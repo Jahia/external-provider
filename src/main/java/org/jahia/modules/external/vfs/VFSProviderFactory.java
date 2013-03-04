@@ -1,0 +1,64 @@
+package org.jahia.modules.external.vfs;
+
+import org.apache.commons.beanutils.BeanUtils;
+import org.eclipse.gemini.blueprint.context.event.OsgiBundleApplicationContextEvent;
+import org.eclipse.gemini.blueprint.context.event.OsgiBundleApplicationContextListener;
+import org.jahia.data.templates.JahiaTemplatesPackage;
+import org.jahia.exceptions.JahiaInitializationException;
+import org.jahia.modules.external.osgi.ExternalProviderActivator;
+import org.jahia.services.JahiaAfterInitializationService;
+import org.jahia.services.SpringContextSingleton;
+import org.jahia.services.content.*;
+import org.jahia.modules.external.ExternalContentStoreProvider;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+
+import javax.jcr.RepositoryException;
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * Mount external VFS Data store
+ */
+public class VFSProviderFactory implements ProviderFactory {
+    private static org.slf4j.Logger logger = LoggerFactory.getLogger(ExternalProviderActivator.class);
+    /**
+     * The node type which is supported by this factory
+     * @return The node type name
+     */
+    @Override
+    public String getNodeTypeName() {
+        return "jnt:vfsMountPoint";
+    }
+
+    /**
+     * Mount the provider in place of the mountPoint node passed in parameter. Use properties of
+     * the mountPoint node to set parameters in the store provider
+     *
+     * @param mountPoint The jnt:mountPoint node
+     * @return A new provider instance, mounted
+     * @throws RepositoryException
+     */
+    @Override
+    public JCRStoreProvider mountProvider(JCRNodeWrapper mountPoint) throws RepositoryException {
+        ExternalContentStoreProvider provider = (ExternalContentStoreProvider) SpringContextSingleton.getBean("ExternalStoreProviderPrototype");
+        provider.setKey(mountPoint.getIdentifier());
+        provider.setMountPoint(mountPoint.getPath());
+
+        VFSDataSource dataSource = new VFSDataSource();
+        dataSource.setRoot(mountPoint.getProperty("j:rootPath").getString());
+        provider.setDataSource(dataSource);
+        provider.setDynamicallyMounted(true);
+        provider.setSessionFactory(JCRSessionFactory.getInstance());
+        try {
+            provider.start();
+        } catch (JahiaInitializationException e) {
+            throw new RepositoryException(e);
+        }
+        return provider;
+
+    }
+
+}
