@@ -126,10 +126,11 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
                 b = new BinaryImpl(inputStream);
                 setValue(getSession().getValueFactory().createValue(b));
             } catch (IOException e) {
+                throw new RepositoryException(e);
+            } finally {
                 if (b != null ) {
                     b.dispose();
                 }
-                throw new RepositoryException(e);
             }
         } else {
             remove();
@@ -161,6 +162,10 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public Value getValue() throws ValueFormatException, RepositoryException {
+        if (isMultiple()) {
+            throw new ValueFormatException(this + " is a multi-valued property,"
+                    + " so it's values can only be retrieved as an array");
+        }
         return value;
     }
 
@@ -173,6 +178,10 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public Value[] getValues() throws ValueFormatException, RepositoryException {
+        if (!isMultiple()) {
+            throw new ValueFormatException(this + " is a single-valued property,"
+                    + " so it's value can not be retrieved as an array");
+        }
         return values;
     }
 
@@ -223,11 +232,19 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public long getLength() throws ValueFormatException, RepositoryException {
-        return 0;
+        return getLength(getValue());
+    }
+
+    protected long getLength(Value value) throws ValueFormatException, RepositoryException {
+        return PropertyType.BINARY == value.getType() ? value.getBinary().getSize() : value.getString().length();
     }
 
     public long[] getLengths() throws ValueFormatException, RepositoryException {
-        return new long[0];
+        long[] lengths = new long[getValues().length];
+        for (int i = 0; i < values.length; i++) {
+            lengths[i] = getLength(values[i]);
+        }
+        return lengths;
     }
 
     public PropertyDefinition getDefinition() throws RepositoryException {
