@@ -111,12 +111,13 @@
                 <configuration>
                     <instructions>
                         <Bundle-Activator>
-                            org.jahia.modules.external.osgi.ExternalProviderActivator
+                            org.jahia.modules.external.modules.osgi.ModulesSourceActivator
                         </Bundle-Activator>
                         <Jahia-Module-Type>system</Jahia-Module-Type>
                         <Export-Package>org.jahia.modules.external</Export-Package>
                         <Export-Package>org.jahia.modules.external.vfs</Export-Package>
                         <Export-Package>org.jahia.modules.external.modules</Export-Package>
+                        <Export-Package>org.jahia.modules.external.modules.osgi</Export-Package>
                     </instructions>
                 </configuration>
             </plugin>

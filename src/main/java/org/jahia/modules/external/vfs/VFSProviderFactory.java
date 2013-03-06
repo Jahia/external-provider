@@ -1,29 +1,19 @@
 package org.jahia.modules.external.vfs;
 
-import org.apache.commons.beanutils.BeanUtils;
-import org.eclipse.gemini.blueprint.context.event.OsgiBundleApplicationContextEvent;
-import org.eclipse.gemini.blueprint.context.event.OsgiBundleApplicationContextListener;
-import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.exceptions.JahiaInitializationException;
-import org.jahia.modules.external.osgi.ExternalProviderActivator;
-import org.jahia.services.JahiaAfterInitializationService;
+import org.jahia.modules.external.modules.osgi.ModulesSourceActivator;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 
 import javax.jcr.RepositoryException;
-import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * Mount external VFS Data store
  */
 public class VFSProviderFactory implements ProviderFactory {
-    private static org.slf4j.Logger logger = LoggerFactory.getLogger(ExternalProviderActivator.class);
+    private static org.slf4j.Logger logger = LoggerFactory.getLogger(VFSProviderFactory.class);
     /**
      * The node type which is supported by this factory
      * @return The node type name
