@@ -171,7 +171,6 @@ public class ExternalProviderActivator implements BundleActivator,JahiaAfterInit
                 BeanUtils.populate(ex, properties);
 
                 ex.start();
-                start(context);
             } catch (IllegalAccessException e) {
                 logger.error(e.getMessage(), e);
             } catch (InvocationTargetException e) {
