@@ -41,10 +41,8 @@ public class ModulesListener extends DefaultEventListener {
 
     @Override
     public void onEvent(EventIterator events) {
-        System.out.println("event");
-
         for (StackTraceElement element : new Exception().getStackTrace()) {
-            if (element.getMethodName().equals("initializeModuleContent") && element.getClassName().equals("org.jahia.services.templates.TemplatePackageDeployer")) {
+            if (element.getClassName().equals("org.jahia.services.templates.TemplatePackageDeployer") || element.getClassName().equals("org.jahia.services.templates.JahiaTemplateManagerService")) {
                 return;
             }
         }
