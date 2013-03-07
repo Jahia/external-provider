@@ -121,5 +121,10 @@ public interface ExternalDataSource {
         List<String> search(String basePath, String type, Map<String, String> constraints, String orderBy, int limit);
     }
 
+    public interface Initializable {
+        void start();
+
+        void stop();
+    }
 
 }

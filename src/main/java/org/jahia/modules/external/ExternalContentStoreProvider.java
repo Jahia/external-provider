@@ -46,6 +46,7 @@ import org.hibernate.Criteria;
 import org.hibernate.HibernateException;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Restrictions;
+import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRStoreProvider;
 import org.slf4j.Logger;
@@ -100,6 +101,22 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
             }
         }
         return repo;
+    }
+
+    @Override
+    public void start() throws JahiaInitializationException {
+        if (dataSource instanceof ExternalDataSource.Initializable) {
+            ((ExternalDataSource.Initializable) dataSource).start();
+        }
+        super.start();
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+        if (dataSource instanceof ExternalDataSource.Initializable) {
+            ((ExternalDataSource.Initializable) dataSource).stop();
+        }
     }
 
     @Override

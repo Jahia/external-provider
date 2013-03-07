@@ -53,11 +53,14 @@ import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
+import org.jahia.modules.external.ExternalDataSource;
+import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.vfs.VFSDataSource;
 import org.jahia.services.content.nodetypes.*;
+import org.jahia.tools.files.FileWatcher;
 import org.jahia.utils.LanguageCodeConverters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +85,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author david
  * @since 6.7
  */
-public class ModulesDataSource extends VFSDataSource {
+public class ModulesDataSource extends VFSDataSource implements ExternalDataSource.Initializable {
 
     private static final Logger logger = LoggerFactory.getLogger(ModulesDataSource.class);
     protected static final String UNSTRUCTURED_PROPERTY = "__prop__";
@@ -98,6 +101,29 @@ public class ModulesDataSource extends VFSDataSource {
     private List<String> supportedNodeTypes;
 
     private Map<String, NodeTypeRegistry> nodeTypeRegistryMap = new HashMap<String, NodeTypeRegistry>();
+    private FileWatcher watcher;
+
+    @Override
+    public void start() {
+        try {
+            watcher = new FileWatcher(module.getSourcesFolder().getPath() + "/src", true, 5000, true, ServicesRegistry.getInstance().getSchedulerService());
+            watcher.setRecursive(true);
+            watcher.addObserver(new Observer() {
+                @Override
+                public void update(Observable o, Object arg) {
+                    List<File> f = (List<File>)arg;
+                }
+            });
+            watcher.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void stop() {
+        watcher.stop();
+    }
 
     /**
      * Return the children of the specified path.
