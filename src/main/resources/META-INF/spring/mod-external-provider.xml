@@ -129,4 +129,30 @@
     </bean>
 
     <bean class="org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer" factory-method="getInstance"/>
+
+    <bean class="org.jahia.modules.external.modules.ModulesListener" factory-method="getInstance">
+
+    </bean>
+
+
+    <bean parent="jobSchedulingBean">
+        <property name="ramJob" value="true"/>
+        <property name="jobDetail">
+            <bean class="org.springframework.scheduling.quartz.JobDetailBean">
+                <property name="name" value="ModulesAutoExport" />
+                <property name="jobClass" value="org.jahia.modules.external.modules.ModulesExportJob" />
+                <property name="group" value="Studio" />
+                <property name="jobDataAsMap">
+                    <map>
+                    </map>
+                </property>
+            </bean>
+        </property>
+        <property name="trigger">
+            <bean class="org.quartz.CronTrigger">
+                <property name="name" value="StudioExportJobTrigger"/>
+                <property name="cronExpression" value="0/5 * * * * ?"/><!-- execute every hour -->
+            </bean>
+        </property>
+    </bean>
 </beans>
