@@ -1305,8 +1305,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             try {
                 ntr.initSystemDefinitions();
 
-                List<JahiaTemplatesPackage> dependencies = new ArrayList<JahiaTemplatesPackage>(module.getDependencies());
-                Collections.reverse(dependencies);
+                List<JahiaTemplatesPackage> dependencies = module.getDependencies();
                 for (JahiaTemplatesPackage depend : dependencies) {
                     for (String s : depend.getDefinitionsFiles()) {
                         ntr.addDefinitionsFile(depend.getResource(s), depend.getRootFolder(), null);
