@@ -87,6 +87,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ModulesDataSource extends VFSDataSource implements ExternalDataSource.Initializable {
 
+    private static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
     private static final Logger logger = LoggerFactory.getLogger(ModulesDataSource.class);
     protected static final String UNSTRUCTURED_PROPERTY = "__prop__";
     protected static final String UNSTRUCTURED_CHILD_NODE = "__node__";
@@ -111,7 +112,6 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             watcher.addObserver(new Observer() {
                 @Override
                 public void update(Observable o, Object arg) {
-                    List<File> f = (List<File>)arg;
                 }
             });
             watcher.start();
@@ -290,7 +290,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 }
             } else {
                 String ext = StringUtils.substringAfterLast(path,".");
-                Map extensions = (Map) SpringContextSingleton.getBean("fileExtensionIcons");
+                Map<?, ?> extensions = (Map<?, ?>) SpringContextSingleton.getBean("fileExtensionIcons");
                 if ("img".equals(extensions.get(ext))) {
                     data.setMixin(Arrays.asList("jmix:image"));
                 }
@@ -312,11 +312,11 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     @Override
     public void removeItemByPath(String path) throws PathNotFoundException {
-        String[] splitPath = path.split("/");
-        if (path.toLowerCase().endsWith(".cnd")) {
+        String pathLowerCase = path.toLowerCase();
+        if (pathLowerCase.endsWith(".cnd")) {
             nodeTypeRegistryMap.remove(path);
             super.removeItemByPath(path);
-        } else if (path.toLowerCase().contains(".cnd/")) {
+        } else if (pathLowerCase.contains(".cnd/")) {
             removeCndItemByPath(path);
         } else {
             super.removeItemByPath(path);
@@ -324,9 +324,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     private void removeCndItemByPath(String path) throws PathNotFoundException {
-        String cndPath = path.substring(0, path.toLowerCase().indexOf(".cnd/") + 4);
-        String subPath = path.substring(path.toLowerCase().indexOf(".cnd/") + 5);
-        String[] splitPath = subPath.split("/");
+        String pathLowerCase = path.toLowerCase();
+        String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
+        String subPath = path.substring(pathLowerCase.indexOf(".cnd/") + 5);
+        String[] splitPath = StringUtils.split(subPath, "/");
         String nodeTypeName = splitPath[0];
         if (splitPath.length == 1) {
             try {
@@ -366,7 +367,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     /**
      * Move a file from one path to another one.
-     * If file is of type cnd the definitions will be first remove from the registry.
+     * If file is of type CND the definitions will be first remove from the registry.
      * @param oldPath
      * @param newPath
      * @throws PathNotFoundException
@@ -384,13 +385,15 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     private void moveCndItems(String oldPath, String newPath) throws PathNotFoundException {
-        String oldCndPath = oldPath.substring(0, oldPath.toLowerCase().indexOf(".cnd/") + 4);
-        String oldSubPath = oldPath.substring(oldPath.toLowerCase().indexOf(".cnd/") + 5);
-        String[] splitOldPath = oldSubPath.split("/");
+        String oldPathlowerCase = oldPath.toLowerCase();
+        String oldCndPath = oldPath.substring(0, oldPathlowerCase.indexOf(".cnd/") + 4);
+        String oldSubPath = oldPath.substring(oldPathlowerCase.indexOf(".cnd/") + 5);
+        String[] splitOldPath = StringUtils.split(oldSubPath, "/");
 
-        String newCndPath = newPath.substring(0, newPath.toLowerCase().indexOf(".cnd/") + 4);
-        String newSubPath = newPath.substring(newPath.toLowerCase().indexOf(".cnd/") + 5);
-        String[] splitNewPath = newSubPath.split("/");
+        String newPathlowerCase = newPath.toLowerCase();
+        String newCndPath = newPath.substring(0, newPathlowerCase.indexOf(".cnd/") + 4);
+        String newSubPath = newPath.substring(newPathlowerCase.indexOf(".cnd/") + 5);
+        String[] splitNewPath = StringUtils.split(newSubPath, "/");
 
         if ((splitOldPath.length == 1) && (splitNewPath.length == 1)) {
             String oldNodeTypeName = splitOldPath[0];
@@ -450,10 +453,11 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     @Override
     public void order(String path, final List<String> children) throws PathNotFoundException {
         // Order only for nodeType
-        if (path.toLowerCase().contains(".cnd/")) {
-            String cndPath = path.substring(0, path.toLowerCase().indexOf(".cnd/") + 4);
-            String subPath = path.substring(path.toLowerCase().indexOf(".cnd/") + 5);
-            String[] splitPath = subPath.split("/");
+        String pathLowerCase = path.toLowerCase();
+        if (pathLowerCase.contains(".cnd/")) {
+            String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
+            String subPath = path.substring(pathLowerCase.indexOf(".cnd/") + 5);
+            String[] splitPath = StringUtils.split(subPath, "/");
 
             ExternalData data = getItemByPath(path);
             try {
@@ -601,9 +605,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private void saveNodeType(ExternalData data) {
         String path = data.getPath();
-        String cndPath = path.substring(0, path.toLowerCase().indexOf(".cnd/") + 4);
-        String subPath = path.substring(path.toLowerCase().indexOf(".cnd/") + 5);
-        String[] splitPath = subPath.split("/");
+        String pathLowerCase = path.toLowerCase();
+        String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
+        String subPath = path.substring(pathLowerCase.indexOf(".cnd/") + 5);
+        String[] splitPath = StringUtils.split(subPath, "/");
 
         String nodeTypeName = splitPath[0];
         NodeTypeRegistry nodeTypeRegistry = loadRegistry(cndPath);
@@ -653,7 +658,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
         values = properties.get("j:mixinExtends");
         if (values != null) {
-            nodeType.setMixinExtendNames(new ArrayList(Arrays.asList(values)));
+            nodeType.setMixinExtendNames(new ArrayList<String>(Arrays.asList(values)));
         } else {
             nodeType.setMixinExtendNames(new ArrayList<String>());
         }
@@ -716,7 +721,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     Properties p = new SortedProperties();
                     if (file.exists()) {
                         is = content.getInputStream();
-                        isr = new InputStreamReader(is, Charset.forName("ISO-8859-1"));
+                        isr = new InputStreamReader(is, ISO_8859_1);
                         p.load(isr);
                         isr.close();
                         is.close();
@@ -730,7 +735,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         p.setProperty(key+"_description", description);
                     }
                     os = content.getOutputStream();
-                    osw = new OutputStreamWriter(os, Charset.forName("ISO-8859-1"));
+                    osw = new OutputStreamWriter(os, ISO_8859_1);
                     p.store(osw, rbPath);
                     ResourceBundle.clearCache();
                 } catch (FileSystemException e) {
@@ -749,9 +754,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private void savePropertyDefinition(ExternalData data) {
         String path = data.getPath();
-        String cndPath = path.substring(0, path.toLowerCase().indexOf(".cnd/") + 4);
-        String subPath = path.substring(path.toLowerCase().indexOf(".cnd/") + 5);
-        String[] splitPath = subPath.split("/");
+        String pathLowerCase = path.toLowerCase();
+        String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
+        String subPath = path.substring(pathLowerCase.indexOf(".cnd/") + 5);
+        String[] splitPath = StringUtils.split(subPath, "/");
 
         NodeTypeRegistry nodeTypeRegistry = loadRegistry(cndPath);
         String nodeTypeName = splitPath[0];
@@ -955,7 +961,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private Value getValueFromString(String value, int requiredType, ExtendedPropertyDefinition propertyDefinition) {
         if (value.contains("(")) {
-            String[] params = StringUtils.substringBetween(value, "(", ")").split(",");
+            String[] params = StringUtils.split(StringUtils.substringBetween(value, "(", ")"), ",");
             List<String> paramList = new ArrayList<String>();
             for (String param : params) {
                 param = param.trim();
@@ -971,9 +977,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private void saveChildNodeDefinition(ExternalData data) {
         String path = data.getPath();
-        String cndPath = path.substring(0, path.toLowerCase().indexOf(".cnd/") + 4);
-        String subPath = path.substring(path.toLowerCase().indexOf(".cnd/") + 5);
-        String[] splitPath = subPath.split("/");
+        String pathLowerCase = path.toLowerCase();
+        String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
+        String subPath = path.substring(pathLowerCase.indexOf(".cnd/") + 5);
+        String[] splitPath = StringUtils.split(subPath, "/");
 
         NodeTypeRegistry nodeTypeRegistry = loadRegistry(cndPath);
 
@@ -1054,9 +1061,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             }
             return children;
         } else {
-            String cndPath = path.substring(0, path.toLowerCase().indexOf(".cnd/") + 4);
-            String subPath = path.substring(path.toLowerCase().indexOf(".cnd/") + 5);
-            String[] splitPath = subPath.split("/");
+            String pathLowerCase = path.toLowerCase();
+            String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
+            String subPath = path.substring(pathLowerCase.indexOf(".cnd/") + 5);
+            String[] splitPath = StringUtils.split(subPath, "/");
 
             List<String> children = new ArrayList<String>();
 
@@ -1078,9 +1086,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     private ExternalData getCndItemByPath(String path) throws PathNotFoundException {
-        String cndPath = path.substring(0, path.toLowerCase().indexOf(".cnd/") + 4);
-        String subPath = path.substring(path.toLowerCase().indexOf(".cnd/") + 5);
-        String[] splitPath = subPath.split("/");
+        String pathLowerCase = path.toLowerCase();
+        String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
+        String subPath = path.substring(pathLowerCase.indexOf(".cnd/") + 5);
+        String[] splitPath = StringUtils.split(subPath, "/");
         if (splitPath.length == 1) {
             String nodeTypeName = splitPath[0];
             try {
@@ -1394,6 +1403,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     class SortedProperties extends Properties {
+        private static final long serialVersionUID = -6636432847084484922L;
+
+        @SuppressWarnings({ "rawtypes", "unchecked" })
         @Override
         public synchronized Enumeration<Object> keys() {
             return new Vector(new TreeSet(super.keySet())).elements();

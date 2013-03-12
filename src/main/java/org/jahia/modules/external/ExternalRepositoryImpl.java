@@ -41,9 +41,6 @@
 package org.jahia.modules.external;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.jcr.*;
 import java.util.*;
 
@@ -52,11 +49,8 @@ import java.util.*;
  * @author toto
  * Date: Apr 23, 2008
  * Time: 11:45:50 AM
- * 
  */
 public class ExternalRepositoryImpl implements Repository {
-
-    private static final transient Logger logger = LoggerFactory.getLogger(ExternalRepositoryImpl.class);
 
     private ExternalContentStoreProvider storeProvider;
     private ExternalDataSource dataSource;
@@ -67,7 +61,10 @@ public class ExternalRepositoryImpl implements Repository {
 
     private String providerKey;
 
-    private static final Set<String> STANDARD_KEYS = new HashSet<String>() {{
+    @SuppressWarnings("deprecation")
+    private static final Set<String> STANDARD_KEYS = new HashSet<String>() {
+        private static final long serialVersionUID = -7206797627602056140L;
+        {
         add(Repository.QUERY_FULL_TEXT_SEARCH_SUPPORTED);
         add(Repository.QUERY_JOINS);
         add(Repository.QUERY_LANGUAGES);
@@ -124,6 +121,7 @@ public class ExternalRepositoryImpl implements Repository {
         return STANDARD_KEYS.contains(key);
     }
 
+    @SuppressWarnings("deprecation")
     private void initDescriptors() {
 
         repositoryDescriptors.put(Repository.SPEC_VERSION_DESC, new ExternalValueImpl("2.0"));

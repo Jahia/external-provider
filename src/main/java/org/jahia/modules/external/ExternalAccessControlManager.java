@@ -54,7 +54,6 @@ import javax.jcr.security.*;
 import javax.jcr.version.VersionException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static javax.jcr.security.Privilege.*;
 import static org.jahia.api.Constants.EDIT_WORKSPACE;
@@ -72,8 +71,6 @@ public class ExternalAccessControlManager implements AccessControlManager {
     private String[] rootNodePrivileges;
 
     private String[] privileges;
-
-    private Map<String, Privilege> registeredPrivilegeMap;
 
     private boolean readOnly;
     private JahiaPrivilegeRegistry registry;

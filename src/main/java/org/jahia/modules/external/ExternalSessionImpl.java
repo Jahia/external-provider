@@ -129,7 +129,7 @@ public class ExternalSessionImpl implements Session {
                 Criteria criteria = statelessSession.createCriteria(UuidMapping.class);
                 criteria.add(Restrictions.eq("internalUuid", uuid));
                 criteria.add(Restrictions.eq("providerKey", repository.getProviderKey()));
-                List list = criteria.list();
+                List<?> list = criteria.list();
                 if (list.size() > 0) {
                     uuid = ((UuidMapping) list.get(0)).getExternalId();
                 } else {
@@ -236,7 +236,7 @@ public class ExternalSessionImpl implements Session {
                     Criteria criteria = statelessSession.createCriteria(UuidMapping.class);
                     criteria.add(Restrictions.eq("externalId", oldData.getId()));
                     criteria.add(Restrictions.eq("providerKey", repository.getProviderKey()));
-                    List list = criteria.list();
+                    List<?> list = criteria.list();
                     if (list.size() > 0) {
                         UuidMapping uuidMapping = (UuidMapping) list.get(0);
                         uuidMapping.setExternalId(newData.getId());
@@ -251,6 +251,7 @@ public class ExternalSessionImpl implements Session {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public void save()
             throws AccessDeniedException, ItemExistsException, ConstraintViolationException, InvalidItemStateException, VersionException, LockException, NoSuchNodeTypeException, RepositoryException {
         if (repository.getDataSource() instanceof ExternalDataSource.Writable) {

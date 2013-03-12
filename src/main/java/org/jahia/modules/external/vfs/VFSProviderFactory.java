@@ -1,11 +1,9 @@
 package org.jahia.modules.external.vfs;
 
 import org.jahia.exceptions.JahiaInitializationException;
-import org.jahia.modules.external.modules.osgi.ModulesSourceActivator;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.modules.external.ExternalContentStoreProvider;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 
@@ -13,7 +11,6 @@ import javax.jcr.RepositoryException;
  * Mount external VFS Data store
  */
 public class VFSProviderFactory implements ProviderFactory {
-    private static org.slf4j.Logger logger = LoggerFactory.getLogger(VFSProviderFactory.class);
     /**
      * The node type which is supported by this factory
      * @return The node type name
