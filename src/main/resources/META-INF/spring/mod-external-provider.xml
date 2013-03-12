@@ -128,7 +128,9 @@
         </property>
     </bean>
 
-    <bean class="org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer" factory-method="getInstance"/>
+    <bean class="org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer" factory-method="getInstance">
+        <property name="jcrStoreService" ref="JCRStoreService"/>
+    </bean>
 
     <bean class="org.jahia.modules.external.modules.ModulesListener" factory-method="getInstance">
 

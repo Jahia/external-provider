@@ -6,7 +6,7 @@
  *
  * For more information, please visit http://www.jahia.com.
  *
- * Copyright (C) 2002-2012 Jahia Solutions Group SA. All rights reserved.
+ * Copyright (C) 2002-2013 Jahia Solutions Group SA. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -40,18 +40,37 @@
 
 package org.jahia.modules.external;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.jackrabbit.util.ChildrenCollectorFilter;
-import org.apache.jackrabbit.value.BinaryImpl;
-import org.hibernate.Criteria;
-import org.hibernate.HibernateException;
-import org.hibernate.SessionFactory;
-import org.hibernate.criterion.Restrictions;
-import org.jahia.api.Constants;
-import org.jahia.services.content.nodetypes.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
-import javax.jcr.*;
+import javax.jcr.AccessDeniedException;
+import javax.jcr.Binary;
+import javax.jcr.InvalidItemStateException;
+import javax.jcr.InvalidLifecycleTransitionException;
+import javax.jcr.Item;
+import javax.jcr.ItemExistsException;
+import javax.jcr.ItemNotFoundException;
+import javax.jcr.MergeException;
+import javax.jcr.NoSuchWorkspaceException;
+import javax.jcr.Node;
+import javax.jcr.NodeIterator;
+import javax.jcr.PathNotFoundException;
+import javax.jcr.Property;
+import javax.jcr.PropertyIterator;
+import javax.jcr.PropertyType;
+import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+import javax.jcr.UnsupportedRepositoryOperationException;
+import javax.jcr.Value;
+import javax.jcr.ValueFormatException;
 import javax.jcr.lock.Lock;
 import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
@@ -61,10 +80,22 @@ import javax.jcr.nodetype.NodeType;
 import javax.jcr.version.Version;
 import javax.jcr.version.VersionException;
 import javax.jcr.version.VersionHistory;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.util.*;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.jackrabbit.util.ChildrenCollectorFilter;
+import org.apache.jackrabbit.value.BinaryImpl;
+import org.hibernate.Criteria;
+import org.hibernate.HibernateException;
+import org.hibernate.SessionFactory;
+import org.hibernate.criterion.Restrictions;
+import org.jahia.api.Constants;
+import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
+import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
+import org.jahia.services.content.nodetypes.Name;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the {@link javax.jcr.Node} for the {@link org.jahia.modules.external.ExternalData}.
@@ -75,6 +106,8 @@ import java.util.*;
 
 public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
+    private static final Logger logger = LoggerFactory.getLogger(ExternalNodeImpl.class);
+    
     private ExternalData data;
     private Map<String, ExternalPropertyImpl> properties = null;
     public ExternalNodeImpl(ExternalData data, ExternalSessionImpl session) throws RepositoryException {
@@ -776,7 +809,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             try {
                 return getNode(it.next());
             } catch (RepositoryException e) {
-                e.printStackTrace();
+                logger.error(e.getMessage(), e);
                 return null;
             }
         }

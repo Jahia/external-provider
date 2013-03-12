@@ -6,7 +6,7 @@
  *
  * For more information, please visit http://www.jahia.com.
  *
- * Copyright (C) 2002-2012 Jahia Solutions Group SA. All rights reserved.
+ * Copyright (C) 2002-2013 Jahia Solutions Group SA. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -84,7 +84,7 @@ public class ExternalQueryManager implements QueryManager {
             NamePathResolver npr = new DefaultNamePathResolver(JCRSessionFactory.getInstance().getNamespaceRegistry());
             return new MyQOMFactory(npr);
         } catch (RepositoryException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         }
         return null;
     }
@@ -194,7 +194,7 @@ public class ExternalQueryManager implements QueryManager {
                             try {
                                 return workspace.getSession().getNode(it.next());
                             } catch (RepositoryException e) {
-                                e.printStackTrace();
+                                logger.error(e.getMessage(), e);
                                 return null;
                             }
                         }
