@@ -154,7 +154,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
      */
     @Override
     public String getDataType(FileObject fileObject) throws FileSystemException {
-        int relativeDepth = getFile("/").getName().getRelativeName(fileObject.getName()).split("/").length;
+        int relativeDepth = StringUtils.split(getFile("/").getName().getRelativeName(fileObject.getName()), "/").length;
         String type;
         if (fileObject.getType().equals(FileType.FOLDER)) {
             if (fileObject.getName().equals(getFile("/").getName())) {
@@ -261,7 +261,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     java.nio.charset.Charset c = "jnt:resourceBundleFile".equals(data.getType()) ? Charsets.ISO_8859_1:Charsets.UTF_8;
                     String[] propertyValue = {IOUtils.toString(is, c)};
                     data.getProperties().put("sourceCode", propertyValue);
-                    data.getProperties().put("nodeTypeName", new String[]{path.split("/")[1].replace("_", ":")});
+                    data.getProperties().put("nodeTypeName", new String[]{StringUtils.split(path, "/")[1].replace("_", ":")});
                 } catch (Exception e) {
                     logger.error("Failed to read source code", e);
                 } finally {
@@ -277,7 +277,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         properties.load(is);
                         Map<String, String[]> dataProperties = new HashMap<String, String[]>();
                         for (Map.Entry<?, ?> property : properties.entrySet()) {
-                            dataProperties.put((String) property.getKey(), ((String) property.getValue()).split(","));
+                            dataProperties.put((String) property.getKey(), StringUtils.split(((String) property.getValue()), ","));
                         }
                         data.getProperties().putAll(dataProperties);
                     } catch (FileSystemException e) {
@@ -820,7 +820,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             ConcurrentHashMap<String, String> selectorOptions = new ConcurrentHashMap<String, String>();
             if (values != null) {
                 for (String option : values) {
-                    String[] keyValue = option.split("=");
+                    String[] keyValue = StringUtils.split(option, "=");
                     if (keyValue.length > 1) {
                         selectorOptions.put(keyValue[0].trim(), StringUtils.strip(keyValue[1].trim(), "'"));
                     } else {
