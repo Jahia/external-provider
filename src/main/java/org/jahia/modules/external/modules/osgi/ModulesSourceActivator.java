@@ -113,7 +113,7 @@ public class ModulesSourceActivator implements BundleActivator {
     public void stop(BundleContext context) throws Exception {
         Bundle[] bundles = context.getBundles();
         for (Bundle bundle : bundles) {
-            if (bundle.getState() == Bundle.ACTIVE) {
+            if (bundle.getState() == Bundle.ACTIVE || context.getBundle().getBundleId() == bundle.getBundleId()) {
                 ModulesSourceSpringInitializer.getInstance().unmountBundle(bundle);
             }
         }
