@@ -123,7 +123,9 @@ public class IdentifierMappingService {
 
             session.getTransaction().commit();
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
+            if (session != null) {
+                session.getTransaction().rollback();
+            }
             throw new RepositoryException(e);
         } finally {
             if (session != null) {
@@ -226,8 +228,8 @@ public class IdentifierMappingService {
      * Returns internal provider ID for the specified provider. If the provider is not registered yet, creates an ID for it and stores an
      * entry in the database.
      * 
-     * @param a
-     *            unique provider key
+     * @param providerKey
+     *            a unique provider key
      * @return the internal provider ID for the specified provider
      * @throws RepositoryException
      *             in case an ID cannot be generated for the provider
@@ -256,6 +258,8 @@ public class IdentifierMappingService {
                             e);
                 }
             }
+        } catch (HibernateException e) {
+            throw new RepositoryException("Issue when obtaining external provider ID for provider " + providerId, e);
         } finally {
             if (session != null) {
                 session.close();
@@ -302,7 +306,9 @@ public class IdentifierMappingService {
             // cache it
             getIdentifierCache().put(getCacheKey(externalId.hashCode(), providerKey), uuidMapping.getInternalUuid());
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
+            if (session != null) {
+                session.getTransaction().rollback();
+            }
             throw new RepositoryException("Error storing mapping for external node " + externalId + " [provider: "
                     + providerKey + "]", e);
         } finally {
@@ -312,6 +318,46 @@ public class IdentifierMappingService {
         }
 
         return uuidMapping.getInternalUuid();
+    }
+
+    /**
+     * Removes the provider entry from the DB table and also all the corresponding ID mappings.
+     * 
+     * @param providerKey
+     *            the provider key
+     * @throws RepositoryException
+     *             in case of a DB operation error
+     */
+    public void removeProvider(String providerKey) throws RepositoryException {
+        SessionFactory hibernateSession = getHibernateSessionFactory();
+        StatelessSession session = null;
+        try {
+            session = hibernateSession.openStatelessSession();
+            session.beginTransaction();
+            int deletedCount = session.createQuery("delete from ExternalProviderID where providerKey=?")
+                    .setString(0, providerKey).executeUpdate();
+            if (deletedCount > 0) {
+                logger.info("Deleted external provider entry for key {}", providerKey);
+                deletedCount = session.createQuery("delete from UuidMapping where providerKey=?")
+                        .setString(0, providerKey).executeUpdate();
+                logger.info("Deleted {} identifier mapping entries for external provider with key {}", deletedCount,
+                        providerKey);
+            } else {
+                logger.info("No external provider entry found for key {}", providerKey);
+            }
+            session.getTransaction().commit();
+        } catch (HibernateException e) {
+            if (session != null) {
+                session.getTransaction().rollback();
+            }
+            throw new RepositoryException(
+                    "Issue when removing external provider entry and identifier mappings for provider key "
+                            + providerKey, e);
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
     }
 
     public void setHibernateSessionFactory(SessionFactory hibernateSession) {
@@ -359,7 +405,9 @@ public class IdentifierMappingService {
             }
             session.getTransaction().commit();
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
+            if (session != null) {
+                session.getTransaction().rollback();
+            }
             throw new RepositoryException(e);
         } finally {
             if (session != null) {

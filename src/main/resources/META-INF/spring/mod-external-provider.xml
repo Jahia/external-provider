@@ -101,6 +101,10 @@
     </bean>
 
     <bean class="org.jahia.modules.external.modules.ModulesListener" factory-method="getInstance"/>
+    
+    <bean class="org.jahia.modules.external.MountPointListener">
+        <property name="identifierMappingService" ref="ExternalProviderIdentifierMappingService"/>
+    </bean>
 
     <bean parent="jobSchedulingBean">
         <property name="ramJob" value="true"/>
