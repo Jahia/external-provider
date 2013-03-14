@@ -93,6 +93,12 @@ public interface ExternalDataSource {
         void saveItem(ExternalData data) throws PathNotFoundException;
     }
 
+    public interface Initializable {
+        void start();
+
+        void stop();
+    }
+
     /**
      * @param path path where to get children
      * @return list of paths as String

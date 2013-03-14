@@ -53,11 +53,15 @@ import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
+import org.jahia.modules.external.ExternalDataSource;
+import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.vfs.VFSDataSource;
 import org.jahia.services.content.nodetypes.*;
+import org.jahia.services.templates.SourceControlManagement;
+import org.jahia.tools.files.FileWatcher;
 import org.jahia.utils.LanguageCodeConverters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +86,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author david
  * @since 6.7
  */
-public class ModulesDataSource extends VFSDataSource {
+public class ModulesDataSource extends VFSDataSource implements ExternalDataSource.Initializable {
 
     private static final Predicate FILTER_OUT_FILES_WITH_STARTING_DOT = new Predicate() {
         @Override
@@ -91,7 +95,10 @@ public class ModulesDataSource extends VFSDataSource {
         }
     };
     private static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
-    private static final List<String> JMIX_IMAGE_LIST = Arrays.asList("jmix:image");
+    private static final List<String> JMIX_IMAGE_LIST = new ArrayList<String>();
+    static {
+        JMIX_IMAGE_LIST.add("jmix:image");
+    }
     private static final Logger logger = LoggerFactory.getLogger(ModulesDataSource.class);
     private static final String PROPERTIES_EXTENSION = ".properties";
     protected static final String UNSTRUCTURED_PROPERTY = "__prop__";
@@ -106,6 +113,33 @@ public class ModulesDataSource extends VFSDataSource {
     private List<String> supportedNodeTypes;
 
     private Map<String, NodeTypeRegistry> nodeTypeRegistryMap = new HashMap<String, NodeTypeRegistry>();
+
+    private FileWatcher watcher;
+
+    @Override
+    public void start() {
+        try {
+            watcher = new FileWatcher(module.getSourcesFolder().getPath() + "/src", true, 5000, true, ServicesRegistry.getInstance().getSchedulerService());
+            watcher.setRecursive(true);
+            watcher.addObserver(new Observer() {
+                @Override
+                public void update(Observable o, Object arg) {
+                    SourceControlManagement sourceControl = module.getSourceControl();
+                    if (sourceControl != null) {
+                        sourceControl.invalidateStatusCache();
+                    }
+                }
+            });
+            watcher.start();
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void stop() {
+        watcher.stop();
+    }
 
     /**
      * Return the children of the specified path.
@@ -291,6 +325,27 @@ public class ModulesDataSource extends VFSDataSource {
         } catch (NoSuchNodeTypeException e) {
             logger.error("Unknown type", e);
         }
+        SourceControlManagement sourceControl = module.getSourceControl();
+        if (sourceControl != null) {
+            String relPath = StringUtils.removeStart(rootPath + path, sourceControl.getRootFolder().getAbsolutePath() + "/");
+            relPath = StringUtils.removeEnd(relPath, "/");
+            try {
+                SourceControlManagement.Status status = sourceControl.getStatus(relPath);
+                if (status != SourceControlManagement.Status.UNMODIFIED) {
+                    List<String> mixin = data.getMixin();
+                    if (mixin == null) {
+                        mixin = new ArrayList<String>();
+                    }
+                    if (!mixin.contains("jmix:sourceControl")) {
+                        mixin.add("jmix:sourceControl");
+                    }
+                    data.setMixin(mixin);
+                    data.getProperties().put("scmStatus", new String[] {status.name().toLowerCase()});
+                }
+            } catch (IOException e) {
+                logger.error("Failed to get SCM status", e);
+            }
+        }
         return data;
     }
 
@@ -313,6 +368,10 @@ public class ModulesDataSource extends VFSDataSource {
             removeCndItemByPath(path);
         } else {
             super.removeItemByPath(path);
+        }
+        SourceControlManagement sourceControl = module.getSourceControl();
+        if (sourceControl != null) {
+            sourceControl.invalidateStatusCache();
         }
     }
 
@@ -374,6 +433,10 @@ public class ModulesDataSource extends VFSDataSource {
             moveCndItems(oldPath, newPath);
         } else {
             super.move(oldPath, newPath);
+        }
+        SourceControlManagement sourceControl = module.getSourceControl();
+        if (sourceControl != null) {
+            sourceControl.invalidateStatusCache();
         }
     }
 
@@ -532,6 +595,10 @@ public class ModulesDataSource extends VFSDataSource {
             }
         } catch (NoSuchNodeTypeException e) {
             logger.error("Unknown type", e);
+        }
+        SourceControlManagement sourceControl = module.getSourceControl();
+        if (sourceControl != null) {
+            sourceControl.invalidateStatusCache();
         }
     }
 

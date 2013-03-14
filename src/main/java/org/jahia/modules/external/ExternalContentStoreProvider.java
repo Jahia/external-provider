@@ -78,12 +78,18 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     @Override
     public void start() throws JahiaInitializationException {
         getId(); // initialize ID
+        if (dataSource instanceof ExternalDataSource.Initializable) {
+            ((ExternalDataSource.Initializable) dataSource).start();
+        }
         super.start();
     }
 
     @Override
     public void stop() {
         super.stop();
+        if (dataSource instanceof ExternalDataSource.Initializable) {
+            ((ExternalDataSource.Initializable) dataSource).stop();
+        }
     }
 
     @Override
