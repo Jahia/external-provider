@@ -79,6 +79,7 @@ import javax.jcr.version.Version;
 import javax.jcr.version.VersionException;
 import javax.jcr.version.VersionHistory;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ChildrenCollectorFilter;
 import org.apache.jackrabbit.value.BinaryImpl;
@@ -379,15 +380,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             if (data.getBinaryProperties() == null) {
                 data.setBinaryProperties(new HashMap<String, Binary[]>());
             }
-            data.getBinaryProperties().put(name,b);
+            data.getBinaryProperties().put(name, b);
             v = getSession().getValueFactory().createValue(binary);
         } catch (IOException e) {
             throw new RepositoryException(e);
-        } finally {
-            if (binary != null) {
-                binary.dispose();
-            }
-    }
+        }
 
         return setProperty(name, v);
     }
@@ -635,7 +632,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property setProperty(String name, Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name, value.getStream());
+        InputStream stream = value.getStream();
+        try {
+            return setProperty(name, stream);
+        } finally {
+            IOUtils.closeQuietly(stream);
+        }
     }
 
     public Property setProperty(String name, BigDecimal value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
