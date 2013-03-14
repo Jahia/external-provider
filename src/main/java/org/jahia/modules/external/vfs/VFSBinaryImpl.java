@@ -37,79 +37,80 @@
  * If you are unsure which license is appropriate for your use,
  * please contact the sales department at sales@jahia.com.
  */
+package org.jahia.modules.external.vfs;
 
-package org.jahia.modules.external;
+import java.io.IOException;
+import java.io.InputStream;
 
-import javax.jcr.*;
-import javax.jcr.lock.LockException;
-import javax.jcr.nodetype.ConstraintViolationException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.version.VersionException;
+import javax.jcr.Binary;
+import javax.jcr.RepositoryException;
+
+import org.apache.commons.vfs2.FileContent;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.tika.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Implementation of the {@link javax.jcr.Item} for the {@link org.jahia.modules.external.ExternalData}.
+ * JCR {@link Binary} implementation which has VFS' {@link FileContent} as an underlying source.
  * 
- * @author Thomas Draier
+ * @author Sergiy Shyrkov
  */
-public abstract class ExternalItemImpl implements Item {
-
-    protected ExternalSessionImpl session;
-
-    public ExternalItemImpl(ExternalSessionImpl session) {
-        this.session = session;
-    }
-
-    public ExternalSessionImpl getSession() {
-        return session;
-    }
-
-    /**
-     * Returns the underlying instance of the store provider.
-     * 
-     * @return the underlying instance of the store provider
-     */
-    protected ExternalContentStoreProvider getStoreProvider() {
-        return getSession().getRepository().getStoreProvider();
-    }
+public class VFSBinaryImpl implements Binary {
     
-    public boolean isNode() {
-        return false;  
-    }
+    private static final Logger logger = LoggerFactory.getLogger(VFSBinaryImpl.class);
 
-    public boolean isNew() {
-        return false;  
-    }
-
-    public boolean isModified() {
-        return false;  
-    }
-
-    public boolean isSame(Item item) throws RepositoryException {
-        return false;  
-    }
-
-    public void accept(ItemVisitor itemVisitor) throws RepositoryException {
-
-    }
+    private FileContent fileContent;
 
     /**
-     * {@inheritDoc}
+     * Initializes an instance of this class with the provided VFS file.
+     * 
+     * @param fileContent
+     *            the VFS file's content to use
      */
-    public void save() throws AccessDeniedException, ItemExistsException, ConstraintViolationException, InvalidItemStateException, ReferentialIntegrityException, VersionException, LockException, NoSuchNodeTypeException, RepositoryException {
-        session.save();
+    public VFSBinaryImpl(FileContent fileContent) {
+        super();
+        this.fileContent = fileContent;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public void refresh(boolean b) throws InvalidItemStateException, RepositoryException {
-        session.refresh(b);
+    @Override
+    public void dispose() {
+        try {
+            fileContent.close();
+        } catch (FileSystemException e) {
+            logger.warn(e.getMessage(), e);
+        }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public void remove() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
-
+    @Override
+    public long getSize() throws RepositoryException {
+        try {
+            return fileContent.getSize();
+        } catch (FileSystemException e) {
+            throw new RepositoryException(e);
+        }
     }
+
+    @Override
+    public InputStream getStream() throws RepositoryException {
+        try {
+            return fileContent.getInputStream();
+        } catch (FileSystemException e) {
+            throw new RepositoryException(e);
+        }
+    }
+
+    @Override
+    public int read(byte[] b, long position) throws IOException, RepositoryException {
+        InputStream is = null;
+        int read = 0;
+        try {
+            is = getStream();
+            read = is.read(b, (int) position, b.length);
+        } finally {
+            IOUtils.closeQuietly(is);
+        }
+        return read;
+    }
+
 }

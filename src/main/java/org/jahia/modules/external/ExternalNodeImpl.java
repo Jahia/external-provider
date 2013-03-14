@@ -49,7 +49,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import javax.jcr.AccessDeniedException;
 import javax.jcr.Binary;
@@ -67,7 +66,6 @@ import javax.jcr.Property;
 import javax.jcr.PropertyIterator;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
-import javax.jcr.Session;
 import javax.jcr.UnsupportedRepositoryOperationException;
 import javax.jcr.Value;
 import javax.jcr.ValueFormatException;
@@ -84,10 +82,6 @@ import javax.jcr.version.VersionHistory;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ChildrenCollectorFilter;
 import org.apache.jackrabbit.value.BinaryImpl;
-import org.hibernate.Criteria;
-import org.hibernate.HibernateException;
-import org.hibernate.SessionFactory;
-import org.hibernate.criterion.Restrictions;
 import org.jahia.api.Constants;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
@@ -99,17 +93,18 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the {@link javax.jcr.Node} for the {@link org.jahia.modules.external.ExternalData}.
- * User: toto
- * Date: Apr 23, 2008
- * Time: 11:46:22 AM
+ * 
+ * @author Thomas Draier
  */
-
 public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     private static final Logger logger = LoggerFactory.getLogger(ExternalNodeImpl.class);
     
     private ExternalData data;
     private Map<String, ExternalPropertyImpl> properties = null;
+    
+    private String uuid;
+    
     public ExternalNodeImpl(ExternalData data, ExternalSessionImpl session) throws RepositoryException {
         super(session);
         this.data = data;
@@ -131,7 +126,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 } else {
                     properties.put(entry.getKey(),
                             new ExternalPropertyImpl(new Name(entry.getKey(), NodeTypeRegistry.getInstance().getNamespaces()), this, session,
-                                    session.getValueFactory().createValue(entry.getValue()[0], requiredType)));
+                                    session.getValueFactory().createValue(entry.getValue().length > 0 ? entry.getValue()[0] : null, requiredType)));
                 }
             }
         }
@@ -198,10 +193,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     public int getDepth() throws RepositoryException {
         throw new UnsupportedRepositoryOperationException();
-    }
-
-    public Session getSession() throws RepositoryException {
-        return session;
     }
 
     public boolean isNode() {
@@ -427,8 +418,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Node getNode(String s) throws PathNotFoundException, RepositoryException {
-        String path = getPath().endsWith("/") ? getPath() : getPath()+"/";
-        return session.getNode(path + s);
+        return session.getNode(getPath().endsWith("/") ? getPath() + s : getPath() + "/" + s);
     }
 
     public NodeIterator getNodes() throws RepositoryException {
@@ -499,12 +489,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public boolean hasNode(String s) throws RepositoryException {
-        try {
-            getNode(s);
-            return true;
-        } catch (PathNotFoundException e) {
-            return false;
-        }
+        return session.itemExists(getPath().endsWith("/") ? getPath() + s : getPath() + "/" + s);
     }
 
     public boolean hasProperty(String relPath) throws RepositoryException {
@@ -680,39 +665,19 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public String getIdentifier() throws RepositoryException {
-        if (!session.getRepository().getDataSource().isSupportsUuid() || data.getId().startsWith("translation:")) {
-            ExternalContentStoreProvider storeProvider = ((ExternalSessionImpl) getSession()).getRepository().getStoreProvider();
-            SessionFactory hibernateSession = storeProvider.getHibernateSession();
-            org.hibernate.classic.Session statelessSession = hibernateSession.openSession();
-            try {
-                Criteria criteria = statelessSession.createCriteria(UuidMapping.class);
-                String key = storeProvider.getKey();
-                criteria.add(Restrictions.eq("externalIdHash", data.getId().hashCode())).add(Restrictions.eq("providerKey", key));
-                List<?> list = criteria.list();
-                if (list.size() > 0) {
-                    return ((UuidMapping) list.get(0)).getInternalUuid();
-                } else {
-                    UUID uuid = UUID.randomUUID();
-                    UuidMapping uuidMapping = new UuidMapping();
-                    uuidMapping.setExternalId(data.getId());
-                    uuidMapping.setProviderKey(key);
-                    uuidMapping.setInternalUuid(storeProvider.getId()+"-"+StringUtils.substringAfter(uuid.toString(),"-"));
-                    try {
-                        statelessSession.beginTransaction();
-                        statelessSession.save(uuidMapping);
-                        statelessSession.getTransaction().commit();
-                    } catch (HibernateException e) {
-                        statelessSession.getTransaction().rollback();
-                        throw new RepositoryException("issue when saving in uuidMap uuid : " + uuid.toString() + " for data : " + data.getId(), e);
-                    }
-                    return uuid.toString();
+        if (uuid == null) {
+            if (!session.getRepository().getDataSource().isSupportsUuid() || data.getId().startsWith("translation:")) {
+                uuid = getStoreProvider().getInternalIdentifier(data.getId());
+                if (uuid == null) {
+                    // not mapped yet -> store mapping
+                    uuid = getStoreProvider().mapInternalIdentifier(data.getId());
                 }
-            } finally {
-                statelessSession.close();
+            } else {
+                uuid = data.getId();
             }
-        } else {
-            return data.getId();
         }
+
+        return uuid;
     }
 
     public PropertyIterator getReferences(String name) throws RepositoryException {

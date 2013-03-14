@@ -53,14 +53,11 @@ import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
-import org.jahia.modules.external.ExternalDataSource;
-import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.vfs.VFSDataSource;
 import org.jahia.services.content.nodetypes.*;
-import org.jahia.tools.files.FileWatcher;
 import org.jahia.utils.LanguageCodeConverters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,13 +82,20 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author david
  * @since 6.7
  */
-public class ModulesDataSource extends VFSDataSource implements ExternalDataSource.Initializable {
+public class ModulesDataSource extends VFSDataSource {
 
+    private static final Predicate FILTER_OUT_FILES_WITH_STARTING_DOT = new Predicate() {
+        @Override
+        public boolean evaluate(Object object) {
+            return !object.toString().startsWith(".");
+        }
+    };
     private static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
+    private static final List<String> JMIX_IMAGE_LIST = Arrays.asList("jmix:image");
     private static final Logger logger = LoggerFactory.getLogger(ModulesDataSource.class);
+    private static final String PROPERTIES_EXTENSION = ".properties";
     protected static final String UNSTRUCTURED_PROPERTY = "__prop__";
     protected static final String UNSTRUCTURED_CHILD_NODE = "__node__";
-    private static final String PROPERTIES_EXTENSION = ".properties";
 
     private JahiaTemplatesPackage module;
 
@@ -102,28 +106,6 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private List<String> supportedNodeTypes;
 
     private Map<String, NodeTypeRegistry> nodeTypeRegistryMap = new HashMap<String, NodeTypeRegistry>();
-    private FileWatcher watcher;
-
-    @Override
-    public void start() {
-        try {
-            watcher = new FileWatcher(module.getSourcesFolder().getPath() + "/src", true, 5000, true, ServicesRegistry.getInstance().getSchedulerService());
-            watcher.setRecursive(true);
-            watcher.addObserver(new Observer() {
-                @Override
-                public void update(Observable o, Object arg) {
-                }
-            });
-            watcher.start();
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public void stop() {
-        watcher.stop();
-    }
 
     /**
      * Return the children of the specified path.
@@ -136,12 +118,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             return getCndChildren(path);
         } else {
             List<String> children = super.getChildren(path);
-            CollectionUtils.filter(children, new Predicate() {
-                @Override
-                public boolean evaluate(Object object) {
-                    return !object.toString().startsWith(".");
-                }
-            });
+            if (children.size() > 0) {
+                CollectionUtils.filter(children, FILTER_OUT_FILES_WITH_STARTING_DOT);
+            }
             return children;
         }
     }
@@ -154,10 +133,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
      */
     @Override
     public String getDataType(FileObject fileObject) throws FileSystemException {
-        int relativeDepth = StringUtils.split(getFile("/").getName().getRelativeName(fileObject.getName()), "/").length;
+        String relativeName = getFile("/").getName().getRelativeName(fileObject.getName());
+        int relativeDepth = ".".equals(relativeName) ? 0 : StringUtils.split(relativeName, "/").length;
         String type;
         if (fileObject.getType().equals(FileType.FOLDER)) {
-            if (fileObject.getName().equals(getFile("/").getName())) {
+            if (relativeDepth == 0) {
+                // we are in root
                 type = Constants.JAHIANT_MODULEVERSIONFOLDER;
             } else {
                 type = folderTypeMapping.get(fileObject.getName().getBaseName());
@@ -165,9 +146,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             if (type == null) {
                 if (relativeDepth == 1 && isNodeType(fileObject.getName().getBaseName())) {
                     type = Constants.JAHIANT_NODETYPEFOLDER;
-                } else {
+                } else if (relativeDepth == 2) {
                     FileObject parent = fileObject.getParent();
-                    if (relativeDepth == 2 && parent != null && Constants.JAHIANT_NODETYPEFOLDER.equals(getDataType(parent))) {
+                    if (parent != null && Constants.JAHIANT_NODETYPEFOLDER.equals(getDataType(parent))) {
                         type = Constants.JAHIANT_TEMPLATETYPEFOLDER;
                     }
                 }
@@ -183,15 +164,19 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     && StringUtils.equals(Constants.JAHIANT_RESOURCEBUNDLE_FOLDER,
                     getDataType(parent)) ? type : null;
         }
-        if ((fileObject.getParent() !=null
-                && StringUtils.equals(Constants.JAHIANT_TEMPLATETYPEFOLDER,getDataType(fileObject.getParent()))))  {
+        boolean isFile = fileObject.getType() == FileType.FILE;
+        if (isFile
+                && relativeDepth == 3
+                && (fileObject.getParent() != null && StringUtils.equals(Constants.JAHIANT_TEMPLATETYPEFOLDER,
+                        getDataType(fileObject.getParent())))) {
             if (StringUtils.endsWith(fileObject.getName().toString(), PROPERTIES_EXTENSION)) {
                 type = "jnt:editableFile";
             } else {
                 type = Constants.JAHIANT_VIEWFILE;
             }
         }
-        if (type == null && fileObject.getType() == FileType.FILE
+        if (type == null
+                && isFile
                 && (fileObject.getContent().getContentInfo().getContentType() == null
                 // at least remove image binary files from rendering
                 || fileObject.getContent().getContentInfo().getContentType() !=null
@@ -207,7 +192,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
      * @return
      */
     public boolean isNodeType(String name) {
-        name = name.replaceFirst("_",":");
+        name = StringUtils.replaceOnce(name, "_", ":");
         for (Map.Entry<String, NodeTypeRegistry> entry : nodeTypeRegistryMap.entrySet()) {
             try {
                 entry.getValue().getNodeType(name);
@@ -261,7 +246,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     java.nio.charset.Charset c = "jnt:resourceBundleFile".equals(data.getType()) ? Charsets.ISO_8859_1:Charsets.UTF_8;
                     String[] propertyValue = {IOUtils.toString(is, c)};
                     data.getProperties().put("sourceCode", propertyValue);
-                    data.getProperties().put("nodeTypeName", new String[]{StringUtils.split(path, "/")[1].replace("_", ":")});
+                    data.getProperties().put("nodeTypeName",
+                            new String[] { StringUtils.replace(StringUtils.substringBetween(path, "/"), "_", ":") });
                 } catch (Exception e) {
                     logger.error("Failed to read source code", e);
                 } finally {
@@ -277,7 +263,14 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         properties.load(is);
                         Map<String, String[]> dataProperties = new HashMap<String, String[]>();
                         for (Map.Entry<?, ?> property : properties.entrySet()) {
-                            dataProperties.put((String) property.getKey(), StringUtils.split(((String) property.getValue()), ","));
+                            ExtendedPropertyDefinition propertyDefinition = type.getPropertyDefinitionsAsMap().get(property.getKey());
+                            String[] values;
+                            if (propertyDefinition != null && propertyDefinition.isMultiple()) {
+                                values = StringUtils.split(((String) property.getValue()), ",");
+                            } else {
+                                values = new String[] { (String) property.getValue() };
+                            }
+                            dataProperties.put((String) property.getKey(), values);
                         }
                         data.getProperties().putAll(dataProperties);
                     } catch (FileSystemException e) {
@@ -292,7 +285,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 String ext = StringUtils.substringAfterLast(path,".");
                 Map<?, ?> extensions = (Map<?, ?>) SpringContextSingleton.getBean("fileExtensionIcons");
                 if ("img".equals(extensions.get(ext))) {
-                    data.setMixin(Arrays.asList("jmix:image"));
+                    data.setMixin(JMIX_IMAGE_LIST);
                 }
             }
         } catch (NoSuchNodeTypeException e) {

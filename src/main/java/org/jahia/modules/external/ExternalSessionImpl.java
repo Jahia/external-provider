@@ -41,10 +41,6 @@
 package org.jahia.modules.external;
 
 import org.apache.commons.lang.StringUtils;
-import org.hibernate.Criteria;
-import org.hibernate.SessionFactory;
-import org.hibernate.StatelessSession;
-import org.hibernate.criterion.Restrictions;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.nodetypes.Name;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
@@ -64,15 +60,14 @@ import java.io.OutputStream;
 import java.security.AccessControlException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Implementation of the {@link javax.jcr.Session} for the {@link org.jahia.modules.external.ExternalData}.
  *
- * @author toto
- *         Date: Apr 23, 2008
- *         Time: 11:56:11 AM
+ * @author Thomas Draier
  */
 public class ExternalSessionImpl implements Session {
     private ExternalRepositoryImpl repository;
@@ -119,25 +114,15 @@ public class ExternalSessionImpl implements Session {
 
     public Node getNodeByUUID(String uuid) throws ItemNotFoundException, RepositoryException {
         if (!uuid.startsWith(getRepository().getStoreProvider().getId())) {
-            throw new ItemNotFoundException("Item " + uuid + " could not been found in this repository");
+            throw new ItemNotFoundException("Item " + uuid + " could not be found in this repository");
         }
         if (!repository.getDataSource().isSupportsUuid() || uuid.startsWith("translation:")) {
-            // Translate uuid to external mapping
-            SessionFactory hibernateSession = repository.getStoreProvider().getHibernateSession();
-            StatelessSession statelessSession = hibernateSession.openStatelessSession();
-            try {
-                Criteria criteria = statelessSession.createCriteria(UuidMapping.class);
-                criteria.add(Restrictions.eq("internalUuid", uuid));
-                criteria.add(Restrictions.eq("providerKey", repository.getProviderKey()));
-                List<?> list = criteria.list();
-                if (list.size() > 0) {
-                    uuid = ((UuidMapping) list.get(0)).getExternalId();
-                } else {
-                    throw new ItemNotFoundException("Item " + uuid + " could not been found in this repository");
-                }
-            } finally {
-                statelessSession.close();
+            // Translate UUID to external mapping
+            String externalId = repository.getStoreProvider().getIdentifierMappingService().getExternalIdentifier(uuid);
+            if (externalId == null) {
+                throw new ItemNotFoundException("Item " + uuid + " could not be found in this repository");
             }
+            uuid = externalId;
         }
         return getNodeByLocalIdentifier(uuid);
     }
@@ -210,96 +195,84 @@ public class ExternalSessionImpl implements Session {
 
     }
 
+    @Override
     public boolean itemExists(String path) throws RepositoryException {
-        if (deletedData.containsKey(path)) {
-            throw new PathNotFoundException("This node has been deleted");
-        }
-        try {
-            repository.getDataSource().getItemByPath(path);
-        } catch (PathNotFoundException fse) {
-            return false;
-        }
-        return false;
+        return !deletedData.containsKey(path) && repository.getDataSource().itemExists(path);
     }
 
     public void move(String source, String dest)
             throws ItemExistsException, PathNotFoundException, VersionException, ConstraintViolationException, LockException, RepositoryException {
         //todo : store move in session and move node in save
-        if (repository.getDataSource() instanceof ExternalDataSource.Writable) {
-            ExternalData oldData = repository.getDataSource().getItemByPath(source);
-            ((ExternalDataSource.Writable) repository.getDataSource()).move(source, dest);
-            ExternalData newData = repository.getDataSource().getItemByPath(dest);
-            if (!oldData.getId().equals(newData.getId())) {
-                SessionFactory hibernateSession = repository.getStoreProvider().getHibernateSession();
-                StatelessSession statelessSession = hibernateSession.openStatelessSession();
-                try {
-                    Criteria criteria = statelessSession.createCriteria(UuidMapping.class);
-                    criteria.add(Restrictions.eq("externalId", oldData.getId()));
-                    criteria.add(Restrictions.eq("providerKey", repository.getProviderKey()));
-                    List<?> list = criteria.list();
-                    if (list.size() > 0) {
-                        UuidMapping uuidMapping = (UuidMapping) list.get(0);
-                        uuidMapping.setExternalId(newData.getId());
-                        statelessSession.update(uuidMapping);
-                    }
-                } finally {
-                    statelessSession.close();
-                }
-            }
-        } else {
+        if (!(repository.getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }
+        if (source.equals(dest)) {
+            return;
+        }
+        ExternalData oldData = repository.getDataSource().getItemByPath(source);
+        ((ExternalDataSource.Writable) repository.getDataSource()).move(source, dest);
+        ExternalData newData = repository.getDataSource().getItemByPath(dest);
+        if (oldData.getId().equals(newData.getId())) {
+            return;
+        }
+        getRepository()
+                .getStoreProvider()
+                .getIdentifierMappingService()
+                .updateExternalIdentifier(oldData.getId(), newData.getId(), getRepository().getProviderKey(),
+                        getRepository().getDataSource().isSupportsHierarchicalIdentifiers());
     }
 
-    @SuppressWarnings("unchecked")
     public void save()
             throws AccessDeniedException, ItemExistsException, ConstraintViolationException, InvalidItemStateException, VersionException, LockException, NoSuchNodeTypeException, RepositoryException {
-        if (repository.getDataSource() instanceof ExternalDataSource.Writable) {
-            Map<String, ExternalData> changedDataWithI18n = new LinkedHashMap<String, ExternalData>();
-            for (String path : changedData.keySet()) {
-                if (StringUtils.substringAfterLast(path, "/").startsWith("j:translation_")) {
-                    String lang = StringUtils.substringAfterLast(StringUtils.substringAfterLast(path, "/"), "_");
-                    String parentPath = StringUtils.substringBeforeLast(path, "/");
-                    ExternalData parentData;
-                    if (changedDataWithI18n.containsKey(parentPath)) {
-                        parentData = changedDataWithI18n.get(parentPath);
-                    } else {
-                        parentData = repository.getDataSource().getItemByPath(parentPath);
-                    }
-                    Map<String, Map<String, String[]>> i18nProperties = parentData.getI18nProperties();
-                    if (i18nProperties == null) {
-                        i18nProperties = new HashMap<String, Map<String, String[]>>();
-                    }
-                    i18nProperties.put(lang, changedData.get(path).getProperties());
-                    parentData.setI18nProperties(i18nProperties);
-                    changedDataWithI18n.put(parentPath, parentData);
-                } else {
-                    changedDataWithI18n.put(path, changedData.get(path));
-                }
-            }
-            ExternalDataSource.Writable writableDataSource = (ExternalDataSource.Writable) repository.getDataSource();
-            for (String path : orderedData.keySet()) {
-                writableDataSource.order(path, orderedData.get(path));
-            }
-            orderedData.clear();
-            for (ExternalData data : changedDataWithI18n.values()) {
-                writableDataSource.saveItem(data);
-            }
+        if (!(repository.getDataSource() instanceof ExternalDataSource.Writable)) {
+            deletedData.clear();
             changedData.clear();
-            if (!deletedData.isEmpty()) {
-                SessionFactory hibernateSession = repository.getStoreProvider().getHibernateSession();
-                StatelessSession statelessSession = hibernateSession.openStatelessSession();
-                String key = getRepository().getStoreProvider().getKey();
-                for (String path : deletedData.keySet()) {
-                    writableDataSource.removeItemByPath(path);
-                    Criteria criteria = statelessSession.createCriteria(UuidMapping.class);
-                    criteria.add(Restrictions.eq("externalIdHash", deletedData.get(path).getId().hashCode())).add(Restrictions.eq("providerKey", key));
-                    for (UuidMapping uuid :(List<UuidMapping>)  criteria.list()) {
-                        statelessSession.delete(uuid);
-                    }
+            orderedData.clear();
+            return;
+        }
+        Map<String, ExternalData> changedDataWithI18n = new LinkedHashMap<String, ExternalData>();
+        for (String path : changedData.keySet()) {
+            if (StringUtils.substringAfterLast(path, "/").startsWith("j:translation_")) {
+                String lang = StringUtils.substringAfterLast(StringUtils.substringAfterLast(path, "/"), "_");
+                String parentPath = StringUtils.substringBeforeLast(path, "/");
+                ExternalData parentData;
+                if (changedDataWithI18n.containsKey(parentPath)) {
+                    parentData = changedDataWithI18n.get(parentPath);
+                } else {
+                    parentData = repository.getDataSource().getItemByPath(parentPath);
                 }
-                deletedData.clear();
+                Map<String, Map<String, String[]>> i18nProperties = parentData.getI18nProperties();
+                if (i18nProperties == null) {
+                    i18nProperties = new HashMap<String, Map<String, String[]>>();
+                }
+                i18nProperties.put(lang, changedData.get(path).getProperties());
+                parentData.setI18nProperties(i18nProperties);
+                changedDataWithI18n.put(parentPath, parentData);
+            } else {
+                changedDataWithI18n.put(path, changedData.get(path));
             }
+        }
+        ExternalDataSource.Writable writableDataSource = (ExternalDataSource.Writable) repository.getDataSource();
+        for (String path : orderedData.keySet()) {
+            writableDataSource.order(path, orderedData.get(path));
+        }
+        orderedData.clear();
+        for (ExternalData data : changedDataWithI18n.values()) {
+            writableDataSource.saveItem(data);
+        }
+        changedData.clear();
+        if (!deletedData.isEmpty()) {
+            List<String> toBeDeleted = new LinkedList<String>();
+            for (String path : deletedData.keySet()) {
+                writableDataSource.removeItemByPath(path);
+                toBeDeleted.add(deletedData.get(path).getId());
+            }
+            getRepository()
+                    .getStoreProvider()
+                    .getIdentifierMappingService()
+                    .delete(toBeDeleted, getRepository().getStoreProvider().getKey(),
+                            getRepository().getDataSource().isSupportsHierarchicalIdentifiers());
+            deletedData.clear();
         }
     }
 

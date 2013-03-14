@@ -40,101 +40,72 @@
 
 package org.jahia.modules.external;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.jackrabbit.rmi.server.ServerAdapterFactory;
-import org.hibernate.Criteria;
-import org.hibernate.HibernateException;
-import org.hibernate.SessionFactory;
-import org.hibernate.criterion.Restrictions;
-import org.jahia.exceptions.JahiaInitializationException;
-import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.JCRStoreProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
-
 import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
 import javax.jcr.Workspace;
 import javax.jcr.query.QueryManager;
-import java.rmi.Naming;
-import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+import org.jahia.exceptions.JahiaInitializationException;
+import org.jahia.exceptions.JahiaRuntimeException;
+import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.JCRStoreProvider;
+import org.springframework.beans.factory.InitializingBean;
 
 /**
  * Implementation of the {@link org.jahia.services.content.JCRStoreProvider} for the {@link org.jahia.modules.external.ExternalData}.
  * 
- * @author toto
- * Date: Apr 23, 2008
- * Time: 11:45:31 AM
+ * @author Thomas Draier
  */
 public class ExternalContentStoreProvider extends JCRStoreProvider implements InitializingBean {
     
-    private static final Logger logger = LoggerFactory.getLogger(ExternalContentStoreProvider.class);
-    
-    private ExternalAccessControlManager accessControlManager;
-
     private boolean readOnly;
 
-    private ExternalRepositoryImpl repo;
-    
     private ExternalDataSource dataSource;
-    private SessionFactory hibernateSession;
-
+    
     private String id;
 
-    public Repository getRepository(){
-        if (repo == null) {
-            synchronized (ExternalContentStoreProvider.class) {
-                if (repo == null) {
-                    accessControlManager = new ExternalAccessControlManager(readOnly);
-                    repo = new ExternalRepositoryImpl(this, dataSource, accessControlManager);
-                    repo.setProviderKey(getKey());
-                    if (rmibind != null) {
-                        try {
-                            Naming.rebind(rmibind, new ServerAdapterFactory().getRemoteRepository(repo));
-                        } catch (Exception e) {
-                            logger.warn("Unable to bind remote JCR repository to RMI using "
-                                    + rmibind, e);
-                        }
-                    }
-                }
-            }
-        }
-        return repo;
+    private IdentifierMappingService identifierMappingService;
+
+    @Override
+    protected Repository createRepository() {
+        ExternalRepositoryImpl instance = new ExternalRepositoryImpl(this, dataSource, new ExternalAccessControlManager(readOnly));
+        instance.setProviderKey(getKey());
+
+        return instance;
     }
 
     @Override
     public void start() throws JahiaInitializationException {
-        if (dataSource instanceof ExternalDataSource.Initializable) {
-            ((ExternalDataSource.Initializable) dataSource).start();
-        }
+        getId(); // initialize ID
         super.start();
     }
 
     @Override
     public void stop() {
         super.stop();
-        if (dataSource instanceof ExternalDataSource.Initializable) {
-            ((ExternalDataSource.Initializable) dataSource).stop();
-        }
     }
 
     @Override
     protected void initObservers() throws RepositoryException {
+        // do nothing
     }
 
     @Override
     public QueryManager getQueryManager(JCRSessionWrapper session) throws RepositoryException {
-        if (dataSource instanceof ExternalDataSource.Searchable) {
-            return super.getQueryManager(session);
-        }
-        return null;
+        return dataSource instanceof ExternalDataSource.Searchable ? super.getQueryManager(session) : null;
     }
 
+    @Override
     public boolean isExportable() {
         return false;
     }
 
+    /**
+     * Returns <code>true</code> if this is a read-only content provider.
+     * 
+     * @return <code>true</code> if this is a read-only content provider
+     */
     public boolean isReadOnly() {
         return readOnly;
     }
@@ -151,69 +122,73 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     }
 
     @Override
-    public void setKey(String key) {
-        super.setKey(key);
-        if (repo != null) {
-            repo.setProviderKey(getKey());
+    public void afterPropertiesSet() throws Exception {
+        if (getKey() != null) {
+            init();
         }
-    }
-
-    public void setHibernateSession(SessionFactory hibernateSession) {
-        this.hibernateSession = hibernateSession;
-    }
-
-    public SessionFactory getHibernateSession() {
-        return hibernateSession;
     }
 
     /**
-     * Invoked by a BeanFactory after it has set all bean properties supplied
-     * (and satisfied BeanFactoryAware and ApplicationContextAware).
-     * <p>This method allows the bean instance to perform initialization only
-     * possible when all bean properties have been set and to throw an
-     * exception in the event of misconfiguration.
-     *
-     * @throws Exception in the event of misconfiguration (such
-     *                   as failure to set an essential property) or if initialization fails.
+     * Initializes this provider instance. Should be called after the {@link #setKey(String)} was called to set the provider key.
+     * 
+     * @throws RepositoryException
+     *             in case of an initialization error
      */
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        if(getKey()!=null) {
-            SessionFactory hibernateSession = getHibernateSession();
-            org.hibernate.classic.Session statelessSession = hibernateSession.openSession();
-            try {
-                Criteria criteria = statelessSession.createCriteria(ExternalProviderID.class);
-                criteria.add(Restrictions.eq("providerKey", getKey()));
-                List<?> list = criteria.list();
-                if (list.size() > 0) {
-                    id = StringUtils.leftPad(((ExternalProviderID)list.get(0)).getId().toString(), 8, "f");
-                } else {
-                    ExternalProviderID providerID = new ExternalProviderID();
-                    providerID.setProviderKey(getKey());
-                    try {
-                        statelessSession.beginTransaction();
-                        statelessSession.save(providerID);
-                        statelessSession.getTransaction().commit();
-                        id = StringUtils.leftPad(providerID.getId().toString(), 8, "f");
-                    } catch (HibernateException e) {
-                        statelessSession.getTransaction().rollback();
-                        throw new RepositoryException("issue when saving in uuidMap uuid : " + providerID.toString(), e);
-                    }
-                }
-            } finally {
-                statelessSession.close();
-            }
+    protected void init() throws RepositoryException {
+        if (getKey() == null) {
+            throw new IllegalArgumentException("The key is not specified for the provider instance."
+                    + " Unable to initialize this provider.");
         }
+        id = StringUtils.leftPad(identifierMappingService.getProviderId(getKey()).toString(), 8, "f");
     }
-
+    
+    /**
+     * The internal ID of this provider which is also used as a prefix for UUIDs, handled by this provider.
+     * 
+     * @return internal ID of this provider which is also used as a prefix for UUIDs, handled by this provider.
+     */
     public String getId() {
-        if(id==null) {
+        if (id == null) {
             try {
-                afterPropertiesSet();
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
+                init();
+            } catch (RepositoryException e) {
+                throw new JahiaRuntimeException(e.getMessage(), e);
             }
         }
         return id;
+    }
+
+    public IdentifierMappingService getIdentifierMappingService() {
+        return identifierMappingService;
+    }
+
+    public void setIdentifierMappingService(IdentifierMappingService mappingService) {
+        this.identifierMappingService = mappingService;
+    }
+
+    /**
+     * Reads internal UUID of the specified node via mapping table, using external ID and provider key.
+     * 
+     * @param externalId
+     *            the external ID to retrieve UUID for
+     * @return an internal UUID of the specified node via mapping table or <code>null</code> if the mapping is not stored yet
+     * @throws RepositoryException
+     *             in case an internal identifier cannot be retrieved from the database
+     */
+    protected String getInternalIdentifier(String externalId) throws RepositoryException {
+        return getIdentifierMappingService().getInternalIdentifier(externalId, getKey());
+    }
+    
+    /**
+     * Generates the internal UUID for the specified node in the mapping table, using external ID and this provider.
+     * 
+     * @param externalId
+     *            the external ID to generate UUID for
+     * @return an generated internal UUID
+     * @throws RepositoryException
+     *             in case an internal identifier cannot be stored into the database
+     */
+    protected String mapInternalIdentifier(String externalId) throws RepositoryException {
+        return getIdentifierMappingService().mapInternalIdentifier(externalId, getKey(), getId());
     }
 }

@@ -44,7 +44,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.vfs2.*;
 import org.apache.jackrabbit.util.ISO8601;
-import org.apache.jackrabbit.value.BinaryImpl;
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.modules.external.ExternalData;
@@ -67,7 +66,8 @@ import java.util.*;
 /**
  * VFS Implementation of ExternalDataSource
  */
-public class VFSDataSource implements ExternalDataSource , ExternalDataSource.Writable {
+public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Writable {
+    private static final List<String> JCR_CONTENT_LIST = Arrays.asList(Constants.JCR_CONTENT);
     private static final List<String> SUPPORTED_NODE_TYPES = Arrays.asList(Constants.JAHIANT_FILE, Constants.JAHIANT_FOLDER, Constants.JCR_CONTENT);
     private static final Logger logger = LoggerFactory.getLogger(VFSDataSource.class);
     protected String root;
@@ -97,6 +97,23 @@ public class VFSDataSource implements ExternalDataSource , ExternalDataSource.Wr
         return false;
     }
 
+    @Override
+    public boolean isSupportsHierarchicalIdentifiers() {
+        return true;
+    }
+    
+    @Override
+    public boolean itemExists(String path) {
+        try {
+            FileObject file = getFile(path.endsWith("/" + Constants.JCR_CONTENT) ? StringUtils.substringBeforeLast(
+                    path, "/" + Constants.JCR_CONTENT) : path);
+            return file.exists();
+        } catch (FileSystemException e) {
+            logger.warn("Unable to check file exiustence for path " + path, e);
+        }
+        return false;
+    }
+    
     @Override
     public void order(String path, List<String> children) throws PathNotFoundException {
         // ordering is not supported in VFS
@@ -145,13 +162,18 @@ public class VFSDataSource implements ExternalDataSource , ExternalDataSource.Wr
             if (!path.endsWith("/"+Constants.JCR_CONTENT)) {
                 FileObject fileObject = getFile(path);
                 if (fileObject.getType() == FileType.FILE) {
-                    return Arrays.asList(Constants.JCR_CONTENT);
+                    return JCR_CONTENT_LIST;
                 } else if (fileObject.getType() == FileType.FOLDER) {
-                    List<String> children = new ArrayList<String>();
-                    for (FileObject object : fileObject.getChildren()) {
-                        children.add(object.getName().getBaseName());
+                    FileObject[] files = fileObject.getChildren();
+                    if (files.length > 0) {
+                        List<String> children = new LinkedList<String>();
+                        for (FileObject object : files) {
+                            children.add(object.getName().getBaseName());
+                        }
+                        return children;
+                    } else {
+                        return Collections.emptyList();
                     }
-                    return children;
                 } else {
                     logger.warn("Found non file or folder entry, maybe an alias. VFS file type=" + fileObject.getType());
                 }
@@ -160,19 +182,17 @@ public class VFSDataSource implements ExternalDataSource , ExternalDataSource.Wr
             logger.error("Cannot get node children",e);
         }
 
-        return new ArrayList<String>();
+        return Collections.emptyList();
     }
 
     @Override
     public void removeItemByPath(String path) throws PathNotFoundException {
         try {
             FileObject file = getFile(path);
-            if (file.getType().hasChildren() && file.getChildren().length != 0) {
-                logger.warn("failed to delete folder because not empty " + getFile(path).toString() + " - ");
-                throw new PathNotFoundException("failed to delete folder " + path + ". Folder not empty or contains hidden files");
-            }
-            if (!file.delete()) {
-                logger.warn("failed to delete FileObject " + getFile(path).toString() + " - ");
+            if (file.getType().hasChildren()) {
+                file.delete(Selectors.SELECT_ALL);
+            } else if (!file.delete()) {
+                logger.warn("Failed to delete FileObject {}", getFile(path).toString());
             }
         }
         catch (FileSystemException e) {
@@ -221,6 +241,9 @@ public class VFSDataSource implements ExternalDataSource , ExternalDataSource.Wr
 
     @Override
     public void move(String oldPath, String newPath) throws PathNotFoundException {
+        if (oldPath.equals(newPath)) {
+            return;
+        }
         try {
             getFile(oldPath).moveTo(getFile(newPath));
         } catch (FileSystemException e) {
@@ -270,17 +293,14 @@ public class VFSDataSource implements ExternalDataSource , ExternalDataSource.Wr
         }
         properties.put(Constants.JCR_MIMETYPE, new String[] { s1 });
 
-        Map<String,Binary[]> binaryProperties = new HashMap<String, Binary[]>();
-        try {
-            binaryProperties.put(Constants.JCR_DATA, new Binary[] {new BinaryImpl(content.getInputStream())});
-        } catch (IOException e) {
-            throw new FileSystemException(e);
-        }
-
         String path = content.getFile().getName().getPath().substring(rootPath.length());
-
         ExternalData externalData = new ExternalData(path + "/"+Constants.JCR_CONTENT, path + "/"+Constants.JCR_CONTENT, Constants.NT_RESOURCE, properties);
+
+        Map<String,Binary[]> binaryProperties = new HashMap<String, Binary[]>(1);
+        binaryProperties.put(Constants.JCR_DATA, new Binary[] {new VFSBinaryImpl(content)});
         externalData.setBinaryProperties(binaryProperties);
+        
         return externalData;
     }
+
 }

@@ -46,51 +46,19 @@
         </property>
         <property value="org.hibernate.cfg.AnnotationConfiguration" name="configurationClass"/>
     </bean>
-
-    <!--<bean id="MyStoreProvider" class="org.jahia.services.content.impl.external.ExternalContentStoreProvider"  parent="AbstractJCRStoreProvider">-->
-    <!--<property name="key" value="my"/>-->
-    <!--<property name="dataSource" >-->
-    <!--<bean class="org.jahia.services.content.impl.external.fs.FSDataSource">-->
-    <!--<property name="root" value="/tmp"/>-->
-    <!--</bean>-->
-    <!--</property>-->
-    <!--<property name="mountPoint" value="/tmp"/>-->
-    <!--</bean>-->
-
-
-    <!--<bean id="LdapStoreProvider" class="org.jahia.services.content.impl.external.ExternalContentStoreProvider"  parent="AbstractJCRStoreProvider">-->
-    <!--<property name="key" value="myldap"/>-->
-    <!--<property name="dataSource" >-->
-    <!--<bean class="org.jahia.services.content.impl.external.users.UsersDataSource">-->
-    <!--</bean>-->
-    <!--</property>-->
-    <!--<property name="mountPoint" value="/ldap"/>-->
-    <!--</bean>-->
-
-    <!--<bean id="VFStoreProvider" class="org.jahia.services.content.impl.external.ExternalContentStoreProvider"  parent="AbstractJCRStoreProvider">-->
-    <!--<property name="key" value="myvfs"/>-->
-    <!--<property name="dataSource" >-->
-    <!--<bean class="org.jahia.services.content.impl.external.vfs.VFSDataSource">-->
-    <!--<property name="root" value="file:///Users/toto/tmp"/>-->
-    <!--</bean>-->
-    <!--</property>-->
-    <!--<property name="mountPoint" value="/tmp2"/>-->
-    <!--</bean>-->
+    
+    <bean id="ExternalProviderIdentifierMappingService" class="org.jahia.modules.external.IdentifierMappingService">
+        <property name="hibernateSessionFactory" ref="moduleSessionFactory"/>
+    </bean>
 
     <bean id="ExternalContentStoreProvider" class="org.jahia.modules.external.ExternalContentStoreProvider"
           parent="AbstractJCRStoreProvider" abstract="true">
-        <property name="hibernateSession" ref="moduleSessionFactory"/>
+        <property name="identifierMappingService" ref="ExternalProviderIdentifierMappingService"/>
     </bean>
-
-    <!--<bean id="ModuleStoreProvider" parent="ExternalContentStoreProvider">-->
-    <!--<property name="key" value="module"/>-->
-    <!--<property name="dataSource" ref="ModulesDataSource"/>-->
-    <!--<property name="mountPoint" value="/modulesFileSystem"/>-->
-    <!--</bean>-->
 
     <bean id="ExternalStoreProviderPrototype" class="org.jahia.modules.external.ExternalContentStoreProvider"
           parent="AbstractJCRStoreProviderPrototype" scope="prototype">
-        <property name="hibernateSession" ref="moduleSessionFactory"/>
+        <property name="identifierMappingService" ref="ExternalProviderIdentifierMappingService"/>
     </bean>
 
     <bean id="ModulesDataSourcePrototype" class="org.jahia.modules.external.modules.ModulesDataSource"
@@ -132,10 +100,7 @@
         <property name="jcrStoreService" ref="JCRStoreService"/>
     </bean>
 
-    <bean class="org.jahia.modules.external.modules.ModulesListener" factory-method="getInstance">
-
-    </bean>
-
+    <bean class="org.jahia.modules.external.modules.ModulesListener" factory-method="getInstance"/>
 
     <bean parent="jobSchedulingBean">
         <property name="ramJob" value="true"/>

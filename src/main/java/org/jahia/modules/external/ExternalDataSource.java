@@ -42,6 +42,7 @@ package org.jahia.modules.external;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
+
 import java.util.List;
 import java.util.Map;
 
@@ -50,14 +51,53 @@ import java.util.Map;
  * a DataSource is used to declare a {@link org.jahia.services.content.JCRStoreProvider}
  * This is a simple way to create a new JCR Provider
  */
-
 public interface ExternalDataSource {
-    boolean isSupportsUuid();
+    
+    public interface LazyProperty {
+        String[] getPropertyValues(String path, String propertyName) throws PathNotFoundException;
+    }
 
     /**
-     * @return list of supported nodetypes
+     * If implemented, this interface allow and defines search
      */
-    List<String> getSupportedNodeTypes();
+    public interface Searchable {
+        List<String> search(String basePath, String type, Map<String, String> constraints, String orderBy, int limit);
+    }
+
+    /**
+     * If implemented, this interface allow and defines writing
+     */
+    public interface Writable {
+        /**
+         * moves ExternalData from oldPath to newPath
+         * @param oldPath  source path
+         * @param newPath  destination path
+         * @throws PathNotFoundException
+         */
+        void move(String oldPath, String newPath) throws PathNotFoundException;
+
+        void order(String path, List<String> children) throws PathNotFoundException;
+
+        /**
+         * Delete an item
+         * @param path path of the item to delete
+         * @throws PathNotFoundException
+         */
+        void removeItemByPath(String path) throws PathNotFoundException;
+
+        /**
+         * saves the data
+         * @param data ExternalData to save
+         * @throws PathNotFoundException
+         */
+        void saveItem(ExternalData data) throws PathNotFoundException;
+    }
+
+    /**
+     * @param path path where to get children
+     * @return list of paths as String
+     */
+    List<String> getChildren(String path);
 
     /**
      * identifier is unique for an ExternalData
@@ -76,55 +116,32 @@ public interface ExternalDataSource {
     ExternalData getItemByPath(String path) throws PathNotFoundException;
 
     /**
-     * @param path path where to get children
-     * @return list of paths as String
+     * @return list of supported nodetypes
      */
-    List<String> getChildren(String path);
-
-    public interface LazyProperty {
-        String[] getPropertyValues(String path, String propertyName) throws PathNotFoundException;
-    }
+    List<String> getSupportedNodeTypes();
 
     /**
-     * If implemented, this interface allow and defines writing
+     * Indicates if this data source has path-like hierarchical external identifiers, e.g. IDs that are using file system paths.
+     * 
+     * @return <code>true</code> if this data source has path-like hierarchical external identifiers, e.g. IDs that are using file system
+     *         paths; <code>false</code> otherwise.
      */
-    public interface Writable {
-        /**
-         * saves the data
-         * @param data ExternalData to save
-         * @throws PathNotFoundException
-         */
-        void saveItem(ExternalData data) throws PathNotFoundException;
-
-        /**
-         * moves ExternalData from oldPath to newPath
-         * @param oldPath  source path
-         * @param newPath  destination path
-         * @throws PathNotFoundException
-         */
-        void move(String oldPath, String newPath) throws PathNotFoundException;
-
-        /**
-         * Delete an item
-         * @param path path of the item to delete
-         * @throws PathNotFoundException
-         */
-        void removeItemByPath(String path) throws PathNotFoundException;
-
-        void order(String path, List<String> children) throws PathNotFoundException;
-    }
+    boolean isSupportsHierarchicalIdentifiers();
 
     /**
-     * If implemented, this interface allow and defines search
+     * Indicates if the data source supports UUIDs.
+     * 
+     * @return <code>true</code> if the data source supports UUIDs
      */
-    public interface Searchable {
-        List<String> search(String basePath, String type, Map<String, String> constraints, String orderBy, int limit);
-    }
+    boolean isSupportsUuid();
 
-    public interface Initializable {
-        void start();
-
-        void stop();
-    }
+    /**
+     * Returns <code>true</code> if an item exists at <code>path</code>; otherwise returns <code>false</code>.
+     * 
+     * @param path
+     *            item path
+     * @return <code>true</code> if an item exists at <code>path</code>; otherwise returns <code>false</code>
+     */
+    boolean itemExists(String path);
 
 }
