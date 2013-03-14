@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
  */
 public class IdentifierMappingService {
 
-    private static final String ID_CACHE_NAME = "ExternalIndentifierMapping";
+    private static final String ID_CACHE_NAME = "ExternalIdentifierMapping";
 
     private static final Logger logger = LoggerFactory.getLogger(IdentifierMappingService.class);
 
