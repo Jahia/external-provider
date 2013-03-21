@@ -113,10 +113,10 @@ public class ExternalSessionImpl implements Session {
     }
 
     public Node getNodeByUUID(String uuid) throws ItemNotFoundException, RepositoryException {
-        if (!uuid.startsWith(getRepository().getStoreProvider().getId())) {
-            throw new ItemNotFoundException("Item " + uuid + " could not be found in this repository");
-        }
         if (!repository.getDataSource().isSupportsUuid() || uuid.startsWith("translation:")) {
+            if (!uuid.startsWith(getRepository().getStoreProvider().getId())) {
+                throw new ItemNotFoundException("Item " + uuid + " could not be found in this repository");
+            }
             // Translate UUID to external mapping
             String externalId = repository.getStoreProvider().getIdentifierMappingService().getExternalIdentifier(uuid);
             if (externalId == null) {
