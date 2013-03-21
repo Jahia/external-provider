@@ -209,13 +209,13 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 type = Constants.JAHIANT_VIEWFILE;
             }
         }
-        if (type == null
-                && isFile
-                && (fileObject.getContent().getContentInfo().getContentType() == null
-                // at least remove image binary files from rendering
-                || fileObject.getContent().getContentInfo().getContentType() !=null
-                        && !StringUtils.contains(fileObject.getContent().getContentInfo().getContentType(),"image"))) {
-            type = "jnt:editableFile";
+
+        String contentType = getContentType(fileObject.getContent());
+        if (type == null && isFile) {
+            boolean isMedia = contentType != null && (contentType.contains("image") || contentType.contains("video") || contentType.contains("audio") || contentType.contains("flash"));
+            if (!isMedia) {
+                type = "jnt:editableFile";
+            }
         }
         return type != null ? type : super.getDataType(fileObject);
     }

@@ -281,17 +281,10 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 : Constants.JAHIANT_FOLDER;
     }
 
-    private ExternalData getFileContent(final FileContent content) throws FileSystemException {
+    protected ExternalData getFileContent(final FileContent content) throws FileSystemException {
         Map<String,String[]> properties = new HashMap<String, String[]>();
 
-        String s1 = content.getContentInfo().getContentType();
-        if (s1 == null) {
-            s1 = JCRContentUtils.getMimeType(content.getFile().getName().getBaseName());
-        }
-        if (s1 == null) {
-            s1 = "application/octet-stream";
-        }
-        properties.put(Constants.JCR_MIMETYPE, new String[] { s1 });
+        properties.put(Constants.JCR_MIMETYPE, new String[] {getContentType(content)});
 
         String path = content.getFile().getName().getPath().substring(rootPath.length());
         ExternalData externalData = new ExternalData(path + "/"+Constants.JCR_CONTENT, path + "/"+Constants.JCR_CONTENT, Constants.NT_RESOURCE, properties);
@@ -301,6 +294,17 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         externalData.setBinaryProperties(binaryProperties);
         
         return externalData;
+    }
+
+    protected String getContentType(FileContent content) throws FileSystemException {
+        String s1 = content.getContentInfo().getContentType();
+        if (s1 == null) {
+            s1 = JCRContentUtils.getMimeType(content.getFile().getName().getBaseName());
+        }
+        if (s1 == null) {
+            s1 = "application/octet-stream";
+        }
+        return s1;
     }
 
 }
