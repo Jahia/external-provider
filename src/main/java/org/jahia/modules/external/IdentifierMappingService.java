@@ -196,7 +196,7 @@ public class IdentifierMappingService {
      *            the underlying provider key
      * @return an internal UUID of the specified node via mapping table or <code>null</code> if the mapping is not stored yet
      * @throws RepositoryException
-     *             in case an internal identifier cannot be retrieved from the database
+     *             in case an internal identifier cannot be retrieved from the database or any other issue
      */
     public String getInternalIdentifier(String externalId, String providerKey) throws RepositoryException {
         int hash = externalId.hashCode();
@@ -212,7 +212,7 @@ public class IdentifierMappingService {
                     uuid = ((UuidMapping) list.get(0)).getInternalUuid();
                     getIdentifierCache().put(cacheKey, uuid);
                 }
-            } catch (HibernateException e) {
+            } catch (Exception e) {
                 throw new RepositoryException(e);
             } finally {
                 if (session != null) {

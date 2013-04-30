@@ -252,9 +252,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     private ExternalData getFile(FileObject fileObject) throws FileSystemException {
-        String type;
-
-        type = getDataType(fileObject);
+        String type = getDataType(fileObject);
 
         Map<String,String[]> properties = new HashMap<String, String[]>();
         if (fileObject.getContent() != null) {
