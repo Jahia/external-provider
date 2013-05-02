@@ -592,6 +592,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 savePropertyDefinition(data);
             } else if (type.isNodeType("jnt:childNodeDefinition")) {
                 saveChildNodeDefinition(data);
+            } else if (type.isNodeType("jnt:namespaceDefinition")) {
+                registerNamespace(data);
             }
         } catch (NoSuchNodeTypeException e) {
             logger.error("Unknown type", e);
@@ -669,17 +671,29 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
         String subPath = path.substring(pathLowerCase.indexOf(".cnd/") + 5);
         String[] splitPath = StringUtils.split(subPath, "/");
-
+        String originalNodeTypeName = null;
         String nodeTypeName = splitPath[0];
         NodeTypeRegistry nodeTypeRegistry = loadRegistry(cndPath);
         ExtendedNodeType nodeType = null;
         try {
             nodeType = nodeTypeRegistry.getNodeType(nodeTypeName);
+            originalNodeTypeName = nodeType.getName();
         } catch (NoSuchNodeTypeException e) {
         }
         if (nodeType == null) {
             nodeType = new ExtendedNodeType(nodeTypeRegistry, module.getRootFolder());
+            if(data.getProperties().containsKey("j:namespace")) {
+                String nTypePrefix = data.getProperties().get("j:namespace")[0];
+                nodeTypeName = nTypePrefix + ":" + nodeTypeName;
+                nodeTypeRegistry.getNamespaces().put(nTypePrefix,NodeTypeRegistry.getInstance().getNamespaces().get(nTypePrefix));
+            }
             nodeType.setName(new Name(nodeTypeName, nodeTypeRegistry.getNamespaces()));
+        } else if(data.getProperties().containsKey("j:namespace")) {
+            nodeTypeName = nodeType.getName();
+            String nTypePrefix = data.getProperties().get("j:namespace")[0];
+            nodeTypeName = nodeTypeName.replace(nodeType.getPrefix()+":", nTypePrefix + ":");
+            nodeType.setName(new Name(nodeTypeName, nodeTypeRegistry.getNamespaces()));
+            nodeTypeRegistry.getNamespaces().put(nTypePrefix,NodeTypeRegistry.getInstance().getNamespaces().get(nTypePrefix));
         }
         Map<String, String[]> properties = data.getProperties();
         List<String> declaredSupertypes = new ArrayList<String>();
@@ -1192,6 +1206,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private ExternalData getNodeTypeData(String path, ExtendedNodeType nodeType) {
         Map<String, String[]> properties = new HashMap<String, String[]>();
+        properties.put("j:namespace",new String[]{nodeType.getPrefix()});
         ExtendedNodeType[] declaredSupertypes = nodeType.getDeclaredSupertypes();
         String supertype = null;
         List<String> mixins = new ArrayList<String>();
@@ -1401,14 +1416,45 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 if (nodeTypeRegistryMap.containsKey(path)) {
                     nodeTypeRegistryMap.get(path).flushLabels();
                 }
+                Map<String, String> realUsedNamespaces = new TreeMap<String, String>();
+                NodeTypeIterator nodeTypes = nodeTypeRegistry.getNodeTypes(module.getRootFolder());
+                while (nodeTypes.hasNext()) {
+                    ExtendedNodeType ntd = (ExtendedNodeType) nodeTypes.nextNodeType();
+                    addMissingNamespace(namespaces, realUsedNamespaces, ntd);
+                    ExtendedNodeType[] declaredSupertypes = ntd.getDeclaredSupertypes();
+                    for (ExtendedNodeType declaredSupertype : declaredSupertypes) {
+                        addMissingNamespace(namespaces, realUsedNamespaces, declaredSupertype);
+                    }
+                    ExtendedNodeDefinition[] childNodeDefinitions = ntd.getChildNodeDefinitions();
+                    for (ExtendedNodeDefinition childNodeDefinition : childNodeDefinitions) {
+                        addMissingNamespace(namespaces, realUsedNamespaces, childNodeDefinition.getDefaultPrimaryType());
+                    }
+                }
 
-                new JahiaCndWriter(nodeTypeRegistry.getNodeTypes(module.getRootFolder()), namespaces, writer);
+                new JahiaCndWriter(nodeTypeRegistry.getNodeTypes(module.getRootFolder()), realUsedNamespaces, writer);
             } finally {
                 IOUtils.closeQuietly(writer);
             }
         } catch (IOException e) {
             logger.error("Failed to write definition file", e);
         }
+    }
+
+    private void addMissingNamespace(Map<String, String> namespaces, Map<String, String> realUsedNamespaces,
+                                     ExtendedNodeType ntd) {
+        if (ntd != null) {
+            String ntdPrefix = ntd.getPrefix();
+            if (!realUsedNamespaces.containsKey(ntdPrefix)) {
+                realUsedNamespaces.put(ntdPrefix, namespaces.get(ntdPrefix));
+            }
+        }
+    }
+
+    private void registerNamespace(ExternalData data) {
+        String prefix = data.getProperties().get("j:prefix")[0];
+        String uri = data.getProperties().get("j:uri")[0];
+        NodeTypeRegistry.getInstance().getNamespaces().put(prefix,uri);
+        nodeTypeRegistryMap.get(StringUtils.substringBeforeLast(data.getPath(),"/")).getNamespaces().put(prefix,uri);
     }
 
     /**

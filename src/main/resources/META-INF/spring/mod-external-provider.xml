@@ -75,6 +75,7 @@
                 <value>jnt:definitionFile</value>
                 <value>nt:nodeType</value>
                 <value>jnt:resourceBundleFolder</value>
+                <value>jnt:namespaceDefinition</value>
             </list>
         </property>
         <property name="folderTypeMapping">
