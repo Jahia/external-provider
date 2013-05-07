@@ -115,6 +115,8 @@ public class ExternalQueryManager implements QueryManager {
         private Constraint constraints;
         private Ordering[] orderings;
         private Column[] columns;
+        private long offset = 0;
+        private long limit = -1;
 
         ExternalQuery(Source source, Constraint constraints, Ordering[] orderings, Column[] columns) {
             this.source = source;
@@ -260,7 +262,7 @@ public class ExternalQueryManager implements QueryManager {
                     return r;
                 }
             }
-            return ((ExternalDataSource.Searchable)workspace.getSession().getRepository().getDataSource()).search(root, type.getName(), search,null,-1);
+            return ((ExternalDataSource.Searchable)workspace.getSession().getRepository().getDataSource()).search(root, type.getName(), search, null, offset, limit);
         }
 
         private void addConstraints(Map<String, String> search, Constraint constraint) throws RepositoryException {
@@ -289,12 +291,28 @@ public class ExternalQueryManager implements QueryManager {
             }
         }
 
+        /**
+         * Sets the maximum size of the result set.
+         *
+         * @param limit new maximum size of the result set
+         */
         public void setLimit(long limit) {
-            
+            if (limit < 0) {
+                throw new IllegalArgumentException("limit must not be negative");
+            }
+            this.limit = limit;
         }
 
+        /**
+         * Sets the start offset of the result set.
+         *
+         * @param offset new start offset of the result set
+         */
         public void setOffset(long offset) {
-            
+            if (offset < 0) {
+                throw new IllegalArgumentException("offset must not be negative");
+            }
+            this.offset = offset;
         }
 
         public String getStatement() {

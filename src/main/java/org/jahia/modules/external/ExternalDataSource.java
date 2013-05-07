@@ -61,7 +61,7 @@ public interface ExternalDataSource {
      * If implemented, this interface allow and defines search
      */
     public interface Searchable {
-        List<String> search(String basePath, String type, Map<String, String> constraints, String orderBy, int limit);
+        List<String> search(String basePath, String type, Map<String, String> constraints, String orderBy, long offset, long limit);
     }
 
     /**
