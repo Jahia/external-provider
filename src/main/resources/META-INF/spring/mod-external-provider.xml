@@ -7,45 +7,6 @@
                         http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd">
 
     <bean id="vfsProviderFactory" class="org.jahia.modules.external.vfs.VFSProviderFactory"/>
-
-    <bean id="moduleSessionFactory" class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean"
-          depends-on="settingsBean">
-        <property name="dataSource">
-            <ref bean="dataSource"/>
-        </property>
-        <property value="org.jahia.modules" name="packagesToScan"/>
-        <property name="hibernateProperties">
-            <bean class="org.springframework.beans.factory.config.PropertiesFactoryBean">
-                <property name="properties">
-                    <map>
-                        <entry value="${hibernate.dialect}" key="hibernate.dialect"/>
-                        <entry value="none" key="hibernate.hbm2ddl.auto"/>
-                        <entry value="false" key="hibernate.show_sql"/>
-                        <entry value="net.sf.ehcache.hibernate.SharingEhcacheProvider"
-                               key="hibernate.cache.provider_class"/>
-                        <entry value="false" key="hibernate.cache.use_second_level_cache"/>
-                        <entry value="false" key="hibernate.cache.use_query_cache"/>
-                        <entry value="16" key="hibernate.jdbc.batch_size"/>
-                        <entry value="16" key="hibernate.default_batch_fetch_size"/>
-                        <entry value="3" key="hibernate.max_fetch_depth"/>
-                        <entry value="true 1, false 0" key="hibernate.query.substitutions"/>
-                        <entry value="false" key="hibernate.generate_statistics"/>
-                        <entry value="false" key="hibernate.cache.use_structured_entries"/>
-                        <entry value="org.jahia.hibernate.ehcachemanager"
-                               key="org.jahia.hibernate.ehcache.existingCacheManagerName"/>
-                    </map>
-                </property>
-            </bean>
-        </property>
-        <property name="eventListeners">
-            <map>
-                <entry key="merge">
-                    <bean class="org.springframework.orm.hibernate3.support.IdTransferringMergeEventListener"/>
-                </entry>
-            </map>
-        </property>
-        <property value="org.hibernate.cfg.AnnotationConfiguration" name="configurationClass"/>
-    </bean>
     
     <bean id="ExternalProviderIdentifierMappingService" class="org.jahia.modules.external.IdentifierMappingService">
         <property name="hibernateSessionFactory" ref="moduleSessionFactory"/>
