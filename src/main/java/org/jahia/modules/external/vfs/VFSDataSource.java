@@ -93,10 +93,6 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         return false;
     }
 
-    public boolean isSupportsSearch() {
-        return false;
-    }
-
     @Override
     public boolean isSupportsHierarchicalIdentifiers() {
         return true;
