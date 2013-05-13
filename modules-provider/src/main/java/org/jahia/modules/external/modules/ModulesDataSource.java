@@ -600,7 +600,19 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
         SourceControlManagement sourceControl = module.getSourceControl();
         if (sourceControl != null) {
-            sourceControl.invalidateStatusCache();
+            String path = data.getPath();
+            if (!path.contains(".cnd/")) {
+                if (path.endsWith("/" + Constants.JCR_CONTENT)) {
+                    path = path.substring(0, path.indexOf("/" + Constants.JCR_CONTENT));
+                }
+                try {
+                    sourceControl.setModifiedFile(Arrays.asList(new File(rootPath + path)));
+                } catch (IOException e) {
+                    logger.error("Failed to add file " + path + " to source control", e);
+                }
+            } else {
+                sourceControl.invalidateStatusCache();
+            }
         }
     }
 
@@ -771,6 +783,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         String rbBasePath = "/resources/" + StringUtils.substringAfterLast(resourceBundleName, ".");
         Map<String, Map<String, String[]>> i18nProperties = data.getI18nProperties();
         if (i18nProperties != null) {
+            List<File> newFiles = new ArrayList<File>();
             for (String lang : i18nProperties.keySet()) {
                 properties = i18nProperties.get(lang);
                 String title = null;
@@ -801,6 +814,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         is.close();
                     } else if (StringUtils.isBlank(title) && StringUtils.isBlank(description)) {
                         continue;
+                    } else {
+                        newFiles.add(new File(file.getName().getPath()));
                     }
                     if (!StringUtils.isEmpty(title)) {
                         p.setProperty(key, title);
@@ -821,6 +836,14 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     IOUtils.closeQuietly(isr);
                     IOUtils.closeQuietly(os);
                     IOUtils.closeQuietly(osw);
+                }
+            }
+            SourceControlManagement sourceControl = module.getSourceControl();
+            if (sourceControl != null) {
+                try {
+                    sourceControl.setModifiedFile(newFiles);
+                } catch (IOException e) {
+                    logger.error("Failed to add files to source control", e);
                 }
             }
         }
