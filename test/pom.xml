@@ -42,16 +42,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>jahia-modules</artifactId>
+        <artifactId>external-provider-parent</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>6.7.0.0-SNAPSHOT</version>
-		<relativePath/>
+        <version>2.0.0-SNAPSHOT</version>
     </parent>
-    <version>2.0.0-SNAPSHOT</version>
-    <artifactId>external-provider-parent</artifactId>
-    <name>Jahia External Provider Parent</name>
-    <packaging>pom</packaging>
-    <description>External provider parent project.</description>
+    <artifactId>external-provider-test</artifactId>
+    <groupId>org.jahia.test</groupId>
+    <name>Jahia External Provider Test</name>
+    <packaging>bundle</packaging>
+    <description>This module provides test for the external provider implementations.</description>
     <scm>
         <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
         <url>scm:git:git@github.com:Jahia/external-provider.git</url>
@@ -71,12 +70,40 @@
             </snapshots>
         </repository>
     </repositories>
-	
-	<modules>
-		<module>core</module>
-		<module>modules-provider</module>
-        <module>vfs</module>
-        <module>test</module>
-	</modules>
+    
+    <dependencies>
+        <dependency>
+            <groupId>org.jahia.test</groupId>
+            <artifactId>jahia-test-module</artifactId>
+            <version>6.7.0.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>external-provider</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+						<Jahia-Depends>external-provider</Jahia-Depends>
+                        <Jahia-Module-Type>system</Jahia-Module-Type>
+                        <_removeheaders>
+                            ${jahia.modules.bundle.removeheaders},
+                            Jahia-Static-Resources
+                        </_removeheaders>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

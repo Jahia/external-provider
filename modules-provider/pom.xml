@@ -42,16 +42,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>jahia-modules</artifactId>
+        <artifactId>external-provider-parent</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>6.7.0.0-SNAPSHOT</version>
-		<relativePath/>
+        <version>2.0.0-SNAPSHOT</version>
     </parent>
-    <version>2.0.0-SNAPSHOT</version>
-    <artifactId>external-provider-parent</artifactId>
-    <name>Jahia External Provider Parent</name>
-    <packaging>pom</packaging>
-    <description>External provider parent project.</description>
+    <artifactId>external-provider-modules</artifactId>
+    <name>Jahia External Provider Modules</name>
+    <packaging>bundle</packaging>
+    <description>Provides an implementation of the external provider for Jahia modules sources.</description>
     <scm>
         <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
         <url>scm:git:git@github.com:Jahia/external-provider.git</url>
@@ -71,12 +69,65 @@
             </snapshots>
         </repository>
     </repositories>
-	
-	<modules>
-		<module>core</module>
-		<module>modules-provider</module>
-        <module>vfs</module>
-        <module>test</module>
-	</modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>external-provider</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>external-provider-vfs</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.gemini.blueprint</groupId>
+            <artifactId>gemini-blueprint-core</artifactId>
+            <version>${gemini.blueprint.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>spring-context</artifactId>
+                    <groupId>org.springframework</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>spring-beans</artifactId>
+                    <groupId>org.springframework</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>spring-core</artifactId>
+                    <groupId>org.springframework</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Bundle-Activator>
+                            org.jahia.modules.external.modules.osgi.ModulesSourceActivator
+                        </Bundle-Activator>
+                        <Jahia-Depends>external-provider,external-provider-vfs</Jahia-Depends>
+                        <Jahia-Module-Type>system</Jahia-Module-Type>
+                        <Export-Package>org.jahia.modules.external.modules</Export-Package>
+                        <Export-Package>org.jahia.modules.external.modules.osgi</Export-Package>
+                        <_removeheaders>
+                            ${jahia.modules.bundle.removeheaders},
+                            Jahia-Static-Resources
+                        </_removeheaders>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
