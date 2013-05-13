@@ -94,7 +94,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-						<Jahia-Depends>external-provider</Jahia-Depends>
+                        <Jahia-Depends>external-provider</Jahia-Depends>
                         <Jahia-Module-Type>system</Jahia-Module-Type>
                         <_removeheaders>
                             ${jahia.modules.bundle.removeheaders},
