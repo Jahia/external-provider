@@ -76,7 +76,6 @@ import javax.jcr.nodetype.NodeTypeIterator;
 import javax.jcr.query.qom.QueryObjectModelConstants;
 import javax.jcr.version.OnParentVersionAction;
 import java.io.*;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -94,7 +93,6 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             return !object.toString().startsWith(".");
         }
     };
-    private static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
     private static final List<String> JMIX_IMAGE_LIST = new ArrayList<String>();
     static {
         JMIX_IMAGE_LIST.add("jmix:image");
@@ -683,13 +681,11 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
         String subPath = path.substring(pathLowerCase.indexOf(".cnd/") + 5);
         String[] splitPath = StringUtils.split(subPath, "/");
-        String originalNodeTypeName = null;
         String nodeTypeName = splitPath[0];
         NodeTypeRegistry nodeTypeRegistry = loadRegistry(cndPath);
         ExtendedNodeType nodeType = null;
         try {
             nodeType = nodeTypeRegistry.getNodeType(nodeTypeName);
-            originalNodeTypeName = nodeType.getName();
         } catch (NoSuchNodeTypeException e) {
         }
         if (nodeType == null) {
@@ -808,7 +804,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     Properties p = new SortedProperties();
                     if (file.exists()) {
                         is = content.getInputStream();
-                        isr = new InputStreamReader(is, ISO_8859_1);
+                        isr = new InputStreamReader(is, Charsets.ISO_8859_1);
                         p.load(isr);
                         isr.close();
                         is.close();
@@ -824,7 +820,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         p.setProperty(key+"_description", description);
                     }
                     os = content.getOutputStream();
-                    osw = new OutputStreamWriter(os, ISO_8859_1);
+                    osw = new OutputStreamWriter(os, Charsets.ISO_8859_1);
                     p.store(osw, rbPath);
                     ResourceBundle.clearCache();
                 } catch (FileSystemException e) {
