@@ -263,6 +263,20 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         return enhanceData(path, data);
     }
 
+    @Override
+    public boolean itemExists(String path) {
+        if (path.toLowerCase().contains(".cnd/")) {
+            try {
+                getItemByPath(path);
+                return true;
+            } catch (PathNotFoundException e) {
+                return false;
+            }
+        }
+        return super.itemExists(path);
+    }
+
+
     private ExternalData enhanceData(String path, ExternalData data) {
         try {
             ExtendedNodeType type = NodeTypeRegistry.getInstance().getNodeType(data.getType());

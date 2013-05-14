@@ -197,7 +197,18 @@ public class ExternalSessionImpl implements Session {
 
     @Override
     public boolean itemExists(String path) throws RepositoryException {
-        return !deletedData.containsKey(path) && repository.getDataSource().itemExists(path);
+        if (StringUtils.substringAfterLast(path, "/").startsWith("j:translation_")) {
+            String lang = StringUtils.substringAfterLast(path, "_");
+            if (itemExists(StringUtils.substringBeforeLast(path,"/"))) {
+                ExternalData parentObject = repository.getDataSource().getItemByPath(StringUtils.substringBeforeLast(path, "/"));
+                if (parentObject.getI18nProperties() != null && parentObject.getI18nProperties().containsKey(lang)) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            return !deletedData.containsKey(path) && repository.getDataSource().itemExists(path);
+        }
     }
 
     public void move(String source, String dest)
