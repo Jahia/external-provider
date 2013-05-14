@@ -382,18 +382,34 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     @Override
     public void removeItemByPath(String path) throws PathNotFoundException {
-        String pathLowerCase = path.toLowerCase();
-        if (pathLowerCase.endsWith(".cnd")) {
-            nodeTypeRegistryMap.remove(path);
-            super.removeItemByPath(path);
-        } else if (pathLowerCase.contains(".cnd/")) {
-            removeCndItemByPath(path);
-        } else {
-            super.removeItemByPath(path);
-        }
         SourceControlManagement sourceControl = module.getSourceControl();
-        if (sourceControl != null) {
-            sourceControl.invalidateStatusCache();
+        String pathLowerCase = path.toLowerCase();
+        if (pathLowerCase.contains(".cnd/")) {
+            removeCndItemByPath(path);
+            if (sourceControl != null) {
+                sourceControl.invalidateStatusCache();
+            }
+        } else {
+            if (pathLowerCase.endsWith(".cnd")) {
+                nodeTypeRegistryMap.remove(path);
+            }
+            if (sourceControl != null) {
+                String relPath = StringUtils.removeStart(rootPath + path, sourceControl.getRootFolder().getAbsolutePath() + "/");
+                relPath = StringUtils.removeEnd(relPath, "/");
+                try {
+                    if (!SourceControlManagement.Status.UNTRACKED.equals(sourceControl.getStatus(relPath))) {
+                        File file = new File(rootPath + path);
+                        sourceControl.setRemovedFile(file);
+                    } else {
+                        super.removeItemByPath(path);
+                    }
+                } catch (IOException e) {
+                    logger.error("Failed to mark file as removed in source control", e);
+                }
+                sourceControl.invalidateStatusCache();
+            } else {
+                super.removeItemByPath(path);
+            }
         }
     }
 
@@ -448,17 +464,34 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
      */
     @Override
     public void move(String oldPath, String newPath) throws PathNotFoundException {
-        if (oldPath.endsWith(".cnd")) {
-            nodeTypeRegistryMap.remove(oldPath);
-            super.move(oldPath, newPath);
-        } else if (oldPath.toLowerCase().contains(".cnd/") && newPath.toLowerCase().contains(".cnd/")) {
-            moveCndItems(oldPath, newPath);
-        } else {
-            super.move(oldPath, newPath);
-        }
         SourceControlManagement sourceControl = module.getSourceControl();
-        if (sourceControl != null) {
-            sourceControl.invalidateStatusCache();
+        if (oldPath.toLowerCase().contains(".cnd/") && newPath.toLowerCase().contains(".cnd/")) {
+            moveCndItems(oldPath, newPath);
+            if (sourceControl != null) {
+                sourceControl.invalidateStatusCache();
+            }
+        } else {
+            if (oldPath.toLowerCase().endsWith(".cnd")) {
+                nodeTypeRegistryMap.remove(oldPath);
+            }
+            if (sourceControl != null) {
+                String oldRelPath = StringUtils.removeStart(rootPath + oldPath, sourceControl.getRootFolder().getAbsolutePath() + "/");
+                oldRelPath = StringUtils.removeEnd(oldRelPath, "/");
+                try {
+                    if (!SourceControlManagement.Status.UNTRACKED.equals(sourceControl.getStatus(oldRelPath))) {
+                        File src = new File(rootPath + oldPath);
+                        File dst = new File(rootPath + newPath);
+                        sourceControl.setMovedFile(src, dst);
+                    } else {
+                        super.move(oldPath, newPath);
+                    }
+                } catch (IOException e) {
+                    logger.error("Failed to mark file as removed in source control", e);
+                }
+                sourceControl.invalidateStatusCache();
+            } else {
+                super.move(oldPath, newPath);
+            }
         }
     }
 
