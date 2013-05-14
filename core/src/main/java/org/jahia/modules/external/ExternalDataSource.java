@@ -42,6 +42,7 @@ package org.jahia.modules.external;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
+import javax.jcr.RepositoryException;
 
 import java.util.List;
 import java.util.Map;
@@ -74,23 +75,23 @@ public interface ExternalDataSource {
          * @param newPath  destination path
          * @throws PathNotFoundException
          */
-        void move(String oldPath, String newPath) throws PathNotFoundException;
+        void move(String oldPath, String newPath) throws RepositoryException;
 
-        void order(String path, List<String> children) throws PathNotFoundException;
+        void order(String path, List<String> children) throws RepositoryException;
 
         /**
          * Delete an item
          * @param path path of the item to delete
          * @throws PathNotFoundException
          */
-        void removeItemByPath(String path) throws PathNotFoundException;
+        void removeItemByPath(String path) throws RepositoryException;
 
         /**
          * saves the data
          * @param data ExternalData to save
          * @throws PathNotFoundException
          */
-        void saveItem(ExternalData data) throws PathNotFoundException;
+        void saveItem(ExternalData data) throws RepositoryException;
     }
 
     public interface Initializable {

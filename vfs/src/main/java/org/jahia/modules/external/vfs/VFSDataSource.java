@@ -111,7 +111,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
     
     @Override
-    public void order(String path, List<String> children) throws PathNotFoundException {
+    public void order(String path, List<String> children) throws RepositoryException {
         // ordering is not supported in VFS
     }
 
@@ -182,7 +182,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     @Override
-    public void removeItemByPath(String path) throws PathNotFoundException {
+    public void removeItemByPath(String path) throws RepositoryException {
         try {
             FileObject file = getFile(path);
             if (file.getType().hasChildren()) {
@@ -192,11 +192,11 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             }
         }
         catch (FileSystemException e) {
-            throw new PathNotFoundException(e);
+            throw new RepositoryException(e);
         }
     }
 
-    public void saveItem(ExternalData data) throws PathNotFoundException {
+    public void saveItem(ExternalData data) throws RepositoryException {
         try {
             ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(data.getType());
             if (nodeType.isNodeType(Constants.NT_RESOURCE)) {
@@ -236,14 +236,14 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     @Override
-    public void move(String oldPath, String newPath) throws PathNotFoundException {
+    public void move(String oldPath, String newPath) throws RepositoryException {
         if (oldPath.equals(newPath)) {
             return;
         }
         try {
             getFile(oldPath).moveTo(getFile(newPath));
         } catch (FileSystemException e) {
-            throw new PathNotFoundException(oldPath);
+            throw new RepositoryException(oldPath);
         }
     }
 

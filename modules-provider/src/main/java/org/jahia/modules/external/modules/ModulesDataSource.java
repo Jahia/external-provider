@@ -56,13 +56,15 @@ import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.external.ExternalDataSource;
 import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.SpringContextSingleton;
-import org.jahia.services.content.JCRContentUtils;
+import org.jahia.services.content.*;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.vfs.VFSDataSource;
 import org.jahia.services.content.nodetypes.*;
+import org.jahia.services.preferences.user.UserPreferencesHelper;
 import org.jahia.services.templates.SourceControlManagement;
 import org.jahia.tools.files.FileWatcher;
 import org.jahia.utils.LanguageCodeConverters;
+import org.jahia.utils.i18n.Messages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
@@ -73,6 +75,9 @@ import javax.jcr.*;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.nodetype.NodeTypeIterator;
+import javax.jcr.query.InvalidQueryException;
+import javax.jcr.query.Query;
+import javax.jcr.query.QueryResult;
 import javax.jcr.query.qom.QueryObjectModelConstants;
 import javax.jcr.version.OnParentVersionAction;
 import java.io.*;
@@ -210,7 +215,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         if (isFile
                 && relativeDepth == 3
                 && (fileObject.getParent() != null && StringUtils.equals(Constants.JAHIANT_TEMPLATETYPEFOLDER,
-                        getDataType(fileObject.getParent())))) {
+                getDataType(fileObject.getParent())))) {
             if (StringUtils.endsWith(fileObject.getName().toString(), PROPERTIES_EXTENSION)) {
                 type = "jnt:editableFile";
             } else {
@@ -381,7 +386,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     @Override
-    public void removeItemByPath(String path) throws PathNotFoundException {
+    public void removeItemByPath(String path) throws RepositoryException {
         SourceControlManagement sourceControl = module.getSourceControl();
         String pathLowerCase = path.toLowerCase();
         if (pathLowerCase.contains(".cnd/")) {
@@ -413,7 +418,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private void removeCndItemByPath(String path) throws PathNotFoundException {
+    private void removeCndItemByPath(String path) throws RepositoryException {
+        checkCndItemUsage(path,"modulesDataSource.errors.delete");
         String pathLowerCase = path.toLowerCase();
         String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
         String subPath = path.substring(pathLowerCase.indexOf(".cnd/") + 5);
@@ -463,7 +469,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
      * @throws PathNotFoundException
      */
     @Override
-    public void move(String oldPath, String newPath) throws PathNotFoundException {
+    public void move(String oldPath, String newPath) throws RepositoryException {
         SourceControlManagement sourceControl = module.getSourceControl();
         if (oldPath.toLowerCase().contains(".cnd/") && newPath.toLowerCase().contains(".cnd/")) {
             moveCndItems(oldPath, newPath);
@@ -495,7 +501,42 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private void moveCndItems(String oldPath, String newPath) throws PathNotFoundException {
+    private void checkCndItemUsage(String path, String message) throws RepositoryException {
+        ExternalData item = getCndItemByPath(path);
+        if (!Arrays.asList("jnt:nodeType", "jnt:mixinNodeType", "jnt:primaryNodeType").contains(item.getType())) {
+            item = getCndItemByPath(StringUtils.substringBeforeLast(path, "/"));
+        }
+        final String type = StringUtils.substringAfterLast(item.getPath(),"/");
+        // Check for usage of the nodetype before moving it
+        checkCndItemUsageByWorkspace(type, "default", message);
+        checkCndItemUsageByWorkspace(type, "live", message);
+    }
+
+    private void checkCndItemUsageByWorkspace(final String type, final String workspace,final String message) throws RepositoryException {
+        JCRTemplate.getInstance().doExecuteWithSystemSession(null, workspace, new JCRCallback<Object>() {
+            public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
+                boolean error = false;
+                try {
+                    QueryResult result = session.getWorkspace().getQueryManager()
+                            .createQuery("Select * from ["+type+"]", Query.JCR_SQL2).execute();
+                    if (result.getRows().hasNext()) {
+                        Locale locale = UserPreferencesHelper.getPreferredLocale(JCRSessionFactory.getInstance().getCurrentUser());
+                        if (locale == null) {
+                            locale = Locale.ENGLISH;
+                        }
+                        throw new ItemExistsException(Messages.get("resources.JahiaExternalProviderModules",message,locale));
+                    }
+                }
+                catch (InvalidQueryException e) {
+                    // this can happen if the type just have been created and not used at all.
+                }
+                return null;
+            }
+        });
+    }
+
+    private void moveCndItems(String oldPath, String newPath) throws RepositoryException {
+        checkCndItemUsage(oldPath,"modulesDataSource.errors.move");
         String oldPathlowerCase = oldPath.toLowerCase();
         String oldCndPath = oldPath.substring(0, oldPathlowerCase.indexOf(".cnd/") + 4);
         String oldSubPath = oldPath.substring(oldPathlowerCase.indexOf(".cnd/") + 5);
@@ -562,7 +603,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
      * @throws PathNotFoundException
      */
     @Override
-    public void order(String path, final List<String> children) throws PathNotFoundException {
+    public void order(String path, final List<String> children) throws RepositoryException {
         // Order only for nodeType
         String pathLowerCase = path.toLowerCase();
         if (pathLowerCase.contains(".cnd/")) {
@@ -633,7 +674,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     @Override
-    public void saveItem(ExternalData data) throws PathNotFoundException {
+    public void saveItem(ExternalData data) throws RepositoryException {
         super.saveItem(data);
 
         try {
@@ -705,7 +746,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     if (v != null) {
                         String propertyValue = StringUtils.join(v,",");
                         if (propertyDefinitionMap.get(property.getKey()).getRequiredType() != PropertyType.BOOLEAN ||
-                            !propertyValue.equals("false")) {
+                                !propertyValue.equals("false")) {
                             properties.put(property.getKey(), propertyValue);
                         }
                     }
@@ -732,7 +773,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private void saveNodeType(ExternalData data) {
+    private void saveNodeType(ExternalData data) throws RepositoryException {
         String path = data.getPath();
         String pathLowerCase = path.toLowerCase();
         String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
@@ -754,11 +795,17 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         List<String> declaredSupertypes = new ArrayList<String>();
         String[] values = properties.get("j:supertype");
         if (values != null && values.length > 0) {
+            if (!Arrays.asList(nodeType.getDeclaredSupertypeNames()).contains(values[0])) {
+                checkCndItemUsage(path,"modulesDataSource.errors.changeSuperType");
+            }
             declaredSupertypes.add(values[0]);
         }
         values = properties.get("j:mixins");
         if (values != null) {
             for (String mixin : values) {
+                if (!Arrays.asList(nodeType.getDeclaredSupertypeNames()).contains(mixin)) {
+                    checkCndItemUsage(path,"modulesDataSource.errors.changeMixins");
+                }
                 declaredSupertypes.add(mixin);
             }
         }
