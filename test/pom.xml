@@ -84,10 +84,44 @@
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.derby</groupId>
+            <artifactId>derby</artifactId>
+            <version>${driver.derby.version}</version>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.apache.derby</groupId>
+                                    <artifactId>derby-toursdb</artifactId>
+                                    <version>10.9.1.0</version>
+                                    <type>jar</type>
+                                    <overWrite>false</overWrite>
+                                    <outputDirectory>${project.basedir}/src/main/resources</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                            <outputDirectory>${project.build.directory}/wars</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -96,6 +130,13 @@
                     <instructions>
                         <Jahia-Depends>external-provider</Jahia-Depends>
                         <Jahia-Module-Type>system</Jahia-Module-Type>
+                        
+                        <Import-Package>*,
+                            com.ibm.jvm;resolution:=optional,
+                            org.apache.derby.impl.drda;resolution:=optional,
+                            ${jahia.plugin.projectPackageImport}
+                        </Import-Package>
+                        <Embed-Dependency>derby;scope=runtime;inline=false</Embed-Dependency>
                         <_removeheaders>
                             ${jahia.modules.bundle.removeheaders},
                             Jahia-Static-Resources
