@@ -1452,7 +1452,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                                      ExtendedNodeType ntd) {
         if (ntd != null) {
             String ntdPrefix = ntd.getPrefix();
-            if (!realUsedNamespaces.containsKey(ntdPrefix)) {
+            if (!StringUtils.isEmpty(ntdPrefix) && !realUsedNamespaces.containsKey(ntdPrefix)) {
                 realUsedNamespaces.put(ntdPrefix, namespaces.get(ntdPrefix));
             }
         }
