@@ -126,6 +126,16 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     if (sourceControl != null) {
                         sourceControl.invalidateStatusCache();
                     }
+                    List<File> files = (List<File>)arg;
+                    for (File file : files) {
+                        String type = fileTypeMapping.get(StringUtils.substringAfterLast(file.getName(),"."));
+                        if (type != null && type.equals("jnt:resourceBundleFile")) {
+                            NodeTypeRegistry.getInstance().flushLabels();
+                            for (NodeTypeRegistry registry : nodeTypeRegistryMap.values()) {
+                                registry.flushLabels();
+                            }
+                        }
+                    }
                 }
             });
             watcher.start();
