@@ -1,0 +1,64 @@
+<nt = 'http://www.jcp.org/jcr/nt/1.0'>
+<mix = 'http://www.jcp.org/jcr/mix/1.0'>
+<jcr = 'http://www.jcp.org/jcr/1.0'>
+<j = 'http://www.jahia.org/jahia/1.0'>
+<jnt = 'http://www.jahia.org/jahia/nt/1.0'>
+<jmix = 'http://www.jahia.org/jahia/mix/1.0'>
+<jtestnt = 'http://www.jahia.org/jahia/test/nt/1.0'>
+<jtestmix = 'http://www.jahia.org/jahia/test/mix/1.0'>
+
+[jtestnt:dbSchema] > jnt:content, jmix:list
+ + * (jtestnt:dbTable)
+
+[jtestnt:dbTable] > jnt:content, jmix:list
+ + * (jtestnt:dbRow)
+
+[jtestnt:dbRow] > jnt:content
+ - * (string)
+
+
+[jtestmix:item] mixin
+
+[jtestnt:catalog] > jnt:content, jmix:list
+ + * (jtestnt:directory)
+ 
+[jtestnt:directory] > jnt:content, jmix:list
+ + * (jtestmix:item)
+
+[jtestnt:airline] > jnt:content, jtestmix:item
+ - airline (string)
+ - airline_full (string)
+ - basic_rate (double)
+ - distance_discount (double)
+ - business_level_factor (double)
+ - firstclass_level_factor (double)
+ - economy_seats (long)
+ - business_seats (long)
+ - firstclass_seats (long)
+
+[jtestnt:country] > jnt:content, jtestmix:item
+ - country_iso_code (string)
+ - country (string)
+ - region (string)
+
+[jtestnt:city] > jnt:content, jtestmix:item
+ - city_id (long)
+ - city_name (string)
+ - country (string)
+ - airport (string)
+ - language (string)
+ - country_iso_code (string)
+// we can try mapping country here as a reference
+
+[jtestnt:flight] > jnt:content, jtestmix:item
+ - flight_id (string)
+ - segment_number (long)
+ - orig_airport (string)
+ - depart_time (string)
+ - dest_airport (string)
+ - arrive_time (string)
+ - meal (string)
+ - flying_time (double)
+ - miles (long)
+ - aircraft (string)
+ 

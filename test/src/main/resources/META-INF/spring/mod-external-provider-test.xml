@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:osgi="http://www.eclipse.org/gemini/blueprint/schema/blueprint"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+                        http://www.eclipse.org/gemini/blueprint/schema/blueprint http://www.eclipse.org/gemini/blueprint/schema/blueprint/gemini-blueprint.xsd">
+
+    <bean class="org.jahia.test.bin.TestBean">
+        <property name="priority" value="56"/>
+
+        <property name="testCases">
+            <list>
+               <value>org.jahia.modules.external.test.db.ExternalDatabaseProviderTest</value>
+            </list>
+        </property>
+    </bean>
+    
+    <osgi:reference id="ExternalProviderIdentifierMappingService" interface="org.jahia.modules.external.IdentifierMappingService"/>
+    
+    <bean id="ExternalGenericDatabaseProvider" class="org.jahia.modules.external.ExternalContentStoreProvider" parent="AbstractJCRStoreProvider">
+        <property name="key" value="ExternalGenericDatabaseProvider"/>
+        <property name="mountPoint" value="/external-database-generic"/>
+        <property name="identifierMappingService" ref="ExternalProviderIdentifierMappingService"/>
+        <property name="dataSource">
+            <bean class="org.jahia.modules.external.test.db.GenericDatabaseDataSource"/>
+        </property>
+    </bean>
+
+    <bean id="ExternalMappedDatabaseProvider" class="org.jahia.modules.external.ExternalContentStoreProvider" parent="AbstractJCRStoreProvider">
+        <property name="key" value="ExternalMappedDatabaseProvider"/>
+        <property name="mountPoint" value="/external-database-mapped"/>
+        <property name="identifierMappingService" ref="ExternalProviderIdentifierMappingService"/>
+        <property name="dataSource">
+            <bean class="org.jahia.modules.external.test.db.MappedDatabaseDataSource"/>
+        </property>
+    </bean>
+</beans>
