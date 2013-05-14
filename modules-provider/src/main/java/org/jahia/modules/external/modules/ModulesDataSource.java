@@ -681,6 +681,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
         String subPath = path.substring(pathLowerCase.indexOf(".cnd/") + 5);
         String[] splitPath = StringUtils.split(subPath, "/");
+
         String nodeTypeName = splitPath[0];
         NodeTypeRegistry nodeTypeRegistry = loadRegistry(cndPath);
         ExtendedNodeType nodeType = null;
@@ -690,18 +691,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
         if (nodeType == null) {
             nodeType = new ExtendedNodeType(nodeTypeRegistry, module.getRootFolder());
-            if(data.getProperties().containsKey("j:namespace")) {
-                String nTypePrefix = data.getProperties().get("j:namespace")[0];
-                nodeTypeName = nTypePrefix + ":" + nodeTypeName;
-                nodeTypeRegistry.getNamespaces().put(nTypePrefix,NodeTypeRegistry.getInstance().getNamespaces().get(nTypePrefix));
-            }
             nodeType.setName(new Name(nodeTypeName, nodeTypeRegistry.getNamespaces()));
-        } else if(data.getProperties().containsKey("j:namespace")) {
-            nodeTypeName = nodeType.getName();
-            String nTypePrefix = data.getProperties().get("j:namespace")[0];
-            nodeTypeName = nodeTypeName.replace(nodeType.getPrefix()+":", nTypePrefix + ":");
-            nodeType.setName(new Name(nodeTypeName, nodeTypeRegistry.getNamespaces()));
-            nodeTypeRegistry.getNamespaces().put(nTypePrefix,NodeTypeRegistry.getInstance().getNamespaces().get(nTypePrefix));
         }
         Map<String, String[]> properties = data.getProperties();
         List<String> declaredSupertypes = new ArrayList<String>();
@@ -1225,7 +1215,6 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private ExternalData getNodeTypeData(String path, ExtendedNodeType nodeType) {
         Map<String, String[]> properties = new HashMap<String, String[]>();
-        properties.put("j:namespace",new String[]{nodeType.getPrefix()});
         ExtendedNodeType[] declaredSupertypes = nodeType.getDeclaredSupertypes();
         String supertype = null;
         List<String> mixins = new ArrayList<String>();
