@@ -272,7 +272,11 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     @Override
     public ExternalData getItemByPath(String path) throws PathNotFoundException {
         if (path.toLowerCase().contains(".cnd/")) {
-            return getCndItemByPath(path);
+            try {
+                return getCndItemByPath(path);
+            } catch (RepositoryException e) {
+                throw new PathNotFoundException(e);
+            }
         }
         ExternalData data = super.getItemByPath(path);
         return enhanceData(path, data);
@@ -502,14 +506,18 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     private void checkCndItemUsage(String path, String message) throws RepositoryException {
-        ExternalData item = getCndItemByPath(path);
-        if (!Arrays.asList("jnt:nodeType", "jnt:mixinNodeType", "jnt:primaryNodeType").contains(item.getType())) {
-            item = getCndItemByPath(StringUtils.substringBeforeLast(path, "/"));
+        try {
+            ExternalData item = getCndItemByPath(path);
+            if (!Arrays.asList("jnt:nodeType", "jnt:mixinNodeType", "jnt:primaryNodeType").contains(item.getType())) {
+                item = getCndItemByPath(StringUtils.substringBeforeLast(path, "/"));
+            }
+            final String type = StringUtils.substringAfterLast(item.getPath(),"/");
+            // Check for usage of the nodetype before moving it
+            checkCndItemUsageByWorkspace(type, "default", message);
+            checkCndItemUsageByWorkspace(type, "live", message);
+        } catch (NoSuchNodeTypeException e) {
+            // do nothing
         }
-        final String type = StringUtils.substringAfterLast(item.getPath(),"/");
-        // Check for usage of the nodetype before moving it
-        checkCndItemUsageByWorkspace(type, "default", message);
-        checkCndItemUsageByWorkspace(type, "live", message);
     }
 
     private void checkCndItemUsageByWorkspace(final String type, final String workspace,final String message) throws RepositoryException {
@@ -1272,19 +1280,15 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private ExternalData getCndItemByPath(String path) throws PathNotFoundException {
+    private ExternalData getCndItemByPath(String path) throws RepositoryException {
         String pathLowerCase = path.toLowerCase();
         String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
         String subPath = path.substring(pathLowerCase.indexOf(".cnd/") + 5);
         String[] splitPath = StringUtils.split(subPath, "/");
         if (splitPath.length == 1) {
             String nodeTypeName = splitPath[0];
-            try {
-                ExtendedNodeType nodeType = loadRegistry(cndPath).getNodeType(nodeTypeName);
-                return getNodeTypeData(path, nodeType);
-            } catch (NoSuchNodeTypeException e) {
-                throw new PathNotFoundException("Failed to get node type " + nodeTypeName, e);
-            }
+            ExtendedNodeType nodeType = loadRegistry(cndPath).getNodeType(nodeTypeName);
+            return getNodeTypeData(path, nodeType);
         } else if (splitPath.length == 2) {
             String nodeTypeName = splitPath[0];
             String itemDefinitionName = splitPath[1];
