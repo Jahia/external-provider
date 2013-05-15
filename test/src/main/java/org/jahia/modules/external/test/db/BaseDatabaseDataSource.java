@@ -57,6 +57,9 @@ import org.apache.jackrabbit.core.util.db.DbUtility;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.ExternalDataSource;
+import org.jahia.modules.external.ExternalQuery;
+import org.jahia.modules.external.ExternalDataSource.AdvancedSearchable;
+import org.jahia.modules.external.ExternalDataSource.Initializable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +68,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Sergiy Shyrkov
  */
-abstract class BaseDatabaseDataSource implements ExternalDataSource, ExternalDataSource.Initializable {
+abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializable, AdvancedSearchable {
     private static final String DB_URI = "jdbc:derby:classpath:toursdb";
 
     private static final Logger logger = LoggerFactory.getLogger(BaseDatabaseDataSource.class);
@@ -346,6 +349,12 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, ExternalDat
     }
 
     @Override
+    public List<String> search(ExternalQuery query) {
+        logger.info("Executing search for query: {}", query);
+        return Collections.emptyList();
+    }
+
+    @Override
     public final void start() {
         long timer = System.currentTimeMillis();
         Connection connection = null;
@@ -376,5 +385,4 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, ExternalDat
         }
         logger.info("Provider stopped");
     }
-
 }

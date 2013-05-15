@@ -41,7 +41,6 @@
 package org.jahia.modules.external;
 
 import org.apache.commons.lang.StringUtils;
-import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.nodetypes.Name;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.xml.sax.ContentHandler;
@@ -343,15 +342,15 @@ public class ExternalSessionImpl implements Session {
     }
 
     public String[] getNamespacePrefixes() throws RepositoryException {
-        return JCRSessionFactory.getInstance().getNamespaceRegistry().getPrefixes();
+        return workspace.getNamespaceRegistry().getPrefixes();
     }
 
     public String getNamespaceURI(String s) throws NamespaceException, RepositoryException {
-        return JCRSessionFactory.getInstance().getNamespaceRegistry().getURI(s);
+        return workspace.getNamespaceRegistry().getURI(s);
     }
 
     public String getNamespacePrefix(String s) throws NamespaceException, RepositoryException {
-        return JCRSessionFactory.getInstance().getNamespaceRegistry().getPrefix(s);
+        return workspace.getNamespaceRegistry().getPrefix(s);
     }
 
     public void logout() {

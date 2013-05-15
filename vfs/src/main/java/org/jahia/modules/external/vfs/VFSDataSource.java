@@ -68,7 +68,7 @@ import java.util.*;
  */
 public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Writable {
     private static final List<String> JCR_CONTENT_LIST = Arrays.asList(Constants.JCR_CONTENT);
-    private static final List<String> SUPPORTED_NODE_TYPES = Arrays.asList(Constants.JAHIANT_FILE, Constants.JAHIANT_FOLDER, Constants.JCR_CONTENT);
+    private static final Set<String> SUPPORTED_NODE_TYPES = new HashSet<String>(Arrays.asList(Constants.JAHIANT_FILE, Constants.JAHIANT_FOLDER, Constants.JCR_CONTENT));
     private static final Logger logger = LoggerFactory.getLogger(VFSDataSource.class);
     protected String root;
     protected String rootPath;
@@ -115,7 +115,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         // ordering is not supported in VFS
     }
 
-    public List<String> getSupportedNodeTypes() {
+    public Set<String> getSupportedNodeTypes() {
         return SUPPORTED_NODE_TYPES;
     }
 

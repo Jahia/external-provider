@@ -44,8 +44,10 @@ import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 
+
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Interface to define an external DataSource to handle (@link org.jahia.services.content.impl.external.ExternalData}
@@ -59,12 +61,26 @@ public interface ExternalDataSource {
     }
 
     /**
-     * If implemented, this interface allow and defines search
+     * If implemented, this interface allow and defines search feature support.
      */
-    public interface Searchable {
-        List<String> search(String basePath, String type, Map<String, String> constraints, String orderBy, long offset, long limit);
+    public abstract interface Searchable {
     }
 
+    /**
+     * If implemented, this interface allow and defines simple search using provided parsed parameters.
+     */
+    public interface SimpleSearchable extends Searchable {
+        List<String> search(String basePath, String type, Map<String, String> constraints, String orderBy,
+                boolean orderAscending, long offset, long limit);
+    }
+
+    /**
+     * If implemented, this interface allow and defines advanced search, accepting the {@link ExternalQuery} directly.
+     */
+    public interface AdvancedSearchable extends Searchable {
+        List<String> search(ExternalQuery query);
+    }
+    
     /**
      * If implemented, this interface allow and defines writing
      */
@@ -123,9 +139,11 @@ public interface ExternalDataSource {
     ExternalData getItemByPath(String path) throws PathNotFoundException;
 
     /**
-     * @return list of supported nodetypes
+     * Returns a set of supported node types.
+     * 
+     * @return a set of supported node types
      */
-    List<String> getSupportedNodeTypes();
+    Set<String> getSupportedNodeTypes();
 
     /**
      * Indicates if this data source has path-like hierarchical external identifiers, e.g. IDs that are using file system paths.

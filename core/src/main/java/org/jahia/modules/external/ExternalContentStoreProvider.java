@@ -40,6 +40,7 @@
 
 package org.jahia.modules.external;
 
+import javax.jcr.NamespaceRegistry;
 import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
 import javax.jcr.Workspace;
@@ -48,6 +49,7 @@ import javax.jcr.query.QueryManager;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.exceptions.JahiaRuntimeException;
+import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRStoreProvider;
 import org.springframework.beans.factory.InitializingBean;
@@ -69,7 +71,16 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     @Override
     protected Repository createRepository() {
-        ExternalRepositoryImpl instance = new ExternalRepositoryImpl(this, dataSource, new ExternalAccessControlManager(readOnly));
+        JCRStoreProvider defaultProvider = JCRSessionFactory.getInstance().getDefaultProvider();
+        NamespaceRegistry namespaceRegistry;
+        try {
+            namespaceRegistry = defaultProvider.getSystemSession().getProviderSession(defaultProvider).getWorkspace()
+                    .getNamespaceRegistry();
+        } catch (RepositoryException e) {
+            throw new JahiaRuntimeException(e);
+        }
+        ExternalRepositoryImpl instance = new ExternalRepositoryImpl(this, dataSource,
+                new ExternalAccessControlManager(namespaceRegistry, readOnly), namespaceRegistry);
         instance.setProviderKey(getKey());
 
         return instance;

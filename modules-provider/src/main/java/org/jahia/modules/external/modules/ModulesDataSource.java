@@ -113,7 +113,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private Map<String, String> folderTypeMapping;
 
-    private List<String> supportedNodeTypes;
+    private Set<String> supportedNodeTypes;
 
     private Map<String, NodeTypeRegistry> nodeTypeRegistryMap = new HashMap<String, NodeTypeRegistry>();
 
@@ -381,7 +381,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
      * @return
      */
     @Override
-    public List<String> getSupportedNodeTypes() {
+    public Set<String> getSupportedNodeTypes() {
         return supportedNodeTypes;
     }
 
@@ -1601,7 +1601,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
      * Injection of supported node types
      * @param supportedNodeTypes
      */
-    public void setSupportedNodeTypes(List<String> supportedNodeTypes) {
+    public void setSupportedNodeTypes(Set<String> supportedNodeTypes) {
         this.supportedNodeTypes = supportedNodeTypes;
     }
 

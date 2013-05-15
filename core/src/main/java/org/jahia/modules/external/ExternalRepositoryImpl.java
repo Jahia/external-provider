@@ -40,26 +40,18 @@
 
 package org.jahia.modules.external;
 
-
 import javax.jcr.*;
+
+import org.apache.jackrabbit.spi.commons.conversion.DefaultNamePathResolver;
+
 import java.util.*;
 
 /**
  * Implementation of the {@link javax.jcr.Repository} for the {@link org.jahia.modules.external.ExternalData}.
+ * 
  * @author toto
- * Date: Apr 23, 2008
- * Time: 11:45:50 AM
  */
 public class ExternalRepositoryImpl implements Repository {
-
-    private ExternalContentStoreProvider storeProvider;
-    private ExternalDataSource dataSource;
-
-    private Map<String, Object> repositoryDescriptors = new HashMap<String, Object>();
-
-    private ExternalAccessControlManager accessControlManager;
-
-    private String providerKey;
 
     @SuppressWarnings("deprecation")
     private static final Set<String> STANDARD_KEYS = new HashSet<String>() {
@@ -116,9 +108,74 @@ public class ExternalRepositoryImpl implements Repository {
         add(Repository.OPTION_BASELINES_SUPPORTED);
 
     }};
+    private ExternalAccessControlManager accessControlManager;
 
-    public boolean isStandardDescriptor(String key) {
-        return STANDARD_KEYS.contains(key);
+    private ExternalDataSource dataSource;
+
+    private DefaultNamePathResolver namePathResolver;
+
+    private NamespaceRegistry namespaceRegistry;
+
+    private String providerKey;
+    
+    private Map<String, Object> repositoryDescriptors = new HashMap<String, Object>();
+    private ExternalContentStoreProvider storeProvider;
+
+    public ExternalRepositoryImpl(ExternalContentStoreProvider storeProvider, ExternalDataSource dataSource, ExternalAccessControlManager accessControlManager, NamespaceRegistry nsRegistry) {
+        initDescriptors();
+        this.storeProvider = storeProvider;
+        this.dataSource = dataSource;
+        this.accessControlManager = accessControlManager;
+        this.namespaceRegistry = nsRegistry;
+        this.namePathResolver = new DefaultNamePathResolver(nsRegistry);
+    }
+
+    protected ExternalAccessControlManager getAccessControlManager() {
+        return accessControlManager;
+    }
+
+    public ExternalDataSource getDataSource() {
+        return dataSource;
+    }
+
+    public String getDescriptor(String s) {
+        Object descriptorObject = repositoryDescriptors.get(s);
+        if (descriptorObject == null) {
+            return null;
+        }
+        if (descriptorObject instanceof Value) {
+            return ((Value) descriptorObject).toString();
+        } else {
+            throw new RuntimeException("Expected single-value value but found multi-valued property instead !");
+        }
+    }
+
+    public String[] getDescriptorKeys() {
+        return repositoryDescriptors.keySet().toArray(new String[repositoryDescriptors.size()]);
+    }
+
+    public Value getDescriptorValue(String key) {
+        return (Value) repositoryDescriptors.get(key);
+    }
+
+    public Value[] getDescriptorValues(String key) {
+        return (Value[]) repositoryDescriptors.get(key);
+    }
+
+    public DefaultNamePathResolver getNamePathResolver() {
+        return namePathResolver;
+    }
+
+    public NamespaceRegistry getNamespaceRegistry() {
+        return namespaceRegistry;
+    }
+
+    public String getProviderKey() {
+        return providerKey;
+    }
+
+    public ExternalContentStoreProvider getStoreProvider() {
+        return storeProvider;
     }
 
     @SuppressWarnings("deprecation")
@@ -180,46 +237,6 @@ public class ExternalRepositoryImpl implements Repository {
         repositoryDescriptors.put(Repository.OPTION_XML_IMPORT_SUPPORTED, new ExternalValueImpl(false));
     }
 
-    public ExternalRepositoryImpl(ExternalContentStoreProvider storeProvider, ExternalDataSource dataSource, ExternalAccessControlManager accessControlManager) {
-        initDescriptors();
-        this.storeProvider = storeProvider;
-        this.dataSource = dataSource;
-        this.accessControlManager = accessControlManager;
-
-    }
-
-    public String[] getDescriptorKeys() {
-        return repositoryDescriptors.keySet().toArray(new String[repositoryDescriptors.size()]);
-    }
-
-    public String getDescriptor(String s) {
-        Object descriptorObject = repositoryDescriptors.get(s);
-        if (descriptorObject == null) {
-            return null;
-        }
-        if (descriptorObject instanceof Value) {
-            return ((Value) descriptorObject).toString();
-        } else {
-            throw new RuntimeException("Expected single-value value but found multi-valued property instead !");
-        }
-    }
-
-    public Session login(Credentials credentials, String s) throws LoginException, NoSuchWorkspaceException, RepositoryException {
-        return new ExternalSessionImpl(this, credentials);
-    }
-
-    public Session login(Credentials credentials) throws LoginException, RepositoryException {
-        return new ExternalSessionImpl(this, credentials);
-    }
-
-    public Session login(String s) throws LoginException, NoSuchWorkspaceException, RepositoryException {
-        return new ExternalSessionImpl(this, null);
-    }
-
-    public Session login() throws LoginException, RepositoryException {
-        return new ExternalSessionImpl(this, null);
-    }
-
     public boolean isSingleValueDescriptor(String key) {
         Object repositoryDescriptor = repositoryDescriptors.get(key);
         if (repositoryDescriptor instanceof Value) {
@@ -228,32 +245,29 @@ public class ExternalRepositoryImpl implements Repository {
             return false;
         }
     }
-
-    public Value getDescriptorValue(String key) {
-        return (Value) repositoryDescriptors.get(key);
+    
+    public boolean isStandardDescriptor(String key) {
+        return STANDARD_KEYS.contains(key);
     }
 
-    public Value[] getDescriptorValues(String key) {
-        return (Value[]) repositoryDescriptors.get(key);
+    public Session login() throws LoginException, RepositoryException {
+        return new ExternalSessionImpl(this, null);
     }
 
-    protected ExternalAccessControlManager getAccessControlManager() {
-        return accessControlManager;
+    public Session login(Credentials credentials) throws LoginException, RepositoryException {
+        return new ExternalSessionImpl(this, credentials);
     }
 
-    public ExternalContentStoreProvider getStoreProvider() {
-        return storeProvider;
+    public Session login(Credentials credentials, String s) throws LoginException, NoSuchWorkspaceException, RepositoryException {
+        return new ExternalSessionImpl(this, credentials);
     }
 
-    public ExternalDataSource getDataSource() {
-        return dataSource;
-    }
-
-    public String getProviderKey() {
-        return providerKey;
+    public Session login(String s) throws LoginException, NoSuchWorkspaceException, RepositoryException {
+        return new ExternalSessionImpl(this, null);
     }
 
     public void setProviderKey(String providerKey) {
         this.providerKey = providerKey;
     }
+
 }

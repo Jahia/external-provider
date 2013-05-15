@@ -46,10 +46,12 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.binary.Base64;
@@ -73,8 +75,8 @@ public class GenericDatabaseDataSource extends BaseDatabaseDataSource {
 
     static final Logger logger = LoggerFactory.getLogger(GenericDatabaseDataSource.class);
 
-    private static final List<String> SUPPORTED_NODETYPES = Arrays.asList(DATA_TYPE_SCHEMA, DATA_TYPE_TABLE,
-            DATA_TYPE_ROW);
+    private static final Set<String> SUPPORTED_NODETYPES = new HashSet<String>(Arrays.asList(DATA_TYPE_SCHEMA,
+            DATA_TYPE_TABLE, DATA_TYPE_ROW));
 
     @Override
     protected String getRowID(ResultSet rs, List<String> primaryKeys) throws SQLException {
@@ -123,7 +125,7 @@ public class GenericDatabaseDataSource extends BaseDatabaseDataSource {
     }
 
     @Override
-    public List<String> getSupportedNodeTypes() {
+    public Set<String> getSupportedNodeTypes() {
         return SUPPORTED_NODETYPES;
     }
 

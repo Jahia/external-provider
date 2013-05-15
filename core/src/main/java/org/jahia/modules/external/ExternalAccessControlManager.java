@@ -44,9 +44,9 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.jackrabbit.commons.iterator.AccessControlPolicyIteratorAdapter;
 import org.apache.jackrabbit.core.security.JahiaPrivilegeRegistry;
 import org.jahia.exceptions.JahiaRuntimeException;
-import org.jahia.services.content.JCRSessionFactory;
 
 import javax.jcr.AccessDeniedException;
+import javax.jcr.NamespaceRegistry;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import javax.jcr.lock.LockException;
@@ -75,18 +75,18 @@ public class ExternalAccessControlManager implements AccessControlManager {
     private boolean readOnly;
     private JahiaPrivilegeRegistry registry;
 
-    public ExternalAccessControlManager(boolean readOnly) {
+    public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, boolean readOnly) {
         super();
         this.readOnly = readOnly;
         try {
-            init();
+            init(namespaceRegistry);
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }
     }
 
-    private void init() throws RepositoryException {
-        registry = new JahiaPrivilegeRegistry(JCRSessionFactory.getInstance().getNamespaceRegistry());
+    private void init(NamespaceRegistry namespaceRegistry) throws RepositoryException {
+        registry = new JahiaPrivilegeRegistry(namespaceRegistry);
         if (readOnly) {
             rootNodePrivileges = new String[] {
                     (JCR_READ + "_" + EDIT_WORKSPACE), (JCR_READ + "_" + LIVE_WORKSPACE),

@@ -40,6 +40,7 @@
 
 package org.jahia.modules.external;
 
+import org.jahia.modules.external.query.ExternalQueryManager;
 import org.xml.sax.ContentHandler;
 
 import javax.jcr.*;
@@ -111,7 +112,7 @@ public class ExternalWorkspaceImpl implements Workspace {
     }
 
     public NamespaceRegistry getNamespaceRegistry() throws RepositoryException {
-        return null;
+        return session.getRepository().getNamespaceRegistry();
     }
 
     public NodeTypeManager getNodeTypeManager() throws RepositoryException {

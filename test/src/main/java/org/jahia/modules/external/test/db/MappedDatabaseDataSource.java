@@ -43,9 +43,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.jcr.PathNotFoundException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
@@ -78,8 +80,8 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource {
 
     private static final Map<String, String> DIRECTORY_TYPE_MAPPING;
 
-    private static final List<String> SUPPORTED_NODETYPES = Arrays.asList(DATA_TYPE_CATALOG, DATA_TYPE_DIRECTORY,
-            DATA_TYPE_AIRLINE, DATA_TYPE_CITY, DATA_TYPE_COUNTRY, DATA_TYPE_FLIGHT);
+    private static final Set<String> SUPPORTED_NODETYPES = new HashSet<String>(Arrays.asList(DATA_TYPE_CATALOG,
+            DATA_TYPE_DIRECTORY, DATA_TYPE_AIRLINE, DATA_TYPE_CITY, DATA_TYPE_COUNTRY, DATA_TYPE_FLIGHT));
 
     static {
         DIRECTORY_TYPE_MAPPING = new HashMap<String, String>();
@@ -145,7 +147,7 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource {
     }
 
     @Override
-    public List<String> getSupportedNodeTypes() {
+    public Set<String> getSupportedNodeTypes() {
         return SUPPORTED_NODETYPES;
     }
 

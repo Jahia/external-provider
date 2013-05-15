@@ -5,8 +5,8 @@
 <hibernate-configuration>
 	<session-factory>
 		<property name="dialect">org.hibernate.dialect.PostgreSQLDialect</property>
-        <mapping class="org.jahia.modules.external.ExternalProviderID" />
-        <mapping class="org.jahia.modules.external.UuidMapping" />
+        <mapping class="org.jahia.modules.external.id.ExternalProviderID" />
+        <mapping class="org.jahia.modules.external.id.UuidMapping" />
 	</session-factory>
 </hibernate-configuration>
 

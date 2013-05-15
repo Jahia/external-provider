@@ -38,38 +38,38 @@
  * please contact the sales department at sales@jahia.com.
  */
 
-package org.jahia.modules.external;
-
-import org.hibernate.annotations.Index;
+package org.jahia.modules.external.id;
 
 import javax.persistence.*;
+
+import org.hibernate.annotations.Index;
 
 /**
  * Map that link valid uuid and (@link org.jahia.services.content.impl.external.ExternalData} id
  */
 @Entity
-@Table(name = "jahia_external_provider_id")
-public class ExternalProviderID {
+@Table(name = "jahia_external_mapping")
+public class UuidMapping {
 
-    private Integer id;
+    private String internalUuid;
     private String providerKey;
+    private String externalId;
 
-    public ExternalProviderID() {
+    public UuidMapping() {
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO, generator = "jahia_external_provider_id_seq")
-    @SequenceGenerator(initialValue = 1, allocationSize = 40, name = "jahia_external_provider_id_seq", sequenceName = "jahia_external_provider_id_seq")
-    public Integer getId() {
-        return id;
+    @Column(length = 36, nullable = false)
+    public String getInternalUuid() {
+        return internalUuid;
     }
 
-    public void setId(Integer id) {
-        this.id = id;
+    public void setInternalUuid(String internalUuid) {
+        this.internalUuid = internalUuid;
     }
 
     @Column(nullable = false)
-    @Index(name = "jahia_external_provider_id_index1")
+    @Index(name = "jahia_external_mapping_index1")
     public String getProviderKey() {
         return providerKey;
     }
@@ -78,13 +78,34 @@ public class ExternalProviderID {
         this.providerKey = providerKey;
     }
 
+    @Lob
+    @Column(nullable = false)
+    public String getExternalId() {
+        return externalId;
+    }
+
+    @Column()
+    @Index(name = "jahia_external_mapping_index1")
+    public int getExternalIdHash() {
+        return externalId != null ? externalId.hashCode() : 0;
+    }
+
+    public void setExternalId(String externalId) {
+        this.externalId = externalId;
+    }
+
+    public void setExternalIdHash(int externalIdHash) {
+        // do nothing
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ExternalProviderID that = (ExternalProviderID) o;
+        UuidMapping that = (UuidMapping) o;
 
+        if (externalId != null ? !externalId.equals(that.externalId) : that.externalId != null) return false;
         if (providerKey != null ? !providerKey.equals(that.providerKey) : that.providerKey != null) return false;
 
         return true;
@@ -92,6 +113,8 @@ public class ExternalProviderID {
 
     @Override
     public int hashCode() {
-        return providerKey != null ? providerKey.hashCode() : 0;
+        int result = providerKey != null ? providerKey.hashCode() : 0;
+        result = 31 * result + (externalId != null ? externalId.hashCode() : 0);
+        return result;
     }
 }

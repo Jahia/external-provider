@@ -13,7 +13,7 @@
     <bean id="ModulesDataSourcePrototype" class="org.jahia.modules.external.modules.ModulesDataSource"
           scope="prototype">
         <property name="supportedNodeTypes">
-            <list>
+            <set>
                 <value>jnt:nodeTypeFolder</value>
                 <value>jnt:templateTypeFolder</value>
                 <value>jnt:cssFolder</value>
@@ -25,7 +25,7 @@
                 <value>nt:nodeType</value>
                 <value>jnt:resourceBundleFolder</value>
                 <value>jnt:namespaceDefinition</value>
-            </list>
+            </set>
         </property>
         <property name="folderTypeMapping">
             <util:map key-type="java.lang.String" value-type="java.lang.String">
