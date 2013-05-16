@@ -222,6 +222,14 @@ public class ExternalSessionImpl implements Session {
         ExternalData oldData = repository.getDataSource().getItemByPath(source);
         ((ExternalDataSource.Writable) repository.getDataSource()).move(source, dest);
         ExternalData newData = repository.getDataSource().getItemByPath(dest);
+
+        // handle i18n child nodes, update translated nodes
+        if (newData.getI18nProperties() != null && !newData.getI18nProperties().isEmpty()) {
+            NodeIterator ni = getNode(dest).getNodes();
+            while (ni.hasNext()) {
+                ExternalNodeImpl n = (ExternalNodeImpl) ni.nextNode();
+            }
+        }
         if (oldData.getId().equals(newData.getId())) {
             return;
         }
