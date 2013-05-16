@@ -64,23 +64,9 @@ public interface ExternalDataSource {
      * If implemented, this interface allow and defines search feature support.
      */
     public abstract interface Searchable {
+        List<String> search(ExternalQuery query) throws RepositoryException;
     }
 
-    /**
-     * If implemented, this interface allow and defines simple search using provided parsed parameters.
-     */
-    public interface SimpleSearchable extends Searchable {
-        List<String> search(String basePath, String type, Map<String, String> constraints, String orderBy,
-                boolean orderAscending, long offset, long limit);
-    }
-
-    /**
-     * If implemented, this interface allow and defines advanced search, accepting the {@link ExternalQuery} directly.
-     */
-    public interface AdvancedSearchable extends Searchable {
-        List<String> search(ExternalQuery query);
-    }
-    
     /**
      * If implemented, this interface allow and defines writing
      */

@@ -47,18 +47,22 @@ import org.apache.jackrabbit.spi.commons.query.qom.QueryObjectModelTree;
 import org.jahia.modules.external.ExternalDataSource;
 import org.jahia.modules.external.ExternalQuery;
 import org.jahia.modules.external.ExternalWorkspaceImpl;
-import org.jahia.modules.external.ExternalDataSource.AdvancedSearchable;
-import org.jahia.modules.external.ExternalDataSource.SimpleSearchable;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.*;
+import javax.jcr.Node;
+import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.query.*;
+import javax.jcr.query.InvalidQueryException;
+import javax.jcr.query.Query;
+import javax.jcr.query.QueryManager;
+import javax.jcr.query.QueryResult;
 import javax.jcr.query.qom.*;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Implementation of the {@link javax.jcr.query.QueryManager} for the {@link org.jahia.modules.external.ExternalData}.
@@ -111,32 +115,6 @@ public class ExternalQueryManager implements QueryManager {
             super(source, constraints, orderings, columns);
         }
         
-        private void addConstraints(Map<String, String> search, Constraint constraint) throws RepositoryException {
-            if (constraint instanceof And) {
-                addConstraints(search, ((And) constraint).getConstraint1());
-                addConstraints(search, ((And) constraint).getConstraint2());
-            } else if (constraint instanceof Comparison) {
-                Comparison comparison = (Comparison) constraint;
-                if (comparison.getOperand1() instanceof PropertyValue &&
-                    comparison.getOperand2() instanceof Literal &&
-                        comparison.getOperator().equals(QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO)) {
-                    search.put(((PropertyValue) comparison.getOperand1()).getPropertyName(), ((Literal) comparison.getOperand2()).getLiteralValue().getString());
-                } else {
-                    throw new UnsupportedRepositoryOperationException("Unsupported constraint : " + constraint.toString());
-                }
-            } else if (constraint instanceof DescendantNode) {
-                String root = ((DescendantNode) constraint).getAncestorPath();
-                search.put("__rootPath", root);
-                search.put("__searchSubNodes", "true");
-            } else if (constraint instanceof ChildNode) {
-                String root = ((ChildNode) constraint).getParentPath();
-                search.put("__rootPath", root);
-                search.put("__searchSubNodes", "false");
-            } else {
-                throw new UnsupportedRepositoryOperationException("Unsupported constraint : " + constraint.toString());
-            }
-        }
-
         @Override
         public QueryResult execute() throws InvalidQueryException, RepositoryException {
             // do a check for supported node types
@@ -145,39 +123,8 @@ public class ExternalQueryManager implements QueryManager {
             }
 
             ExternalDataSource dataSource = workspace.getSession().getRepository().getDataSource();
-            List<String> results = null;
-            if (dataSource instanceof AdvancedSearchable) {
-                results = ((ExternalDataSource.AdvancedSearchable) dataSource).search(this);
-            } else if (dataSource instanceof SimpleSearchable) {
-                results = getSimpleSearchResults();
-            } else {
-                throw new UnsupportedOperationException("Unknown implementation of Searchable external data source");
-            }
-
+            List<String> results = ((ExternalDataSource.Searchable) dataSource).search(this);
             return new ExternalQueryResult(this, results, workspace);
-        }
-
-        private List<String> getSimpleSearchResults() throws RepositoryException {
-            Map<String, String> search = new HashMap<String, String>();
-
-            try {
-                if (getConstraint() != null) {
-                    addConstraints(search, getConstraint());
-                }
-            } catch (RepositoryException e) {
-                logger.error("Error when executing query on external provider:" + e.getMessage());
-                return Collections.emptyList();
-            }
-            String root = search.get("__rootpath");
-            if (root != null) {
-                String mountPoint = workspace.getSession().getRepository().getStoreProvider().getMountPoint();
-                if (!mountPoint.startsWith(root) || !root.startsWith(mountPoint)) {
-                    return Collections.emptyList();
-                }
-            }
-
-            return ((ExternalDataSource.SimpleSearchable) workspace.getSession().getRepository().getDataSource())
-                    .search(root, ((Selector) getSource()).getNodeTypeName(), search, null, true, getOffset(), getLimit());
         }
 
         private boolean isNodeTypeSupported() throws NoSuchNodeTypeException {

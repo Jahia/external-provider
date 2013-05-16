@@ -44,10 +44,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
@@ -83,7 +80,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
         if (nodeType == getSchemaNodeType()) {
             return getTableNames();
         } else if (nodeType == getTableNodeType()) {
-            return getRowIDs(StringUtils.substringAfterLast(path, "/"));
+            return getRowIDs(StringUtils.substringAfterLast(path, "/"), new HashMap<String, String>());
         } else {
             return Collections.emptyList();
         }
@@ -235,11 +232,13 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
     /**
      * Returns a list of row IDs (names) in the specified table.
      * 
+     *
      * @param tableName
      *            the name of the table to read rows from
+     * @param constraints
      * @return a list of row IDs (names) in the specified table
      */
-    protected final List<String> getRowIDs(String tableName) {
+    protected final List<String> getRowIDs(String tableName, Map<String, String> constraints) {
         List<String> ids = new LinkedList<String>();
         Connection conn = null;
         PreparedStatement stmt = null;
@@ -252,7 +251,15 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
             if (logger.isDebugEnabled()) {
                 logger.debug("primaryKeys for table {}: {}", tableName, primaryKeys);
             }
-            stmt = conn.prepareStatement("select * from " + tableName);
+            String sql = "select * from " + tableName;
+            if (!constraints.isEmpty()) {
+                String next = " where ";
+                for (Map.Entry<String, String> entry : constraints.entrySet()) {
+                    sql += next + entry.getKey() + "=" + entry.getValue();
+                    next = " and ";
+                }
+            }
+            stmt = conn.prepareStatement(sql);
             rs = stmt.executeQuery();
             int position = 0;
             while (rs.next()) {

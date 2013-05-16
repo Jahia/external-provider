@@ -39,38 +39,31 @@
  */
 package org.jahia.modules.external.test.db;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.jcr.PathNotFoundException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.query.qom.Selector;
-
 import org.apache.commons.collections.BidiMap;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang.StringUtils;
-import org.jahia.modules.external.ExternalDataSource.AdvancedSearchable;
+import org.jahia.modules.external.ExternalDataSource;
 import org.jahia.modules.external.ExternalQuery;
+import org.jahia.modules.external.query.QueryHelper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.PathNotFoundException;
+import javax.jcr.RepositoryException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+
 /**
  * Implementation of the external data source that uses sample database to fetch the data and predefined node type mappins.
  * 
  * @author Sergiy Shyrkov
  */
-public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements AdvancedSearchable {
+public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements ExternalDataSource.Searchable {
 
     private static final String DATA_TYPE_AIRLINE = "jtestnt:airline".intern();
 
@@ -177,10 +170,11 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
     }
 
     @Override
-    public List<String> search(ExternalQuery query) {
+    public List<String> search(ExternalQuery query) throws RepositoryException {
         logger.info("Executing search for query: {}", query.getSource());
         List<String> allResults = null;
-        String nodeType = ((Selector) query.getSource()).getNodeTypeName();
+
+        String nodeType = QueryHelper.getNodeType(query.getSource());
 
         List<String> dataTypes = getDataTypesForNodeType(nodeType);
         for (String dataType : dataTypes) {
@@ -198,7 +192,7 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
         return allResults != null ? allResults : Collections.<String> emptyList();
     }
 
-    private List<String> doSearch(ExternalQuery query, String dataType) {
+    private List<String> doSearch(ExternalQuery query, String dataType) throws RepositoryException {
         List<String> result = null;
         if (dataType == DATA_TYPE_CATALOG) {
             result = Arrays.asList("/");
@@ -210,7 +204,7 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
         } else if (dataType == DATA_TYPE_AIRLINE || dataType == DATA_TYPE_CITY || dataType == DATA_TYPE_COUNTRY
                 || dataType == DATA_TYPE_FLIGHT) {
             String table = (String) DIRECTORY_TYPE_MAPPING.getKey(dataType);
-            List<String> rowIDs = getRowIDs(table);
+            List<String> rowIDs = getRowIDs(table, QueryHelper.getSimpleAndConstraints(query.getConstraint()));
             if (!rowIDs.isEmpty()) {
                 result = new LinkedList<String>();
                 for (String rowID : rowIDs) {
