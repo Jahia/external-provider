@@ -54,6 +54,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
+import javax.jcr.UnsupportedRepositoryOperationException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.query.InvalidQueryException;
 import javax.jcr.query.Query;
@@ -123,7 +124,13 @@ public class ExternalQueryManager implements QueryManager {
             }
 
             ExternalDataSource dataSource = workspace.getSession().getRepository().getDataSource();
-            List<String> results = ((ExternalDataSource.Searchable) dataSource).search(this);
+            List<String> results = null;
+            try {
+                results = ((ExternalDataSource.Searchable) dataSource).search(this);
+            } catch (UnsupportedRepositoryOperationException e) {
+                logger.warn("Unsupported query ", e);
+                results = Collections.emptyList();
+            }
             return new ExternalQueryResult(this, results, workspace);
         }
 
