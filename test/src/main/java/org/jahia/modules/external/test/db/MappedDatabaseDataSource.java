@@ -42,27 +42,35 @@ package org.jahia.modules.external.test.db;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.jcr.PathNotFoundException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
+import javax.jcr.query.qom.Selector;
 
+import org.apache.commons.collections.BidiMap;
+import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.external.ExternalDataSource.AdvancedSearchable;
+import org.jahia.modules.external.ExternalQuery;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the external data source that uses sample database to fetch the data and predefined node type mappins.
  * 
  * @author Sergiy Shyrkov
  */
-public class MappedDatabaseDataSource extends BaseDatabaseDataSource {
+public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements AdvancedSearchable {
 
     private static final String DATA_TYPE_AIRLINE = "jtestnt:airline".intern();
 
@@ -78,13 +86,15 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource {
 
     private static final List<String> DIRECTORIES = Arrays.asList("AIRLINES", "COUNTRIES", "CITIES", "FLIGHTS");
 
-    private static final Map<String, String> DIRECTORY_TYPE_MAPPING;
+    private static final BidiMap DIRECTORY_TYPE_MAPPING;
+
+    private static final Logger logger = LoggerFactory.getLogger(MappedDatabaseDataSource.class);
 
     private static final Set<String> SUPPORTED_NODETYPES = new HashSet<String>(Arrays.asList(DATA_TYPE_CATALOG,
             DATA_TYPE_DIRECTORY, DATA_TYPE_AIRLINE, DATA_TYPE_CITY, DATA_TYPE_COUNTRY, DATA_TYPE_FLIGHT));
 
     static {
-        DIRECTORY_TYPE_MAPPING = new HashMap<String, String>();
+        DIRECTORY_TYPE_MAPPING = new DualHashBidiMap();
         DIRECTORY_TYPE_MAPPING.put("AIRLINES", DATA_TYPE_AIRLINE);
         DIRECTORY_TYPE_MAPPING.put("COUNTRIES", DATA_TYPE_COUNTRY);
         DIRECTORY_TYPE_MAPPING.put("CITIES", DATA_TYPE_CITY);
@@ -112,7 +122,7 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource {
 
     @Override
     protected String getRowNodeTypeName(String tableName) throws PathNotFoundException {
-        String type = DIRECTORY_TYPE_MAPPING.get(tableName);
+        String type = (String) DIRECTORY_TYPE_MAPPING.get(tableName);
         if (type == null) {
             throw new PathNotFoundException(tableName);
         }
@@ -164,6 +174,68 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource {
     @Override
     protected String[] getValuesForPrimayKeys(String rowId) {
         return StringUtils.split(rowId, "###");
+    }
+
+    @Override
+    public List<String> search(ExternalQuery query) {
+        logger.info("Executing search for query: {}", query.getSource());
+        List<String> allResults = null;
+        String nodeType = ((Selector) query.getSource()).getNodeTypeName();
+
+        List<String> dataTypes = getDataTypesForNodeType(nodeType);
+        for (String dataType : dataTypes) {
+            logger.info("Performing search for data type: {}", dataType);
+            List<String> results = doSearch(query, dataType);
+            if (!results.isEmpty()) {
+                if (allResults == null) {
+                    allResults = results;
+                } else {
+                    allResults.addAll(results);
+                }
+            }
+        }
+
+        return allResults != null ? allResults : Collections.<String> emptyList();
+    }
+
+    private List<String> doSearch(ExternalQuery query, String dataType) {
+        List<String> result = null;
+        if (dataType == DATA_TYPE_CATALOG) {
+            result = Arrays.asList("/");
+        } else if (dataType == DATA_TYPE_DIRECTORY) {
+            result = new LinkedList<String>();
+            for (String table : getTableNames()) {
+                result.add("/" + table);
+            }
+        } else if (dataType == DATA_TYPE_AIRLINE || dataType == DATA_TYPE_CITY || dataType == DATA_TYPE_COUNTRY
+                || dataType == DATA_TYPE_FLIGHT) {
+            String table = (String) DIRECTORY_TYPE_MAPPING.getKey(dataType);
+            List<String> rowIDs = getRowIDs(table);
+            if (!rowIDs.isEmpty()) {
+                result = new LinkedList<String>();
+                for (String rowID : rowIDs) {
+                    result.add("/" + table + "/" + rowID);
+                }
+            }
+
+        }
+
+        return result != null ? result : Collections.<String> emptyList();
+    }
+
+    private List<String> getDataTypesForNodeType(String nodeType) {
+        NodeTypeRegistry ntRegistry = NodeTypeRegistry.getInstance();
+        List<String> types = new LinkedList<String>();
+        for (String supportedType : getSupportedNodeTypes()) {
+            try {
+                if (supportedType.equals(nodeType) || ntRegistry.getNodeType(supportedType).isNodeType(nodeType)) {
+                    types.add(supportedType);
+                }
+            } catch (NoSuchNodeTypeException e) {
+                logger.warn(e.getMessage(), e);
+            }
+        }
+        return types;
     }
 
 }
