@@ -65,6 +65,9 @@ public class QueryHelper {
     }
 
     private static void addConstraints(Map<String, String> search, Constraint constraint, boolean and) throws RepositoryException {
+        if (constraint == null) {
+            return;
+        }
         if (and && constraint instanceof And) {
             addConstraints(search, ((And) constraint).getConstraint1(), and);
             addConstraints(search, ((And) constraint).getConstraint2(), and);

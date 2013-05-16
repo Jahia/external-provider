@@ -189,6 +189,16 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
             }
         }
 
+        if (allResults != null && query.getOffset() > 0) {
+            if (query.getOffset() >= allResults.size()) {
+                return Collections.<String> emptyList();
+            }
+            allResults = allResults.subList((int) query.getOffset(), allResults.size());
+        }
+        if (allResults != null && query.getLimit() > -1 && query.getLimit() < allResults.size()) {
+            allResults = allResults.subList(0, (int) query.getLimit());
+        }
+
         return allResults != null ? allResults : Collections.<String> emptyList();
     }
 
