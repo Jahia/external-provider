@@ -2,6 +2,7 @@ package org.jahia.modules.external.query;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.UnsupportedRepositoryOperationException;
+import javax.jcr.Value;
 import javax.jcr.query.qom.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,19 +53,19 @@ public class QueryHelper {
 
     }
 
-    public static Map<String,String> getSimpleAndConstraints(Constraint constraint) throws RepositoryException {
-        Map<String,String> m = new HashMap<String,String>();
+    public static Map<String,Value> getSimpleAndConstraints(Constraint constraint) throws RepositoryException {
+        Map<String,Value> m = new HashMap<String,Value>();
         addConstraints(m, constraint, true);
         return m;
     }
 
-    public static Map<String,String> getSimpleOrConstraints(Constraint constraint) throws RepositoryException {
-        Map<String,String> m = new HashMap<String,String>();
+    public static Map<String,Value> getSimpleOrConstraints(Constraint constraint) throws RepositoryException {
+        Map<String,Value> m = new HashMap<String,Value>();
         addConstraints(m, constraint, false);
         return m;
     }
 
-    private static void addConstraints(Map<String, String> search, Constraint constraint, boolean and) throws RepositoryException {
+    private static void addConstraints(Map<String, Value> search, Constraint constraint, boolean and) throws RepositoryException {
         if (constraint == null) {
             return;
         }
@@ -79,7 +80,7 @@ public class QueryHelper {
             if (comparison.getOperand1() instanceof PropertyValue &&
                     comparison.getOperand2() instanceof Literal &&
                     comparison.getOperator().equals(QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO)) {
-                search.put(((PropertyValue) comparison.getOperand1()).getPropertyName(), ((Literal) comparison.getOperand2()).getLiteralValue().getString());
+                search.put(((PropertyValue) comparison.getOperand1()).getPropertyName(), ((Literal) comparison.getOperand2()).getLiteralValue());
             } else {
                 throw new UnsupportedRepositoryOperationException("Unsupported constraint : " + constraint.toString());
             }

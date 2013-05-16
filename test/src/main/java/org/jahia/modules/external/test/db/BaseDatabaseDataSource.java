@@ -46,8 +46,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-import javax.jcr.ItemNotFoundException;
-import javax.jcr.PathNotFoundException;
+import javax.jcr.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.util.db.DbUtility;
@@ -80,7 +79,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
         if (nodeType == getSchemaNodeType()) {
             return getTableNames();
         } else if (nodeType == getTableNodeType()) {
-            return getRowIDs(StringUtils.substringAfterLast(path, "/"), new HashMap<String, String>());
+            return getRowIDs(StringUtils.substringAfterLast(path, "/"), new HashMap<String, Value>());
         } else {
             return Collections.emptyList();
         }
@@ -238,7 +237,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
      * @param constraints
      * @return a list of row IDs (names) in the specified table
      */
-    protected final List<String> getRowIDs(String tableName, Map<String, String> constraints) {
+    protected final List<String> getRowIDs(String tableName, Map<String, Value> constraints) {
         List<String> ids = new LinkedList<String>();
         Connection conn = null;
         PreparedStatement stmt = null;
@@ -254,9 +253,19 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
             String sql = "select * from " + tableName;
             if (!constraints.isEmpty()) {
                 String next = " where ";
-                for (Map.Entry<String, String> entry : constraints.entrySet()) {
-                    sql += next + entry.getKey() + "=" + entry.getValue();
-                    next = " and ";
+                for (Map.Entry<String, Value> entry : constraints.entrySet()) {
+                    try {
+                        switch (entry.getValue().getType()) {
+                            case PropertyType.LONG:
+                                sql += next + entry.getKey() + "=" + entry.getValue().getString() + "";
+                                break;
+                            default:
+                                sql += next + entry.getKey() + "='" + entry.getValue().getString() + "'";
+                        }
+                        next = " and ";
+                    } catch (RepositoryException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
             stmt = conn.prepareStatement(sql);
