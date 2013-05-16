@@ -7,25 +7,25 @@
 <jtestnt = 'http://www.jahia.org/jahia/test/nt/1.0'>
 <jtestmix = 'http://www.jahia.org/jahia/test/mix/1.0'>
 
-[jtestnt:dbSchema] > jnt:content, jmix:list
+[jtestnt:dbSchema] > nt:base
  + * (jtestnt:dbTable)
 
-[jtestnt:dbTable] > jnt:content, jmix:list
+[jtestnt:dbTable] > nt:base
  + * (jtestnt:dbRow)
 
-[jtestnt:dbRow] > jnt:content
+[jtestnt:dbRow] > nt:base
  - * (string)
 
 
 [jtestmix:item] mixin
 
-[jtestnt:catalog] > jnt:content, jmix:list
+[jtestnt:catalog] > nt:base
  + * (jtestnt:directory)
  
-[jtestnt:directory] > jnt:content, jmix:list
+[jtestnt:directory] > nt:base
  + * (jtestmix:item)
 
-[jtestnt:airline] > jnt:content, jtestmix:item
+[jtestnt:airline] > nt:base, jtestmix:item
  - airline (string)
  - airline_full (string)
  - basic_rate (double)
@@ -36,12 +36,12 @@
  - business_seats (long)
  - firstclass_seats (long)
 
-[jtestnt:country] > jnt:content, jtestmix:item
+[jtestnt:country] > nt:base, jtestmix:item
  - country_iso_code (string)
  - country (string)
  - region (string)
 
-[jtestnt:city] > jnt:content, jtestmix:item
+[jtestnt:city] > nt:base, jtestmix:item
  - city_id (long)
  - city_name (string)
  - country (string)
@@ -50,7 +50,7 @@
  - country_iso_code (string)
 // we can try mapping country here as a reference
 
-[jtestnt:flight] > jnt:content, jtestmix:item
+[jtestnt:flight] > nt:base, jtestmix:item
  - flight_id (string)
  - segment_number (long)
  - orig_airport (string)

@@ -73,11 +73,16 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     protected Repository createRepository() {
         JCRStoreProvider defaultProvider = JCRSessionFactory.getInstance().getDefaultProvider();
         NamespaceRegistry namespaceRegistry;
+        JCRSessionWrapper systemSession = null;
         try {
-            namespaceRegistry = defaultProvider.getSystemSession().getProviderSession(defaultProvider).getWorkspace()
-                    .getNamespaceRegistry();
+            systemSession = defaultProvider.getSystemSession();
+            namespaceRegistry = systemSession.getProviderSession(defaultProvider).getWorkspace().getNamespaceRegistry();
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
+        } finally {
+            if (systemSession != null) {
+                systemSession.logout();
+            }
         }
         ExternalRepositoryImpl instance = new ExternalRepositoryImpl(this, dataSource,
                 new ExternalAccessControlManager(namespaceRegistry, readOnly), namespaceRegistry);
