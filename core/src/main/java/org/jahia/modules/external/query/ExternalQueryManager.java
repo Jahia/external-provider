@@ -127,6 +127,9 @@ public class ExternalQueryManager implements QueryManager {
             List<String> results = null;
             try {
                 results = ((ExternalDataSource.Searchable) dataSource).search(this);
+                if (getLimit() > -1 && results.size() > getLimit()) {
+                    results = results.subList(0, (int) getLimit());
+                }
             } catch (UnsupportedRepositoryOperationException e) {
                 logger.warn("Unsupported query ", e);
                 results = Collections.emptyList();
