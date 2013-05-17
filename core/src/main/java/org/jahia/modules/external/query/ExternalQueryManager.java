@@ -106,44 +106,19 @@ public class ExternalQueryManager implements QueryManager {
 
         @Override
         protected QueryObjectModel createQuery(QueryObjectModelTree qomTree) throws InvalidQueryException, RepositoryException {
+            if (!isNodeTypeSupported(qomTree)) {
+                return null;
+            }
             return new ExecutableExternalQuery(qomTree.getSource(), qomTree.getConstraint(), qomTree.getOrderings(), qomTree.getColumns());
         }
-    }
 
-    class ExecutableExternalQuery extends ExternalQuery {
-        
-        ExecutableExternalQuery(Source source, Constraint constraints, Ordering[] orderings, Column[] columns) {
-            super(source, constraints, orderings, columns);
-        }
-        
-        @Override
-        public QueryResult execute() throws InvalidQueryException, RepositoryException {
-            // do a check for supported node types
-            if (!isNodeTypeSupported()) {
-                return new ExternalQueryResult(this, Collections.<String> emptyList(), workspace);
-            }
-
-            ExternalDataSource dataSource = workspace.getSession().getRepository().getDataSource();
-            List<String> results = null;
-            try {
-                results = ((ExternalDataSource.Searchable) dataSource).search(this);
-                if (getLimit() > -1 && results.size() > getLimit()) {
-                    results = results.subList(0, (int) getLimit());
-                }
-            } catch (UnsupportedRepositoryOperationException e) {
-                logger.warn("Unsupported query ", e);
-                results = Collections.emptyList();
-            }
-            return new ExternalQueryResult(this, results, workspace);
-        }
-
-        private boolean isNodeTypeSupported() throws NoSuchNodeTypeException {
-            if (!(getSource() instanceof Selector)) {
+        private boolean isNodeTypeSupported(QueryObjectModelTree qomTree) throws NoSuchNodeTypeException {
+            if (!(qomTree.getSource() instanceof Selector)) {
                 return false;
             }
 
             NodeTypeRegistry ntRegistry = NodeTypeRegistry.getInstance();
-            ExtendedNodeType type = ntRegistry.getNodeType(((Selector) getSource()).getNodeTypeName());
+            ExtendedNodeType type = ntRegistry.getNodeType(((Selector) qomTree.getSource()).getNodeTypeName());
 
             // check supported node types
             String nodeType = type.getName();
@@ -160,5 +135,30 @@ public class ExternalQueryManager implements QueryManager {
 
             return false;
         }
+
+    }
+
+    class ExecutableExternalQuery extends ExternalQuery {
+        
+        ExecutableExternalQuery(Source source, Constraint constraints, Ordering[] orderings, Column[] columns) {
+            super(source, constraints, orderings, columns);
+        }
+        
+        @Override
+        public QueryResult execute() throws InvalidQueryException, RepositoryException {
+            ExternalDataSource dataSource = workspace.getSession().getRepository().getDataSource();
+            List<String> results = null;
+            try {
+                results = ((ExternalDataSource.Searchable) dataSource).search(this);
+                if (getLimit() > -1 && results.size() > getLimit()) {
+                    results = results.subList(0, (int) getLimit());
+                }
+            } catch (UnsupportedRepositoryOperationException e) {
+                logger.warn("Unsupported query ", e);
+                results = Collections.emptyList();
+            }
+            return new ExternalQueryResult(this, results, workspace);
+        }
+
     }
 }

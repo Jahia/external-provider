@@ -198,8 +198,12 @@ public class ExternalSessionImpl implements Session {
     public boolean itemExists(String path) throws RepositoryException {
         if (StringUtils.substringAfterLast(path, "/").startsWith("j:translation_")) {
             String lang = StringUtils.substringAfterLast(path, "_");
-            if (itemExists(StringUtils.substringBeforeLast(path,"/"))) {
-                ExternalData parentObject = repository.getDataSource().getItemByPath(StringUtils.substringBeforeLast(path, "/"));
+            String parentPath = StringUtils.substringBeforeLast(path, "/");
+            if (StringUtils.isEmpty(parentPath)) {
+                parentPath = "/";
+            }
+            if (itemExists(parentPath)) {
+                ExternalData parentObject = repository.getDataSource().getItemByPath(parentPath);
                 if (parentObject.getI18nProperties() != null && parentObject.getI18nProperties().containsKey(lang)) {
                     return true;
                 }

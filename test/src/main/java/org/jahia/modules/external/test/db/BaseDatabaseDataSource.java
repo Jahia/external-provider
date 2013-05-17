@@ -109,7 +109,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
 
     @Override
     public final ExternalData getItemByIdentifier(String identifier) throws ItemNotFoundException {
-        if (identifier.startsWith("/")) {
+        if (identifier.startsWith("/") && !identifier.contains(":")) {
             try {
                 return getItemByPath(identifier);
             } catch (PathNotFoundException e) {
@@ -121,20 +121,23 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
 
     @Override
     public final ExternalData getItemByPath(String path) throws PathNotFoundException {
-        String type = getNodeTypeName(path);
+        if (path.startsWith("/") && !path.contains(":")) {
+            String type = getNodeTypeName(path);
 
-        Map<String, String[]> props = null;
-        if (type == getSchemaNodeType() || type == getTableNodeType()) {
-            props = Collections.emptyMap();
-            if (type == getTableNodeType()) {
-                if (!getTableNames().contains(path.substring(1))) {
-                    throw new PathNotFoundException(path);
+            Map<String, String[]> props = null;
+            if (type == getSchemaNodeType() || type == getTableNodeType()) {
+                props = Collections.emptyMap();
+                if (type == getTableNodeType()) {
+                    if (!getTableNames().contains(path.substring(1))) {
+                        throw new PathNotFoundException(path);
+                    }
                 }
+            } else {
+                props = getPropertiesForRow(path);
             }
-        } else {
-            props = getPropertiesForRow(path);
+            return new ExternalData(path, path, type, props);
         }
-        return new ExternalData(path, path, type, props);
+        throw new PathNotFoundException(path);
     }
 
     private String getNodeTypeName(String path) throws PathNotFoundException {
@@ -221,6 +224,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
             }
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
+            throw new PathNotFoundException(path);
         } finally {
             DbUtility.close(conn, stmt, rs);
         }

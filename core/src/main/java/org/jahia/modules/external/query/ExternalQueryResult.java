@@ -43,10 +43,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.jcr.Node;
-import javax.jcr.NodeIterator;
-import javax.jcr.RepositoryException;
+import javax.jcr.*;
 import javax.jcr.query.QueryResult;
+import javax.jcr.query.Row;
 import javax.jcr.query.RowIterator;
 import javax.jcr.query.qom.Column;
 import javax.jcr.query.qom.QueryObjectModel;
@@ -164,7 +163,93 @@ class ExternalQueryResult implements QueryResult {
 
     @Override
     public RowIterator getRows() throws RepositoryException {
-        throw new UnsupportedOperationException();
+        final Iterator<String> it = results.iterator();
+        return new RowIterator() {
+            private int pos = 0;
+
+            @Override
+            public long getPosition() {
+                return pos;
+            }
+
+            @Override
+            public long getSize() {
+                return results.size();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+
+            @Override
+            public Object next() {
+                return nextRow();
+            }
+
+            @Override
+            public Row nextRow() {
+                try {
+                    final Node n = workspace.getSession().getNode(it.next());
+                    return new Row() {
+                        @Override
+                        public Value[] getValues() throws RepositoryException {
+                            return new Value[0];
+                        }
+
+                        @Override
+                        public Value getValue(String columnName) throws ItemNotFoundException, RepositoryException {
+                            return null;
+                        }
+
+                        @Override
+                        public Node getNode() throws RepositoryException {
+                            return n;
+                        }
+
+                        @Override
+                        public Node getNode(String selectorName) throws RepositoryException {
+                            return n;
+                        }
+
+                        @Override
+                        public String getPath() throws RepositoryException {
+                            return n.getPath();
+                        }
+
+                        @Override
+                        public String getPath(String selectorName) throws RepositoryException {
+                            return n.getPath();
+                        }
+
+                        @Override
+                        public double getScore() throws RepositoryException {
+                            return 0;
+                        }
+
+                        @Override
+                        public double getScore(String selectorName) throws RepositoryException {
+                            return 0;
+                        }
+                    };
+                } catch (RepositoryException e) {
+                    logger.error(e.getMessage(), e);
+                    return null;
+                }
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+
+            public void skip(long skipNum) {
+                for (int i = 0; i < skipNum; i++) {
+                    it.next();
+                }
+                pos += skipNum;
+            }
+        };
     }
 
     @Override
