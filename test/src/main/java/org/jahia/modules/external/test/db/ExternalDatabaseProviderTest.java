@@ -322,6 +322,14 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
+    public void testQueryLimitAndOffsetMultipleProviders() throws Exception {
+        String query = "select * from [nt:base]";
+        long total = getResultCount(query, 0, 0);
+
+        assertEquals(200, getResultCount(query, 0, total - 200));
+    }
+
+    @Test
     public void testQueryNodeType() throws Exception {
         // count
         assertEquals(4, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "]"));
