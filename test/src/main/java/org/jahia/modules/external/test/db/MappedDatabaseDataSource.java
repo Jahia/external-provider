@@ -65,17 +65,17 @@ import java.util.*;
  */
 public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements ExternalDataSource.Searchable {
 
-    private static final String DATA_TYPE_AIRLINE = "jtestnt:airline".intern();
+    static final String DATA_TYPE_AIRLINE = "jtestnt:airline".intern();
 
-    private static final String DATA_TYPE_CATALOG = "jtestnt:catalog".intern();
+    static final String DATA_TYPE_CATALOG = "jtestnt:catalog".intern();
 
-    private static final String DATA_TYPE_CITY = "jtestnt:city".intern();
+    static final String DATA_TYPE_CITY = "jtestnt:city".intern();
 
-    private static final String DATA_TYPE_COUNTRY = "jtestnt:country".intern();
+    static final String DATA_TYPE_COUNTRY = "jtestnt:country".intern();
 
-    private static final String DATA_TYPE_DIRECTORY = "jtestnt:directory".intern();
+    static final String DATA_TYPE_DIRECTORY = "jtestnt:directory".intern();
 
-    private static final String DATA_TYPE_FLIGHT = "jtestnt:flight".intern();
+    static final String DATA_TYPE_FLIGHT = "jtestnt:flight".intern();
 
     private static final List<String> DIRECTORIES = Arrays.asList("AIRLINES", "COUNTRIES", "CITIES", "FLIGHTS");
 
