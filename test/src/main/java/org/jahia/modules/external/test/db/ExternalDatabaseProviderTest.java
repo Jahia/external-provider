@@ -39,6 +39,24 @@
  */
 package org.jahia.modules.external.test.db;
 
+import static org.jahia.modules.external.test.db.GenericDatabaseDataSource.DATA_TYPE_ROW;
+import static org.jahia.modules.external.test.db.GenericDatabaseDataSource.DATA_TYPE_SCHEMA;
+import static org.jahia.modules.external.test.db.GenericDatabaseDataSource.DATA_TYPE_TABLE;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.Locale;
+
+import javax.jcr.PathNotFoundException;
+import javax.jcr.RepositoryException;
+
+import org.jahia.api.Constants;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.test.JahiaTestCase;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -53,23 +71,119 @@ import org.junit.Test;
  */
 public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
+    private static String GENERIC_PROVIDER_MOUNTPOINT = "/external-database-generic";
+
+    private static String MAPPED_PROVIDER_MOUNTPOINT = "/external-database-mapped";
+
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
+        // do nothing
     }
 
     @AfterClass
     public static void oneTimeTearDown() throws Exception {
+        // do nothing
     }
 
+    private JCRNodeWrapper root;
+
+    private JCRSessionWrapper session;
+
     @Before
-    public void setUp() {
+    public void setUp() throws RepositoryException {
+        session = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE, Locale.ENGLISH);
+
+        assertTrue("Cannot find mounted provider at " + GENERIC_PROVIDER_MOUNTPOINT,
+                session.nodeExists(GENERIC_PROVIDER_MOUNTPOINT));
+        assertTrue("Cannot find mounted provider at " + MAPPED_PROVIDER_MOUNTPOINT,
+                session.nodeExists(MAPPED_PROVIDER_MOUNTPOINT));
+
+        root = session.getNode(GENERIC_PROVIDER_MOUNTPOINT);
     }
 
     @After
     public void tearDown() {
+        session.logout();
     }
 
     @Test
-    public void testSample() throws Exception {
+    public void testGenericNodes() throws Exception {
+        // node existence
+        assertTrue(session.nodeExists(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES"));
+        assertNotNull(session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES"));
+        assertFalse(session.nodeExists(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES2"));
+        try {
+            session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES2");
+            fail("Node " + GENERIC_PROVIDER_MOUNTPOINT + "/CITIES2" + " should not have been found");
+        } catch (PathNotFoundException e) {
+
+        }
+
+        // hasNodes()
+        assertTrue(root.hasNodes());
+        assertTrue(root.hasNode("AIRLINES"));
+
+        // getNodes()
+        assertEquals(7, root.getNodes().getSize());
+        assertEquals(1, root.getNodes("AIRLINES").getSize());
+        assertEquals(2, root.getNodes("AIRLINES | MAPS").getSize());
+        assertEquals(1, root.getNodes("AIR*").getSize());
+        assertEquals(2, root.getNodes("FLIGHTS*").getSize());
+        assertEquals(3, root.getNodes("FLIGHT*").getSize());
+        assertEquals(4, root.getNodes("AIR* | FLIGHT*").getSize());
+        assertEquals(1, root.getNodes(new String[] { "AIRLINES" }).getSize());
+        assertEquals(2, root.getNodes(new String[] { "AIRLINES", "MAPS" }).getSize());
+        assertEquals(1, root.getNodes(new String[] { "AIR*" }).getSize());
+        assertEquals(2, root.getNodes(new String[] { "FLIGHTS*" }).getSize());
+        assertEquals(3, root.getNodes(new String[] { "FLIGHT*" }).getSize());
+        assertEquals(4, root.getNodes(new String[] { "AIR*", "FLIGHT*" }).getSize());
+
+        // node type mapping
+        assertTrue(session.getNode(GENERIC_PROVIDER_MOUNTPOINT).isNodeType(DATA_TYPE_SCHEMA));
+        assertTrue(session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES").isNodeType(DATA_TYPE_TABLE));
+        assertTrue(session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES/MQ").isNodeType(DATA_TYPE_ROW));
+
+        // UUID and path
+        JCRNodeWrapper amsterdam = root.getNode("CITIES").getNode("MQ");
+        String id = amsterdam.getIdentifier();
+        String path = amsterdam.getPath();
+        assertEquals(id, session.getNodeByIdentifier(id).getIdentifier());
+        assertEquals(id, session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES/MQ").getIdentifier());
+        assertEquals(path, session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES/MQ").getPath());
+        assertEquals(path, root.getNode("CITIES").getNode("MQ").getPath());
+        assertEquals(root.getNode("CITIES").getNode("MQ").getIdentifier(),
+                session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES/MQ").getIdentifier());
+        assertEquals(root.getNode("CITIES").getNode("MQ"), session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES/MQ"));
+    }
+
+    @Test
+    public void testGenericProperties() throws Exception {
+        JCRNodeWrapper amsterdam = root.getNode("CITIES").getNode("MQ");
+
+        // property existence
+        assertTrue(amsterdam.hasProperty("city_id"));
+        assertTrue(amsterdam.hasProperty("airport"));
+        assertTrue(amsterdam.hasProperty("city_name"));
+        assertTrue(amsterdam.hasProperty("country_iso_code"));
+        assertTrue(amsterdam.hasProperty("language"));
+        assertTrue(amsterdam.hasProperty("country"));
+        assertTrue(amsterdam.hasProperty("jcr:uuid"));
+        assertFalse(amsterdam.hasProperty("jcr:test"));
+        assertFalse(amsterdam.hasProperty("city_main_post_code"));
+
+        // property values
+        assertEquals("1", amsterdam.getProperty("city_id").getString());
+        assertEquals("AMS", amsterdam.getProperty("airport").getString());
+        assertEquals("Amsterdam", amsterdam.getProperty("city_name").getString());
+        assertEquals("NL", amsterdam.getProperty("country_iso_code").getString());
+        assertEquals("Dutch", amsterdam.getProperty("language").getString());
+        assertEquals("Netherlands", amsterdam.getProperty("country").getString());
+
+        try {
+            amsterdam.getProperty("city_main_post_code");
+            fail("Property city_main_post_code should not have been found");
+        } catch (PathNotFoundException e) {
+            // property is not present
+        }
     }
 }

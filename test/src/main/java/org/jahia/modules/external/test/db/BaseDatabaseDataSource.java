@@ -44,9 +44,17 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
-import javax.jcr.*;
+import javax.jcr.ItemNotFoundException;
+import javax.jcr.PathNotFoundException;
+import javax.jcr.PropertyType;
+import javax.jcr.RepositoryException;
+import javax.jcr.Value;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.util.db.DbUtility;
@@ -118,6 +126,11 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
         Map<String, String[]> props = null;
         if (type == getSchemaNodeType() || type == getTableNodeType()) {
             props = Collections.emptyMap();
+            if (type == getTableNodeType()) {
+                if (!getTableNames().contains(path.substring(1))) {
+                    throw new PathNotFoundException(path);
+                }
+            }
         } else {
             props = getPropertiesForRow(path);
         }
@@ -231,7 +244,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
     /**
      * Returns a list of row IDs (names) in the specified table.
      * 
-     *
+     * 
      * @param tableName
      *            the name of the table to read rows from
      * @param constraints

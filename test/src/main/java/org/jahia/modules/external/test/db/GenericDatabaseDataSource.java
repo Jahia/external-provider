@@ -67,11 +67,11 @@ import org.slf4j.LoggerFactory;
  */
 public class GenericDatabaseDataSource extends BaseDatabaseDataSource {
 
-    private static final String DATA_TYPE_ROW = "jtestnt:dbRow".intern();
+    static final String DATA_TYPE_ROW = "jtestnt:dbRow".intern();
 
-    private static final String DATA_TYPE_SCHEMA = "jtestnt:dbSchema".intern();
+    static final String DATA_TYPE_SCHEMA = "jtestnt:dbSchema".intern();
 
-    private static final String DATA_TYPE_TABLE = "jtestnt:dbTable".intern();
+    static final String DATA_TYPE_TABLE = "jtestnt:dbTable".intern();
 
     static final Logger logger = LoggerFactory.getLogger(GenericDatabaseDataSource.class);
 
