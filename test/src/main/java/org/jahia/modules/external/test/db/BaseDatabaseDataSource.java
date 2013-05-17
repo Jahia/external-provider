@@ -267,25 +267,28 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
             if (logger.isDebugEnabled()) {
                 logger.debug("primaryKeys for table {}: {}", tableName, primaryKeys);
             }
-            String sql = "select * from " + tableName;
+            StringBuilder sql = new StringBuilder(64);
+            sql.append("select * from ").append(tableName);
             if (!constraints.isEmpty()) {
                 String next = " where ";
                 for (Map.Entry<String, Value> entry : constraints.entrySet()) {
                     try {
                         switch (entry.getValue().getType()) {
                             case PropertyType.LONG:
-                                sql += next + entry.getKey() + "=" + entry.getValue().getString() + "";
+                                sql.append(next).append(entry.getKey()).append("=")
+                                        .append(entry.getValue().getString());
                                 break;
                             default:
-                                sql += next + entry.getKey() + "='" + entry.getValue().getString() + "'";
+                                sql.append(next).append(entry.getKey()).append("='")
+                                        .append(entry.getValue().getString()).append("'");
                         }
                         next = " and ";
                     } catch (RepositoryException e) {
-                        e.printStackTrace();
+                        logger.error(e.getMessage(), e);
                     }
                 }
             }
-            stmt = conn.prepareStatement(sql);
+            stmt = conn.prepareStatement(sql.toString());
             rs = stmt.executeQuery();
             int position = 0;
             while (rs.next()) {

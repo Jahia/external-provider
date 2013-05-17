@@ -171,14 +171,12 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
 
     @Override
     public List<String> search(ExternalQuery query) throws RepositoryException {
-        logger.info("Executing search for query: {}", query.getSource());
         List<String> allResults = null;
 
         String nodeType = QueryHelper.getNodeType(query.getSource());
 
         List<String> dataTypes = getDataTypesForNodeType(nodeType);
         for (String dataType : dataTypes) {
-            logger.info("Performing search for data type: {}", dataType);
             List<String> results = doSearch(query, dataType);
             if (!results.isEmpty()) {
                 if (allResults == null) {

@@ -47,8 +47,12 @@ import static org.junit.Assert.fail;
 
 import java.util.Locale;
 
+import javax.jcr.NodeIterator;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
+import javax.jcr.query.InvalidQueryException;
+import javax.jcr.query.Query;
+import javax.jcr.query.QueryResult;
 
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -110,6 +114,26 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         } catch (PathNotFoundException e) {
             // property is not present
         }
+    }
+
+    private long getResultCount(String query) throws RepositoryException, InvalidQueryException {
+        return getResultCount(query, 0, 0);
+    }
+
+    private long getResultCount(String query, long limit, long offset) throws RepositoryException,
+            InvalidQueryException {
+        return query(query, limit, offset).getNodes().getSize();
+    }
+
+    private QueryResult query(String query, long limit, long offset) throws RepositoryException, InvalidQueryException {
+        Query queryObject = session.getWorkspace().getQueryManager().createQuery(query, Query.JCR_SQL2);
+        if (limit > 0) {
+            queryObject.setLimit(limit);
+        }
+        if (offset > 0) {
+            queryObject.setOffset(offset);
+        }
+        return queryObject.execute();
     }
 
     @Before
@@ -243,5 +267,70 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     @Test
     public void testMappedProperties() throws Exception {
         checkProperties(session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/1"));
+    }
+
+    @Test
+    public void testQueryConstraints() throws Exception {
+        assertEquals(1, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                + "] where [language] = 'Dutch'"));
+
+        assertEquals(3, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                + "] where [language] = 'Arabic'"));
+        assertEquals(1, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                + "] where [language] = 'Arabic' and [city_name] = 'Cairo'"));
+        assertEquals(0, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                + "] where [language] = 'Arabic' and [city_name] = 'Amstaredam'"));
+
+        assertEquals(37, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                + "] where [country_iso_code] = 'US'"));
+        assertEquals(
+                17,
+                getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                        + "] where [country_iso_code] = 'US'", 0, 20));
+        assertEquals(
+                3,
+                getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                        + "] where [country_iso_code] = 'US'", 3, 20));
+        assertEquals(
+                0,
+                getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                        + "] where [country_iso_code] = 'US'", 3, 100));
+    }
+
+    @Test
+    public void testQueryLimitAndOffset() throws Exception {
+        String queryDirs = "select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "]";
+
+        assertEquals(4, getResultCount(queryDirs, 0, 0));
+
+        assertEquals(1, getResultCount(queryDirs, 1, 0));
+        assertEquals(2, getResultCount(queryDirs, 2, 0));
+        assertEquals(3, getResultCount(queryDirs, 3, 0));
+        assertEquals(4, getResultCount(queryDirs, 4, 0));
+
+        assertEquals(3, getResultCount(queryDirs, 0, 1));
+        assertEquals(2, getResultCount(queryDirs, 0, 2));
+        assertEquals(1, getResultCount(queryDirs, 0, 3));
+        assertEquals(0, getResultCount(queryDirs, 0, 4));
+        assertEquals(0, getResultCount(queryDirs, 0, 10));
+
+        assertEquals(3, getResultCount(queryDirs, 3, 1));
+        assertEquals(2, getResultCount(queryDirs, 3, 2));
+        assertEquals(1, getResultCount(queryDirs, 3, 3));
+        assertEquals(0, getResultCount(queryDirs, 3, 4));
+        assertEquals(0, getResultCount(queryDirs, 3, 5));
+    }
+
+    @Test
+    public void testQueryNodeType() throws Exception {
+        // count
+        assertEquals(4, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "]"));
+        assertEquals(2, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "]"));
+        assertEquals(0, getResultCount("select * from [" + GenericDatabaseDataSource.DATA_TYPE_TABLE + "]"));
+
+        for (NodeIterator ni = query("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "]", 0, 0)
+                .getNodes(); ni.hasNext();) {
+            assertTrue(ni.nextNode().isNodeType(MappedDatabaseDataSource.DATA_TYPE_AIRLINE));
+        }
     }
 }
