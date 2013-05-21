@@ -41,6 +41,7 @@
 package org.jahia.modules.external;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.jackrabbit.core.security.JahiaLoginModule;
 import org.jahia.services.content.nodetypes.Name;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.xml.sax.ContentHandler;
@@ -75,6 +76,7 @@ public class ExternalSessionImpl implements Session {
     private Map<String, ExternalData> changedData = new LinkedHashMap<String, ExternalData>();
     private Map<String, ExternalData> deletedData = new LinkedHashMap<String, ExternalData>();
     private Map<String, List<String>> orderedData = new LinkedHashMap<String, List<String>>();
+    private Session extensionSession;
 
     public ExternalSessionImpl(ExternalRepositoryImpl repository, Credentials credentials) {
         this.repository = repository;
@@ -246,6 +248,9 @@ public class ExternalSessionImpl implements Session {
 
     public void save()
             throws AccessDeniedException, ItemExistsException, ConstraintViolationException, InvalidItemStateException, VersionException, LockException, NoSuchNodeTypeException, RepositoryException {
+        if (extensionSession != null && extensionSession.hasPendingChanges()) {
+            extensionSession.save();
+        }
         if (!(repository.getDataSource() instanceof ExternalDataSource.Writable)) {
             deletedData.clear();
             changedData.clear();
@@ -366,11 +371,13 @@ public class ExternalSessionImpl implements Session {
     }
 
     public void logout() {
-
+        if (extensionSession != null) {
+            extensionSession.logout();
+        }
     }
 
     public boolean isLive() {
-        return false;
+        return true;
     }
 
     public void addLockToken(String s) {
@@ -439,5 +446,12 @@ public class ExternalSessionImpl implements Session {
 
     public RetentionManager getRetentionManager() throws UnsupportedRepositoryOperationException, RepositoryException {
         return null;
+    }
+
+    public Session getExtensionSession() throws RepositoryException {
+        if (extensionSession == null) {
+            extensionSession = getRepository().getStoreProvider().getExtensionProvider().getSession(JahiaLoginModule.getSystemCredentials(getUserID()), getWorkspace().getName());
+        }
+        return extensionSession;
     }
 }

@@ -22,6 +22,7 @@
         <property name="key" value="ExternalGenericDatabaseProvider"/>
         <property name="mountPoint" value="/external-database-generic"/>
         <property name="identifierMappingService" ref="ExternalProviderIdentifierMappingService"/>
+        <property name="extensionProvider" ref="DefaulJCRStoreProvider"/>
         <property name="dataSource">
             <bean class="org.jahia.modules.external.test.db.GenericDatabaseDataSource"/>
         </property>
@@ -31,6 +32,7 @@
         <property name="key" value="ExternalMappedDatabaseProvider"/>
         <property name="mountPoint" value="/external-database-mapped"/>
         <property name="identifierMappingService" ref="ExternalProviderIdentifierMappingService"/>
+        <property name="extensionProvider" ref="DefaulJCRStoreProvider"/>
         <property name="dataSource">
             <bean class="org.jahia.modules.external.test.db.MappedDatabaseDataSource"/>
         </property>

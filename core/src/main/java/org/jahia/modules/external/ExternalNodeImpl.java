@@ -43,32 +43,9 @@ package org.jahia.modules.external;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import javax.jcr.AccessDeniedException;
-import javax.jcr.Binary;
-import javax.jcr.InvalidItemStateException;
-import javax.jcr.InvalidLifecycleTransitionException;
-import javax.jcr.Item;
-import javax.jcr.ItemExistsException;
-import javax.jcr.ItemNotFoundException;
-import javax.jcr.MergeException;
-import javax.jcr.NoSuchWorkspaceException;
-import javax.jcr.Node;
-import javax.jcr.NodeIterator;
-import javax.jcr.PathNotFoundException;
-import javax.jcr.Property;
-import javax.jcr.PropertyIterator;
-import javax.jcr.PropertyType;
-import javax.jcr.RepositoryException;
-import javax.jcr.UnsupportedRepositoryOperationException;
-import javax.jcr.Value;
-import javax.jcr.ValueFormatException;
+import javax.jcr.*;
 import javax.jcr.lock.Lock;
 import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
@@ -84,6 +61,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ChildrenCollectorFilter;
 import org.apache.jackrabbit.value.BinaryImpl;
 import org.jahia.api.Constants;
+import org.jahia.services.content.MultiplePropertyIterator;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -254,6 +232,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        if (getExtensionNode(true) != null) {
+            return getExtensionNode(true).setProperty(name, value);
+        }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }
@@ -297,6 +278,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        if (getExtensionNode(true) != null) {
+            return getExtensionNode(true).setProperty(name, values);
+        }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }
@@ -359,6 +343,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        if (getExtensionNode(true) != null) {
+            return getExtensionNode(true).setProperty(name, value);
+        }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }
@@ -448,6 +435,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property getProperty(String s) throws PathNotFoundException, RepositoryException {
+        Node n = getExtensionNode(false);
+        if (n != null && n.hasProperty(s)) {
+            return n.getProperty(s);
+        }
         Property property = properties.get(s);
         if (property == null) {
             throw new PathNotFoundException(s);
@@ -456,6 +447,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public PropertyIterator getProperties() throws RepositoryException {
+        Node n = getExtensionNode(false);
+        if (n != null) {
+            //todo remove duplicate properties !
+            return new MultiplePropertyIterator(Arrays.asList(new ExternalPropertyIterator(properties), n.getProperties()), -1);
+        }
         return new ExternalPropertyIterator(properties);
     }
 
@@ -465,6 +461,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             if (ChildrenCollectorFilter.matches(entry.getKey(),namePattern)) {
                 filteredList.put(entry.getKey(), entry.getValue());
             }
+        }
+        Node n = getExtensionNode(false);
+        if (n != null) {
+            return new MultiplePropertyIterator(Arrays.asList(new ExternalPropertyIterator(filteredList), n.getProperties(namePattern)), -1);
         }
         return new ExternalPropertyIterator(filteredList);
     }
@@ -663,6 +663,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 filteredList.put(entry.getKey(), entry.getValue());
             }
         }
+        Node n = getExtensionNode(false);
+        if (n != null) {
+            return new MultiplePropertyIterator(Arrays.asList(new ExternalPropertyIterator(filteredList), n.getProperties(nameGlobs)), -1);
+        }
         return new ExternalPropertyIterator(filteredList);
     }
 
@@ -717,6 +721,35 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     public String[] getAllowedLifecycleTransistions() throws UnsupportedRepositoryOperationException, RepositoryException {
         return new String[0];  
     }
+
+    public Node getExtensionNode(boolean create) throws RepositoryException {
+        Session extensionSession = getSession().getExtensionSession();
+        if (extensionSession == null) {
+            return null;
+        }
+        String path = getPath();
+        boolean isRoot = path.equals("/");
+
+        String mountPoint = getStoreProvider().getMountPoint();
+        String globalPath = mountPoint + (isRoot ? "" : path);
+
+        if (!extensionSession.itemExists(globalPath)) {
+            if (!create) {
+                return null;
+            } else if (isRoot) {
+                String parent = StringUtils.substringBeforeLast(mountPoint, "/");
+                if (parent.equals("")) {
+                    parent = "/";
+                }
+                extensionSession.getNode(parent).addNode(StringUtils.substringAfterLast(mountPoint, "/"), getPrimaryNodeType().getName());
+            } else {
+                ((ExternalNodeImpl) getParent()).getExtensionNode(true).addNode(getName(), getPrimaryNodeType().getName());
+            }
+        }
+
+        return extensionSession.getNode(globalPath);
+    }
+
 
     private class ExternalPropertyIterator implements PropertyIterator {
         int pos;

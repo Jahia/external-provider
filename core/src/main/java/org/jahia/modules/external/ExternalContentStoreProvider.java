@@ -40,10 +40,7 @@
 
 package org.jahia.modules.external;
 
-import javax.jcr.NamespaceRegistry;
-import javax.jcr.Repository;
-import javax.jcr.RepositoryException;
-import javax.jcr.Workspace;
+import javax.jcr.*;
 import javax.jcr.query.QueryManager;
 
 import org.apache.commons.lang.StringUtils;
@@ -68,6 +65,8 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     private String id;
 
     private IdentifierMappingService identifierMappingService;
+
+    private JCRStoreProvider extensionProvider;
 
     @Override
     protected Repository createRepository() {
@@ -186,6 +185,14 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     public void setIdentifierMappingService(IdentifierMappingService mappingService) {
         this.identifierMappingService = mappingService;
+    }
+
+    public JCRStoreProvider getExtensionProvider() {
+        return extensionProvider;
+    }
+
+    public void setExtensionProvider(JCRStoreProvider extensionProvider) {
+        this.extensionProvider = extensionProvider;
     }
 
     /**
