@@ -791,7 +791,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                         if (canItemBeExtended(next.getDefinition())) {
                             nextProperty = next;
                             externalProperties.remove(next.getName());
-                            pos ++;
                             return next;
                         }
                     } catch (RepositoryException e) {
@@ -816,6 +815,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             }
             Property next = nextProperty;
             fetchNext();
+            pos ++;
             return next;
         }
 
