@@ -511,6 +511,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 nt.add(NodeTypeRegistry.getInstance().getNodeType(s));
             }
         }
+        Node extensionNode = getExtensionNode(false);
+        if (extensionNode != null) {
+            for (NodeType type : extensionNode.getMixinNodeTypes()) {
+                nt.add(NodeTypeRegistry.getInstance().getNodeType(type.getName()));
+            }
+        }
         return nt.toArray(new NodeType[nt.size()]);
     }
 
@@ -526,15 +532,38 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return false;
     }
 
-    public void addMixin(String s) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+    public void addMixin(String mixinName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+        if (isNodeType(mixinName)) {
+            return;
+        }
+
+        Node extensionNode = getExtensionNode(true);
+        if (extensionNode != null) {
+            extensionNode.addMixin(mixinName);
+            return;
+        }
+
         throw new UnsupportedRepositoryOperationException();
     }
 
-    public void removeMixin(String s) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+    public void removeMixin(String mixinName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+        Node extensionNode = getExtensionNode(false);
+        if (extensionNode != null) {
+            extensionNode.removeMixin(mixinName);
+            return;
+        }
+        if (!isNodeType(mixinName)) {
+            throw new NoSuchNodeTypeException("Mixin "+mixinName + " not included in node "+getPath());
+        }
+
         throw new UnsupportedRepositoryOperationException();
     }
 
-    public boolean canAddMixin(String s) throws NoSuchNodeTypeException, RepositoryException {
+    public boolean canAddMixin(String mixinName) throws NoSuchNodeTypeException, RepositoryException {
+        Node extensionNode = getExtensionNode(true);
+        if (extensionNode != null) {
+            return extensionNode.canAddMixin(mixinName);
+        }
         return false;
     }
 
@@ -762,6 +791,18 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 return true;
             }
         }
+
+        if (type.isMixin()) {
+            Node ext = getExtensionNode(false);
+            if (ext != null) {
+                for (NodeType assignedMixin : ext.getMixinNodeTypes()) {
+                    if (type.isNodeType(assignedMixin.getName())) {
+                        return true;
+                    }
+                }
+            }
+        }
+
         return false;
     }
 

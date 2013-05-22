@@ -459,6 +459,6 @@ public class ExternalSessionImpl implements Session {
                 extensionAllowedTypes = Arrays.asList("nt:base");
             }
         }
-        return getExtensionAllowedTypes();
+        return extensionAllowedTypes;
     }
 }
