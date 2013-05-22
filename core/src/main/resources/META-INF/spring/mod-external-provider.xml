@@ -11,16 +11,8 @@
     </bean>
     <osgi:service id="ExternalProviderIdentifierMappingService" ref="IdentifierMappingService" interface="org.jahia.modules.external.IdentifierMappingService"/>
     
-
-    <bean id="ExternalContentStoreProvider" class="org.jahia.modules.external.ExternalContentStoreProvider"
-          parent="AbstractJCRStoreProvider" abstract="true">
-        <property name="extensionProvider" ref="DefaulJCRStoreProvider"/>
-        <property name="identifierMappingService" ref="IdentifierMappingService"/>
-    </bean>
-
     <bean id="ExternalStoreProviderPrototype" class="org.jahia.modules.external.ExternalContentStoreProvider"
           parent="AbstractJCRStoreProviderPrototype" scope="prototype">
-        <property name="extensionProvider" ref="DefaulJCRStoreProvider"/>
         <property name="identifierMappingService" ref="IdentifierMappingService"/>
     </bean>
 </beans>
