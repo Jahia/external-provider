@@ -42,6 +42,7 @@ package org.jahia.modules.external;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.security.JahiaLoginModule;
+import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.content.nodetypes.Name;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.xml.sax.ContentHandler;
