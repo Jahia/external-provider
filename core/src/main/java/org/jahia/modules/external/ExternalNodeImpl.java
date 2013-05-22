@@ -228,7 +228,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        if (getExtensionNode(true) != null && canItemBeExtended(getPropertyDefinition(name))) {
+        if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
             return getExtensionNode(true).setProperty(name, value);
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
@@ -274,7 +274,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        if (getExtensionNode(true) != null && canItemBeExtended(getPropertyDefinition(name))) {
+        if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
             return getExtensionNode(true).setProperty(name, values);
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
@@ -339,7 +339,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        if (getExtensionNode(true) != null && canItemBeExtended(getPropertyDefinition(name))) {
+        if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
             return getExtensionNode(true).setProperty(name, value);
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
