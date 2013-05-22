@@ -180,7 +180,7 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
             List<String> results = doSearch(query, dataType);
             if (!results.isEmpty()) {
                 if (allResults == null) {
-                    allResults = results;
+                    allResults = new ArrayList<String>(results);
                 } else {
                     allResults.addAll(results);
                 }

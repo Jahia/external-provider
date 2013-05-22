@@ -229,7 +229,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
-            return getExtensionNode(true).setProperty(name, value);
+            return new ExtensionProperty(getExtensionNode(true).setProperty(name, value), getPath()+"/"+name, session);
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
@@ -275,7 +275,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
-            return getExtensionNode(true).setProperty(name, values);
+            return new ExtensionProperty(getExtensionNode(true).setProperty(name, values), getPath()+ "/" + name, session);
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
@@ -340,7 +340,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
-            return getExtensionNode(true).setProperty(name, value);
+            return new ExtensionProperty(getExtensionNode(true).setProperty(name, value), getPath()+ "/" + name, session);
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
@@ -433,7 +433,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     public Property getProperty(String s) throws PathNotFoundException, RepositoryException {
         Node n = getExtensionNode(false);
         if (n != null && n.hasProperty(s)  && canItemBeExtended(getPropertyDefinition(s))) {
-            return n.getProperty(s);
+            return new ExtensionProperty(n.getProperty(s), getPath() + "/" + s, session);
         }
         Property property = properties.get(s);
         if (property == null) {
@@ -830,7 +830,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                     Property next = extensionPropertiesIterator.nextProperty();
                     try {
                         if (canItemBeExtended(next.getDefinition())) {
-                            nextProperty = next;
+                            nextProperty = new ExtensionProperty(next, getPath() + "/" + next.getName(), session);
                             externalProperties.remove(next.getName());
                             return next;
                         }
