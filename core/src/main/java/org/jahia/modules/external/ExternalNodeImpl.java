@@ -48,10 +48,7 @@ import java.util.*;
 import javax.jcr.*;
 import javax.jcr.lock.Lock;
 import javax.jcr.lock.LockException;
-import javax.jcr.nodetype.ConstraintViolationException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.nodetype.NodeDefinition;
-import javax.jcr.nodetype.NodeType;
+import javax.jcr.nodetype.*;
 import javax.jcr.version.Version;
 import javax.jcr.version.VersionException;
 import javax.jcr.version.VersionHistory;
@@ -61,7 +58,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ChildrenCollectorFilter;
 import org.apache.jackrabbit.value.BinaryImpl;
 import org.jahia.api.Constants;
-import org.jahia.services.content.MultiplePropertyIterator;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -232,7 +228,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        if (getExtensionNode(true) != null) {
+        if (getExtensionNode(true) != null && canItemBeExtended(getPropertyDefinition(name))) {
             return getExtensionNode(true).setProperty(name, value);
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
@@ -278,7 +274,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        if (getExtensionNode(true) != null) {
+        if (getExtensionNode(true) != null && canItemBeExtended(getPropertyDefinition(name))) {
             return getExtensionNode(true).setProperty(name, values);
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
@@ -343,7 +339,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        if (getExtensionNode(true) != null) {
+        if (getExtensionNode(true) != null && canItemBeExtended(getPropertyDefinition(name))) {
             return getExtensionNode(true).setProperty(name, value);
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
@@ -436,7 +432,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     public Property getProperty(String s) throws PathNotFoundException, RepositoryException {
         Node n = getExtensionNode(false);
-        if (n != null && n.hasProperty(s)) {
+        if (n != null && n.hasProperty(s)  && canItemBeExtended(getPropertyDefinition(s))) {
             return n.getProperty(s);
         }
         Property property = properties.get(s);
@@ -449,8 +445,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     public PropertyIterator getProperties() throws RepositoryException {
         Node n = getExtensionNode(false);
         if (n != null) {
-            //todo remove duplicate properties !
-            return new MultiplePropertyIterator(Arrays.asList(new ExternalPropertyIterator(properties), n.getProperties()), -1);
+            return new ExternalPropertyIterator(properties, n.getProperties());
         }
         return new ExternalPropertyIterator(properties);
     }
@@ -464,7 +459,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
         Node n = getExtensionNode(false);
         if (n != null) {
-            return new MultiplePropertyIterator(Arrays.asList(new ExternalPropertyIterator(filteredList), n.getProperties(namePattern)), -1);
+            return new ExternalPropertyIterator(filteredList, n.getProperties(namePattern));
         }
         return new ExternalPropertyIterator(filteredList);
     }
@@ -665,7 +660,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
         Node n = getExtensionNode(false);
         if (n != null) {
-            return new MultiplePropertyIterator(Arrays.asList(new ExternalPropertyIterator(filteredList), n.getProperties(nameGlobs)), -1);
+            return new ExternalPropertyIterator(filteredList, n.getProperties(nameGlobs));
         }
         return new ExternalPropertyIterator(filteredList);
     }
@@ -758,48 +753,101 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return extensionSession.getNode(globalPath);
     }
 
+    private boolean canItemBeExtended(ItemDefinition definition) throws RepositoryException {
+        NodeType type = definition.getDeclaringNodeType();
+
+        List<String> extensionAllowedTypes = getSession().getExtensionAllowedTypes();
+        for (String extensionAllowedType : extensionAllowedTypes) {
+            if (type.isNodeType(extensionAllowedType)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private class ExternalPropertyIterator implements PropertyIterator {
-        int pos;
-        private final Iterator<ExternalPropertyImpl> it;
-        private Map<String,ExternalPropertyImpl> properties;
+        private int pos = 0;
+        private Iterator<ExternalPropertyImpl> it;
+        private PropertyIterator extensionPropertiesIterator;
+        private Property nextProperty = null;
+        private Map<String, ExternalPropertyImpl> externalProperties;
 
-        public ExternalPropertyIterator( Map<String,ExternalPropertyImpl> properties) {
-            this.properties = properties;
-            this.it = properties.values().iterator();
-            pos = 0;
+        ExternalPropertyIterator(Map<String, ExternalPropertyImpl> externalPropertyMap) {
+            this(externalPropertyMap, null);
         }
 
+        ExternalPropertyIterator(Map<String, ExternalPropertyImpl> externalPropertyMap, PropertyIterator extensionPropertiesIterator) {
+            this.extensionPropertiesIterator = extensionPropertiesIterator;
+            this.externalProperties = new HashMap<String, ExternalPropertyImpl>(externalPropertyMap);
+            fetchNext();
+        }
+
+        private Property fetchNext() {
+            nextProperty = null;
+            if (extensionPropertiesIterator != null) {
+                while (extensionPropertiesIterator.hasNext()) {
+                    Property next = extensionPropertiesIterator.nextProperty();
+                    try {
+                        if (canItemBeExtended(next.getDefinition())) {
+                            nextProperty = next;
+                            externalProperties.remove(next.getName());
+                            pos ++;
+                            return next;
+                        }
+                    } catch (RepositoryException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            if (it == null) {
+                it = externalProperties.values().iterator();
+            }
+            if (it.hasNext()) {
+                nextProperty = it.next();
+                return nextProperty;
+            }
+            return null;
+        }
+
+        @Override
         public Property nextProperty() {
-            pos ++;
-            return it.next();
+            if (nextProperty == null) {
+                throw new NoSuchElementException();
+            }
+            Property next = nextProperty;
+            fetchNext();
+            return next;
         }
 
         public void skip(long skipNum) {
             for (int i=0; i<skipNum; i++) {
                 nextProperty();
             }
-            pos+= skipNum;
         }
 
+        @Override
         public long getSize() {
-            return properties.size();
+            return externalProperties.size() + (extensionPropertiesIterator != null ? extensionPropertiesIterator.getSize() : 0);
         }
 
+        @Override
         public long getPosition() {
             return pos;
         }
 
+        @Override
         public boolean hasNext() {
-            return it.hasNext();
+            return nextProperty != null;
         }
 
+        @Override
         public Object next() {
             return nextProperty();
         }
 
+        @Override
         public void remove() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("remove");
         }
     }
 
