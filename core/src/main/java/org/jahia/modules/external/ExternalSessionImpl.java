@@ -58,11 +58,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.AccessControlException;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Implementation of the {@link javax.jcr.Session} for the {@link org.jahia.modules.external.ExternalData}.
@@ -77,6 +73,7 @@ public class ExternalSessionImpl implements Session {
     private Map<String, ExternalData> deletedData = new LinkedHashMap<String, ExternalData>();
     private Map<String, List<String>> orderedData = new LinkedHashMap<String, List<String>>();
     private Session extensionSession;
+    private List<String> extensionAllowedTypes;
 
     public ExternalSessionImpl(ExternalRepositoryImpl repository, Credentials credentials) {
         this.repository = repository;
@@ -453,5 +450,15 @@ public class ExternalSessionImpl implements Session {
             extensionSession = getRepository().getStoreProvider().getExtensionProvider().getSession(JahiaLoginModule.getSystemCredentials(getUserID()), getWorkspace().getName());
         }
         return extensionSession;
+    }
+
+    public List<String> getExtensionAllowedTypes() throws RepositoryException {
+        if (extensionAllowedTypes == null) {
+            extensionAllowedTypes = getRepository().getStoreProvider().getExtensionAllowedTypes();
+            if (extensionAllowedTypes == null) {
+                extensionAllowedTypes = Arrays.asList("nt:base");
+            }
+        }
+        return getExtensionAllowedTypes();
     }
 }

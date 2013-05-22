@@ -727,6 +727,14 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (extensionSession == null) {
             return null;
         }
+        List<String> extensionAllowedTypes = getSession().getExtensionAllowedTypes();
+        if (extensionAllowedTypes != null) {
+            for (String type : extensionAllowedTypes) {
+                if (!isNodeType(type)) {
+                    return null;
+                }
+            }
+        }
         String path = getPath();
         boolean isRoot = path.equals("/");
 

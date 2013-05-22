@@ -51,6 +51,8 @@ import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRStoreProvider;
 import org.springframework.beans.factory.InitializingBean;
 
+import java.util.List;
+
 /**
  * Implementation of the {@link org.jahia.services.content.JCRStoreProvider} for the {@link org.jahia.modules.external.ExternalData}.
  * 
@@ -67,6 +69,8 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     private IdentifierMappingService identifierMappingService;
 
     private JCRStoreProvider extensionProvider;
+
+    private List<String> extensionAllowedTypes;
 
     @Override
     protected Repository createRepository() {
@@ -193,6 +197,14 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     public void setExtensionProvider(JCRStoreProvider extensionProvider) {
         this.extensionProvider = extensionProvider;
+    }
+
+    public List<String> getExtensionAllowedTypes() {
+        return extensionAllowedTypes;
+    }
+
+    public void setExtensionAllowedTypes(List<String> extensionAllowedTypes) {
+        this.extensionAllowedTypes = extensionAllowedTypes;
     }
 
     /**

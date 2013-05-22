@@ -23,6 +23,11 @@
         <property name="mountPoint" value="/external-database-generic"/>
         <property name="identifierMappingService" ref="ExternalProviderIdentifierMappingService"/>
         <property name="extensionProvider" ref="DefaulJCRStoreProvider"/>
+        <property name="extensionAllowedTypes">
+            <list>
+                <value>nt:base</value>
+            </list>
+        </property>
         <property name="dataSource">
             <bean class="org.jahia.modules.external.test.db.GenericDatabaseDataSource"/>
         </property>
@@ -33,6 +38,11 @@
         <property name="mountPoint" value="/external-database-mapped"/>
         <property name="identifierMappingService" ref="ExternalProviderIdentifierMappingService"/>
         <property name="extensionProvider" ref="DefaulJCRStoreProvider"/>
+        <property name="extensionAllowedTypes">
+            <list>
+                <value>nt:base</value>
+            </list>
+        </property>
         <property name="dataSource">
             <bean class="org.jahia.modules.external.test.db.MappedDatabaseDataSource"/>
         </property>
