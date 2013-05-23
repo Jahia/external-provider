@@ -421,7 +421,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
         n = getExtensionNode(false);
         if (n != null) {
-            return new ExtensionNode(n.getNode(s),getPath() + "/" + n.getName(),getSession());
+            return new ExtensionNode(n.getNode(s),getPath() + "/" + s,getSession());
         }
         throw new PathNotFoundException();
     }
