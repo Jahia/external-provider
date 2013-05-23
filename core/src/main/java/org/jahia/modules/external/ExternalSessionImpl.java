@@ -43,8 +43,6 @@ package org.jahia.modules.external;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.security.JahiaLoginModule;
 import org.jahia.services.content.JCRStoreProvider;
-import org.jahia.services.content.nodetypes.Name;
-import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
@@ -191,7 +189,7 @@ public class ExternalSessionImpl implements Session {
             try {
                 if (getExtensionSession() != null && !StringUtils.equals("/",path)) {
                     Item item = getExtensionSession().getItem(repository.getStoreProvider().getMountPoint() + path);
-                    return item.isNode()?new ExtensionNode((Node) item,path,this):new ExtensionProperty((Property) item,path,this);
+                    return item.isNode()?new ExtensionNode((Node) item,path,this):new ExtensionProperty((Property) item,path,this, ((Property) item).getNode().getIdentifier());
                 }
             } catch (PathNotFoundException e1) {
                 // do nothing

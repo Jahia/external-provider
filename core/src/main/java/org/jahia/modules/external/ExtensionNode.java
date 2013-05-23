@@ -1,5 +1,9 @@
 package org.jahia.modules.external;
 
+import org.apache.commons.lang.StringUtils;
+import org.jahia.services.content.nodetypes.Name;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+
 import javax.jcr.*;
 import javax.jcr.lock.Lock;
 import javax.jcr.lock.LockException;
@@ -13,7 +17,7 @@ import javax.jcr.version.VersionException;
 import javax.jcr.version.VersionHistory;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.util.Calendar;
+import java.util.*;
 
 /**
  * Wrapper for extension Node
@@ -21,22 +25,26 @@ import java.util.Calendar;
 public class ExtensionNode extends ExtensionItem implements Node {
     private Node node;
     private String uuid;
+    private String path;
+    private ExternalSessionImpl session;
 
 
 
     public ExtensionNode(Node node,String path, ExternalSessionImpl session) {
         super(node,path,session);
         this.node = node;
+        this.path = path;
+        this.session = session;
     }
 
     @Override
-    public Node addNode(String relPath) throws ItemExistsException, PathNotFoundException, VersionException, ConstraintViolationException, LockException, RepositoryException {
-        return node.addNode(relPath);
+    public Node addNode(String relPath) throws RepositoryException {
+        return addNode(relPath,null);
     }
 
     @Override
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
-        return node.addNode(relPath, primaryNodeTypeName);
+        return new ExtensionNode(node.addNode(relPath, primaryNodeTypeName), path + "/" + relPath,session);
     }
 
     @Override
@@ -46,127 +54,127 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, value);
+        return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, getIdentifier());
     }
 
     @Override
     public Property setProperty(String name, Value value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, value, type);
+        return new ExtensionProperty(node.setProperty(name, value, type), path + "/" + name, session, getIdentifier());
     }
 
     @Override
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, values);
+        return new ExtensionProperty(node.setProperty(name, values), path + "/" + name, session, getIdentifier());
     }
 
     @Override
     public Property setProperty(String name, Value[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, values, type);
+        return new ExtensionProperty(node.setProperty(name, values, type), path + "/" + name, session, getIdentifier());
     }
 
     @Override
     public Property setProperty(String name, String[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, values);
+        return setProperty(name,values);
     }
 
     @Override
     public Property setProperty(String name, String[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, values, type);
+        return setProperty(name, values, type);
     }
 
     @Override
     public Property setProperty(String name, String value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, value);
+        return setProperty(name, value);
     }
 
     @Override
     public Property setProperty(String name, String value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, value, type);
+        return setProperty(name, value);
     }
 
     @Override
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, value);
+        return setProperty(name, value);
     }
 
     @Override
     public Property setProperty(String name, Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, value);
+        return setProperty(name, value);
     }
 
     @Override
     public Property setProperty(String name, boolean value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, value);
+        return setProperty(name, value);
     }
 
     @Override
     public Property setProperty(String name, double value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, value);
+        return setProperty(name, value);
     }
 
     @Override
     public Property setProperty(String name, BigDecimal value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, value);
+        return setProperty(name, value);
     }
 
     @Override
     public Property setProperty(String name, long value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, value);
+        return setProperty(name, value);
     }
 
     @Override
     public Property setProperty(String name, Calendar value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, value);
+        return setProperty(name, value);
     }
 
     @Override
     public Property setProperty(String name, Node value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return node.setProperty(name, value);
+        return setProperty(name, value);
     }
 
     @Override
     public Node getNode(String relPath) throws PathNotFoundException, RepositoryException {
-        return node.getNode(relPath);
+        return new ExtensionNode(node.getNode(relPath),path + "/" + relPath,session);
     }
 
     @Override
     public NodeIterator getNodes() throws RepositoryException {
-        return node.getNodes();
+        return new ExtensionNodeIterator(node.getNodes());
     }
 
     @Override
     public NodeIterator getNodes(String namePattern) throws RepositoryException {
-        return node.getNodes(namePattern);
+        return new ExtensionNodeIterator(node.getNodes(namePattern));
     }
 
     @Override
     public NodeIterator getNodes(String[] nameGlobs) throws RepositoryException {
-        return node.getNodes(nameGlobs);
+        return new ExtensionNodeIterator(node.getNodes(nameGlobs));
     }
 
     @Override
     public Property getProperty(String relPath) throws PathNotFoundException, RepositoryException {
-        return node.getProperty(relPath);
+        return new ExtensionProperty(node.getProperty(relPath),path + "/" + relPath,session, getIdentifier());
     }
 
     @Override
     public PropertyIterator getProperties() throws RepositoryException {
-        return node.getProperties();
+        return new ExtensionPropertyIterator(node.getProperties());
     }
 
     @Override
     public PropertyIterator getProperties(String namePattern) throws RepositoryException {
-        return node.getProperties(namePattern);
+        return new ExtensionPropertyIterator(node.getProperties(namePattern));
     }
 
     @Override
     public PropertyIterator getProperties(String[] nameGlobs) throws RepositoryException {
-        return node.getProperties(nameGlobs);
+        return new ExtensionPropertyIterator(node.getProperties(nameGlobs));
     }
 
     @Override
     public Item getPrimaryItem() throws ItemNotFoundException, RepositoryException {
-        return node.getPrimaryItem();
+        return new ExtensionItem(node.getPrimaryItem(), path, session);
     }
 
     @Override
@@ -195,22 +203,22 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public PropertyIterator getReferences() throws RepositoryException {
-        return node.getReferences();
+        return new ExtensionPropertyIterator(node.getReferences());
     }
 
     @Override
     public PropertyIterator getReferences(String name) throws RepositoryException {
-        return node.getReferences(name);
+        return new ExtensionPropertyIterator(node.getReferences(name));
     }
 
     @Override
     public PropertyIterator getWeakReferences() throws RepositoryException {
-        return node.getWeakReferences();
+        return new ExtensionPropertyIterator(node.getWeakReferences());
     }
 
     @Override
     public PropertyIterator getWeakReferences(String name) throws RepositoryException {
-        return node.getWeakReferences(name);
+        return new ExtensionPropertyIterator(node.getWeakReferences(name));
     }
 
     @Override
@@ -300,7 +308,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public NodeIterator merge(String srcWorkspace, boolean bestEffort) throws NoSuchWorkspaceException, AccessDeniedException, MergeException, LockException, InvalidItemStateException, RepositoryException {
-        return node.merge(srcWorkspace, bestEffort);
+        return new ExtensionNodeIterator(node.merge(srcWorkspace, bestEffort));
     }
 
     @Override
@@ -310,7 +318,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public NodeIterator getSharedSet() throws RepositoryException {
-        return node.getSharedSet();
+        return new ExtensionNodeIterator(node.getSharedSet());
     }
 
     @Override
@@ -391,5 +399,138 @@ public class ExtensionNode extends ExtensionItem implements Node {
     @Override
     public String[] getAllowedLifecycleTransistions() throws UnsupportedRepositoryOperationException, RepositoryException {
         return node.getAllowedLifecycleTransistions();
+    }
+
+    private class ExtensionPropertyIterator implements PropertyIterator {
+        private int pos = 0;
+        private Iterator<ExternalPropertyImpl> it;
+        private PropertyIterator extensionPropertiesIterator;
+        private Property nextProperty = null;
+
+        ExtensionPropertyIterator(PropertyIterator extensionPropertiesIterator) {
+            this.extensionPropertiesIterator = extensionPropertiesIterator;
+            fetchNext();
+        }
+
+        private Property fetchNext() {
+            nextProperty = null;
+            if (extensionPropertiesIterator != null) {
+                while (extensionPropertiesIterator.hasNext()) {
+                    Property next = extensionPropertiesIterator.nextProperty();
+                    try {
+                        nextProperty = new ExtensionProperty(next, node.getPath() + "/" + next.getName(), getSession(), getIdentifier());
+                        return nextProperty;
+                    } catch (RepositoryException e) {
+                        // go to next property
+                    }
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public Property nextProperty() {
+            if (nextProperty == null) {
+                throw new NoSuchElementException();
+            }
+            Property next = nextProperty;
+            fetchNext();
+            pos ++;
+            return next;
+        }
+
+        public void skip(long skipNum) {
+            for (int i=0; i<skipNum; i++) {
+                nextProperty();
+            }
+        }
+
+        @Override
+        public long getSize() {
+            return extensionPropertiesIterator.getSize();
+        }
+
+        @Override
+        public long getPosition() {
+            return pos;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return nextProperty != null;
+        }
+
+        @Override
+        public Object next() {
+            return nextProperty();
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException("remove");
+        }
+    }
+
+    private class ExtensionNodeIterator implements NodeIterator {
+        private int pos = 0;
+        private NodeIterator extensionNodeIterator;
+        private Node nextNode;
+
+        public ExtensionNodeIterator(NodeIterator extensionNodeIterator) {
+            this.extensionNodeIterator = extensionNodeIterator;
+            fetchNext();
+        }
+
+        private Node fetchNext() {
+            nextNode = null;
+            if (extensionNodeIterator != null) {
+                while (extensionNodeIterator.hasNext()) {
+                    try {
+                        Node n = extensionNodeIterator.nextNode();
+                        nextNode = new ExtensionNode(n,getPath() + "/" + n.getName(),getSession());
+                        return  nextNode;
+                    } catch (RepositoryException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            return null;
+        }
+
+        public Node nextNode() {
+            if (nextNode == null) {
+                throw new NoSuchElementException();
+            }
+            Node next = nextNode;
+            fetchNext();
+            pos++;
+            return next;
+        }
+
+        public void skip(long skipNum) {
+            for (int i = 0; i<skipNum ; i++) {
+                nextNode();
+            }
+        }
+
+        public long getSize() {
+            return extensionNodeIterator.getSize();
+        }
+
+        public long getPosition() {
+            return pos;
+        }
+
+        public boolean hasNext() {
+            return nextNode != null;
+        }
+
+        public Object next() {
+            return nextNode();
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
     }
 }

@@ -1,5 +1,9 @@
 package org.jahia.modules.external;
 
+import org.apache.commons.lang.StringUtils;
+import org.jahia.services.content.nodetypes.Name;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+
 import javax.jcr.*;
 import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
@@ -12,10 +16,12 @@ import java.util.Calendar;
 
 public class ExtensionProperty extends ExtensionItem implements Property {
     private Property property;
+    private String uuid;
 
-    public ExtensionProperty(Property property, String path, ExternalSessionImpl session) {
+    public ExtensionProperty(Property property, String path, ExternalSessionImpl session, String uuid) {
         super(property, path, session);
         this.property = property;
+        this.uuid = uuid;
     }
 
     @Override
@@ -80,7 +86,11 @@ public class ExtensionProperty extends ExtensionItem implements Property {
 
     @Override
     public Value getValue() throws ValueFormatException, RepositoryException {
-        return property.getValue();
+        if (StringUtils.equals(getName(), "jcr:uuid")) {
+            return getSession().getValueFactory().createValue(uuid);
+        }  else {
+            return property.getValue();
+        }
     }
 
     @Override

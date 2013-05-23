@@ -58,8 +58,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ChildrenCollectorFilter;
 import org.apache.jackrabbit.value.BinaryImpl;
 import org.jahia.api.Constants;
-import org.jahia.services.content.MultipleNodeIterator;
-import org.jahia.services.content.MultiplePropertyIterator;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -257,7 +255,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
-            return new ExtensionProperty(getExtensionNode(true).setProperty(name, value), getPath()+"/"+name, session);
+            return new ExtensionProperty(getExtensionNode(true).setProperty(name, value), getPath()+"/"+name, session, getIdentifier());
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
@@ -303,7 +301,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
-            return new ExtensionProperty(getExtensionNode(true).setProperty(name, values), getPath()+ "/" + name, session);
+            return new ExtensionProperty(getExtensionNode(true).setProperty(name, values), getPath()+ "/" + name, session, getIdentifier());
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
@@ -368,7 +366,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
-            return new ExtensionProperty(getExtensionNode(true).setProperty(name, value), getPath()+ "/" + name, session);
+            return new ExtensionProperty(getExtensionNode(true).setProperty(name, value), getPath()+ "/" + name, session, getIdentifier());
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
@@ -478,7 +476,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     public Property getProperty(String s) throws PathNotFoundException, RepositoryException {
         Node n = getExtensionNode(false);
         if (n != null && n.hasProperty(s)  && canItemBeExtended(getPropertyDefinition(s))) {
-            return new ExtensionProperty(n.getProperty(s), getPath() + "/" + s, session);
+            return new ExtensionProperty(n.getProperty(s), getPath() + "/" + s, session, getIdentifier());
         }
         Property property = properties.get(s);
         if (property == null) {
@@ -920,7 +918,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return false;
     }
 
-    public class ExternalPropertyIterator implements PropertyIterator {
+    private class ExternalPropertyIterator implements PropertyIterator {
         private int pos = 0;
         private Iterator<ExternalPropertyImpl> it;
         private PropertyIterator extensionPropertiesIterator;
@@ -946,11 +944,14 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                                  Set<String> lazyBinaryProperties, ExternalNodeImpl node) {
             this.extensionPropertiesIterator = extensionPropertiesIterator;
             this.externalProperties = new HashMap<String, ExternalPropertyImpl>(externalPropertyMap);
+            this.lazyProperties = new HashSet<String>();
             if (lazyProperties != null) {
-                this.lazyProperties = new HashSet<String>(lazyProperties);
+                this.lazyProperties.addAll(lazyProperties);
             }
+
+            this.lazyBinaryProperties = new HashSet<String>();
             if (lazyBinaryProperties != null) {
-                this.lazyBinaryProperties = new HashSet<String>(lazyBinaryProperties);
+                this.lazyBinaryProperties.addAll(lazyBinaryProperties);
             }
             this.node = node;
             fetchNext();
@@ -963,7 +964,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                     Property next = extensionPropertiesIterator.nextProperty();
                     try {
                         if (canItemBeExtended(next.getDefinition())) {
-                            nextProperty = new ExtensionProperty(next, getPath() + "/" + next.getName(), node.getSession());
+                            nextProperty = new ExtensionProperty(next, getPath() + "/" + next.getName(), node.getSession(), getIdentifier());
                             externalProperties.remove(next.getName());
                             lazyProperties.remove(next.getName());
                             lazyBinaryProperties.remove(next.getName());
