@@ -140,6 +140,14 @@ public class ExternalSessionImpl implements Session {
             return getNodeByLocalIdentifier(u).getNode("j:translation_" + lang);
         }
 
+        try {
+        if (getExtensionSession() != null) {
+            Node n = getExtensionSession().getNodeByIdentifier(uuid);
+            return new ExtensionNode(n,StringUtils.substringAfter(n.getPath(),repository.getStoreProvider().getMountPoint()),this);
+        }
+        } catch (RepositoryException e) {
+            // do nothing
+        }
         Node n = new ExternalNodeImpl(repository.getDataSource().getItemByIdentifier(uuid), this);
         if (deletedData.containsKey(n.getPath())) {
             throw new ItemNotFoundException("This node has been deleted");
@@ -147,7 +155,8 @@ public class ExternalSessionImpl implements Session {
         return n;
     }
 
-    public Item getItem(String path) throws PathNotFoundException, RepositoryException {
+    public Item getItem(String path) throws RepositoryException {
+
         path = path.length() > 1 && path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
         if (deletedData.containsKey(path)) {
             throw new PathNotFoundException("This node has been deleted");
@@ -172,6 +181,14 @@ public class ExternalSessionImpl implements Session {
             ExternalData data = repository.getDataSource().getItemByPath(path);
             return new ExternalNodeImpl(data, this);
         } catch (PathNotFoundException e) {
+            try {
+                if (getExtensionSession() != null && !StringUtils.equals("/",path)) {
+                    Item item = getExtensionSession().getItem(repository.getStoreProvider().getMountPoint() + path);
+                    return item.isNode()?new ExtensionNode((Node) item,path,this):new ExtensionProperty((Property) item,path,this);
+                }
+            } catch (PathNotFoundException e1) {
+                // do nothing
+            }
             ExternalData data = repository.getDataSource().getItemByPath(StringUtils.substringBeforeLast(path, "/"));
             String propertyName = StringUtils.substringAfterLast(path, "/");
             ExternalPropertyImpl p = new ExternalPropertyImpl(new Name(propertyName, NodeTypeRegistry.getInstance().getNamespaces()),new ExternalNodeImpl(data,this),this);

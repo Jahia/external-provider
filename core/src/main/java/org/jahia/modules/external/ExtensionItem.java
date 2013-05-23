@@ -57,7 +57,7 @@ public class ExtensionItem implements Item {
     }
 
     @Override
-    public Session getSession() throws RepositoryException {
+    public ExternalSessionImpl getSession() throws RepositoryException {
         return session;
     }
 

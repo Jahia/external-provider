@@ -58,6 +58,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ChildrenCollectorFilter;
 import org.apache.jackrabbit.value.BinaryImpl;
 import org.jahia.api.Constants;
+import org.jahia.services.content.MultipleNodeIterator;
+import org.jahia.services.content.MultiplePropertyIterator;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -68,18 +70,18 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the {@link javax.jcr.Node} for the {@link org.jahia.modules.external.ExternalData}.
- * 
+ *
  * @author Thomas Draier
  */
 public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     private static final Logger logger = LoggerFactory.getLogger(ExternalNodeImpl.class);
-    
+
     private ExternalData data;
     private Map<String, ExternalPropertyImpl> properties = null;
-    
+
     private String uuid;
-    
+
     public ExternalNodeImpl(ExternalData data, ExternalSessionImpl session) throws RepositoryException {
         super(session);
         this.data = data;
@@ -202,6 +204,21 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
+        Node extendedNode = getExtensionNode(true);
+        if (extendedNode != null) {
+            boolean perform = false;
+            for (String type : getSession().getExtensionAllowedTypes()) {
+                if (NodeTypeRegistry.getInstance().getNodeType(primaryNodeTypeName).isNodeType(type)) {
+                    perform = true;
+                    break;
+                }
+            }
+            if (perform) {
+                Node n = extendedNode.addNode(relPath, primaryNodeTypeName);
+                return new ExtensionNode(n,getPath() + "/" + relPath,getSession());
+            }
+        }
+
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }
@@ -397,8 +414,16 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return setProperty(name, v);
     }
 
-    public Node getNode(String s) throws PathNotFoundException, RepositoryException {
-        return session.getNode(getPath().endsWith("/") ? getPath() + s : getPath() + "/" + s);
+    public Node getNode(String s) throws RepositoryException {
+        Node n = session.getNode(getPath().endsWith("/") ? getPath() + s : getPath() + "/" + s);
+        if (n != null) {
+            return  n;
+        }
+        n = getExtensionNode(false);
+        if (n != null) {
+            return new ExtensionNode(n.getNode(s),getPath() + "/" + n.getName(),getSession());
+        }
+        throw new PathNotFoundException();
     }
 
     public NodeIterator getNodes() throws RepositoryException {
@@ -408,6 +433,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             for (String lang : data.getI18nProperties().keySet()) {
                 l.add("j:translation_"+lang);
             }
+        }
+
+        Node n = getExtensionNode(false);
+        if (n != null && n.hasNodes()) {
+            return  new ExternalNodeIterator(l,n.getNodes());
         }
         return new ExternalNodeIterator(l);
     }
@@ -426,6 +456,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                     filteredList.add("j:translation_"+lang);
                 }
             }
+        }
+        Node n = getExtensionNode(false);
+        if (n != null) {
+            return  new ExternalNodeIterator(filteredList,n.getNodes(namePattern));
         }
         return new ExternalNodeIterator(filteredList);
     }
@@ -677,6 +711,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 filteredList.add(path);
             }
         }
+        Node n = getExtensionNode(false);
+        if (n != null) {
+            return new ExternalNodeIterator(filteredList,n.getNodes(nameGlobs));
+        }
         return new ExternalNodeIterator(filteredList);
     }
 
@@ -743,7 +781,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public String[] getAllowedLifecycleTransistions() throws UnsupportedRepositoryOperationException, RepositoryException {
-        return new String[0];  
+        return new String[0];
     }
 
     public Node getExtensionNode(boolean create) throws RepositoryException {
@@ -806,7 +844,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return false;
     }
 
-    private class ExternalPropertyIterator implements PropertyIterator {
+    public class ExternalPropertyIterator implements PropertyIterator {
         private int pos = 0;
         private Iterator<ExternalPropertyImpl> it;
         private PropertyIterator extensionPropertiesIterator;
@@ -893,35 +931,69 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     private class ExternalNodeIterator implements NodeIterator {
-        private int pos;
-        private final Iterator<String> it;
+        private int pos = 0;
+        private Iterator<String> it;
         private final List<String> list;
+        private NodeIterator extensionNodeIterator;
+        private Node nextNode;
 
         public ExternalNodeIterator(List<String> list) {
+            this(list,null);
+        }
+
+        public ExternalNodeIterator(List<String> list, NodeIterator extensionNodeIterator) {
+            this.extensionNodeIterator = extensionNodeIterator;
             this.list = list;
-            it = list.iterator();
-            pos = 0;
+            this.it = list.iterator();
+            fetchNext();
+        }
+
+        private Node fetchNext() {
+            nextNode = null;
+            if (it.hasNext()) {
+                Node next = null;
+                try {
+                    next = getNode(it.next());
+                } catch (RepositoryException e) {
+                    e.printStackTrace();
+                }
+                nextNode = next;
+                return nextNode;
+            }
+            if (extensionNodeIterator != null) {
+                while (extensionNodeIterator.hasNext()) {
+                    Node n = extensionNodeIterator.nextNode();
+                    try {
+                        if (!list.contains(n.getName())) {
+                            nextNode = new ExtensionNode(n,getPath() + "/" + n.getName(),getSession());
+                            return  nextNode;
+                        }
+                    } catch (RepositoryException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            return null;
         }
 
         public Node nextNode() {
-            pos++;
-            try {
-                return getNode(it.next());
-            } catch (RepositoryException e) {
-                logger.error(e.getMessage(), e);
-                return null;
+            if (nextNode == null) {
+                throw new NoSuchElementException();
             }
+            Node next = nextNode;
+            fetchNext();
+            pos++;
+            return next;
         }
 
         public void skip(long skipNum) {
             for (int i = 0; i<skipNum ; i++) {
-                it.next();
+                nextNode();
             }
-            pos+=skipNum;
         }
 
         public long getSize() {
-            return list.size();
+            return list.size() + (extensionNodeIterator!= null ? extensionNodeIterator.getSize():0);
         }
 
         public long getPosition() {
@@ -929,7 +1001,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
 
         public boolean hasNext() {
-            return it.hasNext();
+            return nextNode != null;
         }
 
         public Object next() {
