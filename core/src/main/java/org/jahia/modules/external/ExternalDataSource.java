@@ -40,6 +40,7 @@
 
 package org.jahia.modules.external;
 
+import javax.jcr.Binary;
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
@@ -57,7 +58,9 @@ import java.util.Set;
 public interface ExternalDataSource {
     
     public interface LazyProperty {
-        String[] getPropertyValues(String path, String propertyName) throws PathNotFoundException;
+        String[] getPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException;
+        String[] getI18nPropertyValues(ExternalData data, String lang, String propertyName) throws PathNotFoundException;
+        Binary[] getBinaryPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException;
     }
 
     /**

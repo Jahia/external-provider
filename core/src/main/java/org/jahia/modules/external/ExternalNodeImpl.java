@@ -471,7 +471,36 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
         Property property = properties.get(s);
         if (property == null) {
-            throw new PathNotFoundException(s);
+            if (data.getLazyProperties() != null && data.getLazyProperties().contains(s)) {
+                String[] values;
+                if (properties.containsKey("jcr:language")) {
+                    values = session.getI18nPropertyValues(data, s, properties.get("jcr:language").getString());
+                } else {
+                    values = session.getPropertyValues(data, s);
+                }
+                data.getProperties().put(s, values);
+                data.getLazyProperties().remove(s);
+                ExternalPropertyImpl p = new ExternalPropertyImpl(new Name(s, NodeTypeRegistry.getInstance().getNamespaces()), this, session);
+                if (getPropertyDefinition(s).isMultiple()) {
+                    p.setValue(values);
+                } else if (values != null && values.length > 0) {
+                    p.setValue(values[0]);
+                }
+                return p;
+            } else if (data.getLazyBinaryProperties() != null && data.getLazyBinaryProperties().contains(s)) {
+                Binary[] values = session.getBinaryPropertyValues(data, s);
+                data.getBinaryProperties().put(s, values);
+                data.getLazyBinaryProperties().remove(s);
+                ExternalPropertyImpl p = new ExternalPropertyImpl(new Name(s, NodeTypeRegistry.getInstance().getNamespaces()), this, session);
+                if (getPropertyDefinition(s).isMultiple()) {
+                    p.setValue(values);
+                } else if (values != null && values.length > 0) {
+                    p.setValue(values[0]);
+                }
+                return p;
+            } else {
+                throw new PathNotFoundException(s);
+            }
         }
         return property;
     }
@@ -479,9 +508,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     public PropertyIterator getProperties() throws RepositoryException {
         Node n = getExtensionNode(false);
         if (n != null) {
-            return new ExternalPropertyIterator(properties, n.getProperties());
+            return new ExternalPropertyIterator(properties, n.getProperties(), data.getLazyProperties(), data.getLazyBinaryProperties(), this);
         }
-        return new ExternalPropertyIterator(properties);
+        return new ExternalPropertyIterator(properties, data.getLazyProperties(), data.getLazyBinaryProperties(), this);
     }
 
     public PropertyIterator getProperties(String namePattern) throws RepositoryException {
@@ -491,11 +520,29 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 filteredList.put(entry.getKey(), entry.getValue());
             }
         }
+        Set<String> lazyProperties = null;
+        if (data.getLazyProperties() != null) {
+            lazyProperties = new HashSet<String>();
+            for (String propertyName : data.getLazyProperties()) {
+                if (ChildrenCollectorFilter.matches(propertyName, namePattern)) {
+                    lazyProperties.add(propertyName);
+                }
+            }
+        }
+        Set<String> lazyBinaryProperties = null;
+        if (data.getLazyBinaryProperties() != null) {
+            lazyBinaryProperties = new HashSet<String>();
+            for (String propertyName : data.getLazyBinaryProperties()) {
+                if (ChildrenCollectorFilter.matches(propertyName, namePattern)) {
+                    lazyBinaryProperties.add(propertyName);
+                }
+            }
+        }
         Node n = getExtensionNode(false);
         if (n != null) {
-            return new ExternalPropertyIterator(filteredList, n.getProperties(namePattern));
+            return new ExternalPropertyIterator(filteredList, n.getProperties(namePattern), lazyProperties, lazyBinaryProperties, this);
         }
-        return new ExternalPropertyIterator(filteredList);
+        return new ExternalPropertyIterator(filteredList, lazyProperties, lazyBinaryProperties, this);
     }
 
     public Item getPrimaryItem() throws ItemNotFoundException, RepositoryException {
@@ -511,7 +558,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public PropertyIterator getReferences() throws RepositoryException {
-        return new ExternalPropertyIterator(new HashMap<String, ExternalPropertyImpl>());
+        return new ExternalPropertyIterator(new HashMap<String, ExternalPropertyImpl>(), this);
     }
 
     public boolean hasNode(String s) throws RepositoryException {
@@ -725,11 +772,29 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 filteredList.put(entry.getKey(), entry.getValue());
             }
         }
+        Set<String> lazyProperties = null;
+        if (data.getLazyProperties() != null) {
+            lazyProperties = new HashSet<String>();
+            for (String propertyName : data.getLazyProperties()) {
+                if (ChildrenCollectorFilter.matches(propertyName, nameGlobs)) {
+                    lazyProperties.add(propertyName);
+                }
+            }
+        }
+        Set<String> lazyBinaryProperties = null;
+        if (data.getLazyBinaryProperties() != null) {
+            lazyBinaryProperties = new HashSet<String>();
+            for (String propertyName : data.getLazyBinaryProperties()) {
+                if (ChildrenCollectorFilter.matches(propertyName, nameGlobs)) {
+                    lazyBinaryProperties.add(propertyName);
+                }
+            }
+        }
         Node n = getExtensionNode(false);
         if (n != null) {
-            return new ExternalPropertyIterator(filteredList, n.getProperties(nameGlobs));
+            return new ExternalPropertyIterator(filteredList, n.getProperties(nameGlobs), lazyProperties, lazyBinaryProperties, this);
         }
-        return new ExternalPropertyIterator(filteredList);
+        return new ExternalPropertyIterator(filteredList, lazyProperties, lazyBinaryProperties, this);
     }
 
     public String getIdentifier() throws RepositoryException {
@@ -749,15 +814,15 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public PropertyIterator getReferences(String name) throws RepositoryException {
-        return new ExternalPropertyIterator(new HashMap<String, ExternalPropertyImpl>());
+        return new ExternalPropertyIterator(new HashMap<String, ExternalPropertyImpl>(), this);
     }
 
     public PropertyIterator getWeakReferences() throws RepositoryException {
-        return new ExternalPropertyIterator(new HashMap<String, ExternalPropertyImpl>());
+        return new ExternalPropertyIterator(new HashMap<String, ExternalPropertyImpl>(), this);
     }
 
     public PropertyIterator getWeakReferences(String name) throws RepositoryException {
-        return new ExternalPropertyIterator(new HashMap<String, ExternalPropertyImpl>());
+        return new ExternalPropertyIterator(new HashMap<String, ExternalPropertyImpl>(), this);
     }
 
     public void setPrimaryType(String nodeTypeName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
@@ -850,27 +915,48 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         private PropertyIterator extensionPropertiesIterator;
         private Property nextProperty = null;
         private Map<String, ExternalPropertyImpl> externalProperties;
+        private Set<String> lazyProperties;
+        private Iterator<String> lazyPropertiesIterator;
+        private Set<String> lazyBinaryProperties;
+        private Iterator<String> lazyBinaryPropertiesIterator;
+        private ExternalNodeImpl node;
 
-        ExternalPropertyIterator(Map<String, ExternalPropertyImpl> externalPropertyMap) {
-            this(externalPropertyMap, null);
+        ExternalPropertyIterator(Map<String, ExternalPropertyImpl> externalPropertyMap, Set<String> lazyProperties,
+                                 Set<String> lazyBinaryProperties, ExternalNodeImpl node) {
+            this(externalPropertyMap, null, lazyProperties, lazyBinaryProperties, node);
         }
 
-        ExternalPropertyIterator(Map<String, ExternalPropertyImpl> externalPropertyMap, PropertyIterator extensionPropertiesIterator) {
+        ExternalPropertyIterator(Map<String, ExternalPropertyImpl> externalPropertyMap, ExternalNodeImpl node) {
+            this(externalPropertyMap, null, null, null, node);
+        }
+
+        ExternalPropertyIterator(Map<String, ExternalPropertyImpl> externalPropertyMap,
+                                 PropertyIterator extensionPropertiesIterator, Set<String> lazyProperties,
+                                 Set<String> lazyBinaryProperties, ExternalNodeImpl node) {
             this.extensionPropertiesIterator = extensionPropertiesIterator;
             this.externalProperties = new HashMap<String, ExternalPropertyImpl>(externalPropertyMap);
+            if (lazyProperties != null) {
+                this.lazyProperties = new HashSet<String>(lazyProperties);
+            }
+            if (lazyBinaryProperties != null) {
+                this.lazyBinaryProperties = new HashSet<String>(lazyBinaryProperties);
+            }
+            this.node = node;
             fetchNext();
         }
 
-        private Property fetchNext() {
+        private void fetchNext() {
             nextProperty = null;
             if (extensionPropertiesIterator != null) {
                 while (extensionPropertiesIterator.hasNext()) {
                     Property next = extensionPropertiesIterator.nextProperty();
                     try {
                         if (canItemBeExtended(next.getDefinition())) {
-                            nextProperty = new ExtensionProperty(next, getPath() + "/" + next.getName(), session);
+                            nextProperty = new ExtensionProperty(next, getPath() + "/" + next.getName(), node.getSession());
                             externalProperties.remove(next.getName());
-                            return next;
+                            lazyProperties.remove(next.getName());
+                            lazyBinaryProperties.remove(next.getName());
+                            return;
                         }
                     } catch (RepositoryException e) {
                         e.printStackTrace();
@@ -882,9 +968,49 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             }
             if (it.hasNext()) {
                 nextProperty = it.next();
-                return nextProperty;
+                return;
             }
-            return null;
+            if (lazyPropertiesIterator == null && lazyProperties != null) {
+                lazyPropertiesIterator = lazyProperties.iterator();
+            }
+            if (lazyPropertiesIterator != null && lazyPropertiesIterator.hasNext()) {
+                String propertyName = lazyPropertiesIterator.next();
+                try {
+                    String[] values;
+                    if (externalProperties.containsKey("jcr:language")) {
+                        values = node.getSession().getI18nPropertyValues(data, propertyName, externalProperties.get("jcr:language").getString());
+                    } else {
+                        values = node.getSession().getPropertyValues(data, propertyName);
+                    }
+                    nextProperty = new ExternalPropertyImpl(new Name(propertyName, NodeTypeRegistry.getInstance().getNamespaces()), node, node.getSession());
+                    if (getPropertyDefinition(propertyName).isMultiple()) {
+                        nextProperty.setValue(values);
+                    } else if (values != null && values.length > 0) {
+                        nextProperty.setValue(values[0]);
+                    }
+                } catch (RepositoryException e) {
+                    e.printStackTrace();
+                }
+                return;
+            }
+            if (lazyBinaryPropertiesIterator == null && lazyBinaryProperties != null) {
+                lazyBinaryPropertiesIterator = lazyBinaryProperties.iterator();
+            }
+            if (lazyBinaryPropertiesIterator != null && lazyBinaryPropertiesIterator.hasNext()) {
+                String propertyName = lazyBinaryPropertiesIterator.next();
+                try {
+                    Binary[] values = node.getSession().getBinaryPropertyValues(data, propertyName);
+                    nextProperty = new ExternalPropertyImpl(new Name(propertyName, NodeTypeRegistry.getInstance().getNamespaces()), node, node.getSession());
+                    if (getPropertyDefinition(propertyName).isMultiple()) {
+                        ((ExternalPropertyImpl)nextProperty).setValue(values);
+                    } else if (values != null && values.length > 0) {
+                        nextProperty.setValue(values[0]);
+                    }
+                } catch (RepositoryException e) {
+                    e.printStackTrace();
+                }
+                return;
+            }
         }
 
         @Override

@@ -168,13 +168,20 @@ public class ExternalSessionImpl implements Session {
             String lang = StringUtils.substringAfterLast(path, "_");
             ExternalData parentObject = repository.getDataSource().getItemByPath(StringUtils.substringBeforeLast(path,
                     "/"));
-            if (parentObject.getI18nProperties() == null || !parentObject.getI18nProperties().containsKey(lang)) {
+            if ((parentObject.getI18nProperties() == null || !parentObject.getI18nProperties().containsKey(lang)) &&
+                    (parentObject.getLazyI18nProperties() == null || !parentObject.getLazyI18nProperties().containsKey(lang))) {
                 throw new PathNotFoundException(path);
             }
-            Map<String, String[]> i18nProps = new HashMap<String, String[]>(parentObject.getI18nProperties().get(lang));
+            Map<String, String[]> i18nProps = new HashMap<String, String[]>();
+            if (parentObject.getI18nProperties() != null && parentObject.getI18nProperties().containsKey(lang)) {
+                i18nProps.putAll(parentObject.getI18nProperties().get(lang));
+            }
             i18nProps.put("jcr:language", new String[]{lang});
             ExternalData i18n = new ExternalData("translation:" + lang + ":" + parentObject.getId(), path,
                     "jnt:translation", i18nProps);
+            if (parentObject.getLazyI18nProperties() != null && parentObject.getLazyI18nProperties().containsKey(lang)) {
+                i18n.setLazyProperties(parentObject.getLazyI18nProperties().get(lang));
+            }
             return new ExternalNodeImpl(i18n, this);
         }
         try {
@@ -191,24 +198,36 @@ public class ExternalSessionImpl implements Session {
             }
             ExternalData data = repository.getDataSource().getItemByPath(StringUtils.substringBeforeLast(path, "/"));
             String propertyName = StringUtils.substringAfterLast(path, "/");
-            ExternalPropertyImpl p = new ExternalPropertyImpl(new Name(propertyName, NodeTypeRegistry.getInstance().getNamespaces()),new ExternalNodeImpl(data,this),this);
-            if (data.getProperties() != null && data.getProperties().get(propertyName) != null) {
-                p.setValue(data.getProperties().get(StringUtils.substringAfterLast(path, "/")));
-                return p;
-            } else if (data.getBinaryProperties() != null && data.getBinaryProperties().get(propertyName) != null) {
-                Binary[] binaries = data.getBinaryProperties().get(propertyName);
-                if (data.getBinaryProperties() != null && binaries != null) {
-                    Value[] values = new Value[binaries.length];
-                    for (int i = 0; i < binaries.length; i++) {
-                        values[i] = new ExternalValueImpl(binaries[i]);
-                    }
-                    p.setValue(values);
-                    return p;
-                }
-            }
-            throw new PathNotFoundException(e);
+            return new ExternalNodeImpl(data, this).getProperty(propertyName);
         }
 
+    }
+
+    protected String[] getPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
+        ExternalDataSource dataSource = repository.getDataSource();
+        if (dataSource instanceof ExternalDataSource.LazyProperty) {
+            return ((ExternalDataSource.LazyProperty) dataSource).getPropertyValues(data, propertyName);
+        } else {
+            throw new PathNotFoundException(repository.getProviderKey() + " doesn't support lazy properties");
+        }
+    }
+
+    protected String[] getI18nPropertyValues(ExternalData data, String lang, String propertyName) throws PathNotFoundException {
+        ExternalDataSource dataSource = repository.getDataSource();
+        if (dataSource instanceof ExternalDataSource.LazyProperty) {
+            return ((ExternalDataSource.LazyProperty) dataSource).getI18nPropertyValues(data, lang, propertyName);
+        } else {
+            throw new PathNotFoundException(repository.getProviderKey() + " doesn't support lazy properties");
+        }
+    }
+
+    protected Binary[] getBinaryPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
+        ExternalDataSource dataSource = repository.getDataSource();
+        if (dataSource instanceof ExternalDataSource.LazyProperty) {
+            return ((ExternalDataSource.LazyProperty) dataSource).getBinaryPropertyValues(data, propertyName);
+        } else {
+            throw new PathNotFoundException(repository.getProviderKey() + " doesn't support lazy properties");
+        }
     }
 
     @Override

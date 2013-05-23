@@ -43,6 +43,7 @@ package org.jahia.modules.external;
 import javax.jcr.Binary;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * External Data. Encapsulation of data for external provider
@@ -56,6 +57,9 @@ public class ExternalData {
     private Map<String,String[]> properties;
     private Map<String,Map<String,String[]>> i18nProperties;
     private Map<String,Binary[]> binaryProperties;
+    private Set<String> lazyProperties;
+    private Set<String> lazyBinaryProperties;
+    private Map<String, Set<String>> lazyI18nProperties;
 
     public ExternalData(String id, String path, String type, Map<String, String[]> properties) {
         this.id = id;
@@ -102,5 +106,29 @@ public class ExternalData {
 
     public void setMixin(List<String> mixin) {
         this.mixin = mixin;
+    }
+
+    public Set<String> getLazyProperties() {
+        return lazyProperties;
+    }
+
+    public void setLazyProperties(Set<String> lazyProperties) {
+        this.lazyProperties = lazyProperties;
+    }
+
+    public Set<String> getLazyBinaryProperties() {
+        return lazyBinaryProperties;
+    }
+
+    public void setLazyBinaryProperties(Set<String> lazyBinaryProperties) {
+        this.lazyBinaryProperties = lazyBinaryProperties;
+    }
+
+    public Map<String, Set<String>> getLazyI18nProperties() {
+        return lazyI18nProperties;
+    }
+
+    public void setLazyI18nProperties(Map<String, Set<String>> lazyI18nProperties) {
+        this.lazyI18nProperties = lazyI18nProperties;
     }
 }

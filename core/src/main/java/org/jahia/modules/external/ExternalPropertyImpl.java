@@ -119,6 +119,22 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
         }
     }
 
+    public void setValue(Binary[] binaries) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        if (binaries != null) {
+            Value[] v = new Value[binaries.length];
+            for (int i = 0; i < binaries.length; i++) {
+                if (binaries[i] != null) {
+                    v[i] = getSession().getValueFactory().createValue(binaries[i]);
+                } else {
+                    v[i] = null;
+                }
+            }
+            setValue(v);
+        } else {
+            remove();
+        }
+    }
+
     public void setValue(InputStream inputStream) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         if (inputStream != null) {
             Binary b = null;

@@ -90,7 +90,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author david
  * @since 6.7
  */
-public class ModulesDataSource extends VFSDataSource implements ExternalDataSource.Initializable {
+public class ModulesDataSource extends VFSDataSource implements ExternalDataSource.Initializable, ExternalDataSource.LazyProperty {
 
     private static final Predicate FILTER_OUT_FILES_WITH_STARTING_DOT = new Predicate() {
         @Override
@@ -304,25 +304,20 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 String v = module.getVersion().toString();
                 data.getProperties().put("j:title", new String[]{name + " (" + v + ")"});
             } else if (type.isNodeType("jnt:editableFile")) {
-                // set source code
-                InputStream is = null;
-                try {
-                    is = getFile(path).getContent().getInputStream();
-                    java.nio.charset.Charset c = "jnt:resourceBundleFile".equals(data.getType()) ? Charsets.ISO_8859_1:Charsets.UTF_8;
-                    String[] propertyValue = {IOUtils.toString(is, c)};
-                    data.getProperties().put("sourceCode", propertyValue);
-                    data.getProperties().put("nodeTypeName",
-                            new String[] { StringUtils.replace(StringUtils.substringBetween(path, "/"), "_", ":") });
-                } catch (Exception e) {
-                    logger.error("Failed to read source code", e);
-                } finally {
-                    IOUtils.closeQuietly(is);
+                Set<String> lazyProperties = data.getLazyProperties();
+                if (lazyProperties == null) {
+                    lazyProperties = new HashSet<String>();
+                    data.setLazyProperties(lazyProperties);
                 }
+                lazyProperties.add("sourceCode");
+
+                data.getProperties().put("nodeTypeName",
+                        new String[] { StringUtils.replace(StringUtils.substringBetween(path, "/"), "_", ":") });
 
                 // set Properties
                 if (type.isNodeType(Constants.JAHIAMIX_VIEWPROPERTIES)) {
                     Properties properties = new SortedProperties();
-                    is = null;
+                    InputStream is = null;
                     try {
                         is = getFile(StringUtils.substringBeforeLast(path,".") + PROPERTIES_EXTENSION).getContent().getInputStream();
                         properties.load(is);
@@ -347,7 +342,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     }
                 }
             } else {
-                String ext = StringUtils.substringAfterLast(path,".");
+                String ext = StringUtils.substringAfterLast(path, ".");
                 Map<?, ?> extensions = (Map<?, ?>) SpringContextSingleton.getBean("fileExtensionIcons");
                 if ("img".equals(extensions.get(ext))) {
                     data.setMixin(JMIX_IMAGE_LIST);
@@ -1622,6 +1617,34 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             }
         }
 
+    }
+
+    @Override
+    public String[] getPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
+        if ("sourceCode".equals(propertyName)) {
+            InputStream is = null;
+            try {
+                is = getFile(data.getPath()).getContent().getInputStream();
+                java.nio.charset.Charset c = "jnt:resourceBundleFile".equals(data.getType()) ? Charsets.ISO_8859_1:Charsets.UTF_8;
+                String[] propertyValues = {IOUtils.toString(is, c)};
+                return propertyValues;
+            } catch (Exception e) {
+                logger.error("Failed to read source code", e);
+            } finally {
+                IOUtils.closeQuietly(is);
+            }
+        }
+        throw new PathNotFoundException(data.getPath() + "/" + propertyName);
+    }
+
+    @Override
+    public String[] getI18nPropertyValues(ExternalData data, String lang, String propertyName) throws PathNotFoundException {
+        throw new PathNotFoundException(data.getPath() + "/" + propertyName);
+    }
+
+    @Override
+    public Binary[] getBinaryPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
+        throw new PathNotFoundException(data.getPath() + "/" + propertyName);
     }
 
     class SortedProperties extends Properties {
