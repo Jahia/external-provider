@@ -52,15 +52,14 @@ import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.Node;
-import javax.jcr.RepositoryException;
-import javax.jcr.UnsupportedRepositoryOperationException;
+import javax.jcr.*;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.query.InvalidQueryException;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.QueryResult;
 import javax.jcr.query.qom.*;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -106,10 +105,12 @@ public class ExternalQueryManager implements QueryManager {
 
         @Override
         protected QueryObjectModel createQuery(QueryObjectModelTree qomTree) throws InvalidQueryException, RepositoryException {
-            if (!isNodeTypeSupported(qomTree)) {
+            boolean nodeTypeSupported = isNodeTypeSupported(qomTree);
+            boolean hasExtension = workspace.getSession().getExtensionSession() != null;
+            if (!nodeTypeSupported && !hasExtension) {
                 return null;
             }
-            return new ExecutableExternalQuery(qomTree.getSource(), qomTree.getConstraint(), qomTree.getOrderings(), qomTree.getColumns());
+            return new ExecutableExternalQuery(qomTree.getSource(), qomTree.getConstraint(), qomTree.getOrderings(), qomTree.getColumns(), nodeTypeSupported, hasExtension);
         }
 
         private boolean isNodeTypeSupported(QueryObjectModelTree qomTree) throws NoSuchNodeTypeException {
@@ -139,26 +140,85 @@ public class ExternalQueryManager implements QueryManager {
     }
 
     class ExecutableExternalQuery extends ExternalQuery {
-        
-        ExecutableExternalQuery(Source source, Constraint constraints, Ordering[] orderings, Column[] columns) {
+        private boolean nodeTypeSupported;
+        private boolean hasExtension;
+
+
+        ExecutableExternalQuery(Source source, Constraint constraints, Ordering[] orderings, Column[] columns, boolean nodeTypeSupported, boolean hasExtension) {
             super(source, constraints, orderings, columns);
+            this.nodeTypeSupported = nodeTypeSupported;
+            this.hasExtension = hasExtension;
         }
         
         @Override
         public QueryResult execute() throws InvalidQueryException, RepositoryException {
-            ExternalDataSource dataSource = workspace.getSession().getRepository().getDataSource();
             List<String> results = null;
-            try {
-                results = ((ExternalDataSource.Searchable) dataSource).search(this);
-                if (getLimit() > -1 && results.size() > getLimit()) {
-                    results = results.subList(0, (int) getLimit());
+            if (nodeTypeSupported) {
+                ExternalDataSource dataSource = workspace.getSession().getRepository().getDataSource();
+                try {
+                    results = ((ExternalDataSource.Searchable) dataSource).search(this);
+                    if (getLimit() > -1 && results.size() > getLimit()) {
+                        results = results.subList(0, (int) getLimit());
+                    }
+                } catch (UnsupportedRepositoryOperationException e) {
+                    logger.warn("Unsupported query ", e);
                 }
-            } catch (UnsupportedRepositoryOperationException e) {
-                logger.warn("Unsupported query ", e);
-                results = Collections.emptyList();
+            }
+            if (hasExtension) {
+                Session extSession = workspace.getSession().getExtensionSession();
+                QueryManager queryManager = extSession.getWorkspace().getQueryManager();
+                QueryObjectModelFactory qomFactory = queryManager.getQOMFactory();
+                String mountPoint = workspace.getSession().getRepository().getStoreProvider().getMountPoint();
+                Constraint convertedConstraint = convertExistingPathConstraints(getConstraint(), mountPoint, qomFactory);
+                convertedConstraint = addPathConstraints(convertedConstraint, getSource(), mountPoint, qomFactory);
+                Query q = qomFactory.createQuery(getSource(), convertedConstraint, getOrderings(), getColumns());
+                results = results == null ? new ArrayList<String>() : new ArrayList<String>(results);
+                NodeIterator nodes = q.execute().getNodes();
+                while (nodes.hasNext()) {
+                    Node node = (Node) nodes.next();
+                    results.add(node.getPath().substring(mountPoint.length()));
+                }
             }
             return new ExternalQueryResult(this, results, workspace);
         }
+
+        private Constraint addPathConstraints(Constraint constraint, Source source, String mountPoint, QueryObjectModelFactory f) throws RepositoryException {
+            if (source instanceof Selector) {
+                DescendantNode descendantNode = f.descendantNode(((Selector) source).getSelectorName(), mountPoint);
+                if (constraint == null) {
+                    constraint = descendantNode;
+                } else {
+                    constraint = f.and(constraint, descendantNode);
+                }
+            } else if (source instanceof Join) {
+                constraint = addPathConstraints(constraint, ((Join) source).getLeft(), mountPoint, f);
+                constraint = addPathConstraints(constraint, ((Join) source).getRight(), mountPoint, f);
+            }
+            return constraint;
+        }
+
+        private Constraint convertExistingPathConstraints(Constraint constraint, String mountPoint, QueryObjectModelFactory f) throws RepositoryException {
+            if (constraint instanceof ChildNode) {
+                String root = ((ChildNode)constraint).getParentPath();
+                // Path constraint is under mount point -> create new constraint with local path
+                return f.childNode(((ChildNode)constraint).getSelectorName(), mountPoint + "/" + root);
+            } else if (constraint instanceof DescendantNode) {
+                String root = ((DescendantNode)constraint).getAncestorPath();
+                return f.descendantNode(((DescendantNode) constraint).getSelectorName(), mountPoint + "/" + root);
+            } else if (constraint instanceof And) {
+                Constraint c1 = convertExistingPathConstraints(((And) constraint).getConstraint1(), mountPoint, f);
+                Constraint c2 = convertExistingPathConstraints(((And) constraint).getConstraint2(), mountPoint, f);
+                return f.and(c1,c2);
+            } else if (constraint instanceof Or) {
+                Constraint c1 = convertExistingPathConstraints(((Or) constraint).getConstraint1(), mountPoint, f);
+                Constraint c2 = convertExistingPathConstraints(((Or) constraint).getConstraint2(), mountPoint, f);
+                return f.or(c1, c2);
+            } else if (constraint instanceof Not) {
+                return f.not(convertExistingPathConstraints(((Not) constraint).getConstraint(), mountPoint, f));
+            }
+            return constraint;
+        }
+
 
     }
 }
