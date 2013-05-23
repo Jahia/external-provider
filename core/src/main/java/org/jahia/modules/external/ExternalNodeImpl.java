@@ -188,13 +188,24 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             throw new UnsupportedRepositoryOperationException();
         }
         boolean hasProperty = false;
-        if (data.getBinaryProperties() != null) {
-            hasProperty = data.getBinaryProperties().containsKey(name) || data.getProperties().containsKey(name);
+        if (data.getBinaryProperties() != null && data.getBinaryProperties().containsKey(name)) {
+            hasProperty = true;
             data.getBinaryProperties().remove(name);
         }
-        if (hasProperty) {
+        if (data.getProperties() != null && data.getProperties().containsKey(name)) {
+            hasProperty = true;
             data.getProperties().remove(name);
             properties.remove(name);
+        }
+        if (data.getLazyBinaryProperties() != null && data.getLazyBinaryProperties().contains(name)) {
+            hasProperty = true;
+            data.getLazyBinaryProperties().remove(name);
+        }
+        if (data.getLazyProperties() != null && data.getLazyProperties().contains(name)) {
+            hasProperty = true;
+            data.getLazyProperties().remove(name);
+        }
+        if (hasProperty) {
             session.getChangedData().put(getPath(), data);
         }
     }
@@ -566,7 +577,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public boolean hasProperty(String relPath) throws RepositoryException {
-        return properties.containsKey(relPath);
+        return properties.containsKey(relPath) || (data.getLazyProperties() != null && data.getLazyProperties().contains(relPath)) || (data.getLazyBinaryProperties() != null && data.getLazyBinaryProperties().contains(relPath));
     }
 
     public boolean hasNodes() throws RepositoryException {
@@ -574,7 +585,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public boolean hasProperties() throws RepositoryException {
-        return !properties.isEmpty();
+        return !properties.isEmpty() || (data.getLazyProperties() != null && !data.getLazyProperties().isEmpty()) || (data.getLazyBinaryProperties() != null && !data.getLazyBinaryProperties().isEmpty());
     }
 
     public NodeType getPrimaryNodeType() throws RepositoryException {
