@@ -128,6 +128,26 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                         session.getValueFactory().createValue(getIdentifier())));
     }
 
+    private ExtendedNodeDefinition getChildNodeDefinition(String name, String childType) throws RepositoryException {
+        Map<String, ExtendedNodeDefinition> nodeDefinitionsAsMap = getExtendedPrimaryNodeType().getChildNodeDefinitionsAsMap();
+        if (nodeDefinitionsAsMap.containsKey(name)) {
+            return nodeDefinitionsAsMap.get(name);
+        }
+        for (NodeType nodeType : getMixinNodeTypes()) {
+            nodeDefinitionsAsMap = ((ExtendedNodeType)nodeType).getChildNodeDefinitionsAsMap();
+            if (nodeDefinitionsAsMap.containsKey(name)) {
+                return nodeDefinitionsAsMap.get(name);
+            }
+        }
+        ExtendedNodeType childTypeNT = NodeTypeRegistry.getInstance().getNodeType(childType);
+        for (Map.Entry<String, ExtendedNodeDefinition> entry : getExtendedPrimaryNodeType().getUnstructuredChildNodeDefinitions().entrySet()) {
+            if (childTypeNT.isNodeType(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
     private ExtendedPropertyDefinition getPropertyDefinition(String name) throws RepositoryException {
         Map<String, ExtendedPropertyDefinition> propertyDefinitionsAsMap = getExtendedPrimaryNodeType().getPropertyDefinitionsAsMap();
         if (propertyDefinitionsAsMap.containsKey(name)) {
@@ -206,18 +226,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
         Node extendedNode = getExtensionNode(true);
-        if (extendedNode != null) {
-            boolean perform = false;
-            for (String type : getSession().getExtensionAllowedTypes()) {
-                if (NodeTypeRegistry.getInstance().getNodeType(primaryNodeTypeName).isNodeType(type)) {
-                    perform = true;
-                    break;
-                }
-            }
-            if (perform) {
-                Node n = extendedNode.addNode(relPath, primaryNodeTypeName);
-                return new ExtensionNode(n,getPath() + "/" + relPath,getSession());
-            }
+        if (extendedNode != null && canItemBeExtended(getChildNodeDefinition(relPath, primaryNodeTypeName))) {
+            Node n = extendedNode.addNode(relPath, primaryNodeTypeName);
+            return new ExtensionNode(n,getPath() + "/" + relPath,getSession());
         }
 
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
@@ -656,8 +667,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (nodeDefinition != null) {
             return nodeDefinition;
         }
-        for (ExtendedNodeDefinition extendedNodeDefinition : parentNodeType.getUnstructuredChildNodeDefinitions().values()) {
-            return extendedNodeDefinition;
+        for (Map.Entry<String, ExtendedNodeDefinition> entry : parentNodeType.getUnstructuredChildNodeDefinitions().entrySet()) {
+            if (isNodeType(entry.getKey())) {
+                return entry.getValue();
+            }
         }
         return null;
     }
@@ -887,12 +900,17 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     private boolean canItemBeExtended(ItemDefinition definition) throws RepositoryException {
+        if (definition == null) {
+            throw new ConstraintViolationException();
+        }
+
         NodeType type = definition.getDeclaringNodeType();
 
-        List<String> extensionAllowedTypes = getSession().getExtensionAllowedTypes();
-        for (String extensionAllowedType : extensionAllowedTypes) {
-            if (type.isNodeType(extensionAllowedType)) {
-                return true;
+        Map<String,List<String>> overridableProperties = getSession().getOverridableProperties();
+        for (Map.Entry<String, List<String>> entry : overridableProperties.entrySet()) {
+            if ((entry.getKey().equals("*") || type.getName().equals(entry.getKey())) &&
+                    (entry.getValue().contains("*") || entry.getValue().contains(definition.getName()))) {
+                    return true;
             }
         }
 
@@ -900,7 +918,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             Node ext = getExtensionNode(false);
             if (ext != null) {
                 for (NodeType assignedMixin : ext.getMixinNodeTypes()) {
-                    if (type.isNodeType(assignedMixin.getName())) {
+                    if (assignedMixin.isNodeType(type.getName())) {
                         return true;
                     }
                 }
@@ -1094,7 +1112,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 while (extensionNodeIterator.hasNext()) {
                     Node n = extensionNodeIterator.nextNode();
                     try {
-                        if (!list.contains(n.getName())) {
+                        if (canItemBeExtended(n.getDefinition()) && !list.contains(n.getName())) {
                             nextNode = new ExtensionNode(n,getPath() + "/" + n.getName(),getSession());
                             return  nextNode;
                         }

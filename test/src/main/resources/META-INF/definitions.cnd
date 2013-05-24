@@ -19,13 +19,13 @@
 
 [jtestmix:item] mixin
 
-[jtestnt:catalog] > nt:base
+[jtestnt:catalog] > jnt:contentFolder
  + * (jtestnt:directory)
  
-[jtestnt:directory] > nt:base
+[jtestnt:directory] > jnt:contentFolder
  + * (jtestmix:item)
 
-[jtestnt:airline] > nt:base, jtestmix:item
+[jtestnt:airline] > jnt:content, jmix:basicContent, jtestmix:item
  - airline (string)
  - airline_full (string)
  - basic_rate (double)
@@ -36,12 +36,12 @@
  - business_seats (long)
  - firstclass_seats (long)
 
-[jtestnt:country] > nt:base, jtestmix:item
+[jtestnt:country] > jnt:content, jmix:basicContent, jtestmix:item
  - country_iso_code (string)
  - country (string)
  - region (string)
 
-[jtestnt:city] > nt:base, jtestmix:item
+[jtestnt:city] > jnt:content, jmix:basicContent, jtestmix:item
  - city_id (long)
  - city_name (string)
  - country (string)
@@ -50,7 +50,7 @@
  - country_iso_code (string)
 // we can try mapping country here as a reference
 
-[jtestnt:flight] > nt:base, jtestmix:item
+[jtestnt:flight] > jnt:content, jmix:basicContent,  jtestmix:item
  - flight_id (string)
  - segment_number (long)
  - orig_airport (string)

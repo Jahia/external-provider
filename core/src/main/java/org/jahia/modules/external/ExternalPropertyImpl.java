@@ -41,6 +41,8 @@
 package org.jahia.modules.external;
 
 import org.apache.jackrabbit.value.BinaryImpl;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
+import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.Name;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 
@@ -53,6 +55,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.Calendar;
+import java.util.Map;
 
 /**
  * Implementation of the {@link javax.jcr.Property} for the {@link org.jahia.modules.external.ExternalData}.
@@ -63,25 +66,25 @@ import java.util.Calendar;
  */
 public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
 
-    private Node node;
+    private ExternalNodeImpl node;
     private Name name;
     private Value[] values;
     private Value value;
 
-    public ExternalPropertyImpl(Name name, Node node, ExternalSessionImpl session, Value value) {
+    public ExternalPropertyImpl(Name name, ExternalNodeImpl node, ExternalSessionImpl session, Value value) {
         super(session);
         this.name = name;
         this.node = node;
         this.value = value;
     }
 
-    public ExternalPropertyImpl(Name name, Node node, ExternalSessionImpl session, Value[] values) {
+    public ExternalPropertyImpl(Name name, ExternalNodeImpl node, ExternalSessionImpl session, Value[] values) {
         super(session);
         this.name = name;
         this.node = node;
         this.values = values;
     }
-    public ExternalPropertyImpl(Name name, Node node, ExternalSessionImpl session) {
+    public ExternalPropertyImpl(Name name, ExternalNodeImpl node, ExternalSessionImpl session) {
         super(session);
         this.name = name;
         this.node = node;
@@ -264,7 +267,17 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public PropertyDefinition getDefinition() throws RepositoryException {
-        return NodeTypeRegistry.getInstance().getNodeType(node.getPrimaryNodeType().getName()).getPropertyDefinition(name.toString());
+        ExtendedNodeType parentNodeType = node.getExtendedPrimaryNodeType();
+        ExtendedPropertyDefinition propertyDefinition = parentNodeType.getPropertyDefinition(getName());
+        if (propertyDefinition != null) {
+            return propertyDefinition;
+        }
+        for (Map.Entry<Integer, ExtendedPropertyDefinition> entry : parentNodeType.getUnstructuredPropertyDefinitions().entrySet()) {
+            if (entry.getKey() == getType()) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     public int getType() throws RepositoryException {

@@ -73,6 +73,7 @@ public class ExternalSessionImpl implements Session {
     private Map<String, List<String>> orderedData = new LinkedHashMap<String, List<String>>();
     private Session extensionSession;
     private List<String> extensionAllowedTypes;
+    private Map<String,List<String>> overridableProperties;
 
     public ExternalSessionImpl(ExternalRepositoryImpl repository, Credentials credentials) {
         this.repository = repository;
@@ -493,11 +494,29 @@ public class ExternalSessionImpl implements Session {
 
     public List<String> getExtensionAllowedTypes() throws RepositoryException {
         if (extensionAllowedTypes == null) {
-            extensionAllowedTypes = getRepository().getStoreProvider().getExtensionAllowedTypes();
+            extensionAllowedTypes = getRepository().getStoreProvider().getExtendableTypes();
             if (extensionAllowedTypes == null) {
                 extensionAllowedTypes = Arrays.asList("nt:base");
             }
         }
         return extensionAllowedTypes;
+    }
+
+    public Map<String,List<String>> getOverridableProperties() {
+        if (overridableProperties == null) {
+            overridableProperties = new HashMap<String,List<String>>();
+            List<String> overridablePropertiesString = getRepository().getStoreProvider().getOverridableItems();
+            if (overridablePropertiesString != null) {
+                for (String s : overridablePropertiesString) {
+                    String nodeType = StringUtils.substringBefore(s,".");
+                    String property = StringUtils.substringAfter(s,".");
+                    if (!overridableProperties.containsKey(nodeType)) {
+                        overridableProperties.put(nodeType, new ArrayList<String>());
+                    }
+                    overridableProperties.get(nodeType).add(property);
+                }
+            }
+        }
+        return overridableProperties;
     }
 }

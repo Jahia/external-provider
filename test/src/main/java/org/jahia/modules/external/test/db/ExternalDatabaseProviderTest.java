@@ -347,7 +347,6 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     public void testExtensionProperty() throws Exception {
         JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
         JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
-        assertEquals("Previous value invalid", 5, AA.getProperty("firstclass_seats").getLong());
         AA.setProperty("firstclass_seats", 10);
         assertEquals("Property not updated", 10, AA.getProperty("firstclass_seats").getLong());
     }

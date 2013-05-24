@@ -70,7 +70,8 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     private JCRStoreProvider extensionProvider;
 
-    private List<String> extensionAllowedTypes;
+    private List<String> extendableTypes;
+    private List<String> overridableItems;
 
     @Override
     protected Repository createRepository() {
@@ -199,12 +200,20 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         this.extensionProvider = extensionProvider;
     }
 
-    public List<String> getExtensionAllowedTypes() {
-        return extensionAllowedTypes;
+    public List<String> getExtendableTypes() {
+        return extendableTypes;
     }
 
-    public void setExtensionAllowedTypes(List<String> extensionAllowedTypes) {
-        this.extensionAllowedTypes = extensionAllowedTypes;
+    public void setExtendableTypes(List<String> extendableTypes) {
+        this.extendableTypes = extendableTypes;
+    }
+
+    public List<String> getOverridableItems() {
+        return overridableItems;
+    }
+
+    public void setOverridableItems(List<String> overridableItems) {
+        this.overridableItems = overridableItems;
     }
 
     /**

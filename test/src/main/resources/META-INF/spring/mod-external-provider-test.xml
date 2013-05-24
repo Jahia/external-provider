@@ -23,7 +23,7 @@
         <property name="mountPoint" value="/external-database-generic"/>
         <property name="identifierMappingService" ref="ExternalProviderIdentifierMappingService"/>
         <property name="extensionProvider" ref="DefaulJCRStoreProvider"/>
-        <property name="extensionAllowedTypes">
+        <property name="extendableTypes">
             <list>
                 <value>nt:base</value>
             </list>
@@ -38,9 +38,15 @@
         <property name="mountPoint" value="/external-database-mapped"/>
         <property name="identifierMappingService" ref="ExternalProviderIdentifierMappingService"/>
         <property name="extensionProvider" ref="DefaulJCRStoreProvider"/>
-        <property name="extensionAllowedTypes">
+        <property name="extendableTypes">
             <list>
                 <value>nt:base</value>
+            </list>
+        </property>
+        <property name="overridableItems">
+            <list>
+                <value>jtestnt:directory.*</value>
+                <value>jtestnt:airline.firstclass_seats</value>
             </list>
         </property>
         <property name="dataSource">
