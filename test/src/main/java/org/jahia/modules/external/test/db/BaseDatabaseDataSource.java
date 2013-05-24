@@ -44,11 +44,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
@@ -124,18 +120,16 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
         if (path.startsWith("/") && !path.contains(":")) {
             String type = getNodeTypeName(path);
 
-            Map<String, String[]> props = null;
             if (type == getSchemaNodeType() || type == getTableNodeType()) {
-                props = Collections.emptyMap();
                 if (type == getTableNodeType()) {
                     if (!getTableNames().contains(path.substring(1))) {
                         throw new PathNotFoundException(path);
                     }
                 }
+                return new ExternalData(path, path, type, Collections.<String, String[]>emptyMap());
             } else {
-                props = getPropertiesForRow(path);
+                return getPropertiesForRow(path, type);
             }
-            return new ExternalData(path, path, type, props);
         }
         throw new PathNotFoundException(path);
     }
@@ -160,19 +154,17 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
      * 
      * @param path
      *            the node path which corresponds to a table row
-     * @return the map with property values for the specified row
+     * @return the ExternalData with property values for the specified row
      * @throws PathNotFoundException
      *             if the row cannot be found or the table cannot be handled by this data source
      */
-    private Map<String, String[]> getPropertiesForRow(String path) throws PathNotFoundException {
+    private ExternalData getPropertiesForRow(String path, String type) throws PathNotFoundException {
         String[] pathTokens = StringUtils.split(path, '/');
         if (pathTokens.length != 2) {
             throw new PathNotFoundException(path);
         }
         String table = pathTokens[0];
         String rowId = pathTokens[1];
-
-        Map<String, String[]> props = Collections.<String, String[]> emptyMap();
 
         Connection conn = null;
         PreparedStatement stmt = null;
@@ -190,7 +182,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
                     pos++;
                 }
                 if (pos == targetPos) {
-                    props = getRowProperties(table, rs);
+                    return getRowProperties(path, type, table, rs);
                 } else {
                     throw new PathNotFoundException(path);
                 }
@@ -217,7 +209,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
                 }
                 rs = stmt.executeQuery();
                 if (rs.next()) {
-                    props = getRowProperties(table, rs);
+                    return getRowProperties(path, type, table, rs);
                 } else {
                     throw new PathNotFoundException(path);
                 }
@@ -228,8 +220,6 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
         } finally {
             DbUtility.close(conn, stmt, rs);
         }
-
-        return props;
     }
 
     /**
@@ -318,7 +308,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
      */
     protected abstract String getRowNodeTypeName(String tableName) throws PathNotFoundException;
 
-    protected abstract Map<String, String[]> getRowProperties(String table, ResultSet rs) throws SQLException,
+    protected abstract ExternalData getRowProperties(String path, String type, String table, ResultSet rs) throws SQLException,
             PathNotFoundException;
 
     /**

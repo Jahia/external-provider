@@ -38,14 +38,14 @@
 
 [jtestnt:country] > jnt:content, jmix:basicContent, jtestmix:item
  - country_iso_code (string)
- - country (string)
+ - country (string) i18n
  - region (string)
 
 [jtestnt:city] > jnt:content, jmix:basicContent, jtestmix:item
  - city_id (long)
- - city_name (string)
+ - city_name (string, richtext) i18n
  - country (string)
- - airport (string)
+ - airport (string, richtext)
  - language (string)
  - country_iso_code (string)
 // we can try mapping country here as a reference

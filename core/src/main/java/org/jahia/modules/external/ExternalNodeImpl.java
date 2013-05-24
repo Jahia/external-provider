@@ -439,12 +439,16 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public NodeIterator getNodes() throws RepositoryException {
-        List<String> l = session.getRepository().getDataSource().getChildren(getPath());
+        List<String> l = new ArrayList<String>(session.getRepository().getDataSource().getChildren(getPath()));
+        Set<String> languages = new HashSet<String>();
         if (data.getI18nProperties() != null) {
-            l = new ArrayList<String>(l);
-            for (String lang : data.getI18nProperties().keySet()) {
-                l.add("j:translation_"+lang);
-            }
+            languages.addAll(data.getI18nProperties().keySet());
+        }
+        if (data.getLazyI18nProperties() != null) {
+            languages.addAll(data.getLazyI18nProperties().keySet());
+        }
+        for (String lang : languages) {
+            l.add("j:translation_" + lang);
         }
 
         Node n = getExtensionNode(false);
@@ -462,13 +466,19 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 filteredList.add(path);
             }
         }
+        Set<String> languages = new HashSet<String>();
         if (data.getI18nProperties() != null) {
-            for (String lang : data.getI18nProperties().keySet()) {
-                if (ChildrenCollectorFilter.matches("j:translation_"+lang,namePattern)) {
-                    filteredList.add("j:translation_"+lang);
-                }
+            languages.addAll(data.getI18nProperties().keySet());
+        }
+        if (data.getLazyI18nProperties() != null) {
+            languages.addAll(data.getLazyI18nProperties().keySet());
+        }
+        for (String lang : languages) {
+            if (ChildrenCollectorFilter.matches("j:translation_" + lang, namePattern)) {
+                filteredList.add("j:translation_" + lang);
             }
         }
+
         Node n = getExtensionNode(false);
         if (n != null) {
             return  new ExternalNodeIterator(filteredList,n.getNodes(namePattern));
@@ -774,6 +784,19 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 filteredList.add(path);
             }
         }
+        Set<String> languages = new HashSet<String>();
+        if (data.getI18nProperties() != null) {
+            languages.addAll(data.getI18nProperties().keySet());
+        }
+        if (data.getLazyI18nProperties() != null) {
+            languages.addAll(data.getLazyI18nProperties().keySet());
+        }
+        for (String lang : languages) {
+            if (ChildrenCollectorFilter.matches("j:translation_" + lang, nameGlobs)) {
+                filteredList.add("j:translation_" + lang);
+            }
+        }
+
         Node n = getExtensionNode(false);
         if (n != null) {
             return new ExternalNodeIterator(filteredList,n.getNodes(nameGlobs));

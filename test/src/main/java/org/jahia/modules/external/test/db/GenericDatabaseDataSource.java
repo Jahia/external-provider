@@ -57,6 +57,7 @@ import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.util.db.DbUtility;
+import org.jahia.modules.external.ExternalData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +107,7 @@ public class GenericDatabaseDataSource extends BaseDatabaseDataSource {
     }
 
     @Override
-    protected Map<String, String[]> getRowProperties(String table, ResultSet rs) throws SQLException {
+    protected ExternalData getRowProperties(String path, String type, String table, ResultSet rs) throws SQLException {
         Map<String, String[]> props = new LinkedHashMap<String, String[]>();
         ResultSetMetaData metaData = rs.getMetaData();
         for (int i = 1; i <= metaData.getColumnCount(); i++) {
@@ -116,7 +117,8 @@ public class GenericDatabaseDataSource extends BaseDatabaseDataSource {
                 props.put(columnName.toLowerCase(), new String[] { value });
             }
         }
-        return props;
+        ExternalData data = new ExternalData(path, path, type, props);
+        return data;
     }
 
     @Override

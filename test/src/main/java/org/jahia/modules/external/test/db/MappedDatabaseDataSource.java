@@ -42,15 +42,18 @@ package org.jahia.modules.external.test.db;
 import org.apache.commons.collections.BidiMap;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.ExternalDataSource;
 import org.jahia.modules.external.ExternalQuery;
 import org.jahia.modules.external.query.QueryHelper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.jahia.services.content.nodetypes.SelectorType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.Binary;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
@@ -63,7 +66,7 @@ import java.util.*;
  * 
  * @author Sergiy Shyrkov
  */
-public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements ExternalDataSource.Searchable {
+public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements ExternalDataSource.Searchable, ExternalDataSource.LazyProperty {
 
     static final String DATA_TYPE_AIRLINE = "jtestnt:airline".intern();
 
@@ -124,9 +127,12 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
     }
 
     @Override
-    protected Map<String, String[]> getRowProperties(String table, ResultSet rs) throws SQLException,
+    protected ExternalData getRowProperties(String path, String type, String table, ResultSet rs) throws SQLException,
             PathNotFoundException {
-        Map<String, String[]> props = new LinkedHashMap<String, String[]>();
+        Map<String, String[]> properties = new LinkedHashMap<String, String[]>();
+        Map<String, Map<String, String[]>> i18nProperties = new HashMap<String, Map<String, String[]>>();
+        Set<String> lazyProperties = new HashSet<String>();
+        Map<String, Set<String>> lazyI18nProperties = new HashMap<String, Set<String>>();
         ExtendedNodeType nodeType = null;
         try {
             nodeType = NodeTypeRegistry.getInstance().getNodeType(getRowNodeTypeName(table));
@@ -135,13 +141,49 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
         }
 
         for (ExtendedPropertyDefinition def : nodeType.getDeclaredPropertyDefinitions()) {
-            String val = rs.getString(def.getName());
-            if (val != null) {
-                props.put(def.getName(), new String[] { val });
+            if (def.isInternationalized()) {
+                int columnCount = rs.getMetaData().getColumnCount();
+                for (int i = 1; i <= columnCount; i++) {
+                    String col_name = rs.getMetaData().getColumnName(i).toLowerCase();
+                    if (col_name.startsWith(def.getName() + "__")) {
+                        String lang = StringUtils.substringAfter(col_name, def.getName() + "__");
+                        if (def.getSelector() == SelectorType.RICHTEXT) {
+                            Set<String> lazyPropsForLang = lazyI18nProperties.get(lang);
+                            if (lazyPropsForLang == null) {
+                                lazyPropsForLang = new HashSet<String>();
+                                lazyI18nProperties.put(lang, lazyPropsForLang);
+                            }
+                            lazyPropsForLang.add(def.getName());
+                        } else {
+                            Map<String, String[]> propsForLang = i18nProperties.get(lang);
+                            if (propsForLang == null) {
+                                propsForLang = new HashMap<String, String[]>();
+                                i18nProperties.put(lang, propsForLang);
+                            }
+                            String val = rs.getString(col_name);
+                            if (val != null) {
+                                propsForLang.put(def.getName(), new String[]{val});
+                            }
+                        }
+                    }
+                }
+            } else {
+                if (def.getSelector() == SelectorType.RICHTEXT) {
+                    lazyProperties.add(def.getName());
+                } else {
+                    String val = rs.getString(def.getName());
+                    if (val != null) {
+                        properties.put(def.getName(), new String[]{val});
+                    }
+                }
             }
         }
 
-        return props;
+        ExternalData data = new ExternalData(path, path, type, properties);
+        data.setI18nProperties(i18nProperties);
+        data.setLazyProperties(lazyProperties);
+        data.setLazyI18nProperties(lazyI18nProperties);
+        return data;
     }
 
     @Override
@@ -240,4 +282,18 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
         return types;
     }
 
+    @Override
+    public String[] getPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
+        return new String[]{"TODO"};
+    }
+
+    @Override
+    public String[] getI18nPropertyValues(ExternalData data, String lang, String propertyName) throws PathNotFoundException {
+        return new String[]{"TODO"};
+    }
+
+    @Override
+    public Binary[] getBinaryPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
+        throw new PathNotFoundException(data.getPath() + "/" + propertyName);
+    }
 }
