@@ -176,7 +176,9 @@ public class ExternalQueryManager implements QueryManager {
                 NodeIterator nodes = q.execute().getNodes();
                 while (nodes.hasNext()) {
                     Node node = (Node) nodes.next();
-                    results.add(node.getPath().substring(mountPoint.length()));
+                    if (!results.contains(node.getPath().substring(mountPoint.length()))) {
+                        results.add(node.getPath().substring(mountPoint.length()));
+                    }
                 }
             }
             return new ExternalQueryResult(this, results, workspace);

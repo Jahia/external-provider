@@ -162,14 +162,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return session.getNode(path.isEmpty() ? "/" : path);
     }
 
-    public Item getAncestor(int depth) throws ItemNotFoundException, AccessDeniedException, RepositoryException {
-        throw new UnsupportedRepositoryOperationException();
-    }
-
-    public int getDepth() throws RepositoryException {
-        throw new UnsupportedRepositoryOperationException();
-    }
-
     public boolean isNode() {
         return true;
     }

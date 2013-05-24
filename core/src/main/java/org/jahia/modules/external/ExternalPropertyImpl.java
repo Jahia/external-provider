@@ -309,16 +309,8 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
         return name.toString();
     }
 
-    public Item getAncestor(int depth) throws ItemNotFoundException, AccessDeniedException, RepositoryException {
-        throw new UnsupportedRepositoryOperationException();
-    }
-
     public Node getParent() throws ItemNotFoundException, AccessDeniedException, RepositoryException {
         return node;
-    }
-
-    public int getDepth() throws RepositoryException {
-        throw new UnsupportedRepositoryOperationException();
     }
 
     @Override

@@ -45,6 +45,8 @@ import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.version.VersionException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Implementation of the {@link javax.jcr.Item} for the {@link org.jahia.modules.external.ExternalData}.
@@ -90,6 +92,26 @@ public abstract class ExternalItemImpl implements Item {
 
     public void accept(ItemVisitor itemVisitor) throws RepositoryException {
 
+    }
+
+    @Override
+    public Item getAncestor(int depth) throws ItemNotFoundException, AccessDeniedException, RepositoryException {
+        if (depth == 0) {
+            return session.getItem("/");
+        }
+        Matcher matcher = Pattern.compile("(/[^/]+){" + depth + "}").matcher(getPath());
+        if (matcher.find()) {
+            return session.getItem(matcher.group(0));
+        }
+        throw new ItemNotFoundException();
+    }
+
+    @Override
+    public int getDepth() throws RepositoryException {
+        if (getPath().equals("/")) {
+            return 0;
+        }
+        return getPath().split("/").length - 1;
     }
 
     /**

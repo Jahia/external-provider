@@ -41,6 +41,7 @@
 package org.jahia.modules.external;
 
 import javax.jcr.*;
+import javax.jcr.query.Query;
 
 import org.apache.jackrabbit.spi.commons.conversion.DefaultNamePathResolver;
 
@@ -122,12 +123,12 @@ public class ExternalRepositoryImpl implements Repository {
     private ExternalContentStoreProvider storeProvider;
 
     public ExternalRepositoryImpl(ExternalContentStoreProvider storeProvider, ExternalDataSource dataSource, ExternalAccessControlManager accessControlManager, NamespaceRegistry nsRegistry) {
-        initDescriptors();
         this.storeProvider = storeProvider;
         this.dataSource = dataSource;
         this.accessControlManager = accessControlManager;
         this.namespaceRegistry = nsRegistry;
         this.namePathResolver = new DefaultNamePathResolver(nsRegistry);
+        initDescriptors();
     }
 
     protected ExternalAccessControlManager getAccessControlManager() {
@@ -205,7 +206,11 @@ public class ExternalRepositoryImpl implements Repository {
         repositoryDescriptors.put(Repository.NODE_TYPE_MANAGEMENT_MULTIPLE_BINARY_PROPERTIES_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.NODE_TYPE_MANAGEMENT_VALUE_CONSTRAINTS_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.NODE_TYPE_MANAGEMENT_UPDATE_IN_USE_SUPORTED, new ExternalValueImpl(false));
-        repositoryDescriptors.put(Repository.QUERY_LANGUAGES, new ExternalValueImpl[0]);
+        if (dataSource instanceof ExternalDataSource.Searchable || getStoreProvider().getExtensionProvider() != null) {
+            repositoryDescriptors.put(Repository.QUERY_LANGUAGES, new ExternalValueImpl[] { new ExternalValueImpl(Query.JCR_SQL2) } );
+        } else {
+            repositoryDescriptors.put(Repository.QUERY_LANGUAGES, new ExternalValueImpl[0]);
+        }
         repositoryDescriptors.put(Repository.QUERY_STORED_QUERIES_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.QUERY_FULL_TEXT_SEARCH_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.QUERY_JOINS, new ExternalValueImpl(false));

@@ -403,7 +403,7 @@ public class ExternalSessionImpl implements Session {
     }
 
     public void logout() {
-        if (extensionSession != null) {
+        if (extensionSession != null && extensionSession.isLive()) {
             extensionSession.logout();
         }
     }

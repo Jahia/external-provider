@@ -56,6 +56,7 @@ import javax.jcr.query.QueryResult;
 
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.test.JahiaTestCase;
@@ -340,5 +341,83 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
                 .getNodes(); ni.hasNext();) {
             assertTrue(ni.nextNode().isNodeType(MappedDatabaseDataSource.DATA_TYPE_AIRLINE));
         }
+    }
+
+    @Test
+    public void testExtensionProperty() throws Exception {
+        JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
+        JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
+        assertEquals("Previous value invalid", 5, AA.getProperty("firstclass_seats").getLong());
+        AA.setProperty("firstclass_seats", 10);
+        assertEquals("Property not updated", 10, AA.getProperty("firstclass_seats").getLong());
+    }
+
+    @Test
+    public void testMixin() throws Exception {
+        JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
+        JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
+        AA.addMixin("jmix:comments");
+        AA.setProperty("shortView",true);
+
+        assertTrue("Mixin not set", AA.isNodeType("jmix:comments"));
+        assertEquals("Property not updated", true, AA.getProperty("shortView").getBoolean());
+
+        AA.removeMixin("jmix:comments");
+        assertFalse("Mixin not removed", AA.isNodeType("jmix:comments"));
+        assertFalse("Property not removed", AA.hasProperty("shortView"));
+    }
+
+    @Test
+    public void testAddNode() throws Exception {
+        JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
+        JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
+
+        if (AA.isNodeType("jmix:comments")) {
+            AA.removeMixin("jmix:comments");
+            session.save();
+        }
+
+        AA.addMixin("jmix:comments");
+        session.save();
+
+        assertEquals(1,AA.getNodes().getSize());
+
+        JCRNodeWrapper comments = AA.getNode("comments");
+
+        assertEquals(comments.getPath(), session.getNodeByIdentifier(comments.getIdentifier()).getPath());
+        assertEquals(comments.getIdentifier(), session.getNode(comments.getPath()).getIdentifier());
+        assertEquals(AA.getIdentifier(), comments.getParent().getIdentifier());
+        assertEquals(4,comments.getDepth());
+        assertTrue(comments.isNodeType("jnt:topic"));
+
+        JCRPropertyWrapper propertyWrapper = comments.setProperty("topicSubject", "testSubject");
+        assertEquals(comments.getPath() + "/topicSubject", propertyWrapper.getPath());
+        assertEquals("testSubject", propertyWrapper.getValue().getString());
+
+        propertyWrapper = comments.getProperty("topicSubject");
+        assertEquals(comments.getPath() + "/topicSubject", propertyWrapper.getPath());
+        assertEquals("testSubject", propertyWrapper.getValue().getString());
+
+        JCRNodeWrapper post1 = comments.addNode("post1","jnt:post");
+        assertEquals(post1.getPath(), session.getNodeByIdentifier(post1.getIdentifier()).getPath());
+        assertEquals(post1.getIdentifier(), session.getNode(post1.getPath()).getIdentifier());
+        assertEquals(comments.getIdentifier(), post1.getParent().getIdentifier());
+
+        AA.removeMixin("jmix:comments");
+        session.save();
+    }
+
+    @Test
+    public void testSearchOnExtension() throws Exception {
+        JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
+        JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
+        AA.addMixin("jmix:comments");
+        AA.setProperty("shortView",true);
+        session.save();
+
+        assertEquals(1, getResultCount("select * from [jmix:comments] as c where isdescendantnode(c, '"+MAPPED_PROVIDER_MOUNTPOINT+"')",0,0));
+
+        AA.removeMixin("jmix:comments");
+        session.save();
     }
 }
