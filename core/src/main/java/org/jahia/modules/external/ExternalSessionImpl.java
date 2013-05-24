@@ -139,10 +139,10 @@ public class ExternalSessionImpl implements Session {
         }
 
         try {
-        if (getExtensionSession() != null) {
-            Node n = getExtensionSession().getNodeByIdentifier(uuid);
-            return new ExtensionNode(n,StringUtils.substringAfter(n.getPath(),repository.getStoreProvider().getMountPoint()),this);
-        }
+            if (getExtensionSession() != null) {
+                Node n = getExtensionSession().getNodeByIdentifier(uuid);
+                return new ExtensionNode(n, StringUtils.substringAfter(n.getPath(), repository.getStoreProvider().getMountPoint()), this);
+            }
         } catch (RepositoryException e) {
             // do nothing
         }
@@ -162,41 +162,52 @@ public class ExternalSessionImpl implements Session {
         if (changedData.containsKey(path)) {
             return new ExternalNodeImpl(changedData.get(path), this);
         }
-        if (StringUtils.substringAfterLast(path, "/").startsWith("j:translation_")) {
-            String lang = StringUtils.substringAfterLast(path, "_");
-            ExternalData parentObject = repository.getDataSource().getItemByPath(StringUtils.substringBeforeLast(path,
-                    "/"));
-            if ((parentObject.getI18nProperties() == null || !parentObject.getI18nProperties().containsKey(lang)) &&
-                    (parentObject.getLazyI18nProperties() == null || !parentObject.getLazyI18nProperties().containsKey(lang))) {
-                throw new PathNotFoundException(path);
-            }
-            Map<String, String[]> i18nProps = new HashMap<String, String[]>();
-            if (parentObject.getI18nProperties() != null && parentObject.getI18nProperties().containsKey(lang)) {
-                i18nProps.putAll(parentObject.getI18nProperties().get(lang));
-            }
-            i18nProps.put("jcr:language", new String[]{lang});
-            ExternalData i18n = new ExternalData("translation:" + lang + ":" + parentObject.getId(), path,
-                    "jnt:translation", i18nProps);
-            if (parentObject.getLazyI18nProperties() != null && parentObject.getLazyI18nProperties().containsKey(lang)) {
-                i18n.setLazyProperties(parentObject.getLazyI18nProperties().get(lang));
-            }
-            return new ExternalNodeImpl(i18n, this);
-        }
+        String parentPath = StringUtils.substringBeforeLast(path, "/");
         try {
-            ExternalData data = repository.getDataSource().getItemByPath(path);
-            return new ExternalNodeImpl(data, this);
-        } catch (PathNotFoundException e) {
-            try {
-                if (getExtensionSession() != null && !StringUtils.equals("/",path)) {
-                    Item item = getExtensionSession().getItem(repository.getStoreProvider().getMountPoint() + path);
-                    return item.isNode()?new ExtensionNode((Node) item,path,this):new ExtensionProperty((Property) item,path,this, ((Property) item).getNode().getIdentifier());
+            if (StringUtils.substringAfterLast(parentPath, "/").startsWith("j:translation_")) {
+                // Getting a translation property
+                return getNode(parentPath).getProperty(StringUtils.substringAfterLast(path, "/"));
+            } else if (StringUtils.substringAfterLast(path, "/").startsWith("j:translation_")) {
+                // Getting translation node
+                String lang = StringUtils.substringAfterLast(path, "_");
+                ExternalData parentObject = repository.getDataSource().getItemByPath(parentPath);
+                if ((parentObject.getI18nProperties() == null || !parentObject.getI18nProperties().containsKey(lang)) &&
+                        (parentObject.getLazyI18nProperties() == null || !parentObject.getLazyI18nProperties().containsKey(lang))) {
+                    throw new PathNotFoundException(path);
                 }
-            } catch (PathNotFoundException e1) {
-                // do nothing
+                Map<String, String[]> i18nProps = new HashMap<String, String[]>();
+                if (parentObject.getI18nProperties() != null && parentObject.getI18nProperties().containsKey(lang)) {
+                    i18nProps.putAll(parentObject.getI18nProperties().get(lang));
+                }
+                i18nProps.put("jcr:language", new String[]{lang});
+                ExternalData i18n = new ExternalData("translation:" + lang + ":" + parentObject.getId(), path,
+                        "jnt:translation", i18nProps);
+                if (parentObject.getLazyI18nProperties() != null && parentObject.getLazyI18nProperties().containsKey(lang)) {
+                    i18n.setLazyProperties(parentObject.getLazyI18nProperties().get(lang));
+                }
+                return new ExternalNodeImpl(i18n, this);
+            } else {
+                // Try to get the item as a node
+                try {
+                    ExternalData data = repository.getDataSource().getItemByPath(path);
+                    return new ExternalNodeImpl(data, this);
+                } catch (PathNotFoundException e) {
+                    // Or a property in the parent node
+                    ExternalData data = repository.getDataSource().getItemByPath(parentPath);
+                    String propertyName = StringUtils.substringAfterLast(path, "/");
+                    return new ExternalNodeImpl(data, this).getProperty(propertyName);
+                }
             }
-            ExternalData data = repository.getDataSource().getItemByPath(StringUtils.substringBeforeLast(path, "/"));
-            String propertyName = StringUtils.substringAfterLast(path, "/");
-            return new ExternalNodeImpl(data, this).getProperty(propertyName);
+        } catch (PathNotFoundException e) {
+            // In case item is not found in provider, lookup in extension provider if available
+            if (getExtensionSession() != null && !StringUtils.equals("/", path)) {
+                Item item = getExtensionSession().getItem(repository.getStoreProvider().getMountPoint() + path);
+                return item.isNode() ?
+                        new ExtensionNode((Node) item, path, this) :
+                        new ExtensionProperty((Property) item, path, this, new ExtensionNode(item.getParent(), parentPath, this));
+            } else {
+                throw e;
+            }
         }
 
     }
@@ -230,22 +241,12 @@ public class ExternalSessionImpl implements Session {
 
     @Override
     public boolean itemExists(String path) throws RepositoryException {
-        if (StringUtils.substringAfterLast(path, "/").startsWith("j:translation_")) {
-            String lang = StringUtils.substringAfterLast(path, "_");
-            String parentPath = StringUtils.substringBeforeLast(path, "/");
-            if (StringUtils.isEmpty(parentPath)) {
-                parentPath = "/";
-            }
-            if (itemExists(parentPath)) {
-                ExternalData parentObject = repository.getDataSource().getItemByPath(parentPath);
-                if (parentObject.getI18nProperties() != null && parentObject.getI18nProperties().containsKey(lang)) {
-                    return true;
-                }
-            }
+        try {
+            getItem(path);
+        } catch (PathNotFoundException e) {
             return false;
-        } else {
-            return !deletedData.containsKey(path) && repository.getDataSource().itemExists(path);
         }
+        return true;
     }
 
     public void move(String source, String dest)

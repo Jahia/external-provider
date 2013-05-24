@@ -54,82 +54,82 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, getIdentifier());
+        return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Value value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return new ExtensionProperty(node.setProperty(name, value, type), path + "/" + name, session, getIdentifier());
+        return new ExtensionProperty(node.setProperty(name, value, type), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return new ExtensionProperty(node.setProperty(name, values), path + "/" + name, session, getIdentifier());
+        return new ExtensionProperty(node.setProperty(name, values), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Value[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return new ExtensionProperty(node.setProperty(name, values, type), path + "/" + name, session, getIdentifier());
+        return new ExtensionProperty(node.setProperty(name, values, type), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, String[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name,values);
+        return new ExtensionProperty(node.setProperty(name,values), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, String[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name, values, type);
+        return new ExtensionProperty(node.setProperty(name, values, type), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, String value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name, value);
+        return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, String value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name, value);
+        return new ExtensionProperty(node.setProperty(name, value, type), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name, value);
+        return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name, value);
+        return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, boolean value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name, value);
+        return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, double value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name, value);
+        return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, BigDecimal value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name, value);
+        return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, long value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name, value);
+        return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Calendar value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name, value);
+        return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Node value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name, value);
+        return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
@@ -154,7 +154,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public Property getProperty(String relPath) throws PathNotFoundException, RepositoryException {
-        return new ExtensionProperty(node.getProperty(relPath),path + "/" + relPath,session, getIdentifier());
+        return new ExtensionProperty(node.getProperty(relPath),path + "/" + relPath,session, this);
     }
 
     @Override
@@ -179,7 +179,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public String getUUID() throws UnsupportedRepositoryOperationException, RepositoryException {
-        return node.getUUID();
+        return getIdentifier();
     }
 
     @Override
@@ -418,7 +418,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
                 while (extensionPropertiesIterator.hasNext()) {
                     Property next = extensionPropertiesIterator.nextProperty();
                     try {
-                        nextProperty = new ExtensionProperty(next, node.getPath() + "/" + next.getName(), getSession(), getIdentifier());
+                        nextProperty = new ExtensionProperty(next, node.getPath() + "/" + next.getName(), getSession(), ExtensionNode.this);
                         return nextProperty;
                     } catch (RepositoryException e) {
                         // go to next property

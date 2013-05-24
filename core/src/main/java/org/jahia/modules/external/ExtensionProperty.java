@@ -16,12 +16,17 @@ import java.util.Calendar;
 
 public class ExtensionProperty extends ExtensionItem implements Property {
     private Property property;
-    private String uuid;
+    private Node parentNode;
 
-    public ExtensionProperty(Property property, String path, ExternalSessionImpl session, String uuid) {
+    public ExtensionProperty(Property property, String path, ExternalSessionImpl session, Node parentNode) {
         super(property, path, session);
         this.property = property;
-        this.uuid = uuid;
+        this.parentNode = parentNode;
+    }
+
+    @Override
+    public Node getParent() throws RepositoryException {
+        return parentNode;
     }
 
     @Override
@@ -87,7 +92,7 @@ public class ExtensionProperty extends ExtensionItem implements Property {
     @Override
     public Value getValue() throws ValueFormatException, RepositoryException {
         if (StringUtils.equals(getName(), "jcr:uuid")) {
-            return getSession().getValueFactory().createValue(uuid);
+            return getSession().getValueFactory().createValue(parentNode.getIdentifier());
         }  else {
             return property.getValue();
         }
@@ -100,42 +105,42 @@ public class ExtensionProperty extends ExtensionItem implements Property {
 
     @Override
     public String getString() throws ValueFormatException, RepositoryException {
-        return property.getString();
+        return property.getValue().getString();
     }
 
     @Override
     public InputStream getStream() throws ValueFormatException, RepositoryException {
-        return property.getStream();
+        return property.getValue().getStream();
     }
 
     @Override
     public Binary getBinary() throws ValueFormatException, RepositoryException {
-        return property.getBinary();
+        return property.getValue().getBinary();
     }
 
     @Override
     public long getLong() throws ValueFormatException, RepositoryException {
-        return property.getLong();
+        return property.getValue().getLong();
     }
 
     @Override
     public double getDouble() throws ValueFormatException, RepositoryException {
-        return property.getDouble();
+        return property.getValue().getDouble();
     }
 
     @Override
     public BigDecimal getDecimal() throws ValueFormatException, RepositoryException {
-        return property.getDecimal();
+        return property.getValue().getDecimal();
     }
 
     @Override
     public Calendar getDate() throws ValueFormatException, RepositoryException {
-        return property.getDate();
+        return property.getValue().getDate();
     }
 
     @Override
     public boolean getBoolean() throws ValueFormatException, RepositoryException {
-        return property.getBoolean();
+        return property.getValue().getBoolean();
     }
 
     @Override
