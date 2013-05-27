@@ -248,7 +248,13 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public NodeType[] getMixinNodeTypes() throws RepositoryException {
-        return node.getMixinNodeTypes();
+        List<NodeType> nt = new ArrayList<NodeType>();
+        for (NodeType type : node.getMixinNodeTypes()) {
+            if (!type.isNodeType("jmix:externalProviderExtension")) {
+                nt.add(NodeTypeRegistry.getInstance().getNodeType(type.getName()));
+            }
+        }
+        return nt.toArray(new NodeType[nt.size()]);
     }
 
     @Override

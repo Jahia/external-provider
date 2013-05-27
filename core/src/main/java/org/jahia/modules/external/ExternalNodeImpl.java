@@ -228,6 +228,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         Node extendedNode = getExtensionNode(true);
         if (extendedNode != null && canItemBeExtended(getChildNodeDefinition(relPath, primaryNodeTypeName))) {
             Node n = extendedNode.addNode(relPath, primaryNodeTypeName);
+            n.addMixin("jmix:externalProviderExtension");
             return new ExtensionNode(n,getPath() + "/" + relPath,getSession());
         }
 
@@ -619,7 +620,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         Node extensionNode = getExtensionNode(false);
         if (extensionNode != null) {
             for (NodeType type : extensionNode.getMixinNodeTypes()) {
-                nt.add(NodeTypeRegistry.getInstance().getNodeType(type.getName()));
+                if (!type.isNodeType("jmix:externalProviderExtension")) {
+                    nt.add(NodeTypeRegistry.getInstance().getNodeType(type.getName()));
+                }
             }
         }
         return nt.toArray(new NodeType[nt.size()]);
@@ -915,9 +918,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 if (parent.equals("")) {
                     parent = "/";
                 }
-                extensionSession.getNode(parent).addNode(StringUtils.substringAfterLast(mountPoint, "/"), getPrimaryNodeType().getName());
+                Node n = extensionSession.getNode(parent).addNode(StringUtils.substringAfterLast(mountPoint, "/"), getPrimaryNodeType().getName());
+                n.addMixin("jmix:externalProviderExtension");
             } else {
-                ((ExternalNodeImpl) getParent()).getExtensionNode(true).addNode(getName(), getPrimaryNodeType().getName());
+                Node n = ((ExternalNodeImpl) getParent()).getExtensionNode(true).addNode(getName(), getPrimaryNodeType().getName());
+                n.addMixin("jmix:externalProviderExtension");
             }
         }
 
