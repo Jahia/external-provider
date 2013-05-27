@@ -255,10 +255,10 @@ public class ExternalQueryManager implements QueryManager {
             if (constraint instanceof ChildNode) {
                 String root = ((ChildNode) constraint).getParentPath();
                 // Path constraint is under mount point -> create new constraint with local path
-                return f.childNode(((ChildNode) constraint).getSelectorName(), mountPoint + "/" + root);
+                return f.childNode(((ChildNode) constraint).getSelectorName(), mountPoint + root);
             } else if (constraint instanceof DescendantNode) {
                 String root = ((DescendantNode) constraint).getAncestorPath();
-                return f.descendantNode(((DescendantNode) constraint).getSelectorName(), mountPoint + "/" + root);
+                return f.descendantNode(((DescendantNode) constraint).getSelectorName(), mountPoint + root);
             } else if (constraint instanceof And) {
                 Constraint c1 = convertExistingPathConstraints(((And) constraint).getConstraint1(), mountPoint, f);
                 Constraint c2 = convertExistingPathConstraints(((And) constraint).getConstraint2(), mountPoint, f);

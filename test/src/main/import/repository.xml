@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<content xmlns:j="http://www.jahia.org/jahia/1.0"
+         xmlns:jcr="http://www.jcp.org/jcr/1.0"
+         xmlns:jtestmix="http://www.jahia.org/jahia/test/mix/1.0"
+         xmlns:jtestnt="http://www.jahia.org/jahia/test/nt/1.0">
+    <modules jcr:primaryType="jnt:modules">
+        <external-provider-test j:dependencies="default external-provider rating"
+                                j:moduleType="system"
+                                j:title="Jahia External Provider Test"
+                                jcr:primaryType="jnt:module">
+
+            <templates jcr:primaryType="jnt:templatesFolder">
+                <airline j:applyOn="jtestnt:airline"
+                         j:defaultTemplate="true"
+                         j:hiddenTemplate="false"
+                         jcr:primaryType="jnt:contentTemplate">
+                    <j:translation_en jcr:language="en"
+                                      jcr:mixinTypes="mix:title"
+                                      jcr:primaryType="jnt:translation"
+                                      jcr:title="airline"/>
+                    <pagecontent jcr:primaryType="jnt:contentList">
+                        <simple-text jcr:primaryType="jnt:text">
+                            <j:translation_en jcr:language="en"
+                                              jcr:primaryType="jnt:translation"
+                                              text="--AIRLINE--"/>
+                        </simple-text>
+                        <rating jcr:primaryType="jnt:rateable"/>
+                        <main-resource-display jcr:primaryType="jnt:mainResourceDisplay"/>
+                        <commentable jcr:primaryType="jnt:addComment"/>
+                        <display-comments jcr:primaryType="jnt:commentsList"/>
+                    </pagecontent>
+                </airline>
+            </templates>
+
+        </external-provider-test>
+    </modules>
+</content>
