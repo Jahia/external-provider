@@ -159,7 +159,10 @@ public class ExternalQueryManager implements QueryManager {
                 QueryObjectModelFactory qomFactory = queryManager.getQOMFactory();
                 String mountPoint = workspace.getSession().getRepository().getStoreProvider().getMountPoint();
                 Constraint convertedConstraint = convertExistingPathConstraints(getConstraint(), mountPoint, qomFactory);
-                convertedConstraint = addPathConstraints(convertedConstraint, getSource(), mountPoint, qomFactory);
+                if (!(convertedConstraint instanceof DescendantNode)) {
+                    // Multiple IsDescendantNode queries are not supported
+                    convertedConstraint = addPathConstraints(convertedConstraint, getSource(), mountPoint, qomFactory);
+                }
                 Query q = qomFactory.createQuery(getSource(), convertedConstraint, getOrderings(), getColumns());
                 if (!nodeTypeSupported) {
                     // Query is only done in JCR, directly pass limit and offset
