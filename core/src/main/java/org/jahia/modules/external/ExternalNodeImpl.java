@@ -496,7 +496,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             if (data.getLazyProperties() != null && data.getLazyProperties().contains(s)) {
                 String[] values;
                 if (properties.containsKey("jcr:language")) {
-                    values = session.getI18nPropertyValues(data, s, properties.get("jcr:language").getString());
+                    values = session.getI18nPropertyValues(data, properties.get("jcr:language").getString(), s);
                 } else {
                     values = session.getPropertyValues(data, s);
                 }

@@ -42,6 +42,7 @@ package org.jahia.modules.external.test.db;
 import org.apache.commons.collections.BidiMap;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang.StringUtils;
+import org.apache.jackrabbit.core.util.db.DbUtility;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.ExternalDataSource;
 import org.jahia.modules.external.ExternalQuery;
@@ -57,6 +58,8 @@ import javax.jcr.Binary;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -284,12 +287,73 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
 
     @Override
     public String[] getPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
-        return new String[]{"TODO"};
+        String path = data.getPath();
+        String[] pathTokens = StringUtils.split(path, '/');
+        if (pathTokens.length < 2) {
+            throw new PathNotFoundException(path);
+        }
+        String table = pathTokens[0];
+        String rowId = pathTokens[1];
+
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = getConnection();
+            List<String> primaryKeys = getTablePrimaryKeys(table, conn);
+            if (primaryKeys.isEmpty()) {
+                stmt = conn.prepareStatement("select " + propertyName + " from " + table);
+                rs = stmt.executeQuery();
+                int targetPos = Integer.parseInt(rowId);
+                int pos = 1;
+                while (rs.next() && pos < targetPos) {
+                    pos++;
+                }
+                if (pos == targetPos) {
+                    return new String[]{rs.getString(1)};
+                } else {
+                    throw new PathNotFoundException(path);
+                }
+            } else {
+                String query = null;
+                if (primaryKeys.size() == 1) {
+                    query = "select " + propertyName + " from " + table + " where " + primaryKeys.get(0) + "=?";
+                } else {
+                    StringBuilder buff = new StringBuilder();
+                    for (String col : primaryKeys) {
+                        if (buff.length() > 0) {
+                            buff.append(" and ");
+                        }
+                        buff.append(col).append("=?");
+                    }
+                    buff.insert(0, " where ").insert(0, table).insert(0, "select * from ");
+                    query = buff.toString();
+                }
+
+                stmt = conn.prepareStatement(query);
+                String[] rowData = getValuesForPrimayKeys(rowId);
+                for (int i = 0; i < rowData.length; i++) {
+                    stmt.setString(i + 1, rowData[i]);
+                }
+                rs = stmt.executeQuery();
+                if (rs.next()) {
+                    return new String[]{rs.getString(1)};
+                } else {
+                    throw new PathNotFoundException(path);
+                }
+            }
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            throw new PathNotFoundException(path);
+        } finally {
+            DbUtility.close(conn, stmt, rs);
+        }
     }
 
     @Override
     public String[] getI18nPropertyValues(ExternalData data, String lang, String propertyName) throws PathNotFoundException {
-        return new String[]{"TODO"};
+        return getPropertyValues(data, propertyName + "__" + lang);
     }
 
     @Override

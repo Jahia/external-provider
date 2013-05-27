@@ -332,7 +332,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
      */
     protected abstract String getTableNodeType();
 
-    private List<String> getTablePrimaryKeys(String table, Connection conn) {
+    protected List<String> getTablePrimaryKeys(String table, Connection conn) {
         List<String> keys = new LinkedList<String>();
         ResultSet rs = null;
 
