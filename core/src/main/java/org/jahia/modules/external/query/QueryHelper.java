@@ -75,6 +75,17 @@ public class QueryHelper {
         } else if (!and && constraint instanceof Or) {
             addConstraints(search, ((Or) constraint).getConstraint1(), and);
             addConstraints(search, ((Or) constraint).getConstraint2(), and);
+        } else if (constraint instanceof Not) {
+            Constraint not = ((Not) constraint).getConstraint();
+            if (not instanceof Or) {
+                Constraint constraint1 = ((Or) not).getConstraint1();
+                Constraint constraint2 = ((Or) not).getConstraint2();
+                if (constraint1 instanceof PropertyExistence && ((PropertyExistence)constraint1).getPropertyName().equals("jcr:language")) {
+                    // Skip constraint for language matching
+                    return;
+                }
+            }
+            addConstraints(search, not, and);
         } else if (constraint instanceof Comparison) {
             Comparison comparison = (Comparison) constraint;
             if (comparison.getOperand1() instanceof PropertyValue &&

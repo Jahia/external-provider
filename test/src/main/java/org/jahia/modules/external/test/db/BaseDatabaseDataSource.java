@@ -215,7 +215,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
                 }
             }
         } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
+            logger.debug(e.getMessage(), e);
             throw new PathNotFoundException(path);
         } finally {
             DbUtility.close(conn, stmt, rs);

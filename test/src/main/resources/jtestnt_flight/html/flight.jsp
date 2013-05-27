@@ -13,5 +13,35 @@
 <%--@elvariable id="renderContext" type="org.jahia.services.render.RenderContext"--%>
 <%--@elvariable id="currentResource" type="org.jahia.services.render.Resource"--%>
 <%--@elvariable id="url" type="org.jahia.services.render.URLGenerator"--%>
-  
-  Aircraft :  ${currentNode.properties['aircraft'].string}
+<h2>Flight</h2>
+
+<ul>
+
+    <li>
+        Flight id : ${currentNode.properties['flight_id'].string}
+    </li>
+    <li>
+        Aircraft : ${currentNode.properties['aircraft'].string}
+    </li>
+    <li>
+        Origin : ${currentNode.properties['orig_airport'].string}
+
+        <jcr:jqom var="rs"
+                  statement="select * from [jtestnt:city] where airport='${currentNode.properties['orig_airport'].string}'"/>
+
+        <c:forEach items="${rs.nodes}" var="city">
+             - City = <a href="${url.base}${city.path}.html">${city.properties['city_id'].string} , ${city.properties['city_name'].string}</a>
+        </c:forEach>
+
+    </li>
+    <li>
+        Destination : ${currentNode.properties['dest_airport'].string}
+
+        <jcr:jqom var="rs"
+                  statement="select * from [jtestnt:city] where airport='${currentNode.properties['dest_airport'].string}'"/>
+
+        <c:forEach items="${rs.nodes}" var="city">
+            - City = <a href="${url.base}${city.path}.html">${city.properties['city_id'].string} , ${city.properties['city_name'].string}</a>
+        </c:forEach>
+    </li>
+</ul>

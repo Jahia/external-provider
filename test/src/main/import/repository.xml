@@ -9,27 +9,30 @@
                                 j:title="Jahia External Provider Test"
                                 jcr:primaryType="jnt:module">
 
-            <templates jcr:primaryType="jnt:templatesFolder">
-                <airline j:applyOn="jtestnt:airline"
+                <templates j:rootTemplatePath="/base"
+                    j:templateSetContext="/modules/templates-system"
+                    jcr:primaryType="jnt:templatesFolder">
+                    <test-template j:applyOn="jtestnt:airline jtestnt:city jtestnt:country jtestnt:directory jtestnt:flight"
                          j:defaultTemplate="true"
                          j:hiddenTemplate="false"
+                           j:priority="999"
                          jcr:primaryType="jnt:contentTemplate">
                     <j:translation_en jcr:language="en"
                                       jcr:mixinTypes="mix:title"
                                       jcr:primaryType="jnt:translation"
-                                      jcr:title="airline"/>
+                                 jcr:title="test-template"/>
                     <pagecontent jcr:primaryType="jnt:contentList">
                         <simple-text jcr:primaryType="jnt:text">
                             <j:translation_en jcr:language="en"
                                               jcr:primaryType="jnt:translation"
-                                              text="--AIRLINE--"/>
+                                       text="--TEST TEMPLATE--"/>
                         </simple-text>
                         <rating jcr:primaryType="jnt:rateable"/>
                         <main-resource-display jcr:primaryType="jnt:mainResourceDisplay"/>
                         <commentable jcr:primaryType="jnt:addComment"/>
                         <display-comments jcr:primaryType="jnt:commentsList"/>
                     </pagecontent>
-                </airline>
+                    </test-template>
             </templates>
 
         </external-provider-test>

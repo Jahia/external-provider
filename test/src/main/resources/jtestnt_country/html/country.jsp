@@ -13,35 +13,32 @@
 <%--@elvariable id="renderContext" type="org.jahia.services.render.RenderContext"--%>
 <%--@elvariable id="currentResource" type="org.jahia.services.render.Resource"--%>
 <%--@elvariable id="url" type="org.jahia.services.render.URLGenerator"--%>
-<h2>Airline</h2>
+<h2>Country</h2>
 <ul>
-	<li>  
-  Airline : ${currentNode.properties['airline'].string}
-  </li>
-  <li>
-  Full name : ${currentNode.properties['airline_full'].string}
-  </li>
-  <li>
-  Basic rate : ${currentNode.properties['basic_rate'].string}
-  </li>
-  <li>
-  Distance discount : ${currentNode.properties['distance_discount'].long}
-  </li>
-  <li>
-  Economy seats : ${currentNode.properties['economy_seats'].string}
-  </li>
-  <li>
-  Business level factor : ${currentNode.properties['business_level_factor'].string}
-  </li>
-  <li>
-  Business seats : ${currentNode.properties['business_seats'].string}
-  </li>
-  <li>
-  First class level factor : ${currentNode.properties['firstclass_level_factor'].string}
-  </li>
-  <li>
-  First class seats : ${currentNode.properties['firstclass_seats'].string}
-  </li>
-</ul>
 
-  
+    <li>
+        ISO = ${currentNode.properties['country_iso_code'].string}
+    </li>
+    <li>
+        Name : ${currentNode.properties['country'].string}
+    </li>
+    <li>
+        Region : ${currentNode.properties['region'].string}
+    </li>
+
+    <li>
+        Cities :
+
+        <jcr:jqom var="rs"
+                  statement="select * from [jtestnt:city] where country_iso_code='${currentNode.name}'"/>
+
+        <ul>
+            <c:forEach items="${rs.nodes}" var="city">
+                <li>
+                    <c:url value="${url.base}${fn:replace(city.path,'#','%23')}.html" var="link" />
+                    <a href="${link}">${city.properties['city_name'].string}</a>
+                </li>
+            </c:forEach>
+        </ul>
+    </li>
+</ul>
