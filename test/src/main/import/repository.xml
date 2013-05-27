@@ -22,13 +22,23 @@
                                       jcr:primaryType="jnt:translation"
                                  jcr:title="test-template"/>
                     <pagecontent jcr:primaryType="jnt:contentList">
+                            <all-catalogs j:view="linkList"
+                                jcr:language="JCR-SQL2"
+                                jcr:mixinTypes="jmix:renderable"
+                                jcr:primaryType="jnt:query"
+                                jcr:statement="select * from [jtestnt:directory]"
+                                maxItems="10">
+                                <j:translation_en jcr:language="en"
+                                       jcr:primaryType="jnt:translation"
+                                       jcr:title="all catalogs"/>
+                            </all-catalogs>
                         <simple-text jcr:primaryType="jnt:text">
                             <j:translation_en jcr:language="en"
                                               jcr:primaryType="jnt:translation"
                                        text="--TEST TEMPLATE--"/>
                         </simple-text>
-                        <rating jcr:primaryType="jnt:rateable"/>
                         <main-resource-display jcr:primaryType="jnt:mainResourceDisplay"/>
+                            <rating jcr:primaryType="jnt:rateable"/>
                         <commentable jcr:primaryType="jnt:addComment"/>
                         <display-comments jcr:primaryType="jnt:commentsList"/>
                     </pagecontent>

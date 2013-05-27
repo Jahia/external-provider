@@ -109,7 +109,7 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
             StringBuilder buff = new StringBuilder();
             for (String col : primaryKeys) {
                 if (buff.length() > 0) {
-                    buff.append("###");
+                    buff.append("@@@");
                 }
                 buff.append(rs.getString(col));
             }
@@ -211,7 +211,7 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
 
     @Override
     protected String[] getValuesForPrimayKeys(String rowId) {
-        return StringUtils.split(rowId, "###");
+        return StringUtils.split(rowId, "@@@");
     }
 
     @Override
