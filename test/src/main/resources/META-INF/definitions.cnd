@@ -44,7 +44,7 @@
 [jtestnt:city] > jnt:content, jmix:basicContent, jtestmix:item
  - city_id (long)
  - city_name (string, richtext) i18n
- - country (string)
+ - country (string) i18n
  - airport (string, richtext)
  - language (string)
  - country_iso_code (string)
