@@ -22,25 +22,25 @@
   Full name : ${currentNode.properties['airline_full'].string}
   </li>
   <li>
-  Basic rate : ${currentNode.properties['basic_rate'].string}
+  Basic rate : ${currentNode.properties['basic_rate'].double}
   </li>
   <li>
-  Distance discount : ${currentNode.properties['distance_discount'].long}
+  Distance discount : ${currentNode.properties['distance_discount'].double}
   </li>
   <li>
-  Economy seats : ${currentNode.properties['economy_seats'].string}
+  Economy seats : ${currentNode.properties['economy_seats'].long}
   </li>
   <li>
-  Business level factor : ${currentNode.properties['business_level_factor'].string}
+  Business level factor : ${currentNode.properties['business_level_factor'].double}
   </li>
   <li>
-  Business seats : ${currentNode.properties['business_seats'].string}
+  Business seats : ${currentNode.properties['business_seats'].long}
   </li>
   <li>
-  First class level factor : ${currentNode.properties['firstclass_level_factor'].string}
+  First class level factor : ${currentNode.properties['firstclass_level_factor'].double}
   </li>
   <li>
-  First class seats : ${currentNode.properties['firstclass_seats'].string}
+  First class seats : ${currentNode.properties['firstclass_seats'].long}
   </li>
 </ul>
 

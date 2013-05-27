@@ -40,6 +40,8 @@
 
 package org.jahia.modules.external;
 
+import org.apache.jackrabbit.util.ISO8601;
+
 import javax.jcr.*;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -50,7 +52,6 @@ import java.util.Calendar;
  * User: loom
  * Date: Aug 12, 2010
  * Time: 3:04:33 PM
- * 
  */
 public class ExternalValueImpl implements Value {
 
@@ -66,11 +67,11 @@ public class ExternalValueImpl implements Value {
     }
 
     public ExternalValueImpl(long value) {
-        this(new Long(value), PropertyType.LONG);
+        this(value, PropertyType.LONG);
     }
 
     public ExternalValueImpl(double value) {
-        this(new Double(value), PropertyType.DOUBLE);
+        this(value, PropertyType.DOUBLE);
     }
 
     public ExternalValueImpl(BigDecimal value) {
@@ -82,7 +83,7 @@ public class ExternalValueImpl implements Value {
     }
 
     public ExternalValueImpl(boolean value) {
-        this(new Boolean(value), PropertyType.BOOLEAN);
+        this(value, PropertyType.BOOLEAN);
     }
 
     public ExternalValueImpl(Node value, boolean weakReference) throws RepositoryException {
@@ -101,38 +102,74 @@ public class ExternalValueImpl implements Value {
     }
 
     public String getString() throws ValueFormatException, IllegalStateException, RepositoryException {
-        return value.toString();  
+        if (value instanceof Calendar) {
+            return ISO8601.format((Calendar) value);
+        }
+        return value.toString();
     }
 
     public InputStream getStream() throws RepositoryException {
-        return (InputStream) value;  
+        if (value instanceof Binary) {
+            return ((Binary) value).getStream();
+        }
+        throw new ValueFormatException();
     }
 
     public Binary getBinary() throws RepositoryException {
-        return (Binary) value;  
+        if (value instanceof Binary) {
+            return (Binary) value;
+        }
+        throw new ValueFormatException();
     }
 
     public long getLong() throws ValueFormatException, RepositoryException {
-        return ((Long) value).longValue();  
+        if (value instanceof Long) {
+            return ((Long) value);
+        }
+        try {
+            return Long.parseLong(getString());
+        } catch (NumberFormatException e) {
+            throw new ValueFormatException(e);
+        }
     }
 
     public double getDouble() throws ValueFormatException, RepositoryException {
-        return ((Double) value).doubleValue();
+        if (value instanceof Double) {
+            return ((Double) value);
+        }
+        try {
+            return Double.parseDouble(getString());
+        } catch (NumberFormatException e) {
+            throw new ValueFormatException(e);
+        }
     }
 
     public BigDecimal getDecimal() throws ValueFormatException, RepositoryException {
-        return (BigDecimal) value;  
+        if (value instanceof BigDecimal) {
+            return ((BigDecimal) value);
+        }
+        return BigDecimal.valueOf(getDouble());
     }
 
     public Calendar getDate() throws ValueFormatException, RepositoryException {
-        return (Calendar) value;  
+        if (value instanceof Calendar) {
+            return ((Calendar) value);
+        }
+        try {
+            return ISO8601.parse(getString());
+        } catch (RuntimeException e) {
+            throw new ValueFormatException(e);
+        }
     }
 
     public boolean getBoolean() throws ValueFormatException, RepositoryException {
-        return ((Boolean) value).booleanValue();  
+        if (value instanceof Boolean) {
+            return ((Boolean) value);
+        }
+        return Boolean.valueOf(getString());
     }
 
     public int getType() {
-        return type;  
+        return type;
     }
 }
