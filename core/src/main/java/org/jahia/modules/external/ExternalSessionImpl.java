@@ -75,9 +75,9 @@ public class ExternalSessionImpl implements Session {
     private List<String> extensionAllowedTypes;
     private Map<String,List<String>> overridableProperties;
 
-    public ExternalSessionImpl(ExternalRepositoryImpl repository, Credentials credentials) {
+    public ExternalSessionImpl(ExternalRepositoryImpl repository, Credentials credentials, String workspaceName) {
         this.repository = repository;
-        this.workspace = new ExternalWorkspaceImpl(this);
+        this.workspace = new ExternalWorkspaceImpl(this, workspaceName);
         this.credentials = credentials;
     }
 

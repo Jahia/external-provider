@@ -268,7 +268,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
 
     public PropertyDefinition getDefinition() throws RepositoryException {
         ExtendedNodeType parentNodeType = node.getExtendedPrimaryNodeType();
-        ExtendedPropertyDefinition propertyDefinition = parentNodeType.getPropertyDefinition(getName());
+        ExtendedPropertyDefinition propertyDefinition = parentNodeType.getPropertyDefinitionsAsMap().get(getName());
         if (propertyDefinition != null) {
             return propertyDefinition;
         }

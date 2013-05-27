@@ -256,19 +256,19 @@ public class ExternalRepositoryImpl implements Repository {
     }
 
     public Session login() throws LoginException, RepositoryException {
-        return new ExternalSessionImpl(this, null);
+        return new ExternalSessionImpl(this, null, null);
     }
 
     public Session login(Credentials credentials) throws LoginException, RepositoryException {
-        return new ExternalSessionImpl(this, credentials);
+        return new ExternalSessionImpl(this, credentials, null);
     }
 
-    public Session login(Credentials credentials, String s) throws LoginException, NoSuchWorkspaceException, RepositoryException {
-        return new ExternalSessionImpl(this, credentials);
+    public Session login(Credentials credentials, String workspaceName) throws LoginException, NoSuchWorkspaceException, RepositoryException {
+        return new ExternalSessionImpl(this, credentials, workspaceName);
     }
 
-    public Session login(String s) throws LoginException, NoSuchWorkspaceException, RepositoryException {
-        return new ExternalSessionImpl(this, null);
+    public Session login(String workspaceName) throws LoginException, NoSuchWorkspaceException, RepositoryException {
+        return new ExternalSessionImpl(this, null, workspaceName);
     }
 
     public void setProviderKey(String providerKey) {

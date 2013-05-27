@@ -67,9 +67,11 @@ import java.io.InputStream;
  */
 public class ExternalWorkspaceImpl implements Workspace {
     private ExternalSessionImpl session;
+    private String workspaceName;
 
-    public ExternalWorkspaceImpl(ExternalSessionImpl session) {
+    public ExternalWorkspaceImpl(ExternalSessionImpl session, String workspaceName) {
         this.session = session;
+        this.workspaceName = workspaceName;
     }
 
     public ExternalSessionImpl getSession() {
@@ -77,7 +79,7 @@ public class ExternalWorkspaceImpl implements Workspace {
     }
 
     public String getName() {
-        return null;
+        return workspaceName;
     }
 
     public void copy(String s, String s1) throws ConstraintViolationException, VersionException, AccessDeniedException, PathNotFoundException, ItemExistsException, LockException, RepositoryException {

@@ -675,7 +675,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     public NodeDefinition getDefinition() throws RepositoryException {
         ExternalNodeImpl parentNode = (ExternalNodeImpl) getParent();
         ExtendedNodeType parentNodeType = parentNode.getExtendedPrimaryNodeType();
-        ExtendedNodeDefinition nodeDefinition = parentNodeType.getNodeDefinition(getPrimaryNodeType().getName());
+        ExtendedNodeDefinition nodeDefinition = parentNodeType.getChildNodeDefinitionsAsMap().get(getName());
         if (nodeDefinition != null) {
             return nodeDefinition;
         }
