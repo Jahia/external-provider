@@ -486,7 +486,7 @@ public class ExternalSessionImpl implements Session {
         if (extensionSession == null) {
             JCRStoreProvider extensionProvider = getRepository().getStoreProvider().getExtensionProvider();
             if (extensionProvider != null) {
-                extensionSession = extensionProvider.getSession(JahiaLoginModule.getSystemCredentials(getUserID()), getWorkspace().getName());
+                extensionSession = extensionProvider.getSession(JahiaLoginModule.getSystemCredentials(getUserID()), "default");
             }
         }
         return extensionSession;
