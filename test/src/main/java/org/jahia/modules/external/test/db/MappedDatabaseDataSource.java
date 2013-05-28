@@ -57,7 +57,9 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.Binary;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
+import javax.jcr.Value;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
+import javax.jcr.query.qom.Constraint;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -66,7 +68,7 @@ import java.util.*;
 
 /**
  * Implementation of the external data source that uses sample database to fetch the data and predefined node type mappins.
- * 
+ *
  * @author Sergiy Shyrkov
  */
 public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements ExternalDataSource.Searchable, ExternalDataSource.LazyProperty {
@@ -234,7 +236,7 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
 
         if (allResults != null && query.getOffset() > 0) {
             if (query.getOffset() >= allResults.size()) {
-                return Collections.<String> emptyList();
+                return Collections.<String>emptyList();
             }
             allResults = allResults.subList((int) query.getOffset(), allResults.size());
         }
@@ -242,7 +244,7 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
             allResults = allResults.subList(0, (int) query.getLimit());
         }
 
-        return allResults != null ? allResults : Collections.<String> emptyList();
+        return allResults != null ? allResults : Collections.<String>emptyList();
     }
 
     private List<String> doSearch(ExternalQuery query, String dataType) throws RepositoryException {
@@ -257,7 +259,21 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
         } else if (dataType == DATA_TYPE_AIRLINE || dataType == DATA_TYPE_CITY || dataType == DATA_TYPE_COUNTRY
                 || dataType == DATA_TYPE_FLIGHT) {
             String table = (String) DIRECTORY_TYPE_MAPPING.getKey(dataType);
-            List<String> rowIDs = getRowIDs(table, QueryHelper.getSimpleAndConstraints(query.getConstraint()));
+            Constraint constraint = query.getConstraint();
+            Map<String, Value> simpleAndConstraints = QueryHelper.getSimpleAndConstraints(constraint);
+            String language = QueryHelper.getLanguage(constraint);
+            if (language != null) {
+                ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(dataType);
+                for (String propertyName : new HashSet<String>(simpleAndConstraints.keySet())) {
+                    ExtendedPropertyDefinition propertyDefinition = nodeType.getPropertyDefinition(propertyName);
+                    if (propertyDefinition != null && propertyDefinition.isInternationalized()) {
+                        Value value = simpleAndConstraints.get(propertyName);
+                        simpleAndConstraints.remove(propertyName);
+                        simpleAndConstraints.put(propertyName + "__" + language, value);
+                    }
+                }
+            }
+            List<String> rowIDs = getRowIDs(table, simpleAndConstraints);
             if (!rowIDs.isEmpty()) {
                 result = new LinkedList<String>();
                 for (String rowID : rowIDs) {
@@ -267,7 +283,7 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
 
         }
 
-        return result != null ? result : Collections.<String> emptyList();
+        return result != null ? result : Collections.<String>emptyList();
     }
 
     private List<String> getDataTypesForNodeType(String nodeType) {

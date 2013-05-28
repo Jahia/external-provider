@@ -89,14 +89,14 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     private JCRSessionWrapper session;
 
-    public void checkProperties(JCRNodeWrapper amsterdam) throws Exception {
+    public void checkProperties(JCRNodeWrapper amsterdam, boolean mapped) throws Exception {
         // property existence
         assertTrue(amsterdam.hasProperty("city_id"));
         assertTrue(amsterdam.hasProperty("airport"));
-        assertTrue(amsterdam.hasProperty("city_name"));
+        assertTrue(amsterdam.hasProperty(mapped ? "city_name" : "city_name__en"));
         assertTrue(amsterdam.hasProperty("country_iso_code"));
         assertTrue(amsterdam.hasProperty("language"));
-        assertTrue(amsterdam.hasProperty("country"));
+        assertTrue(amsterdam.hasProperty(mapped ? "country" : "country__en"));
         assertTrue(amsterdam.hasProperty("jcr:uuid"));
         assertFalse(amsterdam.hasProperty("jcr:test"));
         assertFalse(amsterdam.hasProperty("city_main_post_code"));
@@ -104,10 +104,10 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         // property values
         assertEquals("1", amsterdam.getProperty("city_id").getString());
         assertEquals("AMS", amsterdam.getProperty("airport").getString());
-        assertEquals("Amsterdam", amsterdam.getProperty("city_name").getString());
+        assertEquals("Amsterdam", amsterdam.getProperty(mapped ? "city_name" : "city_name__en").getString());
         assertEquals("NL", amsterdam.getProperty("country_iso_code").getString());
         assertEquals("Dutch", amsterdam.getProperty("language").getString());
-        assertEquals("Netherlands", amsterdam.getProperty("country").getString());
+        assertEquals("Netherlands", amsterdam.getProperty(mapped ? "country" : "country__en").getString());
 
         try {
             amsterdam.getProperty("city_main_post_code");
@@ -208,7 +208,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @Test
     public void testGenericProperties() throws Exception {
-        checkProperties(session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES/MQ"));
+        checkProperties(session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES/MQ"), false);
     }
 
     @Test
@@ -267,7 +267,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @Test
     public void testMappedProperties() throws Exception {
-        checkProperties(session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/1"));
+        checkProperties(session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/1"), true);
     }
 
     @Test
@@ -419,4 +419,26 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         AA.removeMixin("jmix:comments");
         session.save();
     }
+
+    @Test
+    public void testI18nAndLazyProperties() throws Exception {
+        JCRNodeWrapper city = session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/16");
+        assertTrue(city.hasI18N(Locale.ENGLISH));
+        assertTrue(city.hasI18N(Locale.FRENCH));
+        assertFalse(city.hasI18N(Locale.GERMAN));
+        assertTrue(city.hasProperty("country"));
+        assertTrue(city.hasProperty("city_name"));
+        assertFalse(city.hasProperty("city_name_en"));
+        assertTrue(city.hasProperty("airport"));
+        assertEquals("GVA", city.getPropertyAsString("airport"));
+        assertEquals("Switzerland", city.getPropertyAsString("country"));
+        assertEquals("Geneva", city.getPropertyAsString("city_name"));
+
+        JCRSessionWrapper frenchSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE, Locale.FRENCH);
+        JCRNodeWrapper frenchCity = frenchSession.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/16");
+        assertEquals("Suisse", frenchCity.getProperty("country").getString());
+        assertEquals("Genève", frenchCity.getPropertyAsString("city_name"));
+        frenchSession.logout();
+    }
+
 }
