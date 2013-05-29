@@ -736,6 +736,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         if (type.isNodeType(Constants.JAHIAMIX_VIEWPROPERTIES)) {
             saveProperties(data);
         }
+
+        if (data.getPath().toLowerCase().endsWith(".cnd")) {
+            nodeTypeRegistryMap.remove(data.getPath());
+        }
     }
 
     private void saveProperties(ExternalData data) {
