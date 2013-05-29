@@ -1156,6 +1156,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private Value getValueFromString(String value, int requiredType, ExtendedPropertyDefinition propertyDefinition) {
         if (value.contains("(")) {
+            String fn = StringUtils.substringBefore(value, "(");
             String[] params = StringUtils.split(StringUtils.substringBetween(value, "(", ")"), ",");
             List<String> paramList = new ArrayList<String>();
             for (String param : params) {
@@ -1164,7 +1165,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     paramList.add(param);
                 }
             }
-            return new DynamicValueImpl(value, paramList, requiredType, false, propertyDefinition);
+            return new DynamicValueImpl(fn, paramList, requiredType, false, propertyDefinition);
         } else {
             return new ValueImpl(value, requiredType, false);
         }
@@ -1397,14 +1398,19 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         if (valueConstraints != null && valueConstraints.length > 0) {
             properties.put("j:valueConstraints", valueConstraints);
         }
-        Value[] defaultValues = propertyDefinition.getDefaultValues();
+        Value[] defaultValues = propertyDefinition.getDefaultValuesAsUnexpandedValue();
         if (defaultValues != null && defaultValues.length > 0) {
             List<String> defaultValuesAsString = new ArrayList<String>();
             for (Value value : defaultValues) {
-                try {
-                    defaultValuesAsString.add(value.getString());
-                } catch (RepositoryException e) {
-                    logger.error("Failed to get default value", e);
+                if (value instanceof DynamicValueImpl) {
+                    DynamicValueImpl dynamicValue = (DynamicValueImpl) value;
+                    defaultValuesAsString.add(dynamicValue.getFn() + "(" + StringUtils.join(dynamicValue.getParams(), ", ") + ")");
+                } else {
+                    try {
+                        defaultValuesAsString.add(value.getString());
+                    } catch (RepositoryException e) {
+                        logger.error("Failed to get default value", e);
+                    }
                 }
             }
             properties.put("j:defaultValues", defaultValuesAsString.toArray(new String[defaultValuesAsString.size()]));
