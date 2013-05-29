@@ -32,6 +32,7 @@
                 <entry key="css" value="jnt:cssFolder"/>
                 <entry key="javascript" value="jnt:javascriptFolder"/>
                 <entry key="resources" value="jnt:resourceBundleFolder"/>
+                <entry key="META-INF" value="jnt:metaInfFolder"/>
             </util:map>
         </property>
         <property name="fileTypeMapping">
