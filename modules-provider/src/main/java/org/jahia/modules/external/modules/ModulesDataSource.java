@@ -529,9 +529,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         }
                         throw new ItemExistsException(Messages.get("resources.JahiaExternalProviderModules",message,locale));
                     }
-                }
-                catch (InvalidQueryException e) {
+                } catch (InvalidQueryException e) {
                     // this can happen if the type just have been created and not used at all.
+                } catch (NamespaceException e) {
+                    // this can happen if the namespace just have been created and the module not deployed.
                 }
                 return null;
             }
