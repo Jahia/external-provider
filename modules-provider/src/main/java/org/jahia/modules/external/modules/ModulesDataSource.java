@@ -1157,10 +1157,13 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private Value getValueFromString(String value, int requiredType, ExtendedPropertyDefinition propertyDefinition) {
         if (value.contains("(")) {
             String fn = StringUtils.substringBefore(value, "(");
-            String[] params = StringUtils.split(StringUtils.substringBetween(value, "(", ")"), ",");
+            String[] params = StringUtils.split(StringUtils.substringBetween(value, "(", ")"), " ");
             List<String> paramList = new ArrayList<String>();
             for (String param : params) {
                 param = param.trim();
+                param = StringUtils.removeEnd(StringUtils.removeStart(param, "'"), "'");
+                param = param.replace("\\\\", "\\");
+                param = param.replace("\\'", "'");
                 if (!"".equals(param)) {
                     paramList.add(param);
                 }
@@ -1400,20 +1403,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
         Value[] defaultValues = propertyDefinition.getDefaultValuesAsUnexpandedValue();
         if (defaultValues != null && defaultValues.length > 0) {
-            List<String> defaultValuesAsString = new ArrayList<String>();
-            for (Value value : defaultValues) {
-                if (value instanceof DynamicValueImpl) {
-                    DynamicValueImpl dynamicValue = (DynamicValueImpl) value;
-                    defaultValuesAsString.add(dynamicValue.getFn() + "(" + StringUtils.join(dynamicValue.getParams(), ", ") + ")");
-                } else {
-                    try {
-                        defaultValuesAsString.add(value.getString());
-                    } catch (RepositoryException e) {
-                        logger.error("Failed to get default value", e);
-                    }
-                }
+            try {
+                List<String> defaultValuesAsString = JahiaCndWriter.getValuesAsString(defaultValues);
+                properties.put("j:defaultValues", defaultValuesAsString.toArray(new String[defaultValuesAsString.size()]));
+            } catch (IOException e) {
+                logger.error("Failed to get default values", e);
             }
-            properties.put("j:defaultValues", defaultValuesAsString.toArray(new String[defaultValuesAsString.size()]));
         }
         properties.put("j:multiple", new String[]{String.valueOf(propertyDefinition.isMultiple())});
         String[] availableQueryOperators = propertyDefinition.getAvailableQueryOperators();
