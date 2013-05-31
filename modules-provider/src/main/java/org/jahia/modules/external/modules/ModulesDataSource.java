@@ -1157,6 +1157,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private Value getValueFromString(String value, int requiredType, ExtendedPropertyDefinition propertyDefinition) {
         if (value.contains("(")) {
             String fn = StringUtils.substringBefore(value, "(");
+            fn = fn.replace("\\\\", "\\");
+            fn = fn.replace("\\'", "'");
             String[] params = StringUtils.split(StringUtils.substringBetween(value, "(", ")"), " ");
             List<String> paramList = new ArrayList<String>();
             for (String param : params) {
@@ -1170,6 +1172,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             }
             return new DynamicValueImpl(fn, paramList, requiredType, false, propertyDefinition);
         } else {
+            value = StringUtils.removeEnd(StringUtils.removeStart(value, "'"), "'");
+            value = value.replace("\\\\", "\\");
+            value = value.replace("\\'", "'");
             return new ValueImpl(value, requiredType, false);
         }
     }
