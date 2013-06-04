@@ -305,9 +305,19 @@ public class ExternalSessionImpl implements Session {
                 Map<String, Map<String, String[]>> i18nProperties = parentData.getI18nProperties();
                 if (i18nProperties == null) {
                     i18nProperties = new HashMap<String, Map<String, String[]>>();
+                    parentData.setI18nProperties(i18nProperties);
                 }
                 i18nProperties.put(lang, changedData.get(path).getProperties());
-                parentData.setI18nProperties(i18nProperties);
+
+                if (changedData.get(path).getLazyProperties() != null) {
+                    Map<String, Set<String>> lazyI18nProperties = parentData.getLazyI18nProperties();
+                    if (lazyI18nProperties == null) {
+                        lazyI18nProperties = new HashMap<String, Set<String>>();
+                        parentData.setLazyI18nProperties(lazyI18nProperties);
+                    }
+                    lazyI18nProperties.put(lang, changedData.get(path).getLazyProperties());
+                }
+
                 changedDataWithI18n.put(parentPath, parentData);
             } else {
                 changedDataWithI18n.put(path, changedData.get(path));

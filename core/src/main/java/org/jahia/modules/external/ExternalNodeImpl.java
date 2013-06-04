@@ -203,7 +203,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         session.getDeletedData().put(getPath(),data);
     }
 
-    public void removeProperty(String name) throws RepositoryException {
+    protected void removeProperty(String name) throws RepositoryException {
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }
