@@ -7,8 +7,19 @@ import javax.jcr.query.qom.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Provide useful methods to parse queries
+ *
+ */
 public class QueryHelper {
 
+    /**
+     * Parse the query source to get the node type on which the query should be executed
+     *
+     * @param source Query source
+     * @return The node type on which the query is executed
+     * @throws UnsupportedRepositoryOperationException If the constraint is a join
+     */
     public static String getNodeType(Source source) throws UnsupportedRepositoryOperationException {
         if (source instanceof Selector) {
             return ((Selector) source).getNodeTypeName();
@@ -16,6 +27,13 @@ public class QueryHelper {
         throw new UnsupportedRepositoryOperationException("Unsupported source : " + source);
     }
 
+    /**
+     * Parse the query constraint to find a descendant/child node constraint. Return the root path of the constraint
+     *
+     * @param constraint Query constraint
+     * @return The relative path under which the query should be executed
+     * @throws UnsupportedRepositoryOperationException If the constraint contains disjunction or cannot be parsed
+     */
     public static String getRootPath(Constraint constraint) throws UnsupportedRepositoryOperationException {
         if (constraint instanceof And) {
             String result1 = getRootPath(((And) constraint).getConstraint1());
@@ -34,6 +52,14 @@ public class QueryHelper {
         }
     }
 
+    /**
+     * If the constraint has a root path, tells if all subnodes should be included or only direct child. (i.e. checks
+     * if the constraint is a childnode or isdescendantnode)
+     *
+     * @param constraint Query constraint
+     * @return true if all descendant nodes should be queried, false if only direct child, null if no constraint found
+     * @throws UnsupportedRepositoryOperationException If the constraint contains disjunction or cannot be parsed
+     */
     public static Boolean includeSubChild(Constraint constraint) throws UnsupportedRepositoryOperationException {
         if (constraint instanceof And) {
             Boolean result1 = includeSubChild(((And) constraint).getConstraint1());
@@ -53,12 +79,30 @@ public class QueryHelper {
 
     }
 
+    /**
+     * The getSimpleAndConstraints method will return you a map of the properties and their expected values from
+     * the ‘AND’ constraints in the query. If the query contains OR constraints, it will throw an
+     * UnsupportedRepositoryOperationException
+     *
+     * @param constraint Query constraint
+     * @return Map of constraints/values
+     * @throws UnsupportedRepositoryOperationException if constraint contains OR disjunction
+     */
     public static Map<String,Value> getSimpleAndConstraints(Constraint constraint) throws RepositoryException {
         Map<String,Value> m = new HashMap<String,Value>();
         addConstraints(m, constraint, true);
         return m;
     }
 
+    /**
+     * The getSimpleAndConstraints method will return you a map of the properties and their expected values from
+     * the ‘OR’ constraints in the query. If the query contains AND constraints, it will throw an
+     * UnsupportedRepositoryOperationException
+     *
+     * @param constraint Query constraint
+     * @return Map of constraints/values
+     * @throws UnsupportedRepositoryOperationException if constraint contains AND conjunction
+     */
     public static Map<String,Value> getSimpleOrConstraints(Constraint constraint) throws RepositoryException {
         Map<String,Value> m = new HashMap<String,Value>();
         addConstraints(m, constraint, false);
@@ -120,6 +164,13 @@ public class QueryHelper {
         }
     }
 
+    /**
+     * Parse the query constraints to get the language on which the query is to be executed.
+     *
+     * @param constraint Query constraint
+     * @return The language code
+     * @throws RepositoryException
+     */
     public static String getLanguage(Constraint constraint) throws RepositoryException {
         if (constraint == null) {
             return null;
