@@ -85,6 +85,7 @@
                             Jahia-Depends,
                             Jahia-Static-Resources
                         </_removeheaders>
+                        <Jahia-Depends> </Jahia-Depends>
                     </instructions>
                 </configuration>
             </plugin>

@@ -104,7 +104,6 @@
             </exclusions>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>
@@ -124,6 +123,7 @@
                             ${jahia.modules.bundle.removeheaders},
                             Jahia-Static-Resources
                         </_removeheaders>
+                        <Jahia-Depends> </Jahia-Depends>
                     </instructions>
                 </configuration>
             </plugin>
