@@ -39,19 +39,8 @@
  */
 package org.jahia.modules.external.id;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.UUID;
-
-import javax.jcr.RepositoryException;
-
 import org.apache.commons.lang.StringUtils;
-import org.hibernate.FlushMode;
-import org.hibernate.HibernateException;
-import org.hibernate.Query;
-import org.hibernate.SessionFactory;
-import org.hibernate.StatelessSession;
-import org.hibernate.classic.Session;
+import org.hibernate.*;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.external.IdentifierMappingService;
@@ -60,9 +49,14 @@ import org.jahia.services.cache.CacheFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.RepositoryException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.UUID;
+
 /**
  * Node identifier mapping service for external content for maintaining internal to external ID mappings and provider IDs.
- * 
+ *
  * @author Sergiy Shyrkov
  */
 public class IdentifierMappingServiceImpl implements IdentifierMappingService {
@@ -244,7 +238,7 @@ public class IdentifierMappingServiceImpl implements IdentifierMappingService {
         uuidMapping.setExternalId(externalId);
         uuidMapping.setProviderKey(providerKey);
         uuidMapping.setInternalUuid(providerId + "-" + StringUtils.substringAfter(UUID.randomUUID().toString(), "-"));
-        org.hibernate.classic.Session session = null;
+        org.hibernate.Session session = null;
         try {
             session = getHibernateSessionFactory().openSession();
             session.beginTransaction();
@@ -307,7 +301,7 @@ public class IdentifierMappingServiceImpl implements IdentifierMappingService {
 
     @Override
     public void updateExternalIdentifier(String oldExternalId, String newExternalId, String providerKey,
-            boolean includeDescendats) throws RepositoryException {
+                                         boolean includeDescendats) throws RepositoryException {
         Session session = null;
         try {
             session = getHibernateSessionFactory().openSession();
