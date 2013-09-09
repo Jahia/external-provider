@@ -372,7 +372,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property setProperty(String name, String value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name,getSession().getValueFactory().createValue(value));
+        Value v = null;
+        if (value != null) {
+            v = getSession().getValueFactory().createValue(value);
+        }
+        return setProperty(name, v);
     }
 
     public Property setProperty(String name, String value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
@@ -429,12 +433,18 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property setProperty(String name, Calendar value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        Value v = getSession().getValueFactory().createValue(value);
+        Value v = null;
+        if (value != null) {
+            v = getSession().getValueFactory().createValue(value);
+        }
         return setProperty(name, v);
     }
 
     public Property setProperty(String name, Node value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        Value v = getSession().getValueFactory().createValue(value);
+        Value v = null;
+        if (value != null) {
+            v = getSession().getValueFactory().createValue(value);
+        }
         return setProperty(name, v);
     }
 
@@ -789,16 +799,23 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Property setProperty(String name, Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        InputStream stream = value.getStream();
-        try {
-            return setProperty(name, stream);
-        } finally {
-            IOUtils.closeQuietly(stream);
+        Value v = null;
+        if (value != null) {
+            InputStream stream = value.getStream();
+            try {
+                return setProperty(name, stream);
+            } finally {
+                IOUtils.closeQuietly(stream);
+            }
         }
+        return setProperty(name, v);
     }
 
     public Property setProperty(String name, BigDecimal value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        Value v = getSession().getValueFactory().createValue(value);
+        Value v = null;
+        if (value != null) {
+            v = getSession().getValueFactory().createValue(value);
+        }
         return setProperty(name, v);
     }
 
@@ -967,7 +984,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         for (Map.Entry<String, List<String>> entry : overridableProperties.entrySet()) {
             if ((entry.getKey().equals("*") || type.getName().equals(entry.getKey())) &&
                     (entry.getValue().contains("*") || entry.getValue().contains(definition.getName()))) {
-                    return true;
+                return true;
             }
         }
 
