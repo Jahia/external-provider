@@ -100,7 +100,7 @@
                     <instructions>
                         <Jahia-Depends>default,external-provider,rating</Jahia-Depends>  
                         <Jahia-Module-Type>system</Jahia-Module-Type>
-                        <Import-Package>*, com.ibm.jvm;resolution:=optional, org.apache.derby.impl.drda;resolution:=optional, ${jahia.plugin.projectPackageImport}</Import-Package>  
+                        <Import-Package>com.ibm.jvm;resolution:=optional, org.apache.derby.impl.drda;resolution:=optional, ${jahia.plugin.projectPackageImport}, *</Import-Package>  
                         <Embed-Dependency>derby;scope=runtime;inline=false</Embed-Dependency>
                         <_removeheaders>${jahia.modules.bundle.removeheaders}, Jahia-Static-Resources</_removeheaders> 
                     </instructions>
