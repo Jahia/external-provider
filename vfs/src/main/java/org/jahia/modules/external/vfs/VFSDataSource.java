@@ -171,7 +171,10 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                         return Collections.emptyList();
                     }
                 } else {
-                    logger.warn("Found non file or folder entry, maybe an alias. VFS file type=" + fileObject.getType());
+                    if (fileObject.exists()) {
+                        logger.warn("Found non file or folder entry at path {}, maybe an alias. VFS file type: {}",
+                                fileObject, fileObject.getType());
+                    }
                 }
             }
         } catch (FileSystemException e) {
