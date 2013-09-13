@@ -1,11 +1,15 @@
 package org.jahia.modules.external;
 
+import org.apache.commons.io.input.AutoCloseInputStream;
 import org.apache.commons.lang.StringUtils;
+
 import javax.jcr.*;
 import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.PropertyDefinition;
 import javax.jcr.version.VersionException;
+
+import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.Calendar;
@@ -45,6 +49,7 @@ public class ExtensionProperty extends ExtensionItem implements Property {
         property.setValue(values);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void setValue(InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         property.setValue(value);
@@ -106,7 +111,14 @@ public class ExtensionProperty extends ExtensionItem implements Property {
 
     @Override
     public InputStream getStream() throws ValueFormatException, RepositoryException {
-        return property.getValue().getStream();
+        final Binary binary = property.getValue().getBinary();
+        return new AutoCloseInputStream(binary.getStream()) {
+            @Override
+            public void close() throws IOException {
+                super.close();
+                binary.dispose();
+            }
+        };
     }
 
     @Override
