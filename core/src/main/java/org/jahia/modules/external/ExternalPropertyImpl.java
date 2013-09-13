@@ -45,8 +45,6 @@ import org.apache.jackrabbit.value.BinaryImpl;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.Name;
-import org.jahia.services.content.nodetypes.NodeTypeRegistry;
-
 import javax.jcr.*;
 import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;

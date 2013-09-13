@@ -1,13 +1,9 @@
 package org.jahia.modules.external;
 
 import org.apache.commons.lang.StringUtils;
-import org.jahia.services.content.nodetypes.Name;
-import org.jahia.services.content.nodetypes.NodeTypeRegistry;
-
 import javax.jcr.*;
 import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.nodetype.PropertyDefinition;
 import javax.jcr.version.VersionException;
 import java.io.InputStream;

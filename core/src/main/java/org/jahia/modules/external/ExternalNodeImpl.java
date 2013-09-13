@@ -63,8 +63,6 @@ import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.Name;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the {@link javax.jcr.Node} for the {@link org.jahia.modules.external.ExternalData}.
@@ -72,8 +70,6 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Draier
  */
 public class ExternalNodeImpl extends ExternalItemImpl implements Node {
-
-    private static final Logger logger = LoggerFactory.getLogger(ExternalNodeImpl.class);
 
     private ExternalData data;
     private Map<String, ExternalPropertyImpl> properties = null;
