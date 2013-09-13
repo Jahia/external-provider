@@ -53,6 +53,7 @@ import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.retention.RetentionManager;
 import javax.jcr.security.AccessControlManager;
 import javax.jcr.version.VersionException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -65,6 +66,7 @@ import java.util.*;
  * @author Thomas Draier
  */
 public class ExternalSessionImpl implements Session {
+    static final String TRANSLATION_PREFIX = "translation:";
     private ExternalRepositoryImpl repository;
     private ExternalWorkspaceImpl workspace;
     private Credentials credentials;
@@ -111,7 +113,7 @@ public class ExternalSessionImpl implements Session {
     }
 
     public Node getNodeByUUID(String uuid) throws ItemNotFoundException, RepositoryException {
-        if (!repository.getDataSource().isSupportsUuid() || uuid.startsWith("translation:")) {
+        if (!repository.getDataSource().isSupportsUuid() || uuid.startsWith(TRANSLATION_PREFIX)) {
             if (!uuid.startsWith(getRepository().getStoreProvider().getId())) {
                 throw new ItemNotFoundException("Item " + uuid + " could not be found in this repository");
             }
@@ -132,8 +134,8 @@ public class ExternalSessionImpl implements Session {
             }
         }
 
-        if (uuid.startsWith("translation:")) {
-            String u = StringUtils.substringAfter(uuid, "translation:");
+        if (uuid.startsWith(TRANSLATION_PREFIX)) {
+            String u = StringUtils.substringAfter(uuid, TRANSLATION_PREFIX);
             String lang = StringUtils.substringBefore(u, ":");
             u = StringUtils.substringAfter(u, ":");
             return getNodeByLocalIdentifier(u).getNode("j:translation_" + lang);
@@ -181,7 +183,7 @@ public class ExternalSessionImpl implements Session {
                     i18nProps.putAll(parentObject.getI18nProperties().get(lang));
                 }
                 i18nProps.put("jcr:language", new String[]{lang});
-                ExternalData i18n = new ExternalData("translation:" + lang + ":" + parentObject.getId(), path,
+                ExternalData i18n = new ExternalData(TRANSLATION_PREFIX + lang + ":" + parentObject.getId(), path,
                         "jnt:translation", i18nProps);
                 if (parentObject.getLazyI18nProperties() != null && parentObject.getLazyI18nProperties().containsKey(lang)) {
                     i18n.setLazyProperties(parentObject.getLazyI18nProperties().get(lang));

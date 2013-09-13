@@ -878,7 +878,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     public String getIdentifier() throws RepositoryException {
         if (uuid == null) {
-            if (!session.getRepository().getDataSource().isSupportsUuid() || data.getId().startsWith("translation:")) {
+            if (!session.getRepository().getDataSource().isSupportsUuid() || data.getId().startsWith(ExternalSessionImpl.TRANSLATION_PREFIX)) {
                 uuid = getStoreProvider().getInternalIdentifier(data.getId());
                 if (uuid == null) {
                     // not mapped yet -> store mapping
