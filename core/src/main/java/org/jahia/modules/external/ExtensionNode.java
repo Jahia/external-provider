@@ -20,6 +20,7 @@ import java.util.*;
 /**
  * Wrapper for extension Node
  */
+@SuppressWarnings("deprecation")
 public class ExtensionNode extends ExtensionItem implements Node {
     private Node node;
     private String uuid;
@@ -410,7 +411,6 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     private class ExtensionPropertyIterator implements PropertyIterator {
         private int pos = 0;
-        private Iterator<ExternalPropertyImpl> it;
         private PropertyIterator extensionPropertiesIterator;
         private Property nextProperty = null;
 

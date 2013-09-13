@@ -379,6 +379,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return setProperty(name,value);
     }
 
+    @SuppressWarnings("deprecation")
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
             return new ExtensionProperty(getExtensionNode(true).setProperty(name, value), getPath()+ "/" + name, session, this);
