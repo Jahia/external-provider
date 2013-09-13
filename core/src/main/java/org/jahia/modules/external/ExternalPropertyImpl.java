@@ -40,6 +40,7 @@
 
 package org.jahia.modules.external;
 
+import org.apache.commons.io.input.AutoCloseInputStream;
 import org.apache.jackrabbit.value.BinaryImpl;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -51,6 +52,7 @@ import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.PropertyDefinition;
 import javax.jcr.version.VersionException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -213,7 +215,14 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
 
     public InputStream getStream() throws ValueFormatException, RepositoryException {
         if (value != null) {
-            return value.getBinary().getStream();
+            final Binary binary = value.getBinary();
+            return new AutoCloseInputStream(binary.getStream()) {
+                @Override
+                public void close() throws IOException {
+                    super.close();
+                    binary.dispose();
+                }
+            };
         }
         return null;
     }
