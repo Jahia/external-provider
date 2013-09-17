@@ -58,6 +58,7 @@ import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -70,20 +71,19 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     private static final List<String> JCR_CONTENT_LIST = Arrays.asList(Constants.JCR_CONTENT);
     private static final Set<String> SUPPORTED_NODE_TYPES = new HashSet<String>(Arrays.asList(Constants.JAHIANT_FILE, Constants.JAHIANT_FOLDER, Constants.JCR_CONTENT));
     private static final Logger logger = LoggerFactory.getLogger(VFSDataSource.class);
-    protected String root;
-    protected String rootPath;
+    private FileObject root;
+    private String rootPath;
     protected FileSystemManager manager;
 
     /**
      * Defines the root point of the DataSource
-     * @param root
+     * @param rootUri
      */
-    public void setRoot(String root) {
-        this.root = root;
-
+    public void setRoot(String rootUri) {
         try {
             manager = VFS.getManager();
-            rootPath = getFile("/").getName().getPath();
+            root = manager.resolveFile(rootUri);
+            rootPath = root.getName().getPath();
         } catch (FileSystemException e) {
             logger.error(e.getMessage(), e);
         }
@@ -150,7 +150,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
 
     public FileObject getFile(String path) throws FileSystemException {
-        return manager.resolveFile(root + path);
+        return (path == null || path.length() == 0 || path.equals("/")) ? root : root
+                .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
     }
 
     public List<String> getChildren(String path) {
@@ -279,12 +280,13 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     protected ExternalData getFileContent(final FileContent content) throws FileSystemException {
-        Map<String,String[]> properties = new HashMap<String, String[]>();
+        Map<String,String[]> properties = new HashMap<String, String[]>(1);
 
         properties.put(Constants.JCR_MIMETYPE, new String[] {getContentType(content)});
 
         String path = content.getFile().getName().getPath().substring(rootPath.length());
-        ExternalData externalData = new ExternalData(path + "/"+Constants.JCR_CONTENT, path + "/"+Constants.JCR_CONTENT, Constants.NT_RESOURCE, properties);
+        String jcrContentPath = path + "/"+Constants.JCR_CONTENT;
+        ExternalData externalData = new ExternalData(jcrContentPath, jcrContentPath, Constants.NT_RESOURCE, properties);
 
         Map<String,Binary[]> binaryProperties = new HashMap<String, Binary[]>(1);
         binaryProperties.put(Constants.JCR_DATA, new Binary[] {new VFSBinaryImpl(content)});
@@ -303,5 +305,4 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         }
         return s1;
     }
-
 }

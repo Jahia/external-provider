@@ -42,15 +42,19 @@ package org.jahia.modules.external.modules;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.io.Charsets;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.vfs2.FileContent;
+import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
+import org.apache.commons.vfs2.provider.local.LocalFileName;
 import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.external.ExternalDataSource;
@@ -62,6 +66,7 @@ import org.jahia.modules.external.vfs.VFSDataSource;
 import org.jahia.services.content.nodetypes.*;
 import org.jahia.services.preferences.user.UserPreferencesHelper;
 import org.jahia.services.templates.SourceControlManagement;
+import org.jahia.services.templates.SourceControlManagement.Status;
 import org.jahia.tools.files.FileWatcher;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.i18n.Messages;
@@ -80,6 +85,7 @@ import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 import javax.jcr.query.qom.QueryObjectModelConstants;
 import javax.jcr.version.OnParentVersionAction;
+
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -118,6 +124,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private Map<String, NodeTypeRegistry> nodeTypeRegistryMap = new HashMap<String, NodeTypeRegistry>();
 
     private FileWatcher watcher;
+    
+    private File realRoot;
+    private String scmRelativeRoot;
 
     @Override
     public void start() {
@@ -131,6 +140,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     if (sourceControl != null) {
                         sourceControl.invalidateStatusCache();
                     }
+                    @SuppressWarnings("unchecked")
                     List<File> files = (List<File>)arg;
                     for (File file : files) {
                         String type = fileTypeMapping.get(StringUtils.substringAfterLast(file.getName(),"."));
@@ -353,10 +363,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
         SourceControlManagement sourceControl = module.getSourceControl();
         if (sourceControl != null) {
-            String relPath = StringUtils.removeStart(rootPath + path, sourceControl.getRootFolder().getAbsolutePath() + "/");
-            relPath = StringUtils.removeEnd(relPath, "/");
             try {
-                SourceControlManagement.Status status = sourceControl.getStatus(relPath);
+                SourceControlManagement.Status status = getScmStatus(path);
                 if (status != SourceControlManagement.Status.UNMODIFIED) {
                     List<String> mixin = data.getMixin();
                     if (mixin == null) {
@@ -373,6 +381,33 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             }
         }
         return data;
+    }
+
+    private Status getScmStatus(String vfsPath) throws IOException {
+        String scmPath = getScmRelativePath(vfsPath);
+        return scmPath != null ? module.getSourceControl().getStatus(scmPath) : Status.UNMODIFIED;
+    }
+
+    private String getScmRelativePath(String vfsPath) {
+        String scmRoot = getScmRelativeRoot();
+        if (scmRoot == null) {
+            return null;
+        }
+        if (vfsPath == null || vfsPath.length() == 0 || vfsPath.equals("/")) {
+            return scmRoot;
+        }
+        return vfsPath.charAt(0) == '/' ? scmRoot + vfsPath : scmRoot + "/" + vfsPath;
+    }
+
+    private String getScmRelativeRoot() {
+        if (scmRelativeRoot == null && module.getSourceControl() != null) {
+            String relativePath = StringUtils.removeStart(getRealRoot().getAbsolutePath(), module.getSourceControl()
+                    .getRootFolder().getAbsolutePath()
+                    + File.separatorChar);
+            relativePath = StringUtils.removeEnd(relativePath, File.separator);
+            scmRelativeRoot = FilenameUtils.separatorsToUnix(relativePath);
+        }
+        return scmRelativeRoot;
     }
 
     /**
@@ -398,12 +433,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 nodeTypeRegistryMap.remove(path);
             }
             if (sourceControl != null) {
-                String relPath = StringUtils.removeStart(rootPath + path, sourceControl.getRootFolder().getAbsolutePath() + "/");
-                relPath = StringUtils.removeEnd(relPath, "/");
                 try {
-                    if (!SourceControlManagement.Status.UNTRACKED.equals(sourceControl.getStatus(relPath))) {
-                        File file = new File(rootPath + path);
-                        sourceControl.setRemovedFile(file);
+                    if (!SourceControlManagement.Status.UNTRACKED.equals(getScmStatus(path))) {
+                        sourceControl.setRemovedFile(getRealFile(path));
                     } else {
                         super.removeItemByPath(path);
                     }
@@ -480,12 +512,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 nodeTypeRegistryMap.remove(oldPath);
             }
             if (sourceControl != null) {
-                String oldRelPath = StringUtils.removeStart(rootPath + oldPath, sourceControl.getRootFolder().getAbsolutePath() + "/");
-                oldRelPath = StringUtils.removeEnd(oldRelPath, "/");
                 try {
-                    if (!SourceControlManagement.Status.UNTRACKED.equals(sourceControl.getStatus(oldRelPath))) {
-                        File src = new File(rootPath + oldPath);
-                        File dst = new File(rootPath + newPath);
+                    if (!SourceControlManagement.Status.UNTRACKED.equals(getScmStatus(oldPath))) {
+                        File src = getRealFile(oldPath);
+                        File dst = getRealFile(newPath);
                         sourceControl.setMovedFile(src, dst);
                     } else {
                         super.move(oldPath, newPath);
@@ -518,7 +548,6 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private void checkCndItemUsageByWorkspace(final String type, final String workspace,final String message) throws RepositoryException {
         JCRTemplate.getInstance().doExecuteWithSystemSession(null, workspace, new JCRCallback<Object>() {
             public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
-                boolean error = false;
                 try {
                     QueryResult result = session.getWorkspace().getQueryManager()
                             .createQuery("Select * from ["+type+"]", Query.JCR_SQL2).execute();
@@ -706,7 +735,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     path = path.substring(0, path.indexOf("/" + Constants.JCR_CONTENT));
                 }
                 try {
-                    sourceControl.setModifiedFile(Arrays.asList(new File(rootPath + path)));
+                    sourceControl.setModifiedFile(Arrays.asList(getRealFile(path)));
                 } catch (IOException e) {
                     logger.error("Failed to add file " + path + " to source control", e);
                 }
@@ -1532,7 +1561,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         try {
             Writer writer = null;
             try {
-                writer = new OutputStreamWriter(new FileOutputStream(new File(rootPath + path)));
+                writer = new OutputStreamWriter(new FileOutputStream(getRealFile(path)));
                 Map<String, String> namespaces = nodeTypeRegistry.getNamespaces();
                 namespaces.remove("rep");
                 if (nodeTypeRegistryMap.containsKey(path)) {
@@ -1656,6 +1685,25 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     @Override
     public Binary[] getBinaryPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
         throw new PathNotFoundException(data.getPath() + "/" + propertyName);
+    }
+
+    protected File getRealFile(String relativePath) throws FileSystemException {
+        return StringUtils.isEmpty(relativePath) || relativePath.equals("/") ? getRealRoot() : new File(getRealRoot(),
+                relativePath);
+    }
+
+    protected File getRealRoot() {
+        if (realRoot == null) {
+            try {
+                FileName name = getFile("/").getName();
+                realRoot = new File(((LocalFileName) name).getRootFile(), name.getPath());
+            } catch (FileSystemException e) {
+                logger.error(e.getMessage(), e);
+                throw new IllegalArgumentException(e);
+            }
+        }
+
+        return realRoot;
     }
 
     class SortedProperties extends Properties {
