@@ -435,7 +435,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             if (sourceControl != null) {
                 try {
                     if (!SourceControlManagement.Status.UNTRACKED.equals(getScmStatus(path))) {
-                        sourceControl.setRemovedFile(getRealFile(path));
+                        sourceControl.remove(getRealFile(path));
                     } else {
                         super.removeItemByPath(path);
                     }
@@ -516,7 +516,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     if (!SourceControlManagement.Status.UNTRACKED.equals(getScmStatus(oldPath))) {
                         File src = getRealFile(oldPath);
                         File dst = getRealFile(newPath);
-                        sourceControl.setMovedFile(src, dst);
+                        sourceControl.move(src, dst);
                     } else {
                         super.move(oldPath, newPath);
                     }
@@ -735,7 +735,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     path = path.substring(0, path.indexOf("/" + Constants.JCR_CONTENT));
                 }
                 try {
-                    sourceControl.setModifiedFile(Arrays.asList(getRealFile(path)));
+                    sourceControl.add(getRealFile(path));
                 } catch (IOException e) {
                     logger.error("Failed to add file " + path + " to source control", e);
                 }
@@ -968,7 +968,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             SourceControlManagement sourceControl = module.getSourceControl();
             if (sourceControl != null) {
                 try {
-                    sourceControl.setModifiedFile(newFiles);
+                    sourceControl.add(newFiles);
                 } catch (IOException e) {
                     logger.error("Failed to add files to source control", e);
                 }
