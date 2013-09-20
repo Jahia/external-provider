@@ -1,7 +1,7 @@
 
-    drop table jahia_external_mapping;
+    drop table if exists jahia_external_mapping cascade;
 
-    drop table jahia_external_provider_id;
+    drop table if exists jahia_external_provider_id cascade;
 
     drop sequence jahia_external_provider_id_seq;
 

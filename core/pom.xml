@@ -91,7 +91,7 @@
             </plugin>
         </plugins>
     </build>
-
+    
     <profiles>
         <profile>
             <id>generate-ddl</id>
@@ -104,80 +104,57 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <version>${antrun.plugin.version}</version>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.jahia.server</groupId>
-                                <artifactId>jahia-impl</artifactId>
-                                <version>6.7.0.0-SNAPSHOT</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.hibernate</groupId>
-                                <artifactId>hibernate-core</artifactId>
-                                <version>${hibernate.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.hibernate</groupId>
-                                <artifactId>hibernate-tools</artifactId>
-                                <version>3.2.3.GA</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.slf4j</groupId>
-                                <artifactId>slf4j-log4j12</artifactId>
-                                <version>${slf4j.version}</version>
-                            </dependency>
-                        </dependencies>
+                        <groupId>de.juplo</groupId>
+                        <artifactId>hibernate4-maven-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>generate-ddl</id>
-                                <phase>process-classes</phase>
+                                <id>ddl-derby</id>
                                 <goals>
-                                    <goal>run</goal>
+                                    <goal>export</goal>
                                 </goals>
                                 <configuration>
-                                    <tasks if="jahia.generate.ddl">
-                                        <echo message="Generating DDL schemata..." />
-                                        <property name="runtime_classpath" refid="maven.runtime.classpath" />
-                                        <taskdef name="hibernatetool" classname="org.hibernate.tool.ant.HibernateToolTask">
-                                            <classpath>
-                                                <path refid="maven.dependency.classpath" />
-                                                <pathelement path="${maven.build.dest}" />
-                                                <pathelement path="${maven.test.dest}" />
-                                            </classpath>
-                                        </taskdef>
-                                        <mkdir dir="${basedir}/src/main/webapp/META-INF/db/derby" />
-                                        <hibernatetool destdir="${basedir}/src/main/resources/META-INF/db/derby/">
-                                            <classpath path="${runtime_classpath}" />
-                                            <annotationconfiguration configurationfile="${basedir}/tools/derby.hibernate.cfg.xml" />
-                                            <hbm2ddl outputfilename="jahia-external-provider-schema.sql" format="true" export="false" drop="true" />
-                                        </hibernatetool>
-                                        <mkdir dir="${basedir}/src/main/webapp/META-INF/db/mssql" />
-                                        <hibernatetool destdir="${basedir}/src/main/resources/META-INF/db/mssql/">
-                                            <classpath path="${runtime_classpath}" />
-                                            <annotationconfiguration configurationfile="${basedir}/tools/mssql.hibernate.cfg.xml" />
-                                            <hbm2ddl outputfilename="jahia-external-provider-schema.sql" format="true" export="false" drop="true" />
-                                        </hibernatetool>
-                                        <mkdir dir="${basedir}/src/main/webapp/META-INF/db/mysql" />
-                                        <hibernatetool destdir="${basedir}/src/main/resources/META-INF/db/mysql/">
-                                            <classpath path="${runtime_classpath}" />
-                                            <annotationconfiguration configurationfile="${basedir}/tools/mysql.hibernate.cfg.xml" />
-                                            <hbm2ddl outputfilename="jahia-external-provider-schema.sql" format="true" export="false" drop="true" />
-                                        </hibernatetool>
-                                        <mkdir dir="${basedir}/src/main/webapp/META-INF/db/oracle" />
-                                        <hibernatetool destdir="${basedir}/src/main/resources/META-INF/db/oracle/">
-                                            <classpath path="${runtime_classpath}" />
-                                            <annotationconfiguration configurationfile="${basedir}/tools/oracle.hibernate.cfg.xml" />
-                                            <hbm2ddl outputfilename="jahia-external-provider-schema.sql" format="true" export="false" drop="true" />
-                                        </hibernatetool>
-                                        <mkdir dir="${basedir}/src/main/webapp/META-INF/db/postgresql" />
-                                        <hibernatetool destdir="${basedir}/src/main/resources/META-INF/db/postgresql/">
-                                            <classpath path="${runtime_classpath}" />
-                                            <annotationconfiguration configurationfile="${basedir}/tools/postgresql.hibernate.cfg.xml" />
-                                            <hbm2ddl outputfilename="jahia-external-provider-schema.sql" format="true" export="false" drop="true" />
-                                        </hibernatetool>
-                                    </tasks>
+                                    <hibernateDialect>${hibernateDialect.derby}</hibernateDialect>
+                                    <outputFile>${basedir}/src/main/resources/META-INF/db/derby/jahia-external-provider-schema.sql</outputFile>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ddl-mssql</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.mssql}</hibernateDialect>
+                                    <outputFile>${basedir}/src/main/resources/META-INF/db/mssql/jahia-external-provider-schema.sql</outputFile>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ddl-mysql</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.mysql}</hibernateDialect>
+                                    <outputFile>${basedir}/src/main/resources/META-INF/db/mysql/jahia-external-provider-schema.sql</outputFile>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ddl-oracle</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.oracle}</hibernateDialect>
+                                    <outputFile>${basedir}/src/main/resources/META-INF/db/oracle/jahia-external-provider-schema.sql</outputFile>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ddl-postgresql</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.postgresql}</hibernateDialect>
+                                    <outputFile>${basedir}/src/main/resources/META-INF/db/postgresql/jahia-external-provider-schema.sql</outputFile>
                                 </configuration>
                             </execution>
                         </executions>

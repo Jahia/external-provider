@@ -4,16 +4,16 @@
     drop table jahia_external_provider_id;
 
     create table jahia_external_mapping (
-        internalUuid nvarchar(36) not null,
-        externalId ntext not null,
-        externalIdHash int null,
-        providerKey nvarchar(255) not null,
+        internalUuid varchar(36) not null,
+        externalId varchar(MAX) not null,
+        externalIdHash int,
+        providerKey varchar(255) not null,
         primary key (internalUuid)
     );
 
     create table jahia_external_provider_id (
         id int identity not null,
-        providerKey nvarchar(255) not null,
+        providerKey varchar(255) not null,
         primary key (id)
     );
 
