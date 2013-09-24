@@ -445,6 +445,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     }
                 } catch (IOException e) {
                     logger.error("Failed to mark file as removed in source control", e);
+                    throw new RepositoryException("Failed to mark file as removed in source control", e);
                 }
                 sourceControl.invalidateStatusCache();
             } else {
@@ -526,6 +527,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     }
                 } catch (IOException e) {
                     logger.error("Failed to mark file as removed in source control", e);
+                    throw new RepositoryException("Failed to mark file as removed in source control", e);
                 }
                 sourceControl.invalidateStatusCache();
             } else {
@@ -743,6 +745,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     sourceControl.add(getRealFile(path));
                 } catch (IOException e) {
                     logger.error("Failed to add file " + path + " to source control", e);
+                    throw new RepositoryException("Failed to add file " + path + " to source control", e);
                 }
             } else {
                 sourceControl.invalidateStatusCache();
@@ -750,7 +753,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private void saveEditableFile(ExternalData data, ExtendedNodeType type) {
+    private void saveEditableFile(ExternalData data, ExtendedNodeType type) throws RepositoryException {
         OutputStream outputStream = null;
         // Handle source code
         try {
@@ -762,6 +765,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             }
         } catch (Exception e) {
             logger.error("Failed to write source code", e);
+            throw new RepositoryException("Failed to write source code", e);
         } finally {
             IOUtils.closeQuietly(outputStream);
         }
@@ -904,7 +908,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         saveCndResourceBundle(data, JCRContentUtils.replaceColon(nodeTypeName));
     }
 
-    private void saveCndResourceBundle(ExternalData data, String key) {
+    private void saveCndResourceBundle(ExternalData data, String key) throws RepositoryException {
         Map<String, String[]> properties;
         String[] values;
 //        String rbBasePath = StringUtils.substringAfter(module.getResourceBundleName(), "modules").replaceAll("\\.", "/").replaceAll("___", ".");
@@ -976,12 +980,13 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     sourceControl.add(newFiles);
                 } catch (IOException e) {
                     logger.error("Failed to add files to source control", e);
+                    throw new RepositoryException("Failed to add new files to source control: " + newFiles, e);
                 }
             }
         }
     }
 
-    private void savePropertyDefinition(ExternalData data) {
+    private void savePropertyDefinition(ExternalData data) throws RepositoryException {
         String path = data.getPath();
         String pathLowerCase = path.toLowerCase();
         String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
@@ -1213,7 +1218,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private void saveChildNodeDefinition(ExternalData data) {
+    private void saveChildNodeDefinition(ExternalData data) throws RepositoryException {
         String path = data.getPath();
         String pathLowerCase = path.toLowerCase();
         String cndPath = path.substring(0, pathLowerCase.indexOf(".cnd/") + 4);
