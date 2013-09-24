@@ -149,6 +149,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                             for (NodeTypeRegistry registry : nodeTypeRegistryMap.values()) {
                                 registry.flushLabels();
                             }
+                            break;
                         }
                     }
                 }
