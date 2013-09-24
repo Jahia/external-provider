@@ -167,12 +167,15 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     /**
      * Return the children of the specified path.
-     * @param path path of which we want to know the children
-     * @return
+     * 
+     * @param path
+     *            path of which we want to know the children
+     * @return the children of the specified path
      */
     @Override
     public List<String> getChildren(String path) {
-        if (path.endsWith(".cnd") || path.contains(".cnd/")) {
+        String pathLowerCase = path.toLowerCase();
+        if (pathLowerCase.endsWith(".cnd") || pathLowerCase.contains(".cnd/")) {
             return getCndChildren(path);
         } else {
             List<String> children = super.getChildren(path);
@@ -731,8 +734,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         SourceControlManagement sourceControl = module.getSourceControl();
         if (sourceControl != null) {
             String path = data.getPath();
-            if (!path.contains(".cnd/")) {
-                if (path.endsWith("/" + Constants.JCR_CONTENT)) {
+            String pathLoweCase = path.toLowerCase();
+            if (!pathLoweCase.contains(".cnd/")) {
+                if (pathLoweCase.endsWith("/" + Constants.JCR_CONTENT)) {
                     path = path.substring(0, path.indexOf("/" + Constants.JCR_CONTENT));
                 }
                 try {
