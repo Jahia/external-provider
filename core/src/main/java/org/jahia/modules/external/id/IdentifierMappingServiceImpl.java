@@ -169,12 +169,14 @@ public class IdentifierMappingServiceImpl implements IdentifierMappingService {
             StatelessSession session = null;
             try {
                 session = getHibernateSessionFactory().openStatelessSession();
+                session.beginTransaction();
                 List<?> list = session.createQuery("from UuidMapping where providerKey=? and externalIdHash=?")
                         .setString(0, providerKey).setLong(1, hash).setReadOnly(true).list();
                 if (list.size() > 0) {
                     uuid = ((UuidMapping) list.get(0)).getInternalUuid();
                     getIdentifierCache().put(cacheKey, uuid);
                 }
+                session.getTransaction().commit();
             } catch (Exception e) {
                 throw new RepositoryException(e);
             } finally {
