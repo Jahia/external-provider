@@ -58,7 +58,6 @@ import org.apache.commons.vfs2.provider.local.LocalFileName;
 import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.external.ExternalDataSource;
-import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.modules.external.ExternalData;
@@ -131,21 +130,25 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     @Override
     public void start() {
         try {
-            watcher = new FileWatcher(module.getSourcesFolder().getPath() + "/src", true, 5000, true, ServicesRegistry.getInstance().getSchedulerService());
+            final String fullFolderPath = module.getSourcesFolder().getPath() + "/src";
+            watcher = new FileWatcher("ModuleSourcesJob-" + module.getRootFolder(), fullFolderPath, true, 5000, true);
             watcher.setRecursive(true);
             watcher.addObserver(new Observer() {
                 @Override
                 public void update(Observable o, Object arg) {
+                    logger.info("Detected changes in sources of the module in folder {}", fullFolderPath);
                     SourceControlManagement sourceControl = module.getSourceControl();
                     if (sourceControl != null) {
                         sourceControl.invalidateStatusCache();
+                        logger.info("Invalidating SCM status caches for module {}", module.getRootFolder());
                     }
                     @SuppressWarnings("unchecked")
                     List<File> files = (List<File>)arg;
                     for (File file : files) {
-                        String type = fileTypeMapping.get(StringUtils.substringAfterLast(file.getName(),"."));
+                        String type = fileTypeMapping.get(FilenameUtils.getExtension(file.getName()));
                         if (type != null && type.equals("jnt:resourceBundleFile")) {
                             NodeTypeRegistry.getInstance().flushLabels();
+                            logger.info("Flushing node type label caches");
                             for (NodeTypeRegistry registry : nodeTypeRegistryMap.values()) {
                                 registry.flushLabels();
                             }
