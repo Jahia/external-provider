@@ -178,6 +178,9 @@ public class IdentifierMappingServiceImpl implements IdentifierMappingService {
                 }
                 session.getTransaction().commit();
             } catch (Exception e) {
+                if (session != null) {
+                    session.getTransaction().rollback();
+                }
                 throw new RepositoryException(e);
             } finally {
                 if (session != null) {
