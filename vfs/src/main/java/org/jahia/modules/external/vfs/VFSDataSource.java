@@ -73,7 +73,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     private static final Logger logger = LoggerFactory.getLogger(VFSDataSource.class);
     private FileObject root;
     private String rootPath;
-    protected FileSystemManager manager;
+    private FileSystemManager manager;
 
     /**
      * Defines the root point of the DataSource
@@ -87,6 +87,18 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         } catch (FileSystemException e) {
             logger.error(e.getMessage(), e);
         }
+    }
+
+    protected FileObject getRoot() {
+        return root;
+    }
+
+    protected String getRootPath() {
+        return rootPath;
+    }
+
+    protected FileSystemManager getManager() {
+        return manager;
     }
 
     public boolean isSupportsUuid() {
@@ -105,7 +117,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     path, "/" + Constants.JCR_CONTENT) : path);
             return file.exists();
         } catch (FileSystemException e) {
-            logger.warn("Unable to check file exiustence for path " + path, e);
+            logger.warn("Unable to check file existence for path " + path, e);
         }
         return false;
     }
@@ -154,7 +166,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
     }
 
-    public List<String> getChildren(String path) {
+    public List<String> getChildren(String path) throws RepositoryException {
         try {
             if (!path.endsWith("/"+Constants.JCR_CONTENT)) {
                 FileObject fileObject = getFile(path);

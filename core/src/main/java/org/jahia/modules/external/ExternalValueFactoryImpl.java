@@ -86,9 +86,7 @@ public class ExternalValueFactoryImpl implements ValueFactory {
             case PropertyType.WEAKREFERENCE :
                 return new ExternalValueImpl(value, PropertyType.WEAKREFERENCE);
             case PropertyType.NAME :
-                return createValue(value);
             case PropertyType.PATH :
-                return createValue(value);
             case PropertyType.URI :
                 return createValue(value);
         }

@@ -265,13 +265,6 @@ public class ExternalSessionImpl implements Session {
         ((ExternalDataSource.Writable) repository.getDataSource()).move(source, dest);
         ExternalData newData = repository.getDataSource().getItemByPath(dest);
 
-        // handle i18n child nodes, update translated nodes
-        if (newData.getI18nProperties() != null && !newData.getI18nProperties().isEmpty()) {
-            NodeIterator ni = getNode(dest).getNodes();
-            while (ni.hasNext()) {
-                ExternalNodeImpl n = (ExternalNodeImpl) ni.nextNode();
-            }
-        }
         if (oldData.getId().equals(newData.getId())) {
             return;
         }
@@ -294,9 +287,11 @@ public class ExternalSessionImpl implements Session {
             return;
         }
         Map<String, ExternalData> changedDataWithI18n = new LinkedHashMap<String, ExternalData>();
-        for (String path : changedData.keySet()) {
-            if (StringUtils.substringAfterLast(path, "/").startsWith("j:translation_")) {
-                String lang = StringUtils.substringAfterLast(StringUtils.substringAfterLast(path, "/"), "_");
+        for (Map.Entry<String, ExternalData> entry : changedData.entrySet()) {
+            String path = entry.getKey();
+            ExternalData externalData = entry.getValue();
+            if (path.startsWith("j:translation_",path.lastIndexOf('/'))) {
+                String lang = path.substring(path.lastIndexOf("j:translation_"));
                 String parentPath = StringUtils.substringBeforeLast(path, "/");
                 ExternalData parentData;
                 if (changedDataWithI18n.containsKey(parentPath)) {
@@ -309,20 +304,20 @@ public class ExternalSessionImpl implements Session {
                     i18nProperties = new HashMap<String, Map<String, String[]>>();
                     parentData.setI18nProperties(i18nProperties);
                 }
-                i18nProperties.put(lang, changedData.get(path).getProperties());
+                i18nProperties.put(lang, externalData.getProperties());
 
-                if (changedData.get(path).getLazyProperties() != null) {
+                if (externalData.getLazyProperties() != null) {
                     Map<String, Set<String>> lazyI18nProperties = parentData.getLazyI18nProperties();
                     if (lazyI18nProperties == null) {
                         lazyI18nProperties = new HashMap<String, Set<String>>();
                         parentData.setLazyI18nProperties(lazyI18nProperties);
                     }
-                    lazyI18nProperties.put(lang, changedData.get(path).getLazyProperties());
+                    lazyI18nProperties.put(lang, externalData.getLazyProperties());
                 }
 
                 changedDataWithI18n.put(parentPath, parentData);
             } else {
-                changedDataWithI18n.put(path, changedData.get(path));
+                changedDataWithI18n.put(path, externalData);
             }
         }
         ExternalDataSource.Writable writableDataSource = (ExternalDataSource.Writable) repository.getDataSource();

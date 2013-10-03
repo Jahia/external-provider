@@ -81,6 +81,12 @@ public interface ExternalDataSource {
          */
         void move(String oldPath, String newPath) throws RepositoryException;
 
+        /**
+         * reorder children nodes according to the list passed as parameter
+         * @param path
+         * @param children
+         * @throws RepositoryException
+         */
         void order(String path, List<String> children) throws RepositoryException;
 
         /**
@@ -108,7 +114,7 @@ public interface ExternalDataSource {
      * @param path path where to get children
      * @return list of paths as String
      */
-    List<String> getChildren(String path);
+    List<String> getChildren(String path) throws RepositoryException ;
 
     /**
      * identifier is unique for an ExternalData
