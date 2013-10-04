@@ -174,7 +174,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     SourceControlManagement sourceControl = module.getSourceControl();
                     if (sourceControl != null) {
                         sourceControl.invalidateStatusCache();
-                        logger.info("Invalidating SCM status caches for module {}", module.getRootFolder());
+                        logger.debug("Invalidating SCM status caches for module {}", module.getRootFolder());
                     }
                     @SuppressWarnings("unchecked")
                     List<File> files = (List<File>)arg;
@@ -182,7 +182,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         String type = fileTypeMapping.get(FilenameUtils.getExtension(file.getName()));
                         if (type != null && type.equals("jnt:resourceBundleFile")) {
                             NodeTypeRegistry.getInstance().flushLabels();
-                            logger.info("Flushing node type label caches");
+                            logger.debug("Flushing node type label caches");
                             for (NodeTypeRegistry registry : nodeTypeRegistryMap.values()) {
                                 registry.flushLabels();
                             }
