@@ -53,9 +53,12 @@ import javax.jcr.RepositoryException;
 import java.io.File;
 import java.util.Set;
 
+/**
+ * Background task for regenerating initial import of the modules.
+ */
 public class ModulesExportJob extends BackgroundJob {
 
-    private final Set<String> modules = ModulesListener.getInstance().getModules();;
+    private final Set<String> modules = ModulesListener.getInstance().getModules();
 
     @Override
     public void executeJahiaJob(JobExecutionContext jobExecutionContext) throws Exception {
@@ -65,8 +68,8 @@ public class ModulesExportJob extends BackgroundJob {
                     JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Object>() {
                         @Override
                         public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
+                            JahiaTemplateManagerService service = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
                             for (String module : modules) {
-                                JahiaTemplateManagerService service = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
                                 JahiaTemplatesPackage pack = service.getTemplatePackageByFileName(module);
                                 if (pack != null) {
                                     File sources = service.getSources(pack, session);
