@@ -1072,7 +1072,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             Map<String, String> selectorOptions = new HashMap<String, String>();
             if (values != null) {
                 for (String option : values) {
-                    String[] keyValue = StringUtils.split(option, "=");
+                    String[] keyValue = StringUtils.split(option, "=", 3);
                     if (keyValue.length > 1) {
                         selectorOptions.put(keyValue[0].trim(), StringUtils.strip(keyValue[1].trim(), "'"));
                     } else {
