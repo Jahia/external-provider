@@ -58,6 +58,7 @@
     </bean>
 
     <bean parent="jobSchedulingBean">
+        <property name="disabled" value="#{jahiaProperties['operatingMode'] != 'development'}"/>
         <property name="ramJob" value="true"/>
         <property name="jobDetail">
             <bean class="org.springframework.scheduling.quartz.JobDetailBean">
@@ -73,7 +74,7 @@
         <property name="trigger">
             <bean class="org.quartz.CronTrigger">
                 <property name="name" value="StudioExportJobTrigger"/>
-                <property name="cronExpression" value="0/5 * * * * ?"/><!-- execute every hour -->
+                <property name="cronExpression" value="0/5 * * * * ?"/><!-- execute every 5 seconds -->
             </bean>
         </property>
     </bean>

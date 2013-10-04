@@ -58,34 +58,37 @@ import java.util.Set;
  */
 public class ModulesExportJob extends BackgroundJob {
 
+    private static void regenerateImport(final Set<String> modules) throws RepositoryException {
+        JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Object>() {
+            @Override
+            public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
+                JahiaTemplateManagerService service = ServicesRegistry.getInstance()
+                        .getJahiaTemplateManagerService();
+                for (String module : modules) {
+                    JahiaTemplatesPackage pack = service.getTemplatePackageByFileName(module);
+                    if (pack != null) {
+                        File sources = service.getSources(pack, session);
+                        if (sources != null) {
+                            service.regenerateImportFile(module, sources, session);
+                        }
+                    }
+                }
+                return null;
+            }
+        });
+    }
+
     private final Set<String> modules = ModulesListener.getInstance().getModules();
 
     @Override
     public void executeJahiaJob(JobExecutionContext jobExecutionContext) throws Exception {
         if (ModulesListener.getInstance() != null) {
-            if (!modules.isEmpty()) {
-                synchronized (modules) {
-                    JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Object>() {
-                        @Override
-                        public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
-                            JahiaTemplateManagerService service = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
-                            for (String module : modules) {
-                                JahiaTemplatesPackage pack = service.getTemplatePackageByFileName(module);
-                                if (pack != null) {
-                                    File sources = service.getSources(pack, session);
-                                    if (sources != null) {
-                                        service.regenerateImportFile(module, sources, session);
-                                    }
-                                }
-                            }
-                            return null;
-                        }
-                    });
-
+            synchronized (modules) {
+                if (!modules.isEmpty()) {
+                    regenerateImport(modules);
                     modules.clear();
                 }
             }
         }
-
     }
 }

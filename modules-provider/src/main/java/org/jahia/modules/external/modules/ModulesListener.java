@@ -49,9 +49,14 @@ import javax.jcr.observation.EventIterator;
 
 import org.apache.commons.lang.StringUtils;
 import org.jahia.services.content.DefaultEventListener;
+import org.jahia.services.content.JCREventIterator;
+import org.jahia.settings.SettingsBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * JCR event listener to detect changes in modules content.
+ */
 public class ModulesListener extends DefaultEventListener {
     private static final Logger logger = LoggerFactory.getLogger(ModulesListener.class);
     private static ModulesListener instance;
@@ -75,8 +80,10 @@ public class ModulesListener extends DefaultEventListener {
 
     @Override
     public int getEventTypes() {
-        return Event.NODE_ADDED + Event.NODE_REMOVED + Event.PROPERTY_ADDED + Event.PROPERTY_CHANGED +
-                Event.PROPERTY_REMOVED + Event.NODE_MOVED;    }
+        return !SettingsBean.getInstance().isProductionMode()
+                && !SettingsBean.getInstance().isDistantPublicationServerMode() ? Event.NODE_ADDED + Event.NODE_REMOVED
+                + Event.PROPERTY_ADDED + Event.PROPERTY_CHANGED + Event.PROPERTY_REMOVED + Event.NODE_MOVED : 0;
+    }
 
     @Override
     public String getPath() {
@@ -85,11 +92,11 @@ public class ModulesListener extends DefaultEventListener {
 
     @Override
     public void onEvent(EventIterator events) {
-        for (StackTraceElement element : new Exception().getStackTrace()) {
-            if (element.getClassName().equals("org.jahia.services.templates.TemplatePackageDeployer") || element.getClassName().equals("org.jahia.services.templates.JahiaTemplateManagerService")) {
-                return;
-            }
+        if (((JCREventIterator)events).getSession().isSystem()) {
+            // skip internal module operations -> initial import and initialization / cleanup
+            return;
         }
+
         synchronized (modules) {
             while (events.hasNext()) {
                 Event event = (Event) events.next();
