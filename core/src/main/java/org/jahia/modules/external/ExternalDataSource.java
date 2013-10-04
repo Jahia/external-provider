@@ -104,9 +104,18 @@ public interface ExternalDataSource {
         void saveItem(ExternalData data) throws RepositoryException;
     }
 
+    /**
+     * Implemented by a service that needs initialization/finalization logic during service life cycle. 
+     */
     public interface Initializable {
+        /**
+         * Called when the external data source provider is initializing.
+         */
         void start();
 
+        /**
+         * Called when the external data source provider is stopping.
+         */
         void stop();
     }
 
