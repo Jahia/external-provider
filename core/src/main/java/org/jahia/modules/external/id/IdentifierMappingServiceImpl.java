@@ -39,13 +39,12 @@
  */
 package org.jahia.modules.external.id;
 
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.Element;
 import org.apache.commons.lang.StringUtils;
 import org.hibernate.*;
-import org.jahia.exceptions.JahiaInitializationException;
-import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.external.IdentifierMappingService;
-import org.jahia.services.cache.Cache;
-import org.jahia.services.cache.CacheFactory;
+import org.jahia.services.cache.ehcache.EhCacheProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,9 +66,10 @@ public class IdentifierMappingServiceImpl implements IdentifierMappingService {
 
     private SessionFactory hibernateSessionFactory;
 
+    private EhCacheProvider cacheProvider;
     // The ID mapping cache, where a key is a <providerKey>-<externalId-hashCode> and a value is
     // the corresponding internalId
-    private Cache<String, String> idCache;
+    private Cache idCache;
 
     @Override
     public void delete(List<String> externalIds, String providerKey, boolean includeDescendats)
@@ -146,13 +146,12 @@ public class IdentifierMappingServiceImpl implements IdentifierMappingService {
         return hibernateSessionFactory;
     }
 
-    public Cache<String, String> getIdentifierCache() {
+    public Cache getIdentifierCache() {
         if (idCache == null) {
-            try {
-                idCache = CacheFactory.getInstance().getCache(ID_CACHE_NAME, true);
-            } catch (JahiaInitializationException e) {
-                logger.error(e.getMessage(), e);
-                throw new JahiaRuntimeException(e);
+            idCache = cacheProvider.getCacheManager().getCache(ID_CACHE_NAME);
+            if (idCache == null) {
+                cacheProvider.getCacheManager().addCache(ID_CACHE_NAME);
+                idCache = cacheProvider.getCacheManager().getCache(ID_CACHE_NAME);
             }
         }
 
@@ -164,7 +163,7 @@ public class IdentifierMappingServiceImpl implements IdentifierMappingService {
     public String getInternalIdentifier(String externalId, String providerKey) throws RepositoryException {
         int hash = externalId.hashCode();
         String cacheKey = getCacheKey(hash, providerKey);
-        String uuid = getIdentifierCache().get(cacheKey);
+        String uuid = getIdentifierCache().get(cacheKey) != null ? (String)getIdentifierCache().get(cacheKey).getObjectValue() : null;
         if (uuid == null) {
             StatelessSession session = null;
             try {
@@ -174,7 +173,7 @@ public class IdentifierMappingServiceImpl implements IdentifierMappingService {
                         .setString(0, providerKey).setLong(1, hash).setReadOnly(true).list();
                 if (list.size() > 0) {
                     uuid = ((UuidMapping) list.get(0)).getInternalUuid();
-                    getIdentifierCache().put(cacheKey, uuid);
+                    getIdentifierCache().put(new Element(cacheKey, uuid, true));
                 }
                 session.getTransaction().commit();
             } catch (Exception e) {
@@ -251,7 +250,7 @@ public class IdentifierMappingServiceImpl implements IdentifierMappingService {
             session.getTransaction().commit();
 
             // cache it
-            getIdentifierCache().put(getCacheKey(externalId.hashCode(), providerKey), uuidMapping.getInternalUuid());
+            getIdentifierCache().put(new Element(getCacheKey(externalId.hashCode(), providerKey), uuidMapping.getInternalUuid(), true));
         } catch (HibernateException e) {
             if (session != null) {
                 session.getTransaction().rollback();
@@ -302,6 +301,10 @@ public class IdentifierMappingServiceImpl implements IdentifierMappingService {
 
     public void setHibernateSessionFactory(SessionFactory hibernateSession) {
         this.hibernateSessionFactory = hibernateSession;
+    }
+
+    public void setCacheProvider(EhCacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
     }
 
     @Override
