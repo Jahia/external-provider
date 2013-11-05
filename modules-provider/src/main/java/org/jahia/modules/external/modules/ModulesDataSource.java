@@ -152,6 +152,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private static final int RESOURCES_DEPTH_TOKEN = 3;
     private static final int NODETYPE_FOLDER_DEPTH_TOKEN = 4;
     private static final int TEMPLATE_TYPE_FOLDER_DEPTH_TOKEN = 5;
+    private static final int VIEWS_FOLDER_DEPTH_TOKEN = 5;
 
     private JahiaTemplatesPackage module;
 
@@ -274,7 +275,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
         boolean isFile = fileObject.getType() == FileType.FILE;
         if (isFile
-                && relativeDepth == 3
+                && relativeDepth ==  VIEWS_FOLDER_DEPTH_TOKEN
                 && (fileObject.getParent() != null && StringUtils.equals(Constants.JAHIANT_TEMPLATETYPEFOLDER,
                 getDataType(fileObject.getParent())))) {
             if (StringUtils.endsWith(fileObject.getName().toString(), PROPERTIES_EXTENSION)) {
