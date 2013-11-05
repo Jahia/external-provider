@@ -67,6 +67,7 @@ import java.util.*;
  */
 public class ExternalSessionImpl implements Session {
     static final String TRANSLATION_PREFIX = "translation:";
+    static final String TRANSLATION_NODE_NAME_BASE = "j:translation_";
     private ExternalRepositoryImpl repository;
     private ExternalWorkspaceImpl workspace;
     private Credentials credentials;
@@ -138,7 +139,7 @@ public class ExternalSessionImpl implements Session {
             String u = StringUtils.substringAfter(uuid, TRANSLATION_PREFIX);
             String lang = StringUtils.substringBefore(u, ":");
             u = StringUtils.substringAfter(u, ":");
-            return getNodeByLocalIdentifier(u).getNode("j:translation_" + lang);
+            return getNodeByLocalIdentifier(u).getNode(TRANSLATION_NODE_NAME_BASE + lang);
         }
 
         try {
@@ -167,10 +168,10 @@ public class ExternalSessionImpl implements Session {
         }
         String parentPath = StringUtils.substringBeforeLast(path, "/");
         try {
-            if (StringUtils.substringAfterLast(parentPath, "/").startsWith("j:translation_")) {
+            if (StringUtils.substringAfterLast(parentPath, "/").startsWith(TRANSLATION_NODE_NAME_BASE)) {
                 // Getting a translation property
                 return getNode(parentPath).getProperty(StringUtils.substringAfterLast(path, "/"));
-            } else if (StringUtils.substringAfterLast(path, "/").startsWith("j:translation_")) {
+            } else if (StringUtils.substringAfterLast(path, "/").startsWith(TRANSLATION_NODE_NAME_BASE)) {
                 // Getting translation node
                 String lang = StringUtils.substringAfterLast(path, "_");
                 ExternalData parentObject = repository.getDataSource().getItemByPath(parentPath);
@@ -290,8 +291,8 @@ public class ExternalSessionImpl implements Session {
         for (Map.Entry<String, ExternalData> entry : changedData.entrySet()) {
             String path = entry.getKey();
             ExternalData externalData = entry.getValue();
-            if (path.startsWith("j:translation_",path.lastIndexOf('/'))) {
-                String lang = path.substring(path.lastIndexOf("j:translation_"));
+            if (StringUtils.substringAfterLast(path, "/").startsWith(TRANSLATION_NODE_NAME_BASE)) {
+                String lang = StringUtils.substringAfterLast(path, TRANSLATION_NODE_NAME_BASE);
                 String parentPath = StringUtils.substringBeforeLast(path, "/");
                 ExternalData parentData;
                 if (changedDataWithI18n.containsKey(parentPath)) {

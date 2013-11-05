@@ -958,7 +958,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         if (resourceBundleName == null) {
             resourceBundleName = "resources." + module.getRootFolder();
         }
-        String rbBasePath = "/resources/" + StringUtils.substringAfterLast(resourceBundleName, ".");
+        String rbBasePath = "/src/main/resources/resources/" + StringUtils.substringAfterLast(resourceBundleName, ".");
         Map<String, Map<String, String[]>> i18nProperties = data.getI18nProperties();
         if (i18nProperties != null) {
             List<File> newFiles = new ArrayList<File>();
