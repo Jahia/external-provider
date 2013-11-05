@@ -147,6 +147,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     public static final String JNT_PRIMARY_NODE_TYPE = "jnt:primaryNodeType";
     public static final HashSet<String> NODETYPES_TYPES = Sets.newHashSet(JNT_NODE_TYPE, JNT_MIXIN_NODE_TYPE, JNT_PRIMARY_NODE_TYPE);
 
+    private static final int ROOT_DEPTH_TOKEN = 0;
+    private static final int TARGET_DEPTH_TOKEN = 1;
+    private static final int RESOURCES_DEPTH_TOKEN = 3;
+    private static final int NODETYPE_FOLDER_DEPTH_TOKEN = 4;
+    private static final int TEMPLATE_TYPE_FOLDER_DEPTH_TOKEN = 5;
+
     private JahiaTemplatesPackage module;
 
     private Map<String, String> fileTypeMapping;
@@ -158,7 +164,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private Map<String, NodeTypeRegistry> nodeTypeRegistryMap = new HashMap<String, NodeTypeRegistry>();
 
     private FileWatcher watcher;
-    
+
     private File realRoot;
     private String scmRelativeRoot;
 
@@ -204,7 +210,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     /**
      * Return the children of the specified path.
-     * 
+     *
      * @param path
      *            path of which we want to know the children
      * @return the children of the specified path
@@ -233,34 +239,38 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     public String getDataType(FileObject fileObject) throws FileSystemException {
         String relativeName = getFile("/").getName().getRelativeName(fileObject.getName());
         int relativeDepth = ".".equals(relativeName) ? 0 : StringUtils.split(relativeName, "/").length;
-        String type;
+        String type = null;
         if (fileObject.getType().equals(FileType.FOLDER)) {
-            if (relativeDepth == 0) {
+            if (relativeDepth == ROOT_DEPTH_TOKEN) {
                 // we are in root
                 type = Constants.JAHIANT_MODULEVERSIONFOLDER;
             } else {
-                type = folderTypeMapping.get(fileObject.getName().getBaseName());
-            }
-            if (type == null) {
-                if (relativeDepth == 1 && isNodeType(fileObject.getName().getBaseName())) {
+                if (relativeDepth == TARGET_DEPTH_TOKEN && StringUtils.equals("target",fileObject.getName().getBaseName())) {
+                    type = "jnt:mavenTargetFolder";
+                } else if (StringUtils.equals("resources",fileObject.getName().getBaseName()) && relativeDepth == RESOURCES_DEPTH_TOKEN) {
+                    type = "jnt:folder";
+                } else if (relativeDepth == NODETYPE_FOLDER_DEPTH_TOKEN && isNodeType(fileObject.getName().getBaseName())) {
                     type = Constants.JAHIANT_NODETYPEFOLDER;
-                } else if (relativeDepth == 2) {
+                } else if (relativeDepth == TEMPLATE_TYPE_FOLDER_DEPTH_TOKEN) {
                     FileObject parent = fileObject.getParent();
                     if (parent != null && Constants.JAHIANT_NODETYPEFOLDER.equals(getDataType(parent))) {
                         type = Constants.JAHIANT_TEMPLATETYPEFOLDER;
                     }
                 }
             }
+            if (type == null) {
+                type = folderTypeMapping.get(fileObject.getName().getBaseName());
+            }
         } else {
             type = fileTypeMapping.get(fileObject.getName().getExtension());
         }
-        if (type != null && Constants.JAHIANT_RESOURCEBUNDLE_FILE.equals(type)) {
+        if (type != null && StringUtils.equals(type,"jnt:propertiesFile")) {
             // we've detected a properties file, check if its parent is of type jnt:resourceBundleFolder
             // -> than this one gets the type jnt:resourceBundleFile; otherwise just jnt:file
             FileObject parent = fileObject.getParent();
             type = parent != null
                     && StringUtils.equals(Constants.JAHIANT_RESOURCEBUNDLE_FOLDER,
-                    getDataType(parent)) ? type : null;
+                    getDataType(parent)) ? Constants.JAHIANT_RESOURCEBUNDLE_FILE : type;
         }
         boolean isFile = fileObject.getType() == FileType.FILE;
         if (isFile
@@ -281,6 +291,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 type = JNT_EDITABLE_FILE;
             }
         }
+
+
         return type != null ? type : super.getDataType(fileObject);
     }
 
@@ -300,7 +312,13 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 // Continue with next registry
             }
         }
-        return false;
+        // if not found, check in jahia registry
+        try {
+            NodeTypeRegistry.getInstance().getNodeType(name);
+            return true;
+        } catch (NoSuchNodeTypeException e) {
+            return false;
+        }
     }
 
     /**
@@ -362,9 +380,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     data.setLazyProperties(lazyProperties);
                 }
                 lazyProperties.add(SOURCE_CODE);
-
                 data.getProperties().put("nodeTypeName",
-                        new String[] { StringUtils.replace(StringUtils.substringBetween(path, "/"), "_", ":") });
+                        new String[] { StringUtils.replace(StringUtils.substringBetween(path, "/src/main/resources/","/"), "_", ":") });
 
                 // set Properties
                 if (type.isNodeType(Constants.JAHIAMIX_VIEWPROPERTIES)) {

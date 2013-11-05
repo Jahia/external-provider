@@ -103,14 +103,7 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                     Object dataSource = SpringContextSingleton.getBeanInModulesContext("ModulesDataSourcePrototype");
                     logger.info("Mounting source for bundle {}", templatePackage.getName());
                     Map<String, Object> properties = new LinkedHashMap<String, Object>();
-                    File oldStructure = new File(templatePackage.getSourcesFolder(), "src/main/webapp");
-                    if (oldStructure.exists()) {
-                        properties.put("root",
-                                templatePackage.getSourcesFolder().toURI().toString() + "src/main/webapp");
-                    } else {
-                        properties.put("root",
-                                templatePackage.getSourcesFolder().toURI().toString() + "src/main/resources");
-                    }
+                    properties.put("root",templatePackage.getSourcesFolder().toURI().toString());
                     properties.put("module", templatePackage);
 
                     BeanUtils.populate(dataSource, properties);

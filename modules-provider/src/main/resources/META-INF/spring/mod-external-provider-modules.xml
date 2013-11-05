@@ -14,16 +14,22 @@
           scope="prototype">
         <property name="supportedNodeTypes">
             <set>
+                <value>jnt:file</value>
+                <value>jnt:folder</value>
+                <value>jnt:javaSourceFile</value>
                 <value>jnt:nodeTypeFolder</value>
                 <value>jnt:templateTypeFolder</value>
                 <value>jnt:cssFolder</value>
                 <value>jnt:cssFile</value>
                 <value>jnt:javascriptFolder</value>
+                <value>jnt:propertiesFile</value>
+                <value>jnt:xmlFile</value>
                 <value>jnt:javascriptFile</value>
                 <value>jnt:viewFile</value>
                 <value>jnt:definitionFile</value>
                 <value>nt:nodeType</value>
                 <value>jnt:resourceBundleFolder</value>
+                <value>jnt:resourceBundleFile</value>
                 <value>jnt:namespaceDefinition</value>
             </set>
         </property>
@@ -37,12 +43,16 @@
         </property>
         <property name="fileTypeMapping">
             <util:map key-type="java.lang.String" value-type="java.lang.String">
+                <entry key="xml" value="jnt:xmlFile"/>
+                <entry key="properties" value="jnt:propertiesFile"/>
+                <entry key="java" value="jnt:javaSourceFile"/>
                 <entry key="cnd" value="jnt:definitionFile"/>
                 <entry key="css" value="jnt:cssFile"/>
                 <entry key="js" value="jnt:javascriptFile"/>
                 <entry key="jsp" value="jnt:viewFile"/>
-                <entry key="properties" value="jnt:resourceBundleFile"/>
-                <!-- we will do an additional check in the ModulesDataSource if the parent is the jnt:resourceBundleFolder -->
+                <!-- we will do an additional checks in the ModulesDataSource.getDataType() :
+                  - if file is a properties file and the parent is the jnt:resourceBundleFolder
+                  - if the node is a folder and at root level and its mame is target -->
             </util:map>
         </property>
     </bean>

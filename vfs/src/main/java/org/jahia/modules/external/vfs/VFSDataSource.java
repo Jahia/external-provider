@@ -177,7 +177,9 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     if (files.length > 0) {
                         List<String> children = new LinkedList<String>();
                         for (FileObject object : files) {
-                            children.add(object.getName().getBaseName());
+                            if (getSupportedNodeTypes().contains(getDataType(object))) {
+                                children.add(object.getName().getBaseName());
+                            }
                         }
                         return children;
                     } else {
