@@ -27,6 +27,7 @@
                 <value>jnt:javascriptFile</value>
                 <value>jnt:viewFile</value>
                 <value>jnt:definitionFile</value>
+                <value>jnt:metaInfFolder</value>
                 <value>nt:nodeType</value>
                 <value>jnt:resourceBundleFolder</value>
                 <value>jnt:resourceBundleFile</value>
