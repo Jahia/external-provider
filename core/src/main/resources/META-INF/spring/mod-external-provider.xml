@@ -8,6 +8,7 @@
 
     <bean id="IdentifierMappingService" class="org.jahia.modules.external.id.IdentifierMappingServiceImpl">
         <property name="hibernateSessionFactory" ref="moduleSessionFactory"/>
+        <property name="cacheProvider" ref="ehCacheProvider"/>
     </bean>
     <osgi:service id="ExternalProviderIdentifierMappingService" ref="IdentifierMappingService" interface="org.jahia.modules.external.IdentifierMappingService"/>
     
