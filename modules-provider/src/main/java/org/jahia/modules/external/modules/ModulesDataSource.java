@@ -461,11 +461,17 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private String getScmRelativeRoot() {
         if (scmRelativeRoot == null && module.getSourceControl() != null) {
-            String relativePath = StringUtils.removeStart(getRealRoot().getAbsolutePath(), module.getSourceControl()
-                    .getRootFolder().getAbsolutePath()
-                    + File.separatorChar);
-            relativePath = StringUtils.removeEnd(relativePath, File.separator);
-            scmRelativeRoot = FilenameUtils.separatorsToUnix(relativePath);
+            // if root folder of the module is the scm root location return "" else compute it.
+            if (StringUtils.equals(getRealRoot().getAbsolutePath(),module.getSourceControl()
+                    .getRootFolder().getAbsolutePath())) {
+                scmRelativeRoot = "";
+            } else {
+                String relativePath = StringUtils.removeStart(getRealRoot().getAbsolutePath(), module.getSourceControl()
+                        .getRootFolder().getAbsolutePath()
+                        + File.separatorChar);
+                relativePath = StringUtils.removeEnd(relativePath, File.separator);
+                scmRelativeRoot = FilenameUtils.separatorsToUnix(relativePath);
+            }
         }
         return scmRelativeRoot;
     }

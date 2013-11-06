@@ -51,6 +51,7 @@
                 <entry key="css" value="jnt:cssFile"/>
                 <entry key="js" value="jnt:javascriptFile"/>
                 <entry key="jsp" value="jnt:viewFile"/>
+                <entry key="groovy" value="jnt:viewFile"/>
                 <!-- we will do an additional checks in the ModulesDataSource.getDataType() :
                   - if file is a properties file and the parent is the jnt:resourceBundleFolder
                   - if the node is a folder and at root level and its mame is target -->
