@@ -17,6 +17,7 @@
                 <value>jnt:file</value>
                 <value>jnt:folder</value>
                 <value>jnt:javaSourceFile</value>
+                <value>jnt:editableFile</value>
                 <value>jnt:nodeTypeFolder</value>
                 <value>jnt:templateTypeFolder</value>
                 <value>jnt:cssFolder</value>
