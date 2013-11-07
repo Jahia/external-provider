@@ -768,12 +768,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     @Override
     public void saveItem(ExternalData data) throws RepositoryException {
         super.saveItem(data);
-
+        boolean hasProperties = false;
         try {
             ExtendedNodeType type = NodeTypeRegistry.getInstance().getNodeType(data.getType());
 
             if (type.isNodeType(JNT_EDITABLE_FILE)) {
-                saveEditableFile(data, type);
+                hasProperties = saveEditableFile(data, type);
             } else if (type.isNodeType(JNT_NODE_TYPE)) {
                 saveNodeType(data);
             } else if (type.isNodeType("jnt:propertyDefinition")) {
@@ -796,6 +796,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 }
                 try {
                     sourceControl.add(getRealFile(path));
+                    if (hasProperties) {
+                        sourceControl.add(getRealFile(StringUtils.substringBeforeLast(data.getPath(),".") + PROPERTIES_EXTENSION));
+                    }
+                    // add properties file if needed
                 } catch (IOException e) {
                     logger.error("Failed to add file " + path + " to source control", e);
                     throw new RepositoryException("Failed to add file " + path + " to source control", e);
@@ -806,7 +810,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private void saveEditableFile(ExternalData data, ExtendedNodeType type) throws RepositoryException {
+    private boolean saveEditableFile(ExternalData data, ExtendedNodeType type) throws RepositoryException {
+        boolean hasProperties = false;
         OutputStream outputStream = null;
         // Handle source code
         try {
@@ -825,12 +830,14 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
         // Handle properties
         if (type.isNodeType(Constants.JAHIAMIX_VIEWPROPERTIES)) {
+            hasProperties = true;
             saveProperties(data);
         }
 
         if (data.getPath().toLowerCase().endsWith(CND)) {
             nodeTypeRegistryMap.remove(data.getPath());
         }
+        return hasProperties;
     }
 
     private void saveProperties(ExternalData data) throws RepositoryException {
