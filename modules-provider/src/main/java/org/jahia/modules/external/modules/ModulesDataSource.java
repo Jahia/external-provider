@@ -799,7 +799,6 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     if (hasProperties) {
                         sourceControl.add(getRealFile(StringUtils.substringBeforeLast(data.getPath(),".") + PROPERTIES_EXTENSION));
                     }
-                    // add properties file if needed
                 } catch (IOException e) {
                     logger.error("Failed to add file " + path + " to source control", e);
                     throw new RepositoryException("Failed to add file " + path + " to source control", e);
