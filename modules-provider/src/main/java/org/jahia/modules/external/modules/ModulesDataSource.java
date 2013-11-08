@@ -167,11 +167,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private FileWatcher watcher;
 
     private File realRoot;
-    private String scmRelativeRoot;
 
     public void start() {
         try {
-            final String fullFolderPath = module.getSourcesFolder().getPath() + "/src";
+            final String fullFolderPath = module.getSourcesFolder().getPath();
             watcher = new FileWatcher("ModuleSourcesJob-" + module.getRootFolder(), fullFolderPath, true, 5000, true);
             watcher.setRecursive(true);
             watcher.addObserver(new Observer() {
@@ -444,36 +443,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     private Status getScmStatus(String vfsPath) throws IOException {
-        String scmPath = getScmRelativePath(vfsPath);
-        return scmPath != null ? module.getSourceControl().getStatus(scmPath) : Status.UNMODIFIED;
-    }
-
-    private String getScmRelativePath(String vfsPath) {
-        String scmRoot = getScmRelativeRoot();
-        if (scmRoot == null) {
-            return null;
-        }
-        if (vfsPath == null || vfsPath.length() == 0 || vfsPath.equals("/")) {
-            return scmRoot;
-        }
-        return vfsPath.charAt(0) == '/' ? scmRoot + vfsPath : scmRoot + "/" + vfsPath;
-    }
-
-    private String getScmRelativeRoot() {
-        if (scmRelativeRoot == null && module.getSourceControl() != null) {
-            // if root folder of the module is the scm root location return "" else compute it.
-            if (StringUtils.equals(getRealRoot().getAbsolutePath(),module.getSourceControl()
-                    .getRootFolder().getAbsolutePath())) {
-                scmRelativeRoot = "";
-            } else {
-                String relativePath = StringUtils.removeStart(getRealRoot().getAbsolutePath(), module.getSourceControl()
-                        .getRootFolder().getAbsolutePath()
-                        + File.separatorChar);
-                relativePath = StringUtils.removeEnd(relativePath, File.separator);
-                scmRelativeRoot = FilenameUtils.separatorsToUnix(relativePath);
-            }
-        }
-        return scmRelativeRoot;
+        SourceControlManagement sourceControl = module.getSourceControl();
+        return StringUtils.isEmpty(vfsPath) ? sourceControl.getStatus("/") : sourceControl.getStatus(vfsPath);
     }
 
     /**
