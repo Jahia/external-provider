@@ -62,7 +62,6 @@ import org.apache.commons.vfs2.provider.local.LocalFileName;
 import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.external.ExternalDataSource;
-import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.modules.external.ExternalData;
@@ -92,7 +91,6 @@ import javax.jcr.version.OnParentVersionAction;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Data source provider that is mapped to the /modules filesystem folder with deployed Jahia modules.
