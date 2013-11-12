@@ -79,13 +79,17 @@
                 <configuration>
                     <instructions>
                         <Jahia-Module-Type>system</Jahia-Module-Type>
+                        <Import-Package>
+                            javassist.util.proxy,
+                            ${jahia.plugin.projectPackageImport},
+                            *
+                        </Import-Package>
                         <Export-Package>org.jahia.modules.external,org.jahia.modules.external.query</Export-Package>
                         <_removeheaders>
                             ${jahia.modules.bundle.removeheaders},
                             Jahia-Depends,
                             Jahia-Static-Resources
                         </_removeheaders>
-                        <Jahia-Depends> </Jahia-Depends>
                     </instructions>
                 </configuration>
             </plugin>
