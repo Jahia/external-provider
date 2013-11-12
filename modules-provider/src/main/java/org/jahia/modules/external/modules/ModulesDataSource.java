@@ -147,7 +147,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private static final int ROOT_DEPTH_TOKEN = 0;
     private static final int TARGET_DEPTH_TOKEN = 1;
-    private static final int RESOURCES_DEPTH_TOKEN = 3;
+    private static final int SOURCES_DEPTH_TOKEN = 3;
     private static final int NODETYPE_FOLDER_DEPTH_TOKEN = 4;
     private static final int TEMPLATE_TYPE_FOLDER_DEPTH_TOKEN = 5;
     private static final int VIEWS_FOLDER_DEPTH_TOKEN = 5;
@@ -245,7 +245,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             } else {
                 if (relativeDepth == TARGET_DEPTH_TOKEN && StringUtils.equals("target",fileObject.getName().getBaseName())) {
                     type = "jnt:mavenTargetFolder";
-                } else if (StringUtils.equals("resources",fileObject.getName().getBaseName()) && relativeDepth == RESOURCES_DEPTH_TOKEN) {
+                } else if (StringUtils.equals("resources",fileObject.getName().getBaseName()) && relativeDepth == SOURCES_DEPTH_TOKEN) {
                     type = "jnt:folder";
                 } else if (relativeDepth == NODETYPE_FOLDER_DEPTH_TOKEN && isNodeType(fileObject.getName().getBaseName())) {
                     type = Constants.JAHIANT_NODETYPEFOLDER;
@@ -254,6 +254,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     if (parent != null && Constants.JAHIANT_NODETYPEFOLDER.equals(getDataType(parent))) {
                         type = Constants.JAHIANT_TEMPLATETYPEFOLDER;
                     }
+                } else if (StringUtils.split(relativeName,"/").length >= SOURCES_DEPTH_TOKEN && StringUtils.equals(StringUtils.split(relativeName,"/")[SOURCES_DEPTH_TOKEN-1],"java")) {
+                    type = "jnt:javaPackageFolder";
                 }
             }
             if (type == null) {
@@ -379,7 +381,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 }
                 lazyProperties.add(SOURCE_CODE);
                 data.getProperties().put("nodeTypeName",
-                        new String[] { StringUtils.replace(StringUtils.substringBetween(path, "/src/main/resources/","/"), "_", ":") });
+                        new String[]{StringUtils.replace(StringUtils.substringBetween(path, "/src/main/resources/", "/"), "_", ":")});
 
                 // set Properties
                 if (type.isNodeType(Constants.JAHIAMIX_VIEWPROPERTIES)) {
