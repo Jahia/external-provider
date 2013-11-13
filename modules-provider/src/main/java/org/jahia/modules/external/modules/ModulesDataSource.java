@@ -379,10 +379,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     lazyProperties = new HashSet<String>();
                     data.setLazyProperties(lazyProperties);
                 }
+                String nodeTypeName= StringUtils.replace(StringUtils.substringBetween(path, "/src/main/resources/", "/"), "_", ":");
+                // add nodetype only if it is resolved
+                if (nodeTypeName != null) {
+                    data.getProperties().put("nodeTypeName",new String[]{nodeTypeName});
+                }
                 lazyProperties.add(SOURCE_CODE);
-                data.getProperties().put("nodeTypeName",
-                        new String[]{StringUtils.replace(StringUtils.substringBetween(path, "/src/main/resources/", "/"), "_", ":")});
-
                 // set Properties
                 if (type.isNodeType(Constants.JAHIAMIX_VIEWPROPERTIES)) {
                     Properties properties = new SortedProperties();
