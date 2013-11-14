@@ -70,6 +70,8 @@ import org.jahia.services.content.nodetypes.*;
 import org.jahia.services.preferences.user.UserPreferencesHelper;
 import org.jahia.services.templates.SourceControlManagement;
 import org.jahia.services.templates.SourceControlManagement.Status;
+import org.jahia.services.templates.TemplatePackageRegistry;
+import org.jahia.settings.SettingsBean;
 import org.jahia.tools.files.FileWatcher;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.i18n.Messages;
@@ -143,6 +145,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     public static final String JNT_NODE_TYPE = "jnt:nodeType";
     public static final String JNT_MIXIN_NODE_TYPE = "jnt:mixinNodeType";
     public static final String JNT_PRIMARY_NODE_TYPE = "jnt:primaryNodeType";
+    public static final String JNT_DEFINITION_FILE = "jnt:definitionFile";
     public static final HashSet<String> NODETYPES_TYPES = Sets.newHashSet(JNT_NODE_TYPE, JNT_MIXIN_NODE_TYPE, JNT_PRIMARY_NODE_TYPE);
 
     private static final int ROOT_DEPTH_TOKEN = 0;
@@ -166,7 +169,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private File realRoot;
 
+    private JCRStoreService jcrStoreService;
+
     public void start() {
+        if (jcrStoreService == null) {
+            jcrStoreService = (JCRStoreService) SpringContextSingleton.getBean("JCRStoreService");
+        }
         try {
             final String fullFolderPath = module.getSourcesFolder().getPath();
             watcher = new FileWatcher("ModuleSourcesJob-" + module.getRootFolder(), fullFolderPath, true, 5000, true);
@@ -182,15 +190,38 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     }
                     @SuppressWarnings("unchecked")
                     List<File> files = (List<File>)arg;
+                    boolean nodeTypeLabelsFlushed = false;
                     for (File file : files) {
                         String type = fileTypeMapping.get(FilenameUtils.getExtension(file.getName()));
-                        if (type != null && type.equals("jnt:resourceBundleFile")) {
+                        if (type == null) {
+                            continue;
+                        }
+                        if (type.equals("jnt:resourceBundleFile") && !nodeTypeLabelsFlushed) {
                             NodeTypeRegistry.getInstance().flushLabels();
                             logger.debug("Flushing node type label caches");
                             for (NodeTypeRegistry registry : nodeTypeRegistryMap.values()) {
                                 registry.flushLabels();
                             }
-                            break;
+                            nodeTypeLabelsFlushed = true;
+                        } else if (type.equals(JNT_DEFINITION_FILE)) {
+                            try {
+                                String cndPath = StringUtils.substringAfter(file.getPath(), "/src/main/resources/");
+                                if (!module.getDefinitionsFiles().contains(cndPath)) {
+                                    module.setDefinitionsFile(cndPath);
+                                }
+                                String systemId = module.getRootFolder();
+                                NodeTypeRegistry nodeTypeRegistry = NodeTypeRegistry.getInstance();
+                                nodeTypeRegistry.unregisterNodeTypes(systemId);
+                                nodeTypeRegistry.addDefinitionsFile(file, systemId, module.getVersion());
+                                if (SettingsBean.getInstance().isProcessingServer()) {
+                                    jcrStoreService.deployDefinitions(systemId);
+                                }
+                                logger.info("Registered definitions from file {} for bundle {}", file, module.getBundle());
+                            } catch (IOException e) {
+                                logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
+                            } catch (ParseException e) {
+                                logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
+                            }
                         }
                     }
                 }
@@ -665,9 +696,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     sub.validate();
                 }
 
-                writeDefinitionFile(oldNodeTypeRegistry, StringUtils.substringBeforeLast(newCndPath, "/"));
+                writeDefinitionFile(oldNodeTypeRegistry, newCndPath);
                 if (!oldCndPath.equals(newCndPath)) {
-                    writeDefinitionFile(newNodeTypeRegistry, StringUtils.substringBeforeLast(oldCndPath, "/"));
+                    writeDefinitionFile(newNodeTypeRegistry, oldCndPath);
                 }
             } catch (RepositoryException e) {
                 nodeTypeRegistryMap.remove(newCndPath);
@@ -806,7 +837,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             saveProperties(data);
         }
 
-        if (data.getPath().toLowerCase().endsWith(CND)) {
+        if (type.isNodeType(JNT_DEFINITION_FILE)) {
             nodeTypeRegistryMap.remove(data.getPath());
         }
         return hasProperties;
