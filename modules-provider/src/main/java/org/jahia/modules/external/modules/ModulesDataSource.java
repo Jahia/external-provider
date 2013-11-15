@@ -1721,12 +1721,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     @Override
-    public String[] getPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
+    public String[] getPropertyValues(String path, String propertyName) throws PathNotFoundException {
         if (SOURCE_CODE.equals(propertyName)) {
             InputStream is = null;
             try {
-                is = getFile(data.getPath()).getContent().getInputStream();
-                java.nio.charset.Charset c = "jnt:resourceBundleFile".equals(data.getType()) ? Charsets.ISO_8859_1:Charsets.UTF_8;
+                is = getFile(path).getContent().getInputStream();
+                java.nio.charset.Charset c = path.toLowerCase().endsWith(".properties") ? Charsets.ISO_8859_1:Charsets.UTF_8;
                 return new String[] {IOUtils.toString(is, c)};
             } catch (Exception e) {
                 logger.error("Failed to read source code", e);
@@ -1734,17 +1734,17 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 IOUtils.closeQuietly(is);
             }
         }
-        throw new PathNotFoundException(data.getPath() + "/" + propertyName);
+        throw new PathNotFoundException(path + "/" + propertyName);
     }
 
     @Override
-    public String[] getI18nPropertyValues(ExternalData data, String lang, String propertyName) throws PathNotFoundException {
-        throw new PathNotFoundException(data.getPath() + "/" + propertyName);
+    public String[] getI18nPropertyValues(String path, String lang, String propertyName) throws PathNotFoundException {
+        throw new PathNotFoundException(path + "/" + propertyName);
     }
 
     @Override
-    public Binary[] getBinaryPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
-        throw new PathNotFoundException(data.getPath() + "/" + propertyName);
+    public Binary[] getBinaryPropertyValues(String path, String propertyName) throws PathNotFoundException {
+        throw new PathNotFoundException(path + "/" + propertyName);
     }
 
     protected File getRealFile(String relativePath) throws FileSystemException {

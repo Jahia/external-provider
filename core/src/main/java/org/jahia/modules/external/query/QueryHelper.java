@@ -47,9 +47,17 @@ public class QueryHelper {
             return ((DescendantNode) constraint).getAncestorPath();
         } else if (constraint instanceof ChildNode) {
             return ((ChildNode) constraint).getParentPath();
-        } else {
-            throw new UnsupportedRepositoryOperationException("Unsupported constraint : " + constraint.toString());
+        } else if (constraint instanceof Or) {
+            Constraint constraint1 = ((Or) constraint).getConstraint1();
+            if (constraint1 instanceof Not) {
+                Constraint not = ((Not) constraint1).getConstraint();
+                if (not instanceof PropertyExistence && ((PropertyExistence) not).getPropertyName().equals("jcr:language")) {
+                    // Skip constraint for language matching
+                    return null;
+                }
+            }
         }
+        throw new UnsupportedRepositoryOperationException("Unsupported constraint : " + constraint.toString());
     }
 
     /**

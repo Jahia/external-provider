@@ -302,8 +302,7 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
     }
 
     @Override
-    public String[] getPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
-        String path = data.getPath();
+    public String[] getPropertyValues(String path, String propertyName) throws PathNotFoundException {
         String[] pathTokens = StringUtils.split(path, '/');
         if (pathTokens.length < 2) {
             throw new PathNotFoundException(path);
@@ -368,12 +367,12 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
     }
 
     @Override
-    public String[] getI18nPropertyValues(ExternalData data, String lang, String propertyName) throws PathNotFoundException {
-        return getPropertyValues(data, propertyName + "__" + lang);
+    public String[] getI18nPropertyValues(String path, String lang, String propertyName) throws PathNotFoundException {
+        return getPropertyValues(path, propertyName + "__" + lang);
     }
 
     @Override
-    public Binary[] getBinaryPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
-        throw new PathNotFoundException(data.getPath() + "/" + propertyName);
+    public Binary[] getBinaryPropertyValues(String path, String propertyName) throws PathNotFoundException {
+        throw new PathNotFoundException(path + "/" + propertyName);
     }
 }

@@ -219,7 +219,7 @@ public class ExternalSessionImpl implements Session {
     protected String[] getPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
         ExternalDataSource dataSource = repository.getDataSource();
         if (dataSource instanceof ExternalDataSource.LazyProperty) {
-            return ((ExternalDataSource.LazyProperty) dataSource).getPropertyValues(data, propertyName);
+            return ((ExternalDataSource.LazyProperty) dataSource).getPropertyValues(data.getPath(), propertyName);
         } else {
             throw new PathNotFoundException(repository.getProviderKey() + " doesn't support lazy properties");
         }
@@ -228,7 +228,7 @@ public class ExternalSessionImpl implements Session {
     protected String[] getI18nPropertyValues(ExternalData data, String lang, String propertyName) throws PathNotFoundException {
         ExternalDataSource dataSource = repository.getDataSource();
         if (dataSource instanceof ExternalDataSource.LazyProperty) {
-            return ((ExternalDataSource.LazyProperty) dataSource).getI18nPropertyValues(data, lang, propertyName);
+            return ((ExternalDataSource.LazyProperty) dataSource).getI18nPropertyValues(StringUtils.substringBeforeLast(data.getPath(),"/"), lang, propertyName);
         } else {
             throw new PathNotFoundException(repository.getProviderKey() + " doesn't support lazy properties");
         }
@@ -237,7 +237,7 @@ public class ExternalSessionImpl implements Session {
     protected Binary[] getBinaryPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
         ExternalDataSource dataSource = repository.getDataSource();
         if (dataSource instanceof ExternalDataSource.LazyProperty) {
-            return ((ExternalDataSource.LazyProperty) dataSource).getBinaryPropertyValues(data, propertyName);
+            return ((ExternalDataSource.LazyProperty) dataSource).getBinaryPropertyValues(data.getPath(), propertyName);
         } else {
             throw new PathNotFoundException(repository.getProviderKey() + " doesn't support lazy properties");
         }

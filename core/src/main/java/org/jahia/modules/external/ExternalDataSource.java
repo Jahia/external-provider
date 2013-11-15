@@ -55,17 +55,52 @@ import java.util.Set;
  * This is a simple way to create a new JCR Provider
  */
 public interface ExternalDataSource {
-    
+
+    /**
+     * If implemented, the data source can avoid to fill all properties values when getting the nodes. Instead, fill the
+     * lazy*Properties fields of ExternalData to tell which properties can be queried on demand, and implement
+     * the get*PropertyValues for these properties.
+     */
     public interface LazyProperty {
-        String[] getPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException;
-        String[] getI18nPropertyValues(ExternalData data, String lang, String propertyName) throws PathNotFoundException;
-        Binary[] getBinaryPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException;
+        /**
+         * Get values for a lazy property
+         * @param path Path of the node
+         * @param propertyName Name of the property to get
+         * @return values
+         * @throws PathNotFoundException
+         */
+        String[] getPropertyValues(String path, String propertyName) throws PathNotFoundException;
+
+        /**
+         * Get values for an lazy internationalized property
+         * @param path Path of the node
+         * @param propertyName Name of the property to get
+         * @return values
+         * @throws PathNotFoundException
+         */
+        String[] getI18nPropertyValues(String path, String lang, String propertyName) throws PathNotFoundException;
+
+        /**
+         * Get values for a lazy binary property
+         * @param path Path of the node
+         * @param propertyName Name of the property to get
+         * @return values
+         * @throws PathNotFoundException
+         */
+        Binary[] getBinaryPropertyValues(String path, String propertyName) throws PathNotFoundException;
     }
 
     /**
      * If implemented, this interface allow and defines search feature support.
      */
     public abstract interface Searchable {
+        /**
+         * Execute a search query
+         * @see org.jahia.modules.external.query.QueryHelper
+         * @param query The JCR Query, can be parsed with
+         * @return List of node path
+         * @throws RepositoryException
+         */
         List<String> search(ExternalQuery query) throws RepositoryException;
     }
 
