@@ -1100,6 +1100,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             int selectorType = SelectorType.SMALLTEXT;  // Default selector type is smallText
             if (values != null && values.length > 0) {
                 selectorType = SelectorType.valueFromName(values[0]);
+            } else if (propertyDefinition.getRequiredType() == PropertyType.WEAKREFERENCE) {
+                selectorType = SelectorType.CONTENTPICKER;
             }
             propertyDefinition.setSelector(selectorType);
             values = properties.get(J_SELECTOR_OPTIONS);
