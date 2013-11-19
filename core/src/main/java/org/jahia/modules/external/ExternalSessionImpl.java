@@ -167,6 +167,9 @@ public class ExternalSessionImpl implements Session {
             return new ExternalNodeImpl(changedData.get(path), this);
         }
         String parentPath = StringUtils.substringBeforeLast(path, "/");
+        if (parentPath.equals("")) {
+            parentPath = "/";
+        }
         try {
             if (StringUtils.substringAfterLast(parentPath, "/").startsWith(TRANSLATION_NODE_NAME_BASE)) {
                 // Getting a translation property
