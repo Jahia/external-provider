@@ -70,7 +70,6 @@ import org.jahia.services.content.nodetypes.*;
 import org.jahia.services.preferences.user.UserPreferencesHelper;
 import org.jahia.services.templates.SourceControlManagement;
 import org.jahia.services.templates.SourceControlManagement.Status;
-import org.jahia.services.templates.TemplatePackageRegistry;
 import org.jahia.settings.SettingsBean;
 import org.jahia.tools.files.FileWatcher;
 import org.jahia.utils.LanguageCodeConverters;
@@ -154,6 +153,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private static final int NODETYPE_FOLDER_DEPTH_TOKEN = 4;
     private static final int TEMPLATE_TYPE_FOLDER_DEPTH_TOKEN = 5;
     private static final int VIEWS_FOLDER_DEPTH_TOKEN = 5;
+    private static final String SRC_MAIN_RESOURCES = "/src/main/resources/";
 
     private JahiaTemplatesPackage module;
 
@@ -179,6 +179,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             final String fullFolderPath = module.getSourcesFolder().getPath();
             watcher = new FileWatcher("ModuleSourcesJob-" + module.getRootFolder(), fullFolderPath, true, 5000, true);
             watcher.setRecursive(true);
+            watcher.setRemovedFiles(true);
+            watcher.setIgnoreFiles(Arrays.asList(".svn", ".git", "target", ".idea"));
             watcher.addObserver(new Observer() {
                 @Override
                 public void update(Observable o, Object arg) {
@@ -205,14 +207,19 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                             nodeTypeLabelsFlushed = true;
                         } else if (type.equals(JNT_DEFINITION_FILE)) {
                             try {
-                                String cndPath = StringUtils.substringAfter(file.getPath(), "/src/main/resources/");
-                                if (!module.getDefinitionsFiles().contains(cndPath)) {
-                                    module.setDefinitionsFile(cndPath);
+                                String cndPath = StringUtils.substringAfter(file.getPath(), SRC_MAIN_RESOURCES);
+                                List<String> definitionsFiles = module.getDefinitionsFiles();
+                                if (file.exists() && !definitionsFiles.contains(cndPath)) {
+                                    definitionsFiles.add(cndPath);
+                                } else if (!file.exists() && definitionsFiles.contains(cndPath)) {
+                                    definitionsFiles.remove(cndPath);
                                 }
                                 String systemId = module.getRootFolder();
                                 NodeTypeRegistry nodeTypeRegistry = NodeTypeRegistry.getInstance();
                                 nodeTypeRegistry.unregisterNodeTypes(systemId);
-                                nodeTypeRegistry.addDefinitionsFile(file, systemId, module.getVersion());
+                                for (String path : definitionsFiles) {
+                                    nodeTypeRegistry.addDefinitionsFile(getRealFile(SRC_MAIN_RESOURCES + path), systemId, module.getVersion());
+                                }
                                 if (SettingsBean.getInstance().isProcessingServer()) {
                                     jcrStoreService.deployDefinitions(systemId);
                                 }
@@ -410,7 +417,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     lazyProperties = new HashSet<String>();
                     data.setLazyProperties(lazyProperties);
                 }
-                String nodeTypeName= StringUtils.replace(StringUtils.substringBetween(path, "/src/main/resources/", "/"), "_", ":");
+                String nodeTypeName= StringUtils.replace(StringUtils.substringBetween(path, SRC_MAIN_RESOURCES, "/"), "_", ":");
                 // add nodetype only if it is resolved
                 if (nodeTypeName != null) {
                     data.getProperties().put("nodeTypeName",new String[]{nodeTypeName});
