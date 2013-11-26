@@ -157,6 +157,8 @@ public class QueryHelper {
 //            String root = ((ChildNode) constraint).getParentPath();
 //            search.put("__rootPath", root);
 //            search.put("__searchSubNodes", "false");
+        } else if (constraint instanceof FullTextSearch) {
+            search.put(((FullTextSearch) constraint).getPropertyName(), ((Literal) ((FullTextSearch) constraint).getFullTextSearchExpression()).getLiteralValue());
         } else {
             if (constraint instanceof Or) {
                 Constraint constraint1 = ((Or) constraint).getConstraint1();
