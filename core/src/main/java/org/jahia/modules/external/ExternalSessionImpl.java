@@ -362,7 +362,7 @@ public class ExternalSessionImpl implements Session {
 
     public ExternalValueFactoryImpl getValueFactory()
             throws UnsupportedRepositoryOperationException, RepositoryException {
-        return new ExternalValueFactoryImpl();
+        return new ExternalValueFactoryImpl(this);
     }
 
     public void checkPermission(String s, String s1) throws AccessControlException, RepositoryException {

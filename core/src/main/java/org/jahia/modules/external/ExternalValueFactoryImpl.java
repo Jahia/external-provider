@@ -43,6 +43,7 @@ package org.jahia.modules.external;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.Calendar;
+import java.util.UUID;
 
 import javax.jcr.Binary;
 import javax.jcr.Node;
@@ -61,6 +62,12 @@ import org.apache.jackrabbit.util.ISO8601;
  * 
  */
 public class ExternalValueFactoryImpl implements ValueFactory {
+    private ExternalSessionImpl session;
+
+    public ExternalValueFactoryImpl(ExternalSessionImpl session) {
+        this.session = session;
+    }
+
     public ExternalValueImpl createValue(String value) {
         return new ExternalValueImpl(value);
     }
@@ -80,11 +87,26 @@ public class ExternalValueFactoryImpl implements ValueFactory {
             case PropertyType.LONG :
                 return createValue(Long.parseLong(value));
             case PropertyType.REFERENCE :
-                return new ExternalValueImpl(value, PropertyType.REFERENCE);
+            case PropertyType.WEAKREFERENCE :
+                try {
+                    if (!session.getRepository().getDataSource().isSupportsUuid()) {
+                        try {
+                            UUID.fromString(value);
+                        } catch (IllegalArgumentException e) {
+                            String externalId = session.getRepository().getStoreProvider().getInternalIdentifier(value);
+                            if (externalId == null) {
+                                // not mapped yet -> store mapping
+                                externalId = session.getRepository().getStoreProvider().mapInternalIdentifier(value);
+                            }
+                            return new ExternalValueImpl(externalId, type);
+                        }
+                    }
+                } catch (RepositoryException e) {
+                    e.printStackTrace();
+                }
+                return new ExternalValueImpl(value, type);
             case PropertyType.STRING :
                 return createValue(value);
-            case PropertyType.WEAKREFERENCE :
-                return new ExternalValueImpl(value, PropertyType.WEAKREFERENCE);
             case PropertyType.NAME :
             case PropertyType.PATH :
             case PropertyType.URI :
