@@ -127,11 +127,16 @@ public class IdentifierMappingServiceImpl implements IdentifierMappingService {
         StatelessSession session = null;
         try {
             session = getHibernateSessionFactory().openStatelessSession();
+            session.beginTransaction();
             UuidMapping mapping = (UuidMapping) session.get(UuidMapping.class, internalId);
             if (mapping != null) {
                 externalId = mapping.getExternalId();
             }
+            session.getTransaction().commit();
         } catch (HibernateException e) {
+            if (session != null) {
+                session.getTransaction().rollback();
+            }
             throw new RepositoryException(e);
         } finally {
             if (session != null) {
