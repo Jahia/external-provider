@@ -159,7 +159,7 @@ public class ExternalQueryManager implements QueryManager {
                 QueryObjectModelFactory qomFactory = queryManager.getQOMFactory();
                 String mountPoint = workspace.getSession().getRepository().getStoreProvider().getMountPoint();
                 Constraint convertedConstraint = convertExistingPathConstraints(getConstraint(), mountPoint, qomFactory);
-                if (!(convertedConstraint instanceof DescendantNode)) {
+                if (!hasDescendantNode(convertedConstraint)) {
                     // Multiple IsDescendantNode queries are not supported
                     convertedConstraint = addPathConstraints(convertedConstraint, getSource(), mountPoint, qomFactory);
                 }
@@ -237,6 +237,16 @@ public class ExternalQueryManager implements QueryManager {
                 }
             }
             return new ExternalQueryResult(this, results, workspace);
+        }
+
+        private boolean hasDescendantNode(Constraint convertedConstraint) {
+            if (convertedConstraint instanceof DescendantNode) {
+                return true;
+            }
+            if (convertedConstraint instanceof And) {
+                return hasDescendantNode(((And) convertedConstraint).getConstraint1()) || hasDescendantNode(((And) convertedConstraint).getConstraint2());
+            }
+            return false;
         }
 
         private Constraint addPathConstraints(Constraint constraint, Source source, String mountPoint, QueryObjectModelFactory f) throws RepositoryException {
