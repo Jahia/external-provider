@@ -154,9 +154,11 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                 bundle) : null;
         if (null != pkg && pkg.getSourcesFolder() != null) {
             mountSourcesProvider(pkg);
-            ModulesSourceHttpServiceTracker modulesSourceHttpServiceTracker = new ModulesSourceHttpServiceTracker(pkg);
-            modulesSourceHttpServiceTracker.open(true);
-            httpServiceTrackers.put(bundle.getSymbolicName(), modulesSourceHttpServiceTracker);
+            if (!httpServiceTrackers.containsKey(bundle.getSymbolicName())) {
+                ModulesSourceHttpServiceTracker modulesSourceHttpServiceTracker = new ModulesSourceHttpServiceTracker(pkg);
+                modulesSourceHttpServiceTracker.open(true);
+                httpServiceTrackers.put(bundle.getSymbolicName(), modulesSourceHttpServiceTracker);
+            }
         }
     }
 
@@ -166,7 +168,7 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
         if (null != pkg && pkg.getSourcesFolder() != null) {
             unmountSourcesProvider(pkg);
         }
-        httpServiceTrackers.remove(bundle.getSymbolicName());
+        httpServiceTrackers.remove(bundle.getSymbolicName()).close();
     }
 
     public ModulesSourceHttpServiceTracker getHttpServiceTracker(String bundleSymbolicName) {
