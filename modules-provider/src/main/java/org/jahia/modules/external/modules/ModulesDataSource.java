@@ -1636,13 +1636,16 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         ntr.addDefinitionsFile(depend.getResource(s), depend.getRootFolder(), null);
                     }
                 }
-                ntr.addDefinitionsFile(new UrlResource(getFile(path).getURL()), module.getRootFolder(), null);
+                FileObject file = getFile(path);
+                if (file.exists()) {
+                    ntr.addDefinitionsFile(new UrlResource(file.getURL()), module.getRootFolder(), null);
+                    nodeTypeRegistryMap.put(path, ntr);
+                }
             } catch (IOException e) {
                 throw new RepositoryException("Failed to load node type registry", e);
             } catch (ParseException e) {
                 throw new RepositoryException("Failed to load node type registry", e);
             }
-            nodeTypeRegistryMap.put(path, ntr);
             return ntr;
         }
     }
