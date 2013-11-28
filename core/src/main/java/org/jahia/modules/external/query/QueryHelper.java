@@ -48,14 +48,7 @@ public class QueryHelper {
         } else if (constraint instanceof ChildNode) {
             return ((ChildNode) constraint).getParentPath();
         } else if (constraint instanceof Or) {
-            Constraint constraint1 = ((Or) constraint).getConstraint1();
-            if (constraint1 instanceof Not) {
-                Constraint not = ((Not) constraint1).getConstraint();
-                if (not instanceof PropertyExistence && ((PropertyExistence) not).getPropertyName().equals("jcr:language")) {
-                    // Skip constraint for language matching
-                    return null;
-                }
-            }
+            if (isLanguageConstraint(constraint)) return null;
         }
         throw new UnsupportedRepositoryOperationException("Unsupported constraint : " + constraint.toString());
     }
@@ -157,19 +150,40 @@ public class QueryHelper {
 //            String root = ((ChildNode) constraint).getParentPath();
 //            search.put("__rootPath", root);
 //            search.put("__searchSubNodes", "false");
+        } else if (constraint instanceof FullTextSearch) {
+            search.put(((FullTextSearch) constraint).getPropertyName(), ((Literal) ((FullTextSearch) constraint).getFullTextSearchExpression()).getLiteralValue());
         } else {
             if (constraint instanceof Or) {
-                Constraint constraint1 = ((Or) constraint).getConstraint1();
-                if (constraint1 instanceof Not) {
-                    Constraint not = ((Not) constraint1).getConstraint();
-                    if (not instanceof PropertyExistence && ((PropertyExistence) not).getPropertyName().equals("jcr:language")) {
-                        // Skip constraint for language matching
-                        return;
-                    }
+                if (isLanguageConstraint(constraint)) return;
+            }
+            if (constraint instanceof And) {
+                Constraint constraint2 = ((And) constraint).getConstraint2();
+                if (isLanguageConstraint(constraint2)) {
+                    addConstraints(search, ((And) constraint).getConstraint1(), and);
+                    return;
                 }
             }
             throw new UnsupportedRepositoryOperationException("Unsupported constraint : " + constraint.toString());
         }
+    }
+
+    private static boolean isLanguageConstraint(Constraint constraint) {
+        if (constraint instanceof Or) {
+            if (isLanguageExistence(((Or) constraint).getConstraint1())) return true;
+            if (isLanguageExistence(((Or) constraint).getConstraint2())) return true;
+        }
+        return false;
+    }
+
+    private static boolean isLanguageExistence(Constraint constraint1) {
+        if (constraint1 instanceof Not) {
+            Constraint not = ((Not) constraint1).getConstraint();
+            if (not instanceof PropertyExistence && ((PropertyExistence) not).getPropertyName().equals("jcr:language")) {
+                // Skip constraint for language matching
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

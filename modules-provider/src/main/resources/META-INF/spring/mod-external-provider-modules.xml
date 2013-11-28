@@ -60,9 +60,11 @@
                   - if the node is a folder and at root level and its mame is target -->
             </util:map>
         </property>
+        <property name="jcrStoreService" ref="JCRStoreService" />
+        <property name="modulesSourceSpringInitializer" ref="ModulesSourceSpringInitializer" />
     </bean>
 
-    <bean class="org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer" factory-method="getInstance">
+    <bean id="ModulesSourceSpringInitializer" class="org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer" factory-method="getInstance">
         <property name="jcrStoreService" ref="JCRStoreService"/>
     </bean>
 
