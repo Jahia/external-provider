@@ -42,7 +42,6 @@ package org.jahia.modules.external.modules;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
@@ -53,21 +52,17 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.vfs2.FileContent;
-import org.apache.commons.vfs2.FileName;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileType;
+import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.provider.local.LocalFileName;
 import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
+import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.ExternalDataSource;
 import org.jahia.modules.external.modules.osgi.ModulesSourceHttpServiceTracker;
 import org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer;
+import org.jahia.modules.external.vfs.VFSDataSource;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
-import org.jahia.modules.external.ExternalData;
-import org.jahia.modules.external.vfs.VFSDataSource;
 import org.jahia.services.content.nodetypes.*;
 import org.jahia.services.preferences.user.UserPreferencesHelper;
 import org.jahia.services.templates.SourceControlManagement;
@@ -82,6 +77,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 
 import javax.annotation.Nullable;
+import javax.imageio.ImageIO;
 import javax.jcr.*;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
@@ -91,7 +87,7 @@ import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 import javax.jcr.query.qom.QueryObjectModelConstants;
 import javax.jcr.version.OnParentVersionAction;
-
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
 
@@ -463,7 +459,23 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 String ext = StringUtils.substringAfterLast(path, ".");
                 Map<?, ?> extensions = (Map<?, ?>) SpringContextSingleton.getBean("fileExtensionIcons");
                 if ("img".equals(extensions.get(ext))) {
-                    data.setMixin(JMIX_IMAGE_LIST);
+                    InputStream is = null;
+                    try {
+                        data.setMixin(JMIX_IMAGE_LIST);
+                        is = getFile(data.getPath()).getContent().getInputStream();
+                        BufferedImage bimg = ImageIO.read(is);
+                        data.getProperties().put("j:height",new String[] {Integer.toString(bimg.getHeight())});
+                        data.getProperties().put("j:width",new String[] {Integer.toString(bimg.getWidth())});
+                    }
+                    catch (FileSystemException e) {
+                        //no properties files, do nothing
+                    } catch (IOException e) {
+                        logger.error("Cannot read property file", e);
+                    } finally {
+                        if (is != null) {
+                            IOUtils.closeQuietly(is);
+                        }
+                    }
                 }
             }
         } catch (NoSuchNodeTypeException e) {
