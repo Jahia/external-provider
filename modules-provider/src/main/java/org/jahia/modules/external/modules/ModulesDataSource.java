@@ -665,6 +665,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private void moveCndItems(String oldPath, String newPath) throws RepositoryException {
         checkCndItemUsage(oldPath,"modulesDataSource.errors.move");
+        if (itemExists(newPath)) {
+            throw new ItemExistsException("Item " + newPath + " already exists");
+        }
         String oldPathlowerCase = oldPath.toLowerCase();
         String oldCndPath = getCndPath(oldPath, oldPathlowerCase);
         String oldSubPath = getSubPath(oldPath, oldPathlowerCase);
