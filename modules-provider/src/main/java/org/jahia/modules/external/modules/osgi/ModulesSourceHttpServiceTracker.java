@@ -46,6 +46,7 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         if (bundle.getEntry(jspPath) != null) {
             return;
         }
+        unregisterJsp(jspPath);
         String jspServletAlias = "/" + bundle.getSymbolicName() + jspPath;
         HttpContext httpContext = new FileHttpContext(FileHttpContext.getSourceURLs(bundle),
                 httpService.createDefaultHttpContext());
