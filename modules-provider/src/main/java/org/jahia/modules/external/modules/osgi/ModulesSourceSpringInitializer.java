@@ -49,6 +49,7 @@ import org.jahia.services.JahiaAfterInitializationService;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.content.JCRStoreService;
+import org.jahia.services.render.scripting.bundle.BundleScriptResolver;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
@@ -57,14 +58,16 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class ModulesSourceSpringInitializer implements JahiaAfterInitializationService, BundleContextAware {
-    private static Logger logger = LoggerFactory.getLogger(ModulesSourceActivator.class);
+    private static Logger logger = LoggerFactory.getLogger(ModulesSourceSpringInitializer.class);
     private BundleContext context;
     private static ModulesSourceSpringInitializer instance;
     private JCRStoreService jcrStoreService;
+    private Map<String, ModulesSourceHttpServiceTracker> httpServiceTrackers = new HashMap<String, ModulesSourceHttpServiceTracker>();
 
     public static ModulesSourceSpringInitializer getInstance() {
         if (instance == null) {
@@ -151,6 +154,9 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                 bundle) : null;
         if (null != pkg && pkg.getSourcesFolder() != null) {
             mountSourcesProvider(pkg);
+            ModulesSourceHttpServiceTracker modulesSourceHttpServiceTracker = new ModulesSourceHttpServiceTracker(pkg);
+            modulesSourceHttpServiceTracker.open(true);
+            httpServiceTrackers.put(bundle.getSymbolicName(), modulesSourceHttpServiceTracker);
         }
     }
 
@@ -160,6 +166,11 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
         if (null != pkg && pkg.getSourcesFolder() != null) {
             unmountSourcesProvider(pkg);
         }
+        httpServiceTrackers.remove(bundle.getSymbolicName());
+    }
+
+    public ModulesSourceHttpServiceTracker getHttpServiceTracker(String bundleSymbolicName) {
+        return httpServiceTrackers.get(bundleSymbolicName);
     }
 
     public void setJcrStoreService(JCRStoreService jcrStoreService) {

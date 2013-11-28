@@ -62,6 +62,8 @@ import org.apache.commons.vfs2.provider.local.LocalFileName;
 import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.external.ExternalDataSource;
+import org.jahia.modules.external.modules.osgi.ModulesSourceHttpServiceTracker;
+import org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.modules.external.ExternalData;
@@ -171,10 +173,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private JCRStoreService jcrStoreService;
 
+    private ModulesSourceSpringInitializer modulesSourceSpringInitializer;
+
     public void start() {
-        if (jcrStoreService == null) {
-            jcrStoreService = (JCRStoreService) SpringContextSingleton.getBean("JCRStoreService");
-        }
         try {
             final String fullFolderPath = module.getSourcesFolder().getPath();
             watcher = new FileWatcher("ModuleSourcesJob-" + module.getRootFolder(), fullFolderPath, true, 5000, true);
@@ -228,6 +229,14 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                                 logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
                             } catch (ParseException e) {
                                 logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
+                            }
+                        } else if (type.equals("jnt:viewFile")) {
+                            ModulesSourceHttpServiceTracker httpServiceTracker = modulesSourceSpringInitializer.getHttpServiceTracker(module.getRootFolder());
+                            String jspPath = "/" + StringUtils.substringAfterLast(FilenameUtils.separatorsToUnix(file.getPath()), SRC_MAIN_RESOURCES);
+                            if (file.exists()) {
+                                httpServiceTracker.registerJsp(jspPath);
+                            } else {
+                                httpServiceTracker.unregisterJsp(jspPath);
                             }
                         }
                     }
@@ -1773,6 +1782,14 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
 
         return realRoot;
+    }
+
+    public void setJcrStoreService(JCRStoreService jcrStoreService) {
+        this.jcrStoreService = jcrStoreService;
+    }
+
+    public void setModulesSourceSpringInitializer(ModulesSourceSpringInitializer modulesSourceSpringInitializer) {
+        this.modulesSourceSpringInitializer = modulesSourceSpringInitializer;
     }
 
     static class SortedProperties extends Properties {
