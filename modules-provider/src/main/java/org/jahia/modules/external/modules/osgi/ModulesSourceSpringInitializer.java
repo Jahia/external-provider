@@ -168,7 +168,10 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
         if (null != pkg && pkg.getSourcesFolder() != null) {
             unmountSourcesProvider(pkg);
         }
-        httpServiceTrackers.remove(bundle.getSymbolicName()).close();
+        ModulesSourceHttpServiceTracker modulesSourceHttpServiceTracker = httpServiceTrackers.remove(bundle.getSymbolicName());
+        if (modulesSourceHttpServiceTracker != null) {
+            modulesSourceHttpServiceTracker.close();
+        }
     }
 
     public ModulesSourceHttpServiceTracker getHttpServiceTracker(String bundleSymbolicName) {
