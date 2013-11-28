@@ -38,7 +38,7 @@
         </property>
         <property name="folderTypeMapping">
             <util:map key-type="java.lang.String" value-type="java.lang.String">
-                <entry key="css" value="jnt:cssFolderjnt:javaPackageFolder"/>
+                <entry key="css" value="jnt:cssFolder"/>
                 <entry key="java" value="jnt:javaPackageFolder"/>
                 <entry key="javascript" value="jnt:javascriptFolder"/>
                 <entry key="resources" value="jnt:resourceBundleFolder"/>
