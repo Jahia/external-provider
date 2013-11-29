@@ -44,6 +44,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.phloc.commons.io.file.filter.FilenameFilterNotEquals;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.Predicate;
@@ -228,11 +229,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                             }
                         } else if (type.equals("jnt:viewFile")) {
                             ModulesSourceHttpServiceTracker httpServiceTracker = modulesSourceSpringInitializer.getHttpServiceTracker(module.getRootFolder());
-                            String jspPath = "/" + StringUtils.substringAfterLast(FilenameUtils.separatorsToUnix(file.getPath()), SRC_MAIN_RESOURCES);
                             if (file.exists()) {
-                                httpServiceTracker.registerJsp(jspPath);
+                                httpServiceTracker.registerJsp(file);
                             } else {
-                                httpServiceTracker.unregisterJsp(jspPath);
+                                httpServiceTracker.unregisterJsp(file);
                             }
                         }
                     }

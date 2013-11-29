@@ -1,5 +1,7 @@
 package org.jahia.modules.external.modules.osgi;
 
+import com.phloc.commons.io.file.filter.FilenameFilterNotEquals;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.bundles.extender.jahiamodules.BundleHttpResourcesTracker;
 import org.jahia.bundles.extender.jahiamodules.FileHttpContext;
@@ -15,6 +17,8 @@ import org.osgi.service.http.HttpService;
 import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
 
 public class ModulesSourceHttpServiceTracker extends ServiceTracker {
     private static Logger logger = LoggerFactory.getLogger(ModulesSourceHttpServiceTracker.class);
@@ -42,11 +46,12 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         return httpService;
     }
 
-    public void registerJsp(String jspPath) {
+    public void registerJsp(File jsp) {
+        String jspPath = getJspPath(jsp);
         if (bundle.getEntry(jspPath) != null) {
             return;
         }
-        unregisterJsp(jspPath);
+        unregisterJsp(jsp);
         String jspServletAlias = "/" + bundle.getSymbolicName() + jspPath;
         HttpContext httpContext = new FileHttpContext(FileHttpContext.getSourceURLs(bundle),
                 httpService.createDefaultHttpContext());
@@ -58,13 +63,21 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         }
     }
 
-    public void unregisterJsp(String jspPath) {
+    public void unregisterJsp(File jsp) {
+        String jspPath = getJspPath(jsp);
         String jspServletAlias = "/" + bundle.getSymbolicName() + jspPath;
         httpService.unregister(jspServletAlias);
         bundleScriptResolver.removeBundleScript(bundle, jspPath);
-        templatePackageRegistry.removeModuleWithViewsForComponent(StringUtils.substringBetween(jspPath, "/", "/"), module);
+        String propertiesFileName = FilenameUtils.removeExtension(jsp.getName()) + ".properties";
+        if (jsp.getParentFile().listFiles(new FilenameFilterNotEquals(propertiesFileName)).length == 0) {
+            templatePackageRegistry.removeModuleWithViewsForComponent(StringUtils.substringBetween(jspPath, "/", "/"), module);
+        }
         if (logger.isDebugEnabled()) {
             logger.debug("Unregister JSP {} in bundle {}", jspPath, bundleName);
         }
+    }
+
+    protected String getJspPath(File jsp) {
+        return StringUtils.substringAfterLast(FilenameUtils.separatorsToUnix(jsp.getPath()),"/src/main/resources");
     }
 }
