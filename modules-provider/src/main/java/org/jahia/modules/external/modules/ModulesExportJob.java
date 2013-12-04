@@ -65,7 +65,7 @@ public class ModulesExportJob extends BackgroundJob {
                 JahiaTemplateManagerService service = ServicesRegistry.getInstance()
                         .getJahiaTemplateManagerService();
                 for (String module : modules) {
-                    JahiaTemplatesPackage pack = service.getTemplatePackageByFileName(module);
+                    JahiaTemplatesPackage pack = service.getTemplatePackageById(module);
                     if (pack != null) {
                         File sources = service.getSources(pack, session);
                         if (sources != null) {
