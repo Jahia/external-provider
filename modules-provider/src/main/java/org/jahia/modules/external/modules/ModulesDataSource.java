@@ -44,7 +44,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.phloc.commons.io.file.filter.FilenameFilterNotEquals;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.Predicate;
@@ -461,11 +460,13 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 if ("img".equals(extensions.get(ext))) {
                     InputStream is = null;
                     try {
-                        data.setMixin(JMIX_IMAGE_LIST);
                         is = getFile(data.getPath()).getContent().getInputStream();
                         BufferedImage bimg = ImageIO.read(is);
-                        data.getProperties().put("j:height",new String[] {Integer.toString(bimg.getHeight())});
-                        data.getProperties().put("j:width",new String[] {Integer.toString(bimg.getWidth())});
+                        if(bimg != null){
+                            data.setMixin(JMIX_IMAGE_LIST);
+                            data.getProperties().put("j:height",new String[] {Integer.toString(bimg.getHeight())});
+                            data.getProperties().put("j:width",new String[] {Integer.toString(bimg.getWidth())});
+                        }
                     }
                     catch (FileSystemException e) {
                         //no properties files, do nothing
