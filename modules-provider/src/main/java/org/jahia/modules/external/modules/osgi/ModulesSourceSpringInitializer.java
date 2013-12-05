@@ -49,14 +49,12 @@ import org.jahia.services.JahiaAfterInitializationService;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.content.JCRStoreService;
-import org.jahia.services.render.scripting.bundle.BundleScriptResolver;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 
-import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -100,7 +98,7 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
     public void mountSourcesProvider(JahiaTemplatesPackage templatePackage) {
         if (context != null) {
             JCRStoreProvider provider = jcrStoreService.getSessionFactory().getProviders().get(
-                    "module-" + templatePackage.getRootFolder() + "-" + templatePackage.getVersion().toString());
+                    "module-" + templatePackage.getId() + "-" + templatePackage.getVersion().toString());
             if (provider == null) {
                 try {
                     Object dataSource = SpringContextSingleton.getBeanInModulesContext("ModulesDataSourcePrototype");
@@ -114,9 +112,9 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                     JCRStoreProvider ex = (JCRStoreProvider) SpringContextSingleton.getBeanInModulesContext(
                             "ExternalStoreProviderPrototype");
                     properties.clear();
-                    properties.put("key", "module-" + templatePackage.getRootFolder() + "-" +
+                    properties.put("key", "module-" + templatePackage.getId() + "-" +
                                           templatePackage.getVersion().toString());
-                    properties.put("mountPoint", "/modules/" + templatePackage.getRootFolderWithVersion() + "/sources");
+                    properties.put("mountPoint", "/modules/" + templatePackage.getIdWithVersion() + "/sources");
                     properties.put("dataSource", dataSource);
 
                     BeanUtils.populate(ex, properties);
@@ -141,7 +139,7 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
         if (context != null) {
             JCRStoreService jcrStoreService = (JCRStoreService) SpringContextSingleton.getBean("JCRStoreService");
             JCRStoreProvider provider = jcrStoreService.getSessionFactory().getProviders().get(
-                    "module-" + templatePackage.getRootFolder() + "-" + templatePackage.getVersion().toString());
+                    "module-" + templatePackage.getId() + "-" + templatePackage.getVersion().toString());
             if (provider != null) {
                 logger.info("Unmounting source for bundle {}", templatePackage.getName());
                 provider.stop();

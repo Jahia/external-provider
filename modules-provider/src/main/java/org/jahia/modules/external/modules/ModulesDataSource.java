@@ -44,7 +44,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.phloc.commons.io.file.filter.FilenameFilterNotEquals;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.Predicate;
@@ -175,7 +174,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     public void start() {
         try {
             final String fullFolderPath = module.getSourcesFolder().getPath();
-            watcher = new FileWatcher("ModuleSourcesJob-" + module.getRootFolder(), fullFolderPath, true, 5000, true);
+            watcher = new FileWatcher("ModuleSourcesJob-" + module.getId(), fullFolderPath, true, 5000, true);
             watcher.setRecursive(true);
             watcher.setRemovedFiles(true);
             watcher.setIgnoreFiles(Arrays.asList(".svn", ".git", "target", ".idea"));
@@ -186,7 +185,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     SourceControlManagement sourceControl = module.getSourceControl();
                     if (sourceControl != null) {
                         sourceControl.invalidateStatusCache();
-                        logger.debug("Invalidating SCM status caches for module {}", module.getRootFolder());
+                        logger.debug("Invalidating SCM status caches for module {}", module.getId());
                     }
                     @SuppressWarnings("unchecked")
                     List<File> files = (List<File>)arg;
@@ -212,7 +211,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                                 } else if (!file.exists() && definitionsFiles.contains(cndPath)) {
                                     definitionsFiles.remove(cndPath);
                                 }
-                                String systemId = module.getRootFolder();
+                                String systemId = module.getId();
                                 NodeTypeRegistry nodeTypeRegistry = NodeTypeRegistry.getInstance();
                                 nodeTypeRegistry.unregisterNodeTypes(systemId);
                                 for (String path : definitionsFiles) {
@@ -228,7 +227,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                                 logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
                             }
                         } else if (type.equals("jnt:viewFile")) {
-                            ModulesSourceHttpServiceTracker httpServiceTracker = modulesSourceSpringInitializer.getHttpServiceTracker(module.getRootFolder());
+                            ModulesSourceHttpServiceTracker httpServiceTracker = modulesSourceSpringInitializer.getHttpServiceTracker(module.getId());
                             if (file.exists()) {
                                 httpServiceTracker.registerJsp(file);
                             } else {
@@ -461,11 +460,13 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 if ("img".equals(extensions.get(ext))) {
                     InputStream is = null;
                     try {
-                        data.setMixin(JMIX_IMAGE_LIST);
                         is = getFile(data.getPath()).getContent().getInputStream();
                         BufferedImage bimg = ImageIO.read(is);
-                        data.getProperties().put("j:height",new String[] {Integer.toString(bimg.getHeight())});
-                        data.getProperties().put("j:width",new String[] {Integer.toString(bimg.getWidth())});
+                        if(bimg != null){
+                            data.setMixin(JMIX_IMAGE_LIST);
+                            data.getProperties().put("j:height",new String[] {Integer.toString(bimg.getHeight())});
+                            data.getProperties().put("j:width",new String[] {Integer.toString(bimg.getWidth())});
+                        }
                     }
                     catch (FileSystemException e) {
                         //no properties files, do nothing
@@ -927,7 +928,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         try {
             nodeType = nodeTypeRegistry.getNodeType(nodeTypeName);
         } catch (NoSuchNodeTypeException e) {
-            nodeType = new ExtendedNodeType(nodeTypeRegistry, module.getRootFolder());
+            nodeType = new ExtendedNodeType(nodeTypeRegistry, module.getId());
             nodeType.setName(new Name(nodeTypeName, nodeTypeRegistry.getNamespaces()));
         }
         Map<String, String[]> properties = data.getProperties();
@@ -1003,7 +1004,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private void saveCndResourceBundle(ExternalData data, String key) throws RepositoryException {
         String resourceBundleName = module.getResourceBundleName();
         if (resourceBundleName == null) {
-            resourceBundleName = "resources." + module.getRootFolder();
+            resourceBundleName = "resources." + module.getId();
         }
         String rbBasePath = "/src/main/resources/resources/" + StringUtils.substringAfterLast(resourceBundleName, ".");
         Map<String, Map<String, String[]>> i18nProperties = data.getI18nProperties();
@@ -1378,7 +1379,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private List<String> getCndChildren(String path, String pathLowerCase) throws RepositoryException {
         if (pathLowerCase.endsWith(CND)) {
             List<String> children = new ArrayList<String>();
-            NodeTypeIterator nodeTypes = loadRegistry(path).getNodeTypes(module.getRootFolder());
+            NodeTypeIterator nodeTypes = loadRegistry(path).getNodeTypes(module.getId());
             while (nodeTypes.hasNext()) {
                 children.add(nodeTypes.nextNodeType().getName());
             }
@@ -1633,12 +1634,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 List<JahiaTemplatesPackage> dependencies = module.getDependencies();
                 for (JahiaTemplatesPackage depend : dependencies) {
                     for (String s : depend.getDefinitionsFiles()) {
-                        ntr.addDefinitionsFile(depend.getResource(s), depend.getRootFolder(), null);
+                        ntr.addDefinitionsFile(depend.getResource(s), depend.getId(), null);
                     }
                 }
                 FileObject file = getFile(path);
                 if (file.exists()) {
-                    ntr.addDefinitionsFile(new UrlResource(file.getURL()), module.getRootFolder(), null);
+                    ntr.addDefinitionsFile(new UrlResource(file.getURL()), module.getId(), null);
                     nodeTypeRegistryMap.put(path, ntr);
                 }
             } catch (IOException e) {
@@ -1661,7 +1662,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     nodeTypeRegistryMap.get(path).flushLabels();
                 }
                 Map<String, String> realUsedNamespaces = new TreeMap<String, String>();
-                NodeTypeIterator nodeTypes = nodeTypeRegistry.getNodeTypes(module.getRootFolder());
+                NodeTypeIterator nodeTypes = nodeTypeRegistry.getNodeTypes(module.getId());
                 while (nodeTypes.hasNext()) {
                     ExtendedNodeType ntd = (ExtendedNodeType) nodeTypes.nextNodeType();
                     addMissingNamespace(namespaces, realUsedNamespaces, ntd);
@@ -1675,7 +1676,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     }
                 }
 
-                new JahiaCndWriter(nodeTypeRegistry.getNodeTypes(module.getRootFolder()), realUsedNamespaces, writer);
+                new JahiaCndWriter(nodeTypeRegistry.getNodeTypes(module.getId()), realUsedNamespaces, writer);
             } finally {
                 IOUtils.closeQuietly(writer);
             }
