@@ -48,6 +48,7 @@ import org.xml.sax.SAXException;
 
 import javax.jcr.*;
 import javax.jcr.lock.LockException;
+import javax.jcr.lock.LockManager;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.retention.RetentionManager;
@@ -426,7 +427,14 @@ public class ExternalSessionImpl implements Session {
     }
 
     public void addLockToken(String s) {
-
+        try {
+            LockManager extensionLockManager = extensionSession.getWorkspace().getLockManager();
+            if (extensionLockManager != null) {
+                extensionLockManager.addLockToken(s);
+            }
+        } catch (RepositoryException e) {
+            // unable to set token- do nothing
+        }
     }
 
     public String[] getLockTokens() {

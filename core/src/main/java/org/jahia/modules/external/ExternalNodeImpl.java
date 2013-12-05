@@ -233,8 +233,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
         Node extendedNode = getExtensionNode(true);
         if (extendedNode != null && canItemBeExtended(getChildNodeDefinition(relPath, primaryNodeTypeName))) {
-            Node n = extendedNode.addNode(relPath, primaryNodeTypeName);
-            n.addMixin("jmix:externalProviderExtension");
+            Node n = extendedNode.addNode(relPath, "jnt:externalProviderExtension");
+            n.setProperty("j:extendedType", getPrimaryNodeType().getName());
             n.setProperty("j:isExternalProviderRoot", false);
             return new ExtensionNode(n,getPath() + "/" + relPath,getSession());
         }
@@ -648,11 +648,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (withExtension) {
             Node extensionNode = getExtensionNode(false);
             if (extensionNode != null) {
-                for (NodeType type : extensionNode.getMixinNodeTypes()) {
-                    if (!type.isNodeType("jmix:externalProviderExtension")) {
-                        nt.add(NodeTypeRegistry.getInstance().getNodeType(type.getName()));
-                    }
-                }
+                nt.addAll(Arrays.asList(extensionNode.getMixinNodeTypes()));
             }
         }
         return nt.toArray(new NodeType[nt.size()]);
@@ -776,23 +772,23 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Lock lock(boolean b, boolean b1) throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
-        throw new UnsupportedRepositoryOperationException();
+       return session.getWorkspace().getLockManager().lock(getPath(),b,b1, Long.MAX_VALUE, null);
     }
 
     public Lock getLock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, RepositoryException {
-        throw new UnsupportedRepositoryOperationException("Locking is not supported on External repository");
+        return session.getWorkspace().getLockManager().getLock(getPath());
     }
 
     public void unlock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
-        throw new UnsupportedRepositoryOperationException("Locking is not supported on External repository");
+        session.getWorkspace().getLockManager().unlock(getPath());
     }
 
     public boolean holdsLock() throws RepositoryException {
-        return false;
+        return session.getWorkspace().getLockManager().getLock(getPath()) != null;
     }
 
     public boolean isLocked() throws RepositoryException {
-        return false;
+        return  session.getWorkspace().getLockManager().isLocked(getPath());
     }
 
     public Property setProperty(String name, Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
@@ -955,13 +951,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 if (parent.equals("")) {
                     parent = "/";
                 }
-                Node n = extensionSession.getNode(parent).addNode(StringUtils.substringAfterLast(mountPoint, "/"), getPrimaryNodeType().getName());
-                n.addMixin("jmix:externalProviderExtension");
+                Node n = extensionSession.getNode(parent).addNode(StringUtils.substringAfterLast(mountPoint, "/"), "jnt:externalProviderExtension");
+                n.setProperty("j:extendedType", getPrimaryNodeType().getName());
                 n.setProperty("j:isExternalProviderRoot", true);
                 n.setProperty("j:externalNodeIdentifier", getIdentifier());
             } else {
-                Node n = ((ExternalNodeImpl) getParent()).getExtensionNode(true).addNode(getName(), getPrimaryNodeType().getName());
-                n.addMixin("jmix:externalProviderExtension");
+                Node n = ((ExternalNodeImpl) getParent()).getExtensionNode(true).addNode(getName(), "jnt:externalProviderExtension");
+                n.setProperty("j:extendedType", getPrimaryNodeType().getName());
                 n.setProperty("j:isExternalProviderRoot", false);
                 n.setProperty("j:externalNodeIdentifier", getIdentifier());
             }

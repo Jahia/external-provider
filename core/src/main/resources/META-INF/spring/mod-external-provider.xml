@@ -14,6 +14,18 @@
     
     <bean id="ExternalStoreProviderPrototype" class="org.jahia.modules.external.ExternalContentStoreProvider"
           parent="AbstractJCRStoreProviderPrototype" scope="prototype">
+        <property name="extensionProvider" ref="DefaulJCRStoreProvider"/>
+        <property name="extendableTypes">
+            <list>
+                <value>nt:base</value>
+            </list>
+        </property>
+        <property name="overridableItems">
+            <list>
+                <value>jmix:lockable.j:locktoken</value>
+                <value>jmix:lockable.j:lockTypes</value>
+            </list>
+        </property>
         <property name="identifierMappingService" ref="IdentifierMappingService"/>
     </bean>
 </beans>
