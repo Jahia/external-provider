@@ -1036,7 +1036,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 while (extensionPropertiesIterator.hasNext()) {
                     Property next = extensionPropertiesIterator.nextProperty();
                     try {
-                        if (canItemBeExtended(next.getDefinition())) {
+                        final ExtendedPropertyDefinition propertyDefinition = getPropertyDefinition(next.getName());
+                        if (propertyDefinition != null && canItemBeExtended(propertyDefinition)) {
                             nextProperty = new ExtensionProperty(next, getPath() + "/" + next.getName(), node.getSession(), ExternalNodeImpl.this);
                             externalProperties.remove(next.getName());
                             lazyProperties.remove(next.getName());
@@ -1145,7 +1146,16 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 while (extensionNodeIterator.hasNext()) {
                     Node n = extensionNodeIterator.nextNode();
                     try {
-                        if (canItemBeExtended(n.getDefinition()) && !list.contains(n.getName())) {
+                        ExtendedNodeDefinition childNodeDefinition = getChildNodeDefinition(n.getName(), n.getPrimaryNodeType().getName());
+                        if (childNodeDefinition == null) {
+                            for (NodeType t : n.getMixinNodeTypes()) {
+                                childNodeDefinition = getChildNodeDefinition(n.getName(), t.getName());
+                                if (childNodeDefinition != null) {
+                                    break;
+                                }
+                            }
+                        }
+                        if (childNodeDefinition != null && canItemBeExtended(childNodeDefinition) && !list.contains(n.getName())) {
                             nextNode = new ExtensionNode(n,getPath() + "/" + n.getName(),getSession());
                             return  nextNode;
                         }
