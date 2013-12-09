@@ -40,10 +40,10 @@
 
 package org.jahia.modules.external.query;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.commons.query.sql2.Parser;
 import org.apache.jackrabbit.spi.commons.conversion.NamePathResolver;
-import org.apache.jackrabbit.spi.commons.query.qom.QueryObjectModelFactoryImpl;
-import org.apache.jackrabbit.spi.commons.query.qom.QueryObjectModelTree;
+import org.apache.jackrabbit.spi.commons.query.qom.*;
 import org.jahia.modules.external.ExternalDataSource;
 import org.jahia.modules.external.ExternalQuery;
 import org.jahia.modules.external.ExternalWorkspaceImpl;
@@ -156,14 +156,26 @@ public class ExternalQueryManager implements QueryManager {
             if (hasExtension) {
                 Session extSession = workspace.getSession().getExtensionSession();
                 QueryManager queryManager = extSession.getWorkspace().getQueryManager();
+
+                String type = ((Selector) getSource()).getNodeTypeName();
+                String selectorName = ((Selector) getSource()).getSelectorName();
+                boolean isMixin = NodeTypeRegistry.getInstance().getNodeType(type).isMixin();
                 QueryObjectModelFactory qomFactory = queryManager.getQOMFactory();
+                // for extension node,but not mixin , change the type to jnt:externalProviderExtension
+                String selector = isMixin?type:"jnt:externalProviderExtension";
+                Source externalSource = qomFactory.selector(selector,selectorName);
+
                 String mountPoint = workspace.getSession().getRepository().getStoreProvider().getMountPoint();
                 Constraint convertedConstraint = convertExistingPathConstraints(getConstraint(), mountPoint, qomFactory);
                 if (!hasDescendantNode(convertedConstraint)) {
                     // Multiple IsDescendantNode queries are not supported
-                    convertedConstraint = addPathConstraints(convertedConstraint, getSource(), mountPoint, qomFactory);
+                    convertedConstraint = addPathConstraints(convertedConstraint, externalSource, mountPoint, qomFactory);
                 }
-                Query q = qomFactory.createQuery(getSource(), convertedConstraint, getOrderings(), getColumns());
+                if (!isMixin) {
+                    Comparison c = qomFactory.comparison(qomFactory.propertyValue(selectorName,"j:extendedType"), QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO,qomFactory.literal(extSession.getValueFactory().createValue(type)));
+                    convertedConstraint = qomFactory.and(c,convertedConstraint);
+                }
+                Query q = qomFactory.createQuery(externalSource, convertedConstraint, getOrderings(), getColumns());
                 if (!nodeTypeSupported) {
                     // Query is only done in JCR, directly pass limit and offset
                     if (getLimit() > -1) {
