@@ -64,7 +64,7 @@ import java.io.InputStream;
  * User: toto
  * Date: Apr 23, 2008
  * Time: 11:45:56 AM
- * 
+ *
  */
 public class ExternalWorkspaceImpl implements Workspace {
     private ExternalSessionImpl externalSession;
@@ -121,55 +121,55 @@ public class ExternalWorkspaceImpl implements Workspace {
     public NodeTypeManager getNodeTypeManager() throws RepositoryException {
         return new NodeTypeManager() {
             public NodeType getNodeType(String s) throws NoSuchNodeTypeException, RepositoryException {
-                return null;  
+                return null;
             }
 
             public NodeTypeIterator getAllNodeTypes() throws RepositoryException {
-                return null;  
+                return null;
             }
 
             public NodeTypeIterator getPrimaryNodeTypes() throws RepositoryException {
-                return null;  
+                return null;
             }
 
             public NodeTypeIterator getMixinNodeTypes() throws RepositoryException {
-                return null;  
+                return null;
             }
 
             public boolean hasNodeType(String name) throws RepositoryException {
-                return false;  
+                return false;
             }
 
             public NodeTypeTemplate createNodeTypeTemplate() throws UnsupportedRepositoryOperationException, RepositoryException {
-                return null;  
+                return null;
             }
 
             public NodeTypeTemplate createNodeTypeTemplate(NodeTypeDefinition ntd) throws UnsupportedRepositoryOperationException, RepositoryException {
-                return null;  
+                return null;
             }
 
             public NodeDefinitionTemplate createNodeDefinitionTemplate() throws UnsupportedRepositoryOperationException, RepositoryException {
-                return null;  
+                return null;
             }
 
             public PropertyDefinitionTemplate createPropertyDefinitionTemplate() throws UnsupportedRepositoryOperationException, RepositoryException {
-                return null;  
+                return null;
             }
 
             public NodeType registerNodeType(NodeTypeDefinition ntd, boolean allowUpdate) throws InvalidNodeTypeDefinitionException, NodeTypeExistsException, UnsupportedRepositoryOperationException, RepositoryException {
-                return null;  
+                return null;
             }
 
             public NodeTypeIterator registerNodeTypes(NodeTypeDefinition[] ntds, boolean allowUpdate) throws InvalidNodeTypeDefinitionException, NodeTypeExistsException, UnsupportedRepositoryOperationException, RepositoryException {
-                return null;  
+                return null;
             }
 
             public void unregisterNodeType(String name) throws UnsupportedRepositoryOperationException, NoSuchNodeTypeException, RepositoryException {
-                
+
             }
 
             public void unregisterNodeTypes(String[] names) throws UnsupportedRepositoryOperationException, NoSuchNodeTypeException, RepositoryException {
-                
+
             }
         };
     }
@@ -177,41 +177,41 @@ public class ExternalWorkspaceImpl implements Workspace {
     public ObservationManager getObservationManager() throws UnsupportedRepositoryOperationException, RepositoryException {
         return new ObservationManager() {
             public void addEventListener(EventListener eventListener, int i, String s, boolean b, String[] strings, String[] strings1, boolean b1) throws RepositoryException {
-                
+
             }
 
             public void removeEventListener(EventListener eventListener) throws RepositoryException {
-                
+
             }
 
             public EventListenerIterator getRegisteredEventListeners() throws RepositoryException {
-                return null;  
+                return null;
             }
 
             public void setUserData(String userData) throws RepositoryException {
-                
+
             }
 
             public EventJournal getEventJournal() throws RepositoryException {
-                return null;  
+                return null;
             }
 
             public EventJournal getEventJournal(int i, String s, boolean b, String[] strings, String[] strings1) throws RepositoryException {
-                return null;  
+                return null;
             }
         };
     }
 
     public String[] getAccessibleWorkspaceNames() throws RepositoryException {
-        return new String[0];  
+        return new String[0];
     }
 
     public ContentHandler getImportContentHandler(String s, int i) throws PathNotFoundException, ConstraintViolationException, VersionException, LockException, AccessDeniedException, RepositoryException {
-        return null;  
+        return null;
     }
 
     public void importXML(String s, InputStream inputStream, int i) throws IOException, PathNotFoundException, ItemExistsException, ConstraintViolationException, InvalidSerializedDataException, LockException, AccessDeniedException, RepositoryException {
-        
+
     }
 
     public LockManager getLockManager() throws UnsupportedRepositoryOperationException, RepositoryException {
@@ -222,78 +222,58 @@ public class ExternalWorkspaceImpl implements Workspace {
         final LockManager extensionLockMgr =  extensionSession.getWorkspace().getLockManager();
         return new LockManager() {
 
-           @Override
-           public void addLockToken(String lockToken) throws LockException, RepositoryException {
-               extensionLockMgr.addLockToken(lockToken);
-           }
+            @Override
+            public void addLockToken(String lockToken) throws LockException, RepositoryException {
+                extensionLockMgr.addLockToken(lockToken);
+            }
 
-           @Override
-           public Lock getLock(String absPath) throws PathNotFoundException, LockException, AccessDeniedException, RepositoryException {
-               try {
-                   Node  n = ((ExternalNodeImpl) externalSession.getNode(absPath)).getExtensionNode(false);
-                   if (n != null)  {
-                       return extensionLockMgr.getLock(n.getPath());
-                   } else {
-                       return null;
-                   }
-               } catch (RepositoryException e) {
-                   return null;
-               }
-           }
+            @Override
+            public Lock getLock(String absPath) throws PathNotFoundException, LockException, AccessDeniedException, RepositoryException {
+                Node  n = ((ExternalNodeImpl) externalSession.getNode(absPath)).getExtensionNode(false);
+                if (n != null)  {
+                    return extensionLockMgr.getLock(n.getPath());
+                } else {
+                    throw new PathNotFoundException("unable to get node " + absPath);
+                }
+            }
 
-           @Override
-           public String[] getLockTokens() throws RepositoryException {
-               return extensionSession.getLockTokens();
-           }
+            @Override
+            public String[] getLockTokens() throws RepositoryException {
+                return extensionLockMgr.getLockTokens();
+            }
 
-           @Override
-           public boolean holdsLock(String absPath) throws PathNotFoundException, RepositoryException {
-               try {
-                   Node  n = ((ExternalNodeImpl) externalSession.getNode(absPath)).getExtensionNode(false);
-                   if (n != null) {
-                    return extensionLockMgr.holdsLock(n.getPath());
-                   } else {
-                       return false;
-                   }
-               } catch (RepositoryException e) {
-                   return false;
-               }
-           }
+            @Override
+            public boolean holdsLock(String absPath) throws PathNotFoundException, RepositoryException {
+                Node  n = ((ExternalNodeImpl) externalSession.getNode(absPath)).getExtensionNode(false);
+                return n!=null && extensionLockMgr.holdsLock(n.getPath());
+            }
 
-           @Override
-           public Lock lock(final String absPath,final boolean isDeep,final  boolean isSessionScoped, final long timeoutHint,final  String ownerInfo) throws LockException, PathNotFoundException, AccessDeniedException, InvalidItemStateException, RepositoryException {
-               Node  n = ((ExternalNodeImpl) externalSession.getNode(absPath)).getExtensionNode(true);
-               extensionSession.save();
-               return extensionLockMgr.lock(n.getPath(),isDeep,isSessionScoped,timeoutHint,ownerInfo);
-           }
+            @Override
+            public Lock lock(final String absPath,final boolean isDeep,final  boolean isSessionScoped, final long timeoutHint,final  String ownerInfo) throws LockException, PathNotFoundException, AccessDeniedException, InvalidItemStateException, RepositoryException {
+                Node  n = ((ExternalNodeImpl) externalSession.getNode(absPath)).getExtensionNode(true);
+                extensionSession.save();
+                return extensionLockMgr.lock(n.getPath(),isDeep,isSessionScoped,timeoutHint,ownerInfo);
+            }
 
-           @Override
-           public boolean isLocked(String absPath) throws PathNotFoundException, RepositoryException {
-               try {
-                   Node  n = ((ExternalNodeImpl) externalSession.getNode(absPath)).getExtensionNode(false);
-                   if (n != null)  {
-                       return extensionLockMgr.isLocked(n.getPath());
-                   } else {
-                       return false;
-                   }
-               } catch (RepositoryException e) {
-                   return false;
-               }
-           }
+            @Override
+            public boolean isLocked(String absPath) throws PathNotFoundException, RepositoryException {
+                Node  n = ((ExternalNodeImpl) externalSession.getNode(absPath)).getExtensionNode(false);
+                return n != null && extensionLockMgr.isLocked(n.getPath());
+            }
 
-           @Override
-           public void removeLockToken(String lockToken) throws LockException, RepositoryException {
-               extensionLockMgr.removeLockToken(lockToken);
-           }
+            @Override
+            public void removeLockToken(String lockToken) throws LockException, RepositoryException {
+                extensionLockMgr.removeLockToken(lockToken);
+            }
 
-           @Override
-           public void unlock(String absPath) throws PathNotFoundException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
-               Node  n = ((ExternalNodeImpl) externalSession.getNode(absPath)).getExtensionNode(false);
-               if (n!=null) {
-                   extensionLockMgr.unlock(n.getPath());
-               }
-           }
-       };
+            @Override
+            public void unlock(String absPath) throws PathNotFoundException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
+                Node  n = ((ExternalNodeImpl) externalSession.getNode(absPath)).getExtensionNode(false);
+                if (n!=null) {
+                    extensionLockMgr.unlock(n.getPath());
+                }
+            }
+        };
     }
 
     public VersionManager getVersionManager() throws UnsupportedRepositoryOperationException, RepositoryException {

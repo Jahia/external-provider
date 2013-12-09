@@ -24,6 +24,8 @@
             <list>
                 <value>jmix:lockable.j:locktoken</value>
                 <value>jmix:lockable.j:lockTypes</value>
+                <value>mix:lockable.jcr:lockIsDeep</value>
+                <value>mix:lockable.jcr:lockOwner</value>
             </list>
         </property>
         <property name="identifierMappingService" ref="IdentifierMappingService"/>

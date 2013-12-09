@@ -43,6 +43,8 @@ package org.jahia.modules.external;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.security.JahiaLoginModule;
 import org.jahia.services.content.JCRStoreProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
@@ -78,6 +80,8 @@ public class ExternalSessionImpl implements Session {
     private Session extensionSession;
     private List<String> extensionAllowedTypes;
     private Map<String,List<String>> overridableProperties;
+    private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
+
 
     public ExternalSessionImpl(ExternalRepositoryImpl repository, Credentials credentials, String workspaceName) {
         this.repository = repository;
@@ -428,20 +432,35 @@ public class ExternalSessionImpl implements Session {
 
     public void addLockToken(String s) {
         try {
-            LockManager extensionLockManager = extensionSession.getWorkspace().getLockManager();
+            LockManager extensionLockManager = getExtensionSession().getWorkspace().getLockManager();
             if (extensionLockManager != null) {
                 extensionLockManager.addLockToken(s);
             }
         } catch (RepositoryException e) {
-            // unable to set token- do nothing
+            logger.error("Unable to add lock token "+ s,e.getMessage());
         }
     }
 
     public String[] getLockTokens() {
-        return new String[0];
+        try {
+            if (getExtensionSession() == null) {
+                return new String[0];
+            }
+            return getExtensionSession().getWorkspace().getLockManager().getLockTokens();
+        } catch (RepositoryException e) {
+            return new String[0];
+        }
     }
 
     public void removeLockToken(String s) {
+        try {
+            LockManager extensionLockManager = getExtensionSession().getWorkspace().getLockManager();
+            if (extensionLockManager != null) {
+                extensionLockManager.removeLockToken(s);
+            }
+        } catch (RepositoryException e) {
+            logger.error("Unable to remove lock token " + s,e.getMessage());
+        }
 
     }
 
