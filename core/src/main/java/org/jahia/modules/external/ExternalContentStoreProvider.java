@@ -55,15 +55,15 @@ import java.util.List;
 
 /**
  * Implementation of the {@link org.jahia.services.content.JCRStoreProvider} for the {@link org.jahia.modules.external.ExternalData}.
- * 
+ *
  * @author Thomas Draier
  */
 public class ExternalContentStoreProvider extends JCRStoreProvider implements InitializingBean {
-    
+
     private boolean readOnly;
 
     private ExternalDataSource dataSource;
-    
+
     private String id;
 
     private IdentifierMappingService identifierMappingService;
@@ -72,6 +72,9 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     private List<String> extendableTypes;
     private List<String> overridableItems;
+
+    private boolean lockSupport = false;
+    private List<String> overridableItemsForLocks;
 
     @Override
     protected Repository createRepository() {
@@ -97,6 +100,15 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     @Override
     public void start() throws JahiaInitializationException {
+        // Enable lock
+        if (lockSupport) {
+            if (overridableItems != null) {
+                overridableItems.addAll(overridableItemsForLocks);
+            } else {
+                overridableItems = overridableItemsForLocks;
+            }
+        }
+
         getId(); // initialize ID
         if (dataSource instanceof ExternalDataSource.Initializable) {
             ((ExternalDataSource.Initializable) dataSource).start();
@@ -129,7 +141,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     /**
      * Returns <code>true</code> if this is a read-only content provider.
-     * 
+     *
      * @return <code>true</code> if this is a read-only content provider
      */
     public boolean isReadOnly() {
@@ -156,7 +168,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     /**
      * Initializes this provider instance. Should be called after the {@link #setKey(String)} was called to set the provider key.
-     * 
+     *
      * @throws RepositoryException
      *             in case of an initialization error
      */
@@ -167,10 +179,10 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         }
         id = StringUtils.leftPad(identifierMappingService.getProviderId(getKey()).toString(), 8, "f");
     }
-    
+
     /**
      * The internal ID of this provider which is also used as a prefix for UUIDs, handled by this provider.
-     * 
+     *
      * @return internal ID of this provider which is also used as a prefix for UUIDs, handled by this provider.
      */
     public String getId() {
@@ -193,7 +205,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     }
 
     public JCRStoreProvider getExtensionProvider() {
-        return extensionProvider;
+        return extendableTypes != null || overridableItems != null ? extensionProvider:null;
     }
 
     public void setExtensionProvider(JCRStoreProvider extensionProvider) {
@@ -216,9 +228,17 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         this.overridableItems = overridableItems;
     }
 
+    public void setOverridableItemsForLocks(List<String> overridableItemsForLocks) {
+        this.overridableItemsForLocks = overridableItemsForLocks;
+    }
+
+    public void setLockSupport(boolean lockSupport) {
+        this.lockSupport = lockSupport;
+    }
+
     /**
      * Reads internal UUID of the specified node via mapping table, using external ID and provider key.
-     * 
+     *
      * @param externalId
      *            the external ID to retrieve UUID for
      * @return an internal UUID of the specified node via mapping table or <code>null</code> if the mapping is not stored yet
@@ -228,10 +248,10 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     protected String getInternalIdentifier(String externalId) throws RepositoryException {
         return getIdentifierMappingService().getInternalIdentifier(externalId, getKey());
     }
-    
+
     /**
      * Generates the internal UUID for the specified node in the mapping table, using external ID and this provider.
-     * 
+     *
      * @param externalId
      *            the external ID to generate UUID for
      * @return an generated internal UUID

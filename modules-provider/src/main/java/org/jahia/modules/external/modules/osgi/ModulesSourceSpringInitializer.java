@@ -116,6 +116,7 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                                           templatePackage.getVersion().toString());
                     properties.put("mountPoint", "/modules/" + templatePackage.getIdWithVersion() + "/sources");
                     properties.put("dataSource", dataSource);
+                    properties.put("lockSupport",true);
 
                     BeanUtils.populate(ex, properties);
 
