@@ -49,7 +49,9 @@ import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRStoreProvider;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 
 import java.util.List;
 
@@ -66,15 +68,12 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     private String id;
 
-    private IdentifierMappingService identifierMappingService;
-
-    private JCRStoreProvider extensionProvider;
+    private ExternalProviderInitializerService externalProviderInitializerService;
 
     private List<String> extendableTypes;
     private List<String> overridableItems;
 
     private boolean lockSupport = false;
-    private List<String> overridableItemsForLocks;
 
     @Override
     protected Repository createRepository() {
@@ -103,9 +102,9 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         // Enable lock
         if (lockSupport) {
             if (overridableItems != null) {
-                overridableItems.addAll(overridableItemsForLocks);
+                overridableItems.addAll(externalProviderInitializerService.getOverridableItemsForLocks());
             } else {
-                overridableItems = overridableItemsForLocks;
+                overridableItems = externalProviderInitializerService.getOverridableItemsForLocks();
             }
         }
 
@@ -177,7 +176,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
             throw new IllegalArgumentException("The key is not specified for the provider instance."
                     + " Unable to initialize this provider.");
         }
-        id = StringUtils.leftPad(identifierMappingService.getProviderId(getKey()).toString(), 8, "f");
+        id = StringUtils.leftPad(externalProviderInitializerService.getProviderId(getKey()).toString(), 8, "f");
     }
 
     /**
@@ -196,20 +195,16 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         return id;
     }
 
-    public IdentifierMappingService getIdentifierMappingService() {
-        return identifierMappingService;
+    public ExternalProviderInitializerService getExternalProviderInitializerService() {
+        return externalProviderInitializerService;
     }
 
-    public void setIdentifierMappingService(IdentifierMappingService mappingService) {
-        this.identifierMappingService = mappingService;
+    public void setExternalProviderInitializerService(ExternalProviderInitializerService mappingService) {
+        this.externalProviderInitializerService = mappingService;
     }
 
     public JCRStoreProvider getExtensionProvider() {
-        return extendableTypes != null || overridableItems != null ? extensionProvider:null;
-    }
-
-    public void setExtensionProvider(JCRStoreProvider extensionProvider) {
-        this.extensionProvider = extensionProvider;
+        return extendableTypes != null || overridableItems != null ? externalProviderInitializerService.getExtensionProvider():null;
     }
 
     public List<String> getExtendableTypes() {
@@ -228,10 +223,6 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         this.overridableItems = overridableItems;
     }
 
-    public void setOverridableItemsForLocks(List<String> overridableItemsForLocks) {
-        this.overridableItemsForLocks = overridableItemsForLocks;
-    }
-
     public void setLockSupport(boolean lockSupport) {
         this.lockSupport = lockSupport;
     }
@@ -246,7 +237,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
      *             in case an internal identifier cannot be retrieved from the database
      */
     protected String getInternalIdentifier(String externalId) throws RepositoryException {
-        return getIdentifierMappingService().getInternalIdentifier(externalId, getKey());
+        return getExternalProviderInitializerService().getInternalIdentifier(externalId, getKey());
     }
 
     /**
@@ -259,6 +250,6 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
      *             in case an internal identifier cannot be stored into the database
      */
     protected String mapInternalIdentifier(String externalId) throws RepositoryException {
-        return getIdentifierMappingService().mapInternalIdentifier(externalId, getKey(), getId());
+        return getExternalProviderInitializerService().mapInternalIdentifier(externalId, getKey(), getId());
     }
 }

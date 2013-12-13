@@ -57,7 +57,7 @@ public class MountPointListener extends DefaultEventListener {
 
     private static final Logger logger = LoggerFactory.getLogger(MountPointListener.class);
 
-    private IdentifierMappingService identifierMappingService;
+    private ExternalProviderInitializerService externalProviderInitializerService;
 
     public MountPointListener() {
         super();
@@ -79,15 +79,15 @@ public class MountPointListener extends DefaultEventListener {
         while (events.hasNext()) {
             Event evt = events.nextEvent();
             try {
-                identifierMappingService.removeProvider(evt.getIdentifier());
+                externalProviderInitializerService.removeProvider(evt.getIdentifier());
             } catch (RepositoryException e) {
                 logger.error(e.getMessage(), e);
             }
         }
     }
 
-    public void setIdentifierMappingService(IdentifierMappingService mappingService) {
-        this.identifierMappingService = mappingService;
+    public void setExternalProviderInitializerService(ExternalProviderInitializerService mappingService) {
+        this.externalProviderInitializerService = mappingService;
     }
 
 }

@@ -1,10 +1,12 @@
 package org.jahia.modules.external;
 
+import org.jahia.services.content.JCRStoreProvider;
+
 import java.util.List;
 
 import javax.jcr.RepositoryException;
 
-public interface IdentifierMappingService {
+public interface ExternalProviderInitializerService {
 
     /**
      * Deletes mappings for the specified items.
@@ -101,4 +103,15 @@ public interface IdentifierMappingService {
      */
     void updateExternalIdentifier(String oldExternalId, String newExternalId, String providerKey,
             boolean includeDescendats) throws RepositoryException;
+
+    /**
+     * @return the needed types to be override for locks.
+     */
+    List<String> getOverridableItemsForLocks();
+
+    /**
+     * @return the extension provider.
+     */
+    JCRStoreProvider getExtensionProvider();
+
 }

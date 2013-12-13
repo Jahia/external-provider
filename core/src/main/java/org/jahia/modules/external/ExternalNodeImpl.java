@@ -40,10 +40,12 @@
 
 package org.jahia.modules.external;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.util.*;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.jackrabbit.util.ChildrenCollectorFilter;
+import org.apache.jackrabbit.value.BinaryImpl;
+import org.jahia.api.Constants;
+import org.jahia.services.content.nodetypes.*;
 
 import javax.jcr.*;
 import javax.jcr.lock.Lock;
@@ -52,17 +54,10 @@ import javax.jcr.nodetype.*;
 import javax.jcr.version.Version;
 import javax.jcr.version.VersionException;
 import javax.jcr.version.VersionHistory;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.jackrabbit.util.ChildrenCollectorFilter;
-import org.apache.jackrabbit.value.BinaryImpl;
-import org.jahia.api.Constants;
-import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
-import org.jahia.services.content.nodetypes.ExtendedNodeType;
-import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
-import org.jahia.services.content.nodetypes.Name;
-import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.util.*;
 
 /**
  * Implementation of the {@link javax.jcr.Node} for the {@link org.jahia.modules.external.ExternalData}.
@@ -233,8 +228,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
         Node extendedNode = getExtensionNode(true);
         if (extendedNode != null && canItemBeExtended(getChildNodeDefinition(relPath, primaryNodeTypeName))) {
-            Node n = extendedNode.addNode(relPath, "jnt:externalProviderExtension");
-            n.setProperty("j:extendedType", getPrimaryNodeType().getName());
+            Node n = extendedNode.addNode(relPath, primaryNodeTypeName);
+            n.addMixin("jmix:externalProviderExtension");
+            n.setProperty("j:extendedType",primaryNodeTypeName);
             n.setProperty("j:isExternalProviderRoot", false);
             return new ExtensionNode(n,getPath() + "/" + relPath,getSession());
         }
@@ -648,7 +644,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (withExtension) {
             Node extensionNode = getExtensionNode(false);
             if (extensionNode != null) {
-                nt.addAll(Arrays.asList(extensionNode.getMixinNodeTypes()));
+                for (NodeType type : extensionNode.getMixinNodeTypes()) {
+                    if (!type.isNodeType("jmix:externalProviderExtension")) {
+                        nt.add(NodeTypeRegistry.getInstance().getNodeType(type.getName()));
+                    }
+                }
             }
         }
         return nt.toArray(new NodeType[nt.size()]);
@@ -684,6 +684,61 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         Node extensionNode = getExtensionNode(false);
         if (extensionNode != null) {
             extensionNode.removeMixin(mixinName);
+
+
+            // remove child node and properties brought by the mixin
+            PropertyIterator pi = getProperties();
+            while (pi.hasNext()) {
+                Property extensionProperty = pi.nextProperty();
+                List<NodeType> nodeTypes = new ArrayList<NodeType>();
+                nodeTypes.addAll(Arrays.asList(getMixinNodeTypes(true)));
+                nodeTypes.add(NodeTypeRegistry.getInstance().getNodeType("jmix:externalProviderExtension"));
+                boolean canSetProperty = extensionProperty.isMultiple()?getPrimaryNodeType().canSetProperty(extensionProperty.getName(), extensionProperty.getValues()):getPrimaryNodeType().canSetProperty(extensionProperty.getName(), extensionProperty.getValue());
+                for (PropertyDefinition propertyDefinition : getPrimaryNodeType().getPropertyDefinitions()) {
+                    if (propertyDefinition.getName().equals(extensionProperty.getName()) && propertyDefinition.getRequiredType() == extensionProperty.getType()) {
+                        canSetProperty = true;
+                        break;
+                    }
+                }
+                if (!canSetProperty) {
+                    for (NodeType mixinType : nodeTypes) {
+                        if (!StringUtils.equals(mixinType.getName(),mixinName)) {
+                            if (extensionProperty.isMultiple()) {
+                                if (mixinType.canSetProperty(extensionProperty.getName(),extensionProperty.getValues())) {
+                                    canSetProperty = true;
+                                    break;
+                                }
+                            } else {
+                                if (mixinType.canSetProperty(extensionProperty.getName(),extensionProperty.getValue())) {
+                                    canSetProperty = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (!canSetProperty) {
+                        extensionProperty.remove();
+                    }
+                }
+            }
+            NodeIterator ni = extensionNode.getNodes();
+            while (ni.hasNext()) {
+                Node extensionChildNode = ni.nextNode();
+                boolean canAddChildNode = getPrimaryNodeType().canAddChildNode(extensionChildNode.getName(), getPrimaryNodeType().getName());
+                if (!canAddChildNode) {
+                    for (NodeType mixinType : getMixinNodeTypes(true)) {
+                        if (!StringUtils.equals(mixinType.getName(),mixinName)) {
+                            if (mixinType.canAddChildNode(extensionChildNode.getName(), getPrimaryNodeType().getName())) {
+                                canAddChildNode = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!canAddChildNode) {
+                        extensionChildNode.remove();
+                    }
+                }
+            }
             return;
         }
         if (!isNodeType(mixinName)) {
@@ -772,23 +827,25 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public Lock lock(boolean b, boolean b1) throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
-       return session.getWorkspace().getLockManager().lock(getPath(),b,b1, Long.MAX_VALUE, null);
+        return session.getWorkspace().getLockManager().lock(getPath(),b,b1, Long.MAX_VALUE, null);
     }
 
     public Lock getLock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, RepositoryException {
-        return session.getWorkspace().getLockManager().getLock(getPath());
+        return session.getWorkspace().getLockManager()!= null ?session.getWorkspace().getLockManager().getLock(getPath()):null;
     }
 
     public void unlock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
-        session.getWorkspace().getLockManager().unlock(getPath());
+        if (session.getWorkspace().getLockManager()!=null) {
+            session.getWorkspace().getLockManager().unlock(getPath());
+        }
     }
 
     public boolean holdsLock() throws RepositoryException {
-        return session.getWorkspace().getLockManager().getLock(getPath()) != null;
+        return session.getWorkspace().getLockManager()!=null && session.getWorkspace().getLockManager().getLock(getPath()) != null;
     }
 
     public boolean isLocked() throws RepositoryException {
-        return  session.getWorkspace().getLockManager().isLocked(getPath());
+        return  session.getWorkspace().getLockManager()!=null && session.getWorkspace().getLockManager().isLocked(getPath());
     }
 
     public Property setProperty(String name, Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
@@ -953,11 +1010,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 }
                 Node n = extensionSession.getNode(parent).addNode(StringUtils.substringAfterLast(mountPoint, "/"), "jnt:externalProviderExtension");
                 n.setProperty("j:extendedType", getPrimaryNodeType().getName());
+                n.addMixin("jmix:externalProviderExtension");
                 n.setProperty("j:isExternalProviderRoot", true);
                 n.setProperty("j:externalNodeIdentifier", getIdentifier());
             } else {
                 Node n = ((ExternalNodeImpl) getParent()).getExtensionNode(true).addNode(getName(), "jnt:externalProviderExtension");
                 n.setProperty("j:extendedType", getPrimaryNodeType().getName());
+                n.addMixin("jmix:externalProviderExtension");
                 n.setProperty("j:isExternalProviderRoot", false);
                 n.setProperty("j:externalNodeIdentifier", getIdentifier());
             }

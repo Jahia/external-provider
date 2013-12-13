@@ -43,8 +43,9 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
 import org.apache.commons.lang.StringUtils;
 import org.hibernate.*;
-import org.jahia.modules.external.IdentifierMappingService;
+import org.jahia.modules.external.ExternalProviderInitializerService;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
+import org.jahia.services.content.JCRStoreProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,11 +59,11 @@ import java.util.UUID;
  *
  * @author Sergiy Shyrkov
  */
-public class IdentifierMappingServiceImpl implements IdentifierMappingService {
+public class ExternalProviderInitializerServiceImpl implements ExternalProviderInitializerService {
 
     private static final String ID_CACHE_NAME = "ExternalIdentifierMapping";
 
-    private static final Logger logger = LoggerFactory.getLogger(IdentifierMappingServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExternalProviderInitializerServiceImpl.class);
 
     private SessionFactory hibernateSessionFactory;
 
@@ -70,6 +71,11 @@ public class IdentifierMappingServiceImpl implements IdentifierMappingService {
     // The ID mapping cache, where a key is a <providerKey>-<externalId-hashCode> and a value is
     // the corresponding internalId
     private Cache idCache;
+
+    private List<String> overridableItemsForLocks;
+
+    private JCRStoreProvider extensionProvider;
+
 
     @Override
     public void delete(List<String> externalIds, String providerKey, boolean includeDescendats)
@@ -348,5 +354,21 @@ public class IdentifierMappingServiceImpl implements IdentifierMappingService {
                 session.close();
             }
         }
+    }
+
+    public void setOverridableItemsForLocks(List<String> overridableItemsForLocks) {
+        this.overridableItemsForLocks = overridableItemsForLocks;
+    }
+
+    public void setExtensionProvider(JCRStoreProvider extensionProvider) {
+        this.extensionProvider = extensionProvider;
+    }
+
+    public List<String> getOverridableItemsForLocks() {
+        return overridableItemsForLocks;
+    }
+
+    public JCRStoreProvider getExtensionProvider() {
+        return extensionProvider;
     }
 }

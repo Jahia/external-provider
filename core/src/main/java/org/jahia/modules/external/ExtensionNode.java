@@ -47,8 +47,8 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
-        Node subNode = node.addNode(relPath, "jnt:externalProviderExtension");
-        subNode.setProperty("j:extendedType",primaryNodeTypeName);
+        Node subNode = node.addNode(relPath, primaryNodeTypeName);
+        subNode.addMixin("jmix:externalProviderExtension");
         subNode.setProperty("j:isExternalProviderRoot", false);
         return new ExtensionNode(subNode, path + "/" + relPath,session);
     }

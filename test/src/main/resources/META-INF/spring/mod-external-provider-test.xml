@@ -16,13 +16,12 @@
         </property>
     </bean>
     
-    <osgi:reference id="ExternalProviderIdentifierMappingService" interface="org.jahia.modules.external.IdentifierMappingService"/>
-    
+    <osgi:reference id="ExternalProviderInitializerService" interface="org.jahia.modules.external.ExternalProviderInitializerService"/>
+
     <bean id="ExternalGenericDatabaseProvider" class="org.jahia.modules.external.ExternalContentStoreProvider" parent="AbstractJCRStoreProvider">
         <property name="key" value="ExternalGenericDatabaseProvider"/>
         <property name="mountPoint" value="/external-database-generic"/>
-        <property name="identifierMappingService" ref="ExternalProviderIdentifierMappingService"/>
-        <property name="extensionProvider" ref="DefaulJCRStoreProvider"/>
+        <property name="externalProviderInitializerService" ref="ExternalProviderInitializerService"/>
         <property name="extendableTypes">
             <list>
                 <value>nt:base</value>
@@ -36,8 +35,7 @@
     <bean id="ExternalMappedDatabaseProvider" class="org.jahia.modules.external.ExternalContentStoreProvider" parent="AbstractJCRStoreProvider">
         <property name="key" value="ExternalMappedDatabaseProvider"/>
         <property name="mountPoint" value="/external-database-mapped"/>
-        <property name="identifierMappingService" ref="ExternalProviderIdentifierMappingService"/>
-        <property name="extensionProvider" ref="DefaulJCRStoreProvider"/>
+        <property name="externalProviderInitializerService" ref="ExternalProviderInitializerService"/>
         <property name="extendableTypes">
             <list>
                 <value>nt:base</value>
@@ -49,6 +47,7 @@
                 <value>jtestnt:airline.firstclass_seats</value>
             </list>
         </property>
+        <property name="lockSupport" value="true"/>
         <property name="dataSource">
             <bean class="org.jahia.modules.external.test.db.MappedDatabaseDataSource"/>
         </property>

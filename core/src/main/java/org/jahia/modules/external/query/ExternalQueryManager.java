@@ -157,12 +157,12 @@ public class ExternalQueryManager implements QueryManager {
                 Session extSession = workspace.getSession().getExtensionSession();
                 QueryManager queryManager = extSession.getWorkspace().getQueryManager();
 
-                String type = ((Selector) getSource()).getNodeTypeName();
+                String selectorType = ((Selector) getSource()).getNodeTypeName();
                 String selectorName = ((Selector) getSource()).getSelectorName();
-                boolean isMixin = NodeTypeRegistry.getInstance().getNodeType(type).isMixin();
+                boolean isMixin = NodeTypeRegistry.getInstance().getNodeType(selectorType).isMixin();
                 QueryObjectModelFactory qomFactory = queryManager.getQOMFactory();
                 // for extension node,but not mixin , change the type to jnt:externalProviderExtension
-                String selector = isMixin?type:"jnt:externalProviderExtension";
+                String selector = isMixin?selectorType:"jmix:externalProviderExtension";
                 Source externalSource = qomFactory.selector(selector,selectorName);
 
                 String mountPoint = workspace.getSession().getRepository().getStoreProvider().getMountPoint();
@@ -172,7 +172,7 @@ public class ExternalQueryManager implements QueryManager {
                     convertedConstraint = addPathConstraints(convertedConstraint, externalSource, mountPoint, qomFactory);
                 }
                 if (!isMixin) {
-                    Comparison c = qomFactory.comparison(qomFactory.propertyValue(selectorName,"j:extendedType"), QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO,qomFactory.literal(extSession.getValueFactory().createValue(type)));
+                    Comparison c = qomFactory.comparison(qomFactory.propertyValue(selectorName,"j:extendedType"), QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO,qomFactory.literal(extSession.getValueFactory().createValue(selectorType)));
                     convertedConstraint = qomFactory.and(c,convertedConstraint);
                 }
                 Query q = qomFactory.createQuery(externalSource, convertedConstraint, getOrderings(), getColumns());

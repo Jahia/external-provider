@@ -124,7 +124,7 @@ public class ExternalSessionImpl implements Session {
                 throw new ItemNotFoundException("Item " + uuid + " could not be found in this repository");
             }
             // Translate UUID to external mapping
-            String externalId = repository.getStoreProvider().getIdentifierMappingService().getExternalIdentifier(uuid);
+            String externalId = repository.getStoreProvider().getExternalProviderInitializerService().getExternalIdentifier(uuid);
             if (externalId == null) {
                 throw new ItemNotFoundException("Item " + uuid + " could not be found in this repository");
             }
@@ -279,7 +279,7 @@ public class ExternalSessionImpl implements Session {
         }
         getRepository()
                 .getStoreProvider()
-                .getIdentifierMappingService()
+                .getExternalProviderInitializerService()
                 .updateExternalIdentifier(oldData.getId(), newData.getId(), getRepository().getProviderKey(),
                         getRepository().getDataSource().isSupportsHierarchicalIdentifiers());
     }
@@ -346,7 +346,7 @@ public class ExternalSessionImpl implements Session {
             }
             getRepository()
                     .getStoreProvider()
-                    .getIdentifierMappingService()
+                    .getExternalProviderInitializerService()
                     .delete(toBeDeleted, getRepository().getStoreProvider().getKey(),
                             getRepository().getDataSource().isSupportsHierarchicalIdentifiers());
             deletedData.clear();
@@ -423,6 +423,7 @@ public class ExternalSessionImpl implements Session {
     public void logout() {
         if (extensionSession != null && extensionSession.isLive()) {
             extensionSession.logout();
+            extensionSession = null;
         }
     }
 
