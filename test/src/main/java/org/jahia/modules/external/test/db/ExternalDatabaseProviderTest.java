@@ -45,20 +45,22 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.Locale;
 
 import javax.jcr.NodeIterator;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
+import javax.jcr.lock.Lock;
+import javax.jcr.lock.LockException;
 import javax.jcr.query.InvalidQueryException;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 
+import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRPropertyWrapper;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.*;
 import org.jahia.test.JahiaTestCase;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -401,6 +403,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         assertEquals(post1.getPath(), session.getNodeByIdentifier(post1.getIdentifier()).getPath());
         assertEquals(post1.getIdentifier(), session.getNode(post1.getPath()).getIdentifier());
         assertEquals(comments.getIdentifier(), post1.getParent().getIdentifier());
+        session.save();
 
         AA.removeMixin("jmix:comments");
         session.save();
@@ -439,6 +442,36 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         assertEquals("Suisse", frenchCity.getProperty("country").getString());
         assertEquals("Genève", frenchCity.getPropertyAsString("city_name"));
         frenchSession.logout();
+    }
+
+    @Test
+    public void testLock() throws Exception {
+
+        JCRNodeWrapper city = session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/16");
+
+
+        if (city.isNodeType("jmix:lockable")) {
+            boolean result = city.lockAndStoreToken("user");
+            session.save();
+
+            assertTrue(city + " : lockAndStoreToken returned false",
+                    result);
+
+            Lock lock = city.getLock();
+            assertNotNull(city + " : lock is null", lock);
+
+            try {
+                city.unlock();
+            } catch (LockException e) {
+                fail(city + " : unlock failed");
+            }
+        }
+
+        Lock lock = city.lock(false,false);
+        assertNotNull(city.getPath() + " : Lock is null", lock);
+        assertTrue(city.getPath() + " : Node not locked", city.isLocked());
+        city.unlock();
+        assertFalse(city.getPath() + " : Node not unlocked", city.isLocked());
     }
 
 }
