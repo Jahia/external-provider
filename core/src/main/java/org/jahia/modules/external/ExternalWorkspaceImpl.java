@@ -271,6 +271,8 @@ public class ExternalWorkspaceImpl implements Workspace {
                 Node  n = ((ExternalNodeImpl) externalSession.getNode(absPath)).getExtensionNode(false);
                 if (n!=null) {
                     extensionLockMgr.unlock(n.getPath());
+                } else {
+                    throw new LockException("Node not locked");
                 }
             }
         };
