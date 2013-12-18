@@ -9,6 +9,9 @@
 
 // extension nodes.
 
+[jmix:hasExternalProviderExtension] mixin
+ + * (jnt:externalProviderExtension)
+
 [jmix:externalProviderExtension] mixin
  - j:isExternalProviderRoot (boolean)
  - j:externalNodeIdentifier (string)

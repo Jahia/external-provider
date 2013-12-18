@@ -1010,6 +1010,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 }
                 final Node extParent = extensionSession.getNode(parent);
                 takeLockToken(extParent);
+                extParent.addMixin("jmix:hasExternalProviderExtension");
                 Node n = extParent.addNode(StringUtils.substringAfterLast(mountPoint, "/"), "jnt:externalProviderExtension");
                 n.setProperty("j:extendedType", getPrimaryNodeType().getName());
                 n.addMixin("jmix:externalProviderExtension");

@@ -50,6 +50,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
         Node subNode = node.addNode(relPath, primaryNodeTypeName);
         subNode.addMixin("jmix:externalProviderExtension");
         subNode.setProperty("j:isExternalProviderRoot", false);
+        subNode.setProperty("j:extendedType",primaryNodeTypeName);
         return new ExtensionNode(subNode, path + "/" + relPath,session);
     }
 
