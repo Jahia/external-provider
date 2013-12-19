@@ -580,7 +580,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     childNodeDefinitionsAsMap.get(itemDefinitionName).remove();
                 }
                 if (itemDefinitionName.startsWith(UNSTRUCTURED_CHILD_NODE)) {
-                    String type = itemDefinitionName.substring(UNSTRUCTURED_CHILD_NODE.length());
+                    String type = StringUtils.replace(itemDefinitionName.substring(UNSTRUCTURED_CHILD_NODE.length()).trim(),"@@",":");
                     nodeType.getDeclaredUnstructuredChildNodeDefinitions().get(type).remove();
                 }
                 writeDefinitionFile(nodeTypeRegistry, cndPath);
@@ -788,7 +788,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         if (o1.isNode()) {
             s1.append(UNSTRUCTURED_CHILD_NODE);
             for (ExtendedNodeType e : ((ExtendedNodeDefinition) o1).getRequiredPrimaryTypes()) {
-                s1.append(e.getName()).append(" ");
+                String validName = StringUtils.replace(e.getName(),":","@@");
+                s1.append(validName).append(" ");
             }
         } else {
             if (((ExtendedPropertyDefinition) o1).isMultiple()) {
@@ -1320,8 +1321,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             boolean unstructured = "jnt:unstructuredChildNodeDefinition".equals(data.getType());
             ExtendedNodeDefinition childNodeDefinition = null;
             if (unstructured) {
-                String key = StringUtils.substringAfter(lastPathSegment, UNSTRUCTURED_CHILD_NODE);
-                childNodeDefinition = nodeType.getDeclaredUnstructuredChildNodeDefinitions().get(key);
+                String type = StringUtils.replace(lastPathSegment.substring(UNSTRUCTURED_CHILD_NODE.length()).trim(),"@@",":");
+                childNodeDefinition = nodeType.getDeclaredUnstructuredChildNodeDefinitions().get(type);
             } else {
                 childNodeDefinition = nodeType.getDeclaredChildNodeDefinitionsAsMap().get(lastPathSegment);
             }
@@ -1439,7 +1440,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     return getChildNodeDefinitionData(path, childNodeDefinitionsAsMap.get(itemDefinitionName), false);
                 }
                 if (itemDefinitionName.startsWith(UNSTRUCTURED_CHILD_NODE)) {
-                    String type = itemDefinitionName.substring(UNSTRUCTURED_CHILD_NODE.length()).trim();
+                    String type = StringUtils.replace(itemDefinitionName.substring(UNSTRUCTURED_CHILD_NODE.length()).trim(),"@@",":");
                     if (nodeType.getDeclaredUnstructuredChildNodeDefinitions().get(type) != null) {
                         return getChildNodeDefinitionData(path, nodeType.getDeclaredUnstructuredChildNodeDefinitions().get(type), true);
                     }
