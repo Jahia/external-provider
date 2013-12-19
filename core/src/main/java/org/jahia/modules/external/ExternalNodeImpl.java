@@ -124,13 +124,18 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (nodeDefinitionsAsMap.containsKey(name)) {
             return nodeDefinitionsAsMap.get(name);
         }
+        ExtendedNodeType childTypeNT = NodeTypeRegistry.getInstance().getNodeType(childType);
         for (NodeType nodeType : getMixinNodeTypes()) {
             nodeDefinitionsAsMap = ((ExtendedNodeType)nodeType).getChildNodeDefinitionsAsMap();
             if (nodeDefinitionsAsMap.containsKey(name)) {
                 return nodeDefinitionsAsMap.get(name);
             }
+            for (Map.Entry<String, ExtendedNodeDefinition> entry : ((ExtendedNodeType)nodeType).getUnstructuredChildNodeDefinitions().entrySet()) {
+                if (childTypeNT.isNodeType(entry.getKey())) {
+                    return entry.getValue();
+                }
+            }
         }
-        ExtendedNodeType childTypeNT = NodeTypeRegistry.getInstance().getNodeType(childType);
         for (Map.Entry<String, ExtendedNodeDefinition> entry : getExtendedPrimaryNodeType().getUnstructuredChildNodeDefinitions().entrySet()) {
             if (childTypeNT.isNodeType(entry.getKey())) {
                 return entry.getValue();
