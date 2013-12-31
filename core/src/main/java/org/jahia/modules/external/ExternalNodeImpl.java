@@ -119,7 +119,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                         session.getValueFactory().createValue(getIdentifier())));
     }
 
-    private ExtendedNodeDefinition getChildNodeDefinition(String name, String childType) throws RepositoryException {
+    private NodeDefinition getChildNodeDefinition(String name, String childType) throws RepositoryException {
         Map<String, ExtendedNodeDefinition> nodeDefinitionsAsMap = getExtendedPrimaryNodeType().getChildNodeDefinitionsAsMap();
         if (nodeDefinitionsAsMap.containsKey(name)) {
             return nodeDefinitionsAsMap.get(name);
@@ -141,6 +141,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 return entry.getValue();
             }
         }
+        Node extensionNode = getExtensionNode(false);
+        if (extensionNode != null && extensionNode.isNodeType("jnt:externalProviderExtension")) {
+            return extensionNode.getDefinition();
+
+        }
+
         return null;
     }
 
@@ -1221,7 +1227,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 while (extensionNodeIterator.hasNext()) {
                     Node n = extensionNodeIterator.nextNode();
                     try {
-                        ExtendedNodeDefinition childNodeDefinition = getChildNodeDefinition(n.getName(), n.getPrimaryNodeType().getName());
+                        NodeDefinition childNodeDefinition = getChildNodeDefinition(n.getName(), n.getPrimaryNodeType().getName());
                         if (childNodeDefinition == null) {
                             for (NodeType t : n.getMixinNodeTypes()) {
                                 childNodeDefinition = getChildNodeDefinition(n.getName(), t.getName());

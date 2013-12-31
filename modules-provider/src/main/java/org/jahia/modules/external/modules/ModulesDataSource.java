@@ -848,12 +848,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private boolean saveEditableFile(ExternalData data, ExtendedNodeType type) throws RepositoryException {
         boolean hasProperties = false;
-        OutputStream outputStream = null;
         // Handle source code
+        OutputStream outputStream = null;
         try {
-            outputStream = getFile(data.getPath()).getContent().getOutputStream();
             //don't write code if file is empty
             if (data.getProperties().get(SOURCE_CODE) !=null) {
+                outputStream = getFile(data.getPath()).getContent().getOutputStream();
                 byte[] sourceCode = data.getProperties().get(SOURCE_CODE)[0].getBytes();
                 outputStream.write(sourceCode);
             }
