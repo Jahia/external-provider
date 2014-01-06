@@ -1700,7 +1700,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         String prefix = data.getProperties().get("j:prefix")[0];
         String uri = data.getProperties().get("j:uri")[0];
         NodeTypeRegistry.getInstance().getNamespaces().put(prefix, uri);
-        nodeTypeRegistryMap.get(StringUtils.substringBeforeLast(data.getPath(),"/")).getNamespaces().put(prefix, uri);
+        nodeTypeRegistryMap.get(StringUtils.substringBeforeLast(data.getPath(), "/")).getNamespaces().put(prefix, uri);
+        try {
+            JCRSessionFactory.getInstance().getNamespaceRegistry().registerNamespace(prefix, uri);
+        } catch (RepositoryException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
