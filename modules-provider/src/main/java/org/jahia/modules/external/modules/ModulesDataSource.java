@@ -1704,7 +1704,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         try {
             JCRSessionFactory.getInstance().getNamespaceRegistry().registerNamespace(prefix, uri);
         } catch (RepositoryException e) {
-            e.printStackTrace();
+            logger.error("Cannot register namespace",e);
         }
     }
 
