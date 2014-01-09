@@ -40,17 +40,10 @@
 
 package org.jahia.modules.external.modules;
 
-import org.jahia.data.templates.JahiaTemplatesPackage;
-import org.jahia.registries.ServicesRegistry;
-import org.jahia.services.content.JCRCallback;
-import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.scheduler.BackgroundJob;
-import org.jahia.services.templates.JahiaTemplateManagerService;
 import org.quartz.JobExecutionContext;
 
-import javax.jcr.RepositoryException;
-import java.io.File;
 import java.util.Set;
 
 /**
@@ -58,25 +51,7 @@ import java.util.Set;
  */
 public class ModulesExportJob extends BackgroundJob {
 
-    private static void regenerateImport(final Set<String> modules) throws RepositoryException {
-        JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Object>() {
-            @Override
-            public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
-                JahiaTemplateManagerService service = ServicesRegistry.getInstance()
-                        .getJahiaTemplateManagerService();
-                for (String module : modules) {
-                    JahiaTemplatesPackage pack = service.getTemplatePackageById(module);
-                    if (pack != null) {
-                        File sources = service.getSources(pack, session);
-                        if (sources != null) {
-                            service.regenerateImportFile(module, sources, session);
-                        }
-                    }
-                }
-                return null;
-            }
-        });
-    }
+    private final ModulesImportExportHelper modulesImportExportHelper = (ModulesImportExportHelper) SpringContextSingleton.getBean("ModulesImportExportHelper");
 
     private final Set<String> modules = ModulesListener.getInstance().getModules();
 
@@ -85,7 +60,7 @@ public class ModulesExportJob extends BackgroundJob {
         if (ModulesListener.getInstance() != null) {
             synchronized (modules) {
                 if (!modules.isEmpty()) {
-                    regenerateImport(modules);
+                    modulesImportExportHelper.regenerateImportFiles(modules);
                     modules.clear();
                 }
             }

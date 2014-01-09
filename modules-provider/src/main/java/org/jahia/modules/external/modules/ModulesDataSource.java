@@ -171,9 +171,14 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private ModulesSourceSpringInitializer modulesSourceSpringInitializer;
 
+    private ModulesImportExportHelper modulesImportExportHelper;
+
     public void start() {
         try {
             final String fullFolderPath = module.getSourcesFolder().getPath();
+            final String importFilesRootFolder = fullFolderPath + File.separator + "src" + File.separator + "main" + File.separator + "import" +
+                    File.separator + "content" + File.separator + "modules" + File.separator + module.getId() + File.separator + "files" + File.separator;
+            final String filesNodePath = "/modules/" + module.getIdWithVersion() + "/files";
             watcher = new FileWatcher("ModuleSourcesJob-" + module.getId(), fullFolderPath, true, 5000, true);
             watcher.setRecursive(true);
             watcher.setRemovedFiles(true);
@@ -190,7 +195,13 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     @SuppressWarnings("unchecked")
                     List<File> files = (List<File>)arg;
                     boolean nodeTypeLabelsFlushed = false;
+                    List<File> importFiles = new ArrayList<File>();
                     for (File file : files) {
+                        if (file.getPath().startsWith(importFilesRootFolder)) {
+                            importFiles.add(file);
+                            continue;
+                        }
+
                         String type = fileTypeMapping.get(FilenameUtils.getExtension(file.getName()));
                         if (type == null) {
                             continue;
@@ -234,6 +245,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                                 httpServiceTracker.unregisterJsp(file);
                             }
                         }
+                    }
+                    if (!importFiles.isEmpty()) {
+                        modulesImportExportHelper.updateImportFileNodes(importFiles, importFilesRootFolder, filesNodePath);
                     }
                 }
             });
@@ -1815,6 +1829,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     public void setModulesSourceSpringInitializer(ModulesSourceSpringInitializer modulesSourceSpringInitializer) {
         this.modulesSourceSpringInitializer = modulesSourceSpringInitializer;
+    }
+
+    public void setModulesImportExportHelper(ModulesImportExportHelper modulesImportExportHelper) {
+        this.modulesImportExportHelper = modulesImportExportHelper;
     }
 
     static class SortedProperties extends Properties {

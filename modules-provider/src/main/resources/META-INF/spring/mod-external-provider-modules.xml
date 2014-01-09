@@ -10,6 +10,10 @@
 
     <osgi:reference id="ExternalProviderInitializerService" interface="org.jahia.modules.external.ExternalProviderInitializerService"/>
 
+    <bean id="ModulesImportExportHelper" class="org.jahia.modules.external.modules.ModulesImportExportHelper">
+        <property name="templateService" ref="JahiaTemplateManagerService"/>
+    </bean>
+
     <bean id="ModulesDataSourcePrototype" class="org.jahia.modules.external.modules.ModulesDataSource"
           scope="prototype">
         <property name="supportedNodeTypes">
@@ -62,6 +66,7 @@
         </property>
         <property name="jcrStoreService" ref="JCRStoreService" />
         <property name="modulesSourceSpringInitializer" ref="ModulesSourceSpringInitializer" />
+        <property name="modulesImportExportHelper" ref="ModulesImportExportHelper" />
     </bean>
 
     <bean id="ModulesSourceSpringInitializer" class="org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer" factory-method="getInstance">
