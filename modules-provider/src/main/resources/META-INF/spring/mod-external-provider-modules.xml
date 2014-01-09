@@ -95,4 +95,13 @@
             </bean>
         </property>
     </bean>
+
+    <bean class="org.jahia.services.content.decorator.validation.JCRNodeValidatorDefinition">
+        <property name="validators">
+            <map>
+                <entry key="jnt:itemDefinition" value="org.jahia.modules.external.modules.validator.ItemNameValidator"/>
+            </map>
+        </property>
+    </bean>
+
 </beans>
