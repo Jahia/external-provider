@@ -63,6 +63,7 @@ import org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer;
 import org.jahia.modules.external.vfs.VFSDataSource;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
+import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.content.nodetypes.*;
 import org.jahia.services.preferences.user.UserPreferencesHelper;
 import org.jahia.services.templates.SourceControlManagement;
@@ -196,7 +197,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     List<File> files = (List<File>)arg;
                     boolean nodeTypeLabelsFlushed = false;
                     List<File> importFiles = new ArrayList<File>();
-                    for (File file : files) {
+                    for (final File file : files) {
                         if (file.getPath().startsWith(importFilesRootFolder)) {
                             importFiles.add(file);
                             continue;
@@ -206,6 +207,15 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         if (type == null) {
                             continue;
                         }
+                        if (type != null && StringUtils.equals(type,"jnt:propertiesFile")) {
+                            // we've detected a properties file, check if its parent is of type jnt:resourceBundleFolder
+                            // -> than this one gets the type jnt:resourceBundleFile; otherwise just jnt:file
+                            File parent = file.getParentFile();
+                            type = parent != null
+                                    && StringUtils.equals(Constants.JAHIANT_RESOURCEBUNDLE_FOLDER,
+                                    folderTypeMapping.get(parent.getName())) ? Constants.JAHIANT_RESOURCEBUNDLE_FILE : type;
+                        }
+
                         if (type.equals("jnt:resourceBundleFile") && !nodeTypeLabelsFlushed) {
                             NodeTypeRegistry.getInstance().flushLabels();
                             logger.debug("Flushing node type label caches");
@@ -213,6 +223,30 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                                 registry.flushLabels();
                             }
                             nodeTypeLabelsFlushed = true;
+                            try {
+                                JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Object>() {
+                                    @Override
+                                    public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
+                                        JCRSiteNode site = (JCRSiteNode) session.getNode("/modules/"+module.getId());
+                                        Set<String> langs = new HashSet<String>(site.getLanguages());
+                                        boolean changed = false;
+                                        for (File f : file.getParentFile().listFiles()) {
+                                            String s = StringUtils.substringAfterLast(StringUtils.substringBeforeLast(f.getName(), "."), "_");
+                                            if (!StringUtils.isEmpty(s) && !langs.contains(s)) {
+                                                langs.add(s);
+                                                changed = true;
+                                            }
+                                        }
+                                        if (changed) {
+                                            site.setLanguages(langs);
+                                            session.save();
+                                        }
+                                        return null;
+                                    }
+                                });
+                            } catch (RepositoryException e) {
+                                e.printStackTrace();
+                            }
                         } else if (type.equals(JNT_DEFINITION_FILE)) {
                             try {
                                 String cndPath = StringUtils.substringAfter(file.getPath(), SRC_MAIN_RESOURCES);
@@ -672,13 +706,13 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
                 try {
                     QueryResult result = session.getWorkspace().getQueryManager()
-                            .createQuery("Select * from ["+type+"]", Query.JCR_SQL2).execute();
+                            .createQuery("Select * from [" + type + "]", Query.JCR_SQL2).execute();
                     if (result.getRows().hasNext()) {
                         Locale locale = UserPreferencesHelper.getPreferredLocale(JCRSessionFactory.getInstance().getCurrentUser());
                         if (locale == null) {
                             locale = Locale.ENGLISH;
                         }
-                        throw new ItemExistsException(Messages.get("resources.JahiaExternalProviderModules",message,locale));
+                        throw new ItemExistsException(Messages.get("resources.JahiaExternalProviderModules", message, locale));
                     }
                 } catch (InvalidQueryException e) {
                     // this can happen if the type just have been created and not used at all.
