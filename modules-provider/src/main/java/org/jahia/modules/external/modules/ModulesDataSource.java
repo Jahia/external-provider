@@ -672,9 +672,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         File src = getRealFile(oldPath);
                         File dst = getRealFile(newPath);
                         sourceControl.move(src, dst);
-                    } else {
-                        super.move(oldPath, newPath);
                     }
+                    super.move(oldPath, newPath);
                 } catch (IOException e) {
                     logger.error("Failed to mark file as removed in source control", e);
                     throw new RepositoryException("Failed to mark file as removed in source control", e);
