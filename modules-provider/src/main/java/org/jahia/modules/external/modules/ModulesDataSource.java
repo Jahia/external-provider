@@ -230,16 +230,18 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                                         JCRSiteNode site = (JCRSiteNode) session.getNode("/modules/"+module.getId());
                                         Set<String> langs = new HashSet<String>(site.getLanguages());
                                         boolean changed = false;
-                                        for (File f : file.getParentFile().listFiles()) {
-                                            String s = StringUtils.substringAfterLast(StringUtils.substringBeforeLast(f.getName(), "."), "_");
-                                            if (!StringUtils.isEmpty(s) && !langs.contains(s)) {
-                                                langs.add(s);
-                                                changed = true;
+                                        if (file.getParentFile().listFiles() != null) {
+                                            for (File f : file.getParentFile().listFiles()) {
+                                                String s = StringUtils.substringAfterLast(StringUtils.substringBeforeLast(f.getName(), "."), "_");
+                                                if (!StringUtils.isEmpty(s) && !langs.contains(s)) {
+                                                    langs.add(s);
+                                                    changed = true;
+                                                }
                                             }
-                                        }
-                                        if (changed) {
-                                            site.setLanguages(langs);
-                                            session.save();
+                                            if (changed) {
+                                                site.setLanguages(langs);
+                                                session.save();
+                                            }
                                         }
                                         return null;
                                     }
@@ -673,7 +675,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         File dst = getRealFile(newPath);
                         sourceControl.move(src, dst);
                     }
-                    super.move(oldPath, newPath);
+                    // move the file if the source control do not do it (like directories for GIT)
+                    if (!getFile(newPath).exists()) {
+                        super.move(oldPath, newPath);
+                    }
                 } catch (IOException e) {
                     logger.error("Failed to mark file as removed in source control", e);
                     throw new RepositoryException("Failed to mark file as removed in source control", e);
