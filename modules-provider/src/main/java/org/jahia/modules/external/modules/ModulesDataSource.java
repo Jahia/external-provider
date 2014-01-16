@@ -861,7 +861,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         try {
             ExtendedNodeType type = NodeTypeRegistry.getInstance().getNodeType(data.getType());
 
-            if (type.isNodeType(JNT_EDITABLE_FILE)) {
+            if (type.isNodeType(JNT_DEFINITION_FILE)) {
+                checkCndFormat(data);
+                hasProperties = saveEditableFile(data, type);
+            } else if (type.isNodeType(JNT_EDITABLE_FILE)) {
                 hasProperties = saveEditableFile(data, type);
             } else if (type.isNodeType(JNT_NODE_TYPE)) {
                 saveNodeType(data);
@@ -898,13 +901,26 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
+    private void checkCndFormat(ExternalData data) throws RepositoryException {
+        if (data.getProperties().get(SOURCE_CODE) != null) {
+            byte[] sourceCode = data.getProperties().get(SOURCE_CODE)[0].getBytes();
+            try {
+                createRegistry().validateDefinitionsFile(new ByteArrayInputStream(sourceCode), data.getPath(), module.getId());
+            } catch (ParseException e) {
+                logger.error("Error while parsing definitions file", e);
+            } catch (IOException e) {
+                logger.error("Error while parsing definitions file", e);
+            }
+        }
+    }
+
     private boolean saveEditableFile(ExternalData data, ExtendedNodeType type) throws RepositoryException {
         boolean hasProperties = false;
         // Handle source code
         OutputStream outputStream = null;
         try {
             //don't write code if file is empty
-            if (data.getProperties().get(SOURCE_CODE) !=null) {
+            if (data.getProperties().get(SOURCE_CODE) != null) {
                 outputStream = getFile(data.getPath()).getContent().getOutputStream();
                 byte[] sourceCode = data.getProperties().get(SOURCE_CODE)[0].getBytes();
                 outputStream.write(sourceCode);
@@ -1675,21 +1691,27 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
 
+    private NodeTypeRegistry createRegistry() throws IOException, ParseException {
+        NodeTypeRegistry ntr = new NodeTypeRegistry();
+        ntr.initSystemDefinitions();
+
+        List<JahiaTemplatesPackage> dependencies = module.getDependencies();
+        for (JahiaTemplatesPackage depend : dependencies) {
+            for (String s : depend.getDefinitionsFiles()) {
+                ntr.addDefinitionsFile(depend.getResource(s), depend.getId(), null);
+            }
+        }
+
+        return ntr;
+    }
+
     private synchronized NodeTypeRegistry loadRegistry(String path) throws RepositoryException {
         NodeTypeRegistry ntr = nodeTypeRegistryMap.get(path);
         if (ntr != null) {
             return ntr;
         } else {
-            ntr = new NodeTypeRegistry();
             try {
-                ntr.initSystemDefinitions();
-
-                List<JahiaTemplatesPackage> dependencies = module.getDependencies();
-                for (JahiaTemplatesPackage depend : dependencies) {
-                    for (String s : depend.getDefinitionsFiles()) {
-                        ntr.addDefinitionsFile(depend.getResource(s), depend.getId(), null);
-                    }
-                }
+                ntr = createRegistry();
                 FileObject file = getFile(path);
                 if (file.exists()) {
                     ntr.addDefinitionsFile(new UrlResource(file.getURL()), module.getId(), null);
