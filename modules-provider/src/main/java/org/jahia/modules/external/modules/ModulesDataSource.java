@@ -421,8 +421,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
      */
     @Override
     public ExternalData getItemByIdentifier(String identifier) throws ItemNotFoundException {
-        ExternalData data = super.getItemByIdentifier(identifier);
-        return enhanceData(data.getPath(), data);
+        return super.getItemByIdentifier(identifier);
     }
 
     /**
@@ -549,6 +548,15 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 }
             } catch (IOException e) {
                 logger.error("Failed to get SCM status", e);
+            }
+        }
+        if (data.getPath().startsWith("/src/main/import")) {
+            if (data.getMixin() == null) {
+                data.setMixin(Arrays.asList("jmix:moduleImportFile"));
+            } else {
+                List<String> mixins = new ArrayList<String>(data.getMixin());
+                mixins.add("jmix:moduleImportFile");
+                data.setMixin(mixins);
             }
         }
         return data;
