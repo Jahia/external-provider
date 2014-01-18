@@ -96,7 +96,7 @@ import java.util.*;
  * Data source provider that is mapped to the /modules filesystem folder with deployed Jahia modules.
  *
  * @author david
- * @since 6.7
+ * @since 7.0
  */
 public class ModulesDataSource extends VFSDataSource implements ExternalDataSource.Initializable, ExternalDataSource.LazyProperty {
 

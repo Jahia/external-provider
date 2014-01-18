@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author rincevent
- * @since Jahia 6.7
+ * @since Jahia 7.0
  */
 public class ModulesSourceActivator implements BundleActivator {
     private static Logger logger = LoggerFactory.getLogger(ModulesSourceActivator.class);
