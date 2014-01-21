@@ -9,12 +9,14 @@
 
 // extension nodes.
 
-[jmix:hasExternalProviderExtension] mixin
- + * (jnt:externalProviderExtension)
+// These types are defined in Jahia
+// [jmix:hasExternalProviderExtension] mixin
+//  + * (jnt:externalProviderExtension)
+// [jnt:externalProviderExtension] > nt:unstructured, jmix:lockable
+
 
 [jmix:externalProviderExtension] mixin
  - j:isExternalProviderRoot (boolean)
  - j:externalNodeIdentifier (string)
  - j:extendedType (string)
 
-[jnt:externalProviderExtension] > nt:unstructured, jmix:lockable
