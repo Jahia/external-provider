@@ -69,7 +69,7 @@ public class ExternalProviderID {
     }
 
     @Column(nullable = false)
-    @Index(name = "jahia_external_provider_id_index1")
+    @Index(name = "jahia_external_provider_id_ix1")
     public String getProviderKey() {
         return providerKey;
     }
