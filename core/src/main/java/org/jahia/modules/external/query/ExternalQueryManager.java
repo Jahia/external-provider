@@ -159,10 +159,16 @@ public class ExternalQueryManager implements QueryManager {
 
                 String selectorType = ((Selector) getSource()).getNodeTypeName();
                 String selectorName = ((Selector) getSource()).getSelectorName();
-                boolean isMixin = NodeTypeRegistry.getInstance().getNodeType(selectorType).isMixin();
+                boolean isMixinOrFacet = NodeTypeRegistry.getInstance().getNodeType(selectorType).isMixin();
                 QueryObjectModelFactory qomFactory = queryManager.getQOMFactory();
+                for (Column c : getColumns()) {
+                    if (StringUtils.startsWith(c.getColumnName(),"rep:facet(")) {
+                        isMixinOrFacet = true;
+                        break;
+                    }
+                }
                 // for extension node,but not mixin , change the type to jnt:externalProviderExtension
-                String selector = isMixin?selectorType:"jmix:externalProviderExtension";
+                String selector = isMixinOrFacet?selectorType:"jmix:externalProviderExtension";
                 Source externalSource = qomFactory.selector(selector,selectorName);
 
                 String mountPoint = workspace.getSession().getRepository().getStoreProvider().getMountPoint();
@@ -171,7 +177,7 @@ public class ExternalQueryManager implements QueryManager {
                     // Multiple IsDescendantNode queries are not supported
                     convertedConstraint = addPathConstraints(convertedConstraint, externalSource, mountPoint, qomFactory);
                 }
-                if (!isMixin) {
+                if (!isMixinOrFacet) {
                     Comparison c = qomFactory.comparison(qomFactory.propertyValue(selectorName,"j:extendedType"), QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO,qomFactory.literal(extSession.getValueFactory().createValue(selectorType)));
                     convertedConstraint = qomFactory.and(c,convertedConstraint);
                 }
