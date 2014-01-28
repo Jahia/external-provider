@@ -521,7 +521,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         //no properties files, do nothing
                     } catch (IOException e) {
                         logger.error("Cannot read property file", e);
-                    } finally {
+                    } catch (Exception e) {
+                        logger.error("unable to enhance image " + data.getPath(), e);
+                    }
+                    finally {
                         if (is != null) {
                             IOUtils.closeQuietly(is);
                         }
