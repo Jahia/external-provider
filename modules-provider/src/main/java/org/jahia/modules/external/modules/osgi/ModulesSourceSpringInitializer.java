@@ -51,6 +51,7 @@ import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.content.JCRStoreService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -164,10 +165,17 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
     public void unmountBundle(Bundle bundle) {
         final JahiaTemplatesPackage pkg = BundleUtils.isJahiaModuleBundle(bundle) ? BundleUtils.getModule(
                 bundle) : null;
-        if (null != pkg && pkg.getSourcesFolder() != null) {
-            unmountSourcesProvider(pkg);
+        try {
+            if (null != pkg && pkg.getSourcesFolder() != null) {
+                unmountSourcesProvider(pkg);
+            }
+        } catch (Exception e) {
+            logger.error("Cannot unmount sources provider for "+pkg.getId(),e);
         }
-        httpServiceTrackers.remove(bundle.getSymbolicName());
+        ServiceTracker t = httpServiceTrackers.remove(bundle.getSymbolicName());
+        if (t != null) {
+            t.close();
+        }
     }
 
     public ModulesSourceHttpServiceTracker getHttpServiceTracker(String bundleSymbolicName) {

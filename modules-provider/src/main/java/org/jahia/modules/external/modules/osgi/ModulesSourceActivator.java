@@ -79,7 +79,7 @@ public class ModulesSourceActivator implements BundleActivator {
             public void bundleChanged(BundleEvent event) {
                 if (event.getType() == BundleEvent.STARTED) {
                     ModulesSourceSpringInitializer.getInstance().mountBundle(event.getBundle());
-                } else if (event.getType() == BundleEvent.STOPPED) {
+                } else if (event.getType() == BundleEvent.STOPPING) {
                     ModulesSourceSpringInitializer.getInstance().unmountBundle(event.getBundle());
                 }
             }

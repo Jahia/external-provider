@@ -43,6 +43,9 @@ package org.jahia.modules.external.modules;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.scheduler.BackgroundJob;
 import org.quartz.JobExecutionContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 
 import java.util.Set;
 
@@ -50,8 +53,7 @@ import java.util.Set;
  * Background task for regenerating initial import of the modules.
  */
 public class ModulesExportJob extends BackgroundJob {
-
-    private final ModulesImportExportHelper modulesImportExportHelper = (ModulesImportExportHelper) SpringContextSingleton.getBean("ModulesImportExportHelper");
+    private static final Logger logger = LoggerFactory.getLogger(ModulesExportJob.class);
 
     private final Set<String> modules = ModulesListener.getInstance().getModules();
 
@@ -59,9 +61,14 @@ public class ModulesExportJob extends BackgroundJob {
     public void executeJahiaJob(JobExecutionContext jobExecutionContext) throws Exception {
         if (ModulesListener.getInstance() != null) {
             synchronized (modules) {
-                if (!modules.isEmpty()) {
-                    modulesImportExportHelper.regenerateImportFiles(modules);
-                    modules.clear();
+                try {
+                    final ModulesImportExportHelper helper = (ModulesImportExportHelper) SpringContextSingleton.getBean("ModulesImportExportHelper");
+                    if (!modules.isEmpty()) {
+                        helper.regenerateImportFiles(modules);
+                        modules.clear();
+                    }
+                } catch (NoSuchBeanDefinitionException e) {
+                    logger.error("Cannot get ModulesImportExportHelper " + e.getMessage());
                 }
             }
         }
