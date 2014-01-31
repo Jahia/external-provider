@@ -41,9 +41,9 @@
   </li>
   <li>
   First class seats : ${currentNode.properties['firstclass_seats'].long}
-      <form action="${url.base}${currentNode.path}" method="post">
+      <form action="<c:url value='${url.base}${currentNode.path}'/>" method="post">
       <input name="jcrMethodToCall" value="put" type="hidden"/>
-      <input name="jcrRedirectTo" value="${url.base}${currentNode.path}" type="hidden"/>
+      <input name="jcrRedirectTo" value="<c:url value='${url.base}${currentNode.path}.viewContent'/>" type="hidden"/>
       <input name="firstclass_seats" value="${currentNode.properties['firstclass_seats'].long}"/>
       <input type="submit"/>
       </form>

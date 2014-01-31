@@ -30,7 +30,7 @@
                   statement="select * from [jtestnt:city] where airport='${currentNode.properties['orig_airport'].string}'"/>
 
         <c:forEach items="${rs.nodes}" var="city">
-             - City = <a href="${url.base}${city.path}.html">${city.properties['city_id'].string} , ${city.properties['city_name'].string}</a>
+             - City = <a href="<c:url value='${url.base}${city.path}.html'/>">${city.properties['city_id'].string} , ${city.properties['city_name'].string}</a>
         </c:forEach>
 
     </li>
@@ -41,7 +41,7 @@
                   statement="select * from [jtestnt:city] where airport='${currentNode.properties['dest_airport'].string}'"/>
 
         <c:forEach items="${rs.nodes}" var="city">
-            - City = <a href="${url.base}${city.path}.html">${city.properties['city_id'].string} , ${city.properties['city_name'].string}</a>
+            - City = <a href="<c:url value='${url.base}${city.path}.html'/>">${city.properties['city_id'].string} , ${city.properties['city_name'].string}</a>
         </c:forEach>
     </li>
 </ul>
