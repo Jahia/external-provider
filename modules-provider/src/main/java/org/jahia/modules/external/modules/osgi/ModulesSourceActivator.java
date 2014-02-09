@@ -40,6 +40,7 @@
 
 package org.jahia.modules.external.modules.osgi;
 
+import org.jahia.bin.listeners.JahiaContextLoaderListener;
 import org.osgi.framework.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,6 +112,9 @@ public class ModulesSourceActivator implements BundleActivator {
      */
     @Override
     public void stop(BundleContext context) throws Exception {
+        if (!JahiaContextLoaderListener.isRunning()) {
+            return;
+        }
         Bundle[] bundles = context.getBundles();
         for (Bundle bundle : bundles) {
             if (bundle.getState() == Bundle.ACTIVE || context.getBundle().getBundleId() == bundle.getBundleId()) {
