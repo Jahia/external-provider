@@ -596,6 +596,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 try {
                     if (!SourceControlManagement.Status.UNTRACKED.equals(getScmStatus(path))) {
                         sourceControl.remove(getRealFile(path));
+                        // really delete the file if the source control did not do it
+                        if (getRealFile(path).exists()) {
+                            super.removeItemByPath(path);
+                        }
                         // refresh the parent file cache
                         getFile(path).getParent();
                     } else {
