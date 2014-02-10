@@ -43,6 +43,7 @@ package org.jahia.modules.external;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.jackrabbit.commons.iterator.AccessControlPolicyIteratorAdapter;
 import org.apache.jackrabbit.core.security.JahiaPrivilegeRegistry;
+import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
 
 import javax.jcr.AccessDeniedException;
@@ -52,6 +53,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.lock.LockException;
 import javax.jcr.security.*;
 import javax.jcr.version.VersionException;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -163,9 +165,17 @@ public class ExternalAccessControlManager implements AccessControlManager {
         return allowed;
     }
 
-    public Privilege privilegeFromName(String privilegeName) throws AccessControlException,
-            RepositoryException {
-        return registry.getPrivilege(privilegeName, null);
+    public Privilege privilegeFromName(String privilegeName) throws AccessControlException, RepositoryException {
+        try {
+            return registry.getPrivilege(privilegeName, null);
+        } catch (AccessControlException e) {
+            if (e.getMessage() != null && e.getMessage().startsWith("Unknown privilege {http://www.jcp.org/jcr/1.0}")) {
+                // fallback to default workspace for JCR permissions
+                return registry.getPrivilege(privilegeName, Constants.EDIT_WORKSPACE);
+            } else {
+                throw e;
+            }
+        }
     }
 
     public void removePolicy(String absPath, AccessControlPolicy policy)
