@@ -1617,7 +1617,11 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         if (defaultValues != null && defaultValues.length > 0) {
             try {
                 List<String> defaultValuesAsString = JahiaCndWriter.getValuesAsString(defaultValues);
-                properties.put(J_DEFAULT_VALUES, defaultValuesAsString.toArray(new String[defaultValuesAsString.size()]));
+                List<String> unquotedValues = new ArrayList<String>();
+                for (String value : defaultValuesAsString) {
+                    unquotedValues.add(StringUtils.removeEnd(StringUtils.removeStart(value, "'"), "'"));
+                }
+                properties.put(J_DEFAULT_VALUES, unquotedValues.toArray(new String[unquotedValues.size()]));
             } catch (IOException e) {
                 logger.error("Failed to get default values", e);
             }

@@ -75,7 +75,7 @@ public class ModulesSourceActivator implements BundleActivator {
             this.context = context;
         }
         logger.info("Starting external provider bundle.");
-        context.addBundleListener(new BundleListener() {
+        context.addBundleListener(new SynchronousBundleListener() {
             @Override
             public void bundleChanged(BundleEvent event) {
                 if (event.getType() == BundleEvent.STARTED) {

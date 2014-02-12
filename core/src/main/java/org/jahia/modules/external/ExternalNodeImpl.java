@@ -251,8 +251,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
         String separator = StringUtils.equals(this.data.getId(),"/")?"":"/";
         ExternalData data = new ExternalData(this.data.getId() + separator + relPath ,getPath() + ( getPath().equals("/")? "" : "/" ) + relPath,primaryNodeTypeName,new HashMap<String, String[]>());
+        final ExternalNodeImpl newNode = new ExternalNodeImpl(data, session);
         session.getChangedData().put(data.getPath(),data);
-        return  new ExternalNodeImpl(data,session);
+        session.setNewItem(newNode);
+        return newNode;
     }
 
     public void orderBefore(String srcChildRelPath, String destChildRelPath) throws UnsupportedRepositoryOperationException, VersionException, ConstraintViolationException, ItemNotFoundException, LockException, RepositoryException {
@@ -307,7 +309,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             } else {
                 data.getProperties().put(name, new String[]{value.getString()});
             }
-            properties.put(name, new ExternalPropertyImpl(new Name(name, NodeTypeRegistry.getInstance().getNamespaces()), this, session, value));
+            final ExternalPropertyImpl newProperty = new ExternalPropertyImpl(new Name(name, NodeTypeRegistry.getInstance().getNamespaces()), this, session, value);
+            properties.put(name, newProperty);
+            session.setNewItem(newProperty);
             session.getChangedData().put(getPath(),data);
         }
         return getProperty(name);
@@ -345,7 +349,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 }
             }
             data.getProperties().put(name,s);
-            properties.put(name, new ExternalPropertyImpl(new Name(name, NodeTypeRegistry.getInstance().getNamespaces()), this, session, values));
+            final ExternalPropertyImpl newProperty = new ExternalPropertyImpl(new Name(name, NodeTypeRegistry.getInstance().getNamespaces()), this, session, values);
+            properties.put(name, newProperty);
+            session.setNewItem(newProperty);
             session.getChangedData().put(getPath(),data);
         }
         return getProperty(name);
@@ -401,7 +407,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 return p;
             } else {
                 Binary b = null;
-                return new ExternalPropertyImpl(new Name(name, NodeTypeRegistry.getInstance().getNamespaces()), this, session, new ExternalValueImpl(b));
+                final ExternalPropertyImpl newProperty = new ExternalPropertyImpl(new Name(name, NodeTypeRegistry.getInstance().getNamespaces()), this, session, new ExternalValueImpl(b));
+                session.setNewItem(newProperty);
+                return newProperty;
             }
         }
         Value v = null;
@@ -485,11 +493,14 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public NodeIterator getNodes(String namePattern) throws RepositoryException {
-        final List<String> l = session.getRepository().getDataSource().getChildren(getPath());
         final List<String> filteredList = new ArrayList<String>();
-        for (String path : l) {
-            if (ChildrenCollectorFilter.matches(path,namePattern)) {
-                filteredList.add(path);
+
+        if (!namePattern.equals("j:translation*")) {
+            final List<String> l = session.getRepository().getDataSource().getChildren(getPath());
+            for (String path : l) {
+                if (ChildrenCollectorFilter.matches(path,namePattern)) {
+                    filteredList.add(path);
+                }
             }
         }
         Set<String> languages = new HashSet<String>();
