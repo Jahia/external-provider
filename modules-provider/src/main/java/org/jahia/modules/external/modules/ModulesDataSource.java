@@ -937,7 +937,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             //don't write code if file is empty
             if (data.getProperties().get(SOURCE_CODE) != null) {
                 outputStream = getFile(data.getPath()).getContent().getOutputStream();
-                byte[] sourceCode = data.getProperties().get(SOURCE_CODE)[0].getBytes();
+                byte[] sourceCode = data.getProperties().get(SOURCE_CODE)[0].getBytes(Charsets.UTF_8);
                 outputStream.write(sourceCode);
             }
         } catch (Exception e) {
