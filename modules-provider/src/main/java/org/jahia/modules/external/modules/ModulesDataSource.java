@@ -44,6 +44,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.Predicate;
@@ -88,6 +89,7 @@ import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 import javax.jcr.query.qom.QueryObjectModelConstants;
 import javax.jcr.version.OnParentVersionAction;
+
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
@@ -1785,16 +1787,30 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private void registerNamespace(ExternalData data) {
+    private void registerNamespace(ExternalData data) throws RepositoryException {
         String prefix = data.getProperties().get("j:prefix")[0];
         String uri = data.getProperties().get("j:uri")[0];
-        NodeTypeRegistry.getInstance().getNamespaces().put(prefix, uri);
-        nodeTypeRegistryMap.get(StringUtils.substringBeforeLast(data.getPath(), "/")).getNamespaces().put(prefix, uri);
+        NamespaceRegistry nsRegistry = JCRSessionFactory.getInstance().getNamespaceRegistry();
+        NodeTypeRegistry ntRegistry = NodeTypeRegistry.getInstance();
+        boolean exists = false;
         try {
-            JCRSessionFactory.getInstance().getNamespaceRegistry().registerNamespace(prefix, uri);
-        } catch (RepositoryException e) {
-            logger.error("Cannot register namespace",e);
+            nsRegistry.getURI(prefix);
+            exists = true;
+        } catch (NamespaceException e) {
+            // the prefix is not registered yet
+            try {
+                nsRegistry.getPrefix(uri);
+                exists = true;
+            } catch (NamespaceException e2) {
+                // the uri is not registered yet
+            }
         }
+        if (exists || ntRegistry.getNamespaces().containsKey(prefix) || ntRegistry.getNamespaces().containsValue(uri)) {
+            throw new NamespaceException();
+        }
+        nsRegistry.registerNamespace(prefix, uri);
+        ntRegistry.getNamespaces().put(prefix, uri);
+        nodeTypeRegistryMap.get(StringUtils.substringBeforeLast(data.getPath(), "/")).getNamespaces().put(prefix, uri);
     }
 
     /**
