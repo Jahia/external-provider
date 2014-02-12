@@ -21,8 +21,8 @@ Id = ${currentNode.properties['city_id'].string}
     <li>
 Name : ${currentNode.properties['city_name'].string}
     </li>
-    <li>
-Country : <a href="<c:url value='${url.base}/external-database-mapped/COUNTRIES/${currentNode.properties['country_iso_code'].string}.html'/>">${currentNode.properties['country'].string} (${currentNode.properties['country_iso_code'].string})</a>
+    <li><c:url value="${url.base}/external-database-mapped/COUNTRIES/${currentNode.properties['country_iso_code'].string}.html" var="urlCountry"/>
+Country : <a href="${urlCountry}">${currentNode.properties['country'].string} (${currentNode.properties['country_iso_code'].string})</a>
     </li>
     <li>
 Airport : ${currentNode.properties['airport'].string}
