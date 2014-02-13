@@ -1187,6 +1187,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 Name name = new Name(qualifiedName, nodeTypeRegistry.getNamespaces());
                 propertyDefinition.setName(name);
                 propertyDefinition.setRequiredType(PropertyType.valueFromName(data.getProperties().get(J_REQUIRED_TYPE)[0]));
+                String[] isMultiple = data.getProperties().get(J_MULTIPLE);
+                if (isMultiple != null && isMultiple.length > 0) {
+                    propertyDefinition.setMultiple(Boolean.parseBoolean(isMultiple[0]));
+                }
                 propertyDefinition.setDeclaringNodeType(nodeType);
             }
             Map<String, String[]> properties = data.getProperties();
