@@ -77,6 +77,7 @@ public class ExternalSessionImpl implements Session {
     private Map<String, ExternalData> changedData = new LinkedHashMap<String, ExternalData>();
     private Map<String, ExternalData> deletedData = new LinkedHashMap<String, ExternalData>();
     private Map<String, List<String>> orderedData = new LinkedHashMap<String, List<String>>();
+    private Set<ExternalItemImpl> newItems = new HashSet<ExternalItemImpl>();
     private Session extensionSession;
     private List<String> extensionAllowedTypes;
     private Map<String,List<String>> overridableProperties;
@@ -351,6 +352,10 @@ public class ExternalSessionImpl implements Session {
                             getRepository().getDataSource().isSupportsHierarchicalIdentifiers());
             deletedData.clear();
         }
+        for (ExternalItemImpl newItem : newItems) {
+            newItem.setNew(false);
+        }
+        newItems.clear();
     }
 
     public void refresh(boolean b) throws RepositoryException {
@@ -475,6 +480,11 @@ public class ExternalSessionImpl implements Session {
 
     public Map<String, List<String>> getOrderedData() {
         return orderedData;
+    }
+
+    public void setNewItem(ExternalItemImpl newItem) {
+        newItem.setNew(true);
+        newItems.add(newItem);
     }
 
     public Node getNodeByIdentifier(String id) throws ItemNotFoundException, RepositoryException {

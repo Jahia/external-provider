@@ -57,6 +57,8 @@ public abstract class ExternalItemImpl implements Item {
 
     protected ExternalSessionImpl session;
 
+    protected boolean isNew = false;
+
     public ExternalItemImpl(ExternalSessionImpl session) {
         this.session = session;
     }
@@ -78,8 +80,12 @@ public abstract class ExternalItemImpl implements Item {
         return false;  
     }
 
+    void setNew(boolean isNew) {
+        this.isNew = isNew;
+    }
+
     public boolean isNew() {
-        return false;  
+        return isNew;
     }
 
     public boolean isModified() {
