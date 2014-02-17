@@ -1187,6 +1187,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 Name name = new Name(qualifiedName, nodeTypeRegistry.getNamespaces());
                 propertyDefinition.setName(name);
                 propertyDefinition.setRequiredType(PropertyType.valueFromName(data.getProperties().get(J_REQUIRED_TYPE)[0]));
+                String[] isMultiple = data.getProperties().get(J_MULTIPLE);
+                if (isMultiple != null && isMultiple.length > 0) {
+                    propertyDefinition.setMultiple(Boolean.parseBoolean(isMultiple[0]));
+                }
                 propertyDefinition.setDeclaringNodeType(nodeType);
             }
             Map<String, String[]> properties = data.getProperties();
@@ -1617,7 +1621,11 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         if (defaultValues != null && defaultValues.length > 0) {
             try {
                 List<String> defaultValuesAsString = JahiaCndWriter.getValuesAsString(defaultValues);
-                properties.put(J_DEFAULT_VALUES, defaultValuesAsString.toArray(new String[defaultValuesAsString.size()]));
+                List<String> unquotedValues = new ArrayList<String>();
+                for (String value : defaultValuesAsString) {
+                    unquotedValues.add(StringUtils.removeEnd(StringUtils.removeStart(value, "'"), "'"));
+                }
+                properties.put(J_DEFAULT_VALUES, unquotedValues.toArray(new String[unquotedValues.size()]));
             } catch (IOException e) {
                 logger.error("Failed to get default values", e);
             }
