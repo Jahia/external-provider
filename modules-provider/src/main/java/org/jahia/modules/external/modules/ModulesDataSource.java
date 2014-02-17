@@ -66,11 +66,14 @@ import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.content.nodetypes.*;
+import org.jahia.services.deamons.filewatcher.FileMonitor;
+import org.jahia.services.deamons.filewatcher.FileMonitorCallback;
+import org.jahia.services.deamons.filewatcher.FileMonitorJob;
+import org.jahia.services.deamons.filewatcher.FileMonitorResult;
 import org.jahia.services.preferences.user.UserPreferencesHelper;
 import org.jahia.services.templates.SourceControlManagement;
 import org.jahia.services.templates.SourceControlManagement.Status;
 import org.jahia.settings.SettingsBean;
-import org.jahia.tools.files.FileWatcher;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.i18n.Messages;
 import org.slf4j.Logger;
@@ -166,7 +169,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private Map<String, NodeTypeRegistry> nodeTypeRegistryMap = new HashMap<String, NodeTypeRegistry>();
 
-    private FileWatcher watcher;
+    private String fileMonitorJobName;
 
     private File realRoot;
 
@@ -177,127 +180,142 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private ModulesImportExportHelper modulesImportExportHelper;
 
     public void start() {
-        try {
-            final String fullFolderPath = module.getSourcesFolder().getPath();
-            final String importFilesRootFolder = fullFolderPath + File.separator + "src" + File.separator + "main" + File.separator + "import" +
-                    File.separator + "content" + File.separator + "modules" + File.separator + module.getId() + File.separator + "files" + File.separator;
-            final String filesNodePath = "/modules/" + module.getIdWithVersion() + "/files";
-            watcher = new FileWatcher("ModuleSourcesJob-" + module.getId(), fullFolderPath, true, 5000, true);
-            watcher.setRecursive(true);
-            watcher.setRemovedFiles(true);
-            watcher.setIgnoreFiles(Arrays.asList(".svn", ".git", "target", ".idea"));
-            watcher.addObserver(new Observer() {
-                @Override
-                public void update(Observable o, Object arg) {
-                    logger.info("Detected changes in sources of the module in folder {}", fullFolderPath);
-                    SourceControlManagement sourceControl = module.getSourceControl();
-                    if (sourceControl != null) {
-                        sourceControl.invalidateStatusCache();
-                        logger.debug("Invalidating SCM status caches for module {}", module.getId());
+        final String fullFolderPath = module.getSourcesFolder().getPath() + File.separator;
+        final String importFilesRootFolder = fullFolderPath + "src" + File.separator + "main" + File.separator + "import" +
+                File.separator + "content" + File.separator + "modules" + File.separator + module.getId() + File.separator + "files" + File.separator;
+        final String filesNodePath = "/modules/" + module.getIdWithVersion() + "/files";
+        
+        FileMonitor monitor = new FileMonitor(new FileMonitorCallback() {
+            @Override
+            public void process(FileMonitorResult result) {
+                logger.info("Detected changes in sources of the module in folder {}: {}", fullFolderPath, result);
+                if (logger.isDebugEnabled()) {
+                    logger.debug(result.getInfo());
+                }
+                SourceControlManagement sourceControl = module.getSourceControl();
+                if (sourceControl != null) {
+                    sourceControl.invalidateStatusCache();
+                    logger.debug("Invalidating SCM status caches for module {}", module.getId());
+                }
+                boolean nodeTypeLabelsFlushed = false;
+                List<File> importFiles = new ArrayList<File>();
+                for (final File file : result.getAllAsList()) {
+                    invalidateVfsParentCache(fullFolderPath, file);
+                    if (file.getPath().startsWith(importFilesRootFolder)) {
+                        importFiles.add(file);
+                        continue;
                     }
-                    @SuppressWarnings("unchecked")
-                    List<File> files = (List<File>)arg;
-                    boolean nodeTypeLabelsFlushed = false;
-                    List<File> importFiles = new ArrayList<File>();
-                    for (final File file : files) {
-                        if (file.getPath().startsWith(importFilesRootFolder)) {
-                            importFiles.add(file);
-                            continue;
-                        }
 
-                        String type = fileTypeMapping.get(FilenameUtils.getExtension(file.getName()));
-                        if (type == null) {
-                            continue;
-                        }
-                        if (type != null && StringUtils.equals(type,"jnt:propertiesFile")) {
-                            // we've detected a properties file, check if its parent is of type jnt:resourceBundleFolder
-                            // -> than this one gets the type jnt:resourceBundleFile; otherwise just jnt:file
-                            File parent = file.getParentFile();
-                            type = parent != null
-                                    && StringUtils.equals(Constants.JAHIANT_RESOURCEBUNDLE_FOLDER,
-                                    folderTypeMapping.get(parent.getName())) ? Constants.JAHIANT_RESOURCEBUNDLE_FILE : type;
-                        }
+                    String type = fileTypeMapping.get(FilenameUtils.getExtension(file.getName()));
+                    if (type == null) {
+                        continue;
+                    }
+                    if (StringUtils.equals(type,"jnt:propertiesFile")) {
+                        // we've detected a properties file, check if its parent is of type jnt:resourceBundleFolder
+                        // -> than this one gets the type jnt:resourceBundleFile; otherwise just jnt:file
+                        File parent = file.getParentFile();
+                        type = parent != null
+                                && StringUtils.equals(Constants.JAHIANT_RESOURCEBUNDLE_FOLDER,
+                                folderTypeMapping.get(parent.getName())) ? Constants.JAHIANT_RESOURCEBUNDLE_FILE : type;
+                    }
 
-                        if (type.equals("jnt:resourceBundleFile") && !nodeTypeLabelsFlushed) {
-                            NodeTypeRegistry.getInstance().flushLabels();
-                            logger.debug("Flushing node type label caches");
-                            for (NodeTypeRegistry registry : nodeTypeRegistryMap.values()) {
-                                registry.flushLabels();
-                            }
-                            nodeTypeLabelsFlushed = true;
-                            try {
-                                JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Object>() {
-                                    @Override
-                                    public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
-                                        JCRSiteNode site = (JCRSiteNode) session.getNode("/modules/"+module.getId());
-                                        Set<String> langs = new HashSet<String>(site.getLanguages());
-                                        boolean changed = false;
-                                        if (file.getParentFile().listFiles() != null) {
-                                            for (File f : file.getParentFile().listFiles()) {
-                                                String s = StringUtils.substringAfterLast(StringUtils.substringBeforeLast(f.getName(), "."), "_");
-                                                if (!StringUtils.isEmpty(s) && !langs.contains(s)) {
-                                                    langs.add(s);
-                                                    changed = true;
-                                                }
-                                            }
-                                            if (changed) {
-                                                site.setLanguages(langs);
-                                                session.save();
+                    if (type.equals("jnt:resourceBundleFile") && !nodeTypeLabelsFlushed) {
+                        NodeTypeRegistry.getInstance().flushLabels();
+                        logger.debug("Flushing node type label caches");
+                        for (NodeTypeRegistry registry : nodeTypeRegistryMap.values()) {
+                            registry.flushLabels();
+                        }
+                        nodeTypeLabelsFlushed = true;
+                        try {
+                            JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Object>() {
+                                @Override
+                                public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
+                                    JCRSiteNode site = (JCRSiteNode) session.getNode("/modules/"+module.getId());
+                                    Set<String> langs = new HashSet<String>(site.getLanguages());
+                                    boolean changed = false;
+                                    if (file.getParentFile().listFiles() != null) {
+                                        for (File f : file.getParentFile().listFiles()) {
+                                            String s = StringUtils.substringAfterLast(StringUtils.substringBeforeLast(f.getName(), "."), "_");
+                                            if (!StringUtils.isEmpty(s) && !langs.contains(s)) {
+                                                langs.add(s);
+                                                changed = true;
                                             }
                                         }
-                                        return null;
+                                        if (changed) {
+                                            site.setLanguages(langs);
+                                            session.save();
+                                        }
                                     }
-                                });
-                            } catch (RepositoryException e) {
-                                e.printStackTrace();
-                            }
-                        } else if (type.equals(JNT_DEFINITION_FILE)) {
-                            try {
-                                String cndPath = StringUtils.substringAfter(file.getPath(), SRC_MAIN_RESOURCES);
-                                List<String> definitionsFiles = module.getDefinitionsFiles();
-                                if (file.exists() && !definitionsFiles.contains(cndPath)) {
-                                    definitionsFiles.add(cndPath);
-                                } else if (!file.exists() && definitionsFiles.contains(cndPath)) {
-                                    definitionsFiles.remove(cndPath);
+                                    return null;
                                 }
-                                String systemId = module.getId();
-                                NodeTypeRegistry nodeTypeRegistry = NodeTypeRegistry.getInstance();
-                                nodeTypeRegistry.unregisterNodeTypes(systemId);
-                                for (String path : definitionsFiles) {
-                                    nodeTypeRegistry.addDefinitionsFile(getRealFile(SRC_MAIN_RESOURCES + path), systemId, module.getVersion());
-                                }
-                                if (SettingsBean.getInstance().isProcessingServer()) {
-                                    jcrStoreService.deployDefinitions(systemId);
-                                }
-                                logger.info("Registered definitions from file {} for bundle {}", file, module.getBundle());
-                            } catch (IOException e) {
-                                logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
-                            } catch (ParseException e) {
-                                logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
+                            });
+                        } catch (RepositoryException e) {
+                            e.printStackTrace();
+                        }
+                    } else if (type.equals(JNT_DEFINITION_FILE)) {
+                        try {
+                            String cndPath = StringUtils.substringAfter(file.getPath(), SRC_MAIN_RESOURCES);
+                            List<String> definitionsFiles = module.getDefinitionsFiles();
+                            if (file.exists() && !definitionsFiles.contains(cndPath)) {
+                                definitionsFiles.add(cndPath);
+                            } else if (!file.exists() && definitionsFiles.contains(cndPath)) {
+                                definitionsFiles.remove(cndPath);
                             }
-                        } else if (type.equals("jnt:viewFile")) {
-                            ModulesSourceHttpServiceTracker httpServiceTracker = modulesSourceSpringInitializer.getHttpServiceTracker(module.getId());
-                            if (file.exists()) {
-                                httpServiceTracker.registerJsp(file);
-                            } else {
-                                httpServiceTracker.unregisterJsp(file);
+                            String systemId = module.getId();
+                            NodeTypeRegistry nodeTypeRegistry = NodeTypeRegistry.getInstance();
+                            nodeTypeRegistry.unregisterNodeTypes(systemId);
+                            for (String path : definitionsFiles) {
+                                nodeTypeRegistry.addDefinitionsFile(getRealFile(SRC_MAIN_RESOURCES + path), systemId, module.getVersion());
                             }
+                            if (SettingsBean.getInstance().isProcessingServer()) {
+                                jcrStoreService.deployDefinitions(systemId);
+                            }
+                            logger.info("Registered definitions from file {} for bundle {}", file, module.getBundle());
+                        } catch (IOException e) {
+                            logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
+                        } catch (ParseException e) {
+                            logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
+                        }
+                    } else if (type.equals("jnt:viewFile")) {
+                        ModulesSourceHttpServiceTracker httpServiceTracker = modulesSourceSpringInitializer.getHttpServiceTracker(module.getId());
+                        if (file.exists()) {
+                            httpServiceTracker.registerJsp(file);
+                        } else {
+                            httpServiceTracker.unregisterJsp(file);
                         }
                     }
-                    if (!importFiles.isEmpty()) {
-                        modulesImportExportHelper.updateImportFileNodes(importFiles, importFilesRootFolder, filesNodePath);
-                    }
                 }
-            });
-            watcher.start();
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
+                if (!importFiles.isEmpty()) {
+                    modulesImportExportHelper.updateImportFileNodes(importFiles, importFilesRootFolder, filesNodePath);
+                }
+            }
+        });
+        monitor.setRecursive(true);
+        monitor.setFilesToIgnore(".svn", ".git", "target", ".idea", ".settings", ".project", ".classpath");
+        monitor.addFile(module.getSourcesFolder());
+        fileMonitorJobName = "ModuleSourcesJob-" + module.getId();
+        FileMonitorJob.schedule(fileMonitorJobName, 5000, monitor);
+    }
+
+    protected void invalidateVfsParentCache(String fullFolderPath, File file) {
+        String relativePath = StringUtils.substringAfter(file.getPath(), fullFolderPath);
+        if (StringUtils.isNotEmpty(relativePath)) {
+            try {
+                getFile(relativePath).getParent().refresh();
+            } catch (FileSystemException e) {
+                logger.warn("Unable to find parent for {}. Skipped invalidating VFS caches.", relativePath);
+                if (logger.isDebugEnabled()) {
+                    logger.debug(e.getMessage(), e);
+                }
+            }
         }
     }
 
     @Override
     public void stop() {
-        watcher.stop();
+        if (fileMonitorJobName != null) {
+            FileMonitorJob.unschedule(fileMonitorJobName);
+        }
     }
 
     /**

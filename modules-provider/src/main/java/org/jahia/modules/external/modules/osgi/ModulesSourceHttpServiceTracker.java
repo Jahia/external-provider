@@ -109,7 +109,9 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         httpService.unregister(jspServletAlias);
         bundleScriptResolver.removeBundleScript(bundle, jspPath);
         String propertiesFileName = FilenameUtils.removeExtension(jsp.getName()) + ".properties";
-        if (jsp.getParentFile().listFiles(new FilenameFilterNotEquals(propertiesFileName)).length == 0) {
+        File parentFile = jsp.getParentFile();
+        File[] matching = parentFile != null ? parentFile.listFiles(new FilenameFilterNotEquals(propertiesFileName)) : null;
+        if (matching == null || matching.length == 0) {
             templatePackageRegistry.removeModuleWithViewsForComponent(StringUtils.substringBetween(jspPath, "/", "/"), module);
         }
         if (logger.isDebugEnabled()) {
