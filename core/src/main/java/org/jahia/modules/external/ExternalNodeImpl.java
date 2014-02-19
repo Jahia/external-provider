@@ -292,7 +292,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
         ExtendedPropertyDefinition epd = getPropertyDefinition(name);
 
-        if (!hasProperty(name) || (hasProperty(name) && !getProperty(name).equals(value))) {
+        if (!hasProperty(name) || (hasProperty(name) && !getProperty(name).getValue().equals(value))) {
             if (name.equals(Constants.JCR_DATA)) {
                 if (data.getBinaryProperties() == null) {
                     data.setBinaryProperties(new HashMap<String, Binary[]>());
@@ -339,7 +339,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             }
         }
 
-        if (!hasProperty(name) || (hasProperty(name) && !getProperty(name).equals(values))) {
+        if (!hasProperty(name) || (hasProperty(name) && !Arrays.equals(getProperty(name).getValues(),values))) {
             String[] s = new String[values.length];
             for (int i = 0; i < values.length; i ++) {
                 if (values[i] != null)  {
