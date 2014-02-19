@@ -40,6 +40,8 @@
 
 package org.jahia.modules.external;
 
+import org.apache.tika.io.IOUtils;
+
 import javax.jcr.Binary;
 import javax.jcr.RepositoryException;
 import java.io.IOException;
@@ -67,7 +69,7 @@ public class ExternalBinaryImpl implements Binary {
 
     public int read(byte[] b, long position) throws IOException, RepositoryException {
         if (inputStream == null) {
-            getStream();
+            throw new IOException("Empty stream");
         }
         return inputStream.read(b, (int) position, b.length);
     }
@@ -77,6 +79,6 @@ public class ExternalBinaryImpl implements Binary {
     }
 
     public void dispose() {
-        
+        IOUtils.closeQuietly(inputStream);
     }
 }
