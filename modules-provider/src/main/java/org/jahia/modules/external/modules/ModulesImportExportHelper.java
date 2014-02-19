@@ -117,7 +117,7 @@ public class ModulesImportExportHelper {
                                 }
                             } else if (file.isFile()) {
                                 JCRNodeWrapper node = filesNode;
-                                String[] pathSegments = StringUtils.removeStart(file.getPath(), importFilesRootFolder).split(File.separator);
+                                String[] pathSegments = StringUtils.removeStart(file.getPath(), importFilesRootFolder).split(File.separatorChar=='\\' ? "\\\\" : File.separator);
                                 int endIndex;
                                 if (pathSegments.length >= 2 && pathSegments[pathSegments.length - 1].equals(pathSegments[pathSegments.length - 2])) {
                                     endIndex = pathSegments.length - 2;
