@@ -46,16 +46,13 @@ import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.services.content.*;
 import org.jahia.services.templates.JahiaTemplateManagerService;
+import org.jahia.utils.Patterns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.*;
-import javax.jcr.lock.LockException;
-import javax.jcr.nodetype.ConstraintViolationException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.version.VersionException;
+
 import java.io.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -117,7 +114,7 @@ public class ModulesImportExportHelper {
                                 }
                             } else if (file.isFile()) {
                                 JCRNodeWrapper node = filesNode;
-                                String[] pathSegments = StringUtils.removeStart(file.getPath(), importFilesRootFolder).split(File.separatorChar=='\\' ? "\\\\" : File.separator);
+                                String[] pathSegments = (File.separatorChar=='\\' ? Patterns.BACKSLASH : Patterns.SLASH).split(StringUtils.removeStart(file.getPath(), importFilesRootFolder));
                                 int endIndex;
                                 if (pathSegments.length >= 2 && pathSegments[pathSegments.length - 1].equals(pathSegments[pathSegments.length - 2])) {
                                     endIndex = pathSegments.length - 2;
