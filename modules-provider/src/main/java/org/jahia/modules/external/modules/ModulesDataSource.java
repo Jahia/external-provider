@@ -278,11 +278,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         }
                     } else if (type.equals("jnt:viewFile")) {
                         ModulesSourceHttpServiceTracker httpServiceTracker = modulesSourceSpringInitializer.getHttpServiceTracker(module.getId());
-                        if (file.exists()) {
+                        if (result.getCreated().contains(file)) {
                             httpServiceTracker.registerJsp(file);
-                        } else {
+                        } else if (result.getDeleted().contains(file)) {
                             httpServiceTracker.unregisterJsp(file);
                         }
+                        httpServiceTracker.flushJspCache(file);
                     }
                 }
                 if (!importFiles.isEmpty()) {

@@ -88,11 +88,8 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
 
     public void registerJsp(File jsp) {
         String jspPath = getJspPath(jsp);
-        if (bundle.getEntry(jspPath) != null) {
-            return;
-        }
-        unregisterJsp(jsp);
         String jspServletAlias = "/" + bundle.getSymbolicName() + jspPath;
+        httpService.unregister(jspServletAlias);
         HttpContext httpContext = new FileHttpContext(FileHttpContext.getSourceURLs(bundle),
                 httpService.createDefaultHttpContext());
         BundleHttpResourcesTracker.registerJspServlet(httpService, httpContext, bundle, bundleName, jspServletAlias, jspPath, null);
@@ -101,11 +98,17 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         if (logger.isDebugEnabled()) {
             logger.debug("Register JSP {} in bundle {}", jspPath, bundleName);
         }
-    }
+   }
 
     public void unregisterJsp(File jsp) {
         String jspPath = getJspPath(jsp);
         String jspServletAlias = "/" + bundle.getSymbolicName() + jspPath;
+
+        if (bundle.getEntry(jspPath) != null) {
+            // A jsp a still present in the bundle, don't unregister it
+            return;
+        }
+
         httpService.unregister(jspServletAlias);
         bundleScriptResolver.removeBundleScript(bundle, jspPath);
         String propertiesFileName = FilenameUtils.removeExtension(jsp.getName()) + ".properties";
@@ -117,6 +120,11 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         if (logger.isDebugEnabled()) {
             logger.debug("Unregister JSP {} in bundle {}", jspPath, bundleName);
         }
+    }
+
+    public void flushJspCache(File jsp) {
+        String jspPath = getJspPath(jsp);
+        BundleHttpResourcesTracker.flushJspCache(bundle, jspPath);
     }
 
     protected String getJspPath(File jsp) {
