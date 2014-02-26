@@ -56,7 +56,7 @@ import java.io.InputStream;
 */
 public class ExternalBinaryImpl implements Binary {
 
-    InputStream inputStream = null;
+    private InputStream inputStream = null;
 
     public ExternalBinaryImpl(InputStream inputStream) {
         // here we should copy the content of the inputstream, but where ??? Keeping it in memory is a bad idea.

@@ -61,6 +61,8 @@ import javax.jcr.version.VersionException;
 
 import org.apache.commons.lang.ArrayUtils;
 
+import java.util.Arrays;
+
 /**
  * Implementation of the {@link QueryObjectModel} for an external provider.
  */
@@ -75,8 +77,8 @@ public class ExternalQuery implements QueryObjectModel {
     public ExternalQuery(Source source, Constraint constraints, Ordering[] orderings, Column[] columns) {
         this.source = source;
         this.constraints = constraints;
-        this.orderings = orderings;
-        this.columns = columns;
+        this.orderings = Arrays.copyOf(orderings, orderings.length);
+        this.columns = Arrays.copyOf(columns, columns.length);
     }
 
     @Override
@@ -96,7 +98,7 @@ public class ExternalQuery implements QueryObjectModel {
 
     @Override
     public Column[] getColumns() {
-        return columns;
+        return Arrays.copyOf(columns, columns.length);
     }
 
     @Override
@@ -129,7 +131,7 @@ public class ExternalQuery implements QueryObjectModel {
 
     @Override
     public Ordering[] getOrderings() {
-        return orderings;
+        return Arrays.copyOf(orderings, orderings.length);
     }
 
     @Override

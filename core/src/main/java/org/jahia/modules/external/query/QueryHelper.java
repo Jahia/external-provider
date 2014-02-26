@@ -40,6 +40,8 @@
 
 package org.jahia.modules.external.query;
 
+import org.jahia.api.Constants;
+
 import javax.jcr.RepositoryException;
 import javax.jcr.UnsupportedRepositoryOperationException;
 import javax.jcr.Value;
@@ -52,6 +54,9 @@ import java.util.Map;
  *
  */
 public class QueryHelper {
+
+    private QueryHelper() {
+    }
 
     /**
      * Parse the query source to get the node type on which the query should be executed
@@ -161,19 +166,19 @@ public class QueryHelper {
             addConstraints(search, ((Or) constraint).getConstraint1(), and);
             addConstraints(search, ((Or) constraint).getConstraint2(), and);
         } else if (constraint instanceof Not) {
-            Constraint not = ((Not) constraint).getConstraint();
-            if (not instanceof Or) {
-                Constraint constraint1 = ((Or) not).getConstraint1();
-                if (constraint1 instanceof PropertyExistence && ((PropertyExistence)constraint1).getPropertyName().equals("jcr:language")) {
+            Constraint negatedConstraint = ((Not) constraint).getConstraint();
+            if (negatedConstraint instanceof Or) {
+                Constraint constraint1 = ((Or) negatedConstraint).getConstraint1();
+                if (constraint1 instanceof PropertyExistence && ((PropertyExistence)constraint1).getPropertyName().equals(Constants.JCR_LANGUAGE)) {
                     // Skip constraint for language matching
                     return;
                 }
             }
-            addConstraints(search, not, and);
+            addConstraints(search, negatedConstraint, and);
         } else if (constraint instanceof Comparison) {
             Comparison comparison = (Comparison) constraint;
             if (comparison.getOperand1() instanceof PropertyValue &&
-                    ((PropertyValue) comparison.getOperand1()).getPropertyName().equals("jcr:language")) {
+                    ((PropertyValue) comparison.getOperand1()).getPropertyName().equals(Constants.JCR_LANGUAGE)) {
                 return;
             } else if (comparison.getOperand1() instanceof PropertyValue &&
                     comparison.getOperand2() instanceof Literal &&
@@ -183,13 +188,9 @@ public class QueryHelper {
                 throw new UnsupportedRepositoryOperationException("Unsupported constraint : " + constraint.toString());
             }
         } else if (constraint instanceof DescendantNode) {
-//            String root = ((DescendantNode) constraint).getAncestorPath();
-//            search.put("__rootPath", root);
-//            search.put("__searchSubNodes", "true");
+            // ignore
         } else if (constraint instanceof ChildNode) {
-//            String root = ((ChildNode) constraint).getParentPath();
-//            search.put("__rootPath", root);
-//            search.put("__searchSubNodes", "false");
+            // ignore
         } else if (constraint instanceof FullTextSearch) {
             search.put(((FullTextSearch) constraint).getPropertyName(), ((Literal) ((FullTextSearch) constraint).getFullTextSearchExpression()).getLiteralValue());
         } else {
@@ -218,7 +219,7 @@ public class QueryHelper {
     private static boolean isLanguageExistence(Constraint constraint1) {
         if (constraint1 instanceof Not) {
             Constraint not = ((Not) constraint1).getConstraint();
-            if (not instanceof PropertyExistence && ((PropertyExistence) not).getPropertyName().equals("jcr:language")) {
+            if (not instanceof PropertyExistence && ((PropertyExistence) not).getPropertyName().equals(Constants.JCR_LANGUAGE)) {
                 // Skip constraint for language matching
                 return true;
             }
@@ -256,7 +257,7 @@ public class QueryHelper {
             if (comparison.getOperand1() instanceof PropertyValue &&
                     comparison.getOperand2() instanceof Literal &&
                     comparison.getOperator().equals(QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO) &&
-                    ((PropertyValue) comparison.getOperand1()).getPropertyName().equals("jcr:language")) {
+                    ((PropertyValue) comparison.getOperand1()).getPropertyName().equals(Constants.JCR_LANGUAGE)) {
                 return ((Literal) comparison.getOperand2()).getLiteralValue().getString();
             } else {
                 return null;

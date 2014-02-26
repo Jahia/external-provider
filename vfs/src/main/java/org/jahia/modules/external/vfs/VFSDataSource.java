@@ -245,7 +245,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 try {
                     getFile(data.getPath()).createFolder();
                 } catch (FileSystemException e) {
-                    throw new PathNotFoundException(e);
+                    throw new PathNotFoundException(data.getPath(), e);
                 }
             }
         } catch (NoSuchNodeTypeException e) {

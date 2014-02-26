@@ -250,15 +250,15 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
 
     private List<String> doSearch(ExternalQuery query, String dataType) throws RepositoryException {
         List<String> result = null;
-        if (dataType == DATA_TYPE_CATALOG) {
+        if (dataType.equals(DATA_TYPE_CATALOG)) {
             result = Arrays.asList("/");
-        } else if (dataType == DATA_TYPE_DIRECTORY) {
+        } else if (dataType.equals(DATA_TYPE_DIRECTORY)) {
             result = new LinkedList<String>();
             for (String table : getTableNames()) {
                 result.add("/" + table);
             }
-        } else if (dataType == DATA_TYPE_AIRLINE || dataType == DATA_TYPE_CITY || dataType == DATA_TYPE_COUNTRY
-                || dataType == DATA_TYPE_FLIGHT) {
+        } else if (dataType.equals(DATA_TYPE_AIRLINE) || dataType.equals(DATA_TYPE_CITY) || dataType.equals(DATA_TYPE_COUNTRY)
+                || dataType.equals(DATA_TYPE_FLIGHT)) {
             String table = (String) DIRECTORY_TYPE_MAPPING.getKey(dataType);
             Constraint constraint = query.getConstraint();
             Map<String, Value> simpleAndConstraints = QueryHelper.getSimpleAndConstraints(constraint);

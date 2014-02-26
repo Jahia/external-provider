@@ -76,23 +76,23 @@ import org.junit.Test;
  */
 public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
-    private static String GENERIC_PROVIDER_MOUNTPOINT = "/external-database-generic";
+    private final static String GENERIC_PROVIDER_MOUNTPOINT = "/external-database-generic";
 
-    private static String MAPPED_PROVIDER_MOUNTPOINT = "/external-database-mapped";
+    private final static String MAPPED_PROVIDER_MOUNTPOINT = "/external-database-mapped";
 
     @BeforeClass
-    public static void oneTimeSetup() throws Exception {
+    public static void oneTimeSetup() {
         // do nothing
     }
 
     @AfterClass
-    public static void oneTimeTearDown() throws Exception {
+    public static void oneTimeTearDown() {
         // do nothing
     }
 
     private JCRSessionWrapper session;
 
-    public void checkProperties(JCRNodeWrapper amsterdam, boolean mapped) throws Exception {
+    public void checkProperties(JCRNodeWrapper amsterdam, boolean mapped) throws RepositoryException {
         // property existence
         assertTrue(amsterdam.hasProperty("city_id"));
         assertTrue(amsterdam.hasProperty("airport"));
@@ -156,7 +156,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testGenericNodes() throws Exception {
+    public void testGenericNodes() throws RepositoryException {
         JCRNodeWrapper root = session.getNode(GENERIC_PROVIDER_MOUNTPOINT);
 
         // node existence
@@ -210,12 +210,12 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testGenericProperties() throws Exception {
+    public void testGenericProperties() throws RepositoryException {
         checkProperties(session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES/MQ"), false);
     }
 
     @Test
-    public void testMappedNodes() throws Exception {
+    public void testMappedNodes() throws RepositoryException {
         JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
 
         // node existence
@@ -269,12 +269,12 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testMappedProperties() throws Exception {
+    public void testMappedProperties() throws RepositoryException {
         checkProperties(session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/1"), true);
     }
 
     @Test
-    public void testQueryConstraints() throws Exception {
+    public void testQueryConstraints() throws RepositoryException {
         assertEquals(1, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
                 + "] where [language] = 'Dutch'"));
 
@@ -302,7 +302,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testQueryLimitAndOffset() throws Exception {
+    public void testQueryLimitAndOffset() throws RepositoryException {
         String queryDirs = "select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "]";
 
         assertEquals(4, getResultCount(queryDirs, 0, 0));
@@ -326,7 +326,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testQueryLimitAndOffsetMultipleProviders() throws Exception {
+    public void testQueryLimitAndOffsetMultipleProviders() throws RepositoryException {
         String query = "select * from [nt:base]";
         long total = getResultCount(query, 0, 0);
 
@@ -334,7 +334,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testQueryNodeType() throws Exception {
+    public void testQueryNodeType() throws RepositoryException {
         // count
         assertEquals(4, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "]"));
         assertEquals(2, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "]"));
@@ -347,7 +347,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testExtensionProperty() throws Exception {
+    public void testExtensionProperty() throws RepositoryException {
         JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
         JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
         AA.setProperty("firstclass_seats", 10);
@@ -355,7 +355,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testMixin() throws Exception {
+    public void testMixin() throws RepositoryException {
         JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
         JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
         AA.addMixin("jmix:comments");
@@ -370,7 +370,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testAddNode() throws Exception {
+    public void testAddNode() throws RepositoryException {
         JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
         JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
 
@@ -411,7 +411,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testSearchOnExtension() throws Exception {
+    public void testSearchOnExtension() throws RepositoryException {
         JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
         JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
         AA.addMixin("jmix:comments");
@@ -425,7 +425,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testI18nAndLazyProperties() throws Exception {
+    public void testI18nAndLazyProperties() throws RepositoryException {
         JCRNodeWrapper city = session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/16");
         assertTrue(city.hasI18N(Locale.ENGLISH));
         assertTrue(city.hasI18N(Locale.FRENCH));
@@ -446,7 +446,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testLock() throws Exception {
+    public void testLock() throws RepositoryException {
 
         JCRNodeWrapper city = session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/16");
 

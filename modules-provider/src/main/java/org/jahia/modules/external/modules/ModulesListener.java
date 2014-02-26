@@ -61,7 +61,7 @@ public class ModulesListener extends DefaultEventListener {
     private static final Logger logger = LoggerFactory.getLogger(ModulesListener.class);
     private static ModulesListener instance;
 
-    private Set<String> modules = new HashSet<String>();
+    private final Set<String> modules = new HashSet<String>();
 
     public ModulesListener() {
         setWorkspace("default");

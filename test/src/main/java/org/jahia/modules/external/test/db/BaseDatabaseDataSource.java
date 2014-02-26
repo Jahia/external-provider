@@ -81,9 +81,9 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
             // cannot handle that path
             return Collections.emptyList();
         }
-        if (nodeType == getSchemaNodeType()) {
+        if (nodeType.equals(getSchemaNodeType())) {
             return getTableNames();
-        } else if (nodeType == getTableNodeType()) {
+        } else if (nodeType.equals(getTableNodeType())) {
             return getRowIDs(StringUtils.substringAfterLast(path, "/"), new HashMap<String, Value>());
         } else {
             return Collections.emptyList();
@@ -121,11 +121,9 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
         if (path.startsWith("/") && !path.contains(":")) {
             String type = getNodeTypeName(path);
 
-            if (type == getSchemaNodeType() || type == getTableNodeType()) {
-                if (type == getTableNodeType()) {
-                    if (!getTableNames().contains(path.substring(1))) {
-                        throw new PathNotFoundException(path);
-                    }
+            if (type.equals(getSchemaNodeType()) || type.equals(getTableNodeType())) {
+                if (type.equals(getTableNodeType()) &&  !getTableNames().contains(path.substring(1))) {
+                    throw new PathNotFoundException(path);
                 }
                 return new ExternalData(path, path, type, Collections.<String, String[]>emptyMap());
             } else {
@@ -217,7 +215,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
             }
         } catch (SQLException e) {
             logger.debug(e.getMessage(), e);
-            throw new PathNotFoundException(path);
+            throw new PathNotFoundException(path,e);
         } finally {
             DbUtility.close(conn, stmt, rs);
         }

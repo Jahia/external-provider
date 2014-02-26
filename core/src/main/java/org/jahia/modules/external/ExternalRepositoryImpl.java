@@ -141,13 +141,10 @@ public class ExternalRepositoryImpl implements Repository {
 
     public String getDescriptor(String s) {
         Object descriptorObject = repositoryDescriptors.get(s);
-        if (descriptorObject == null) {
-            return null;
-        }
         if (descriptorObject instanceof Value) {
-            return ((Value) descriptorObject).toString();
+            return descriptorObject.toString();
         } else {
-            throw new RuntimeException("Expected single-value value but found multi-valued property instead !");
+            return null;
         }
     }
 
@@ -156,11 +153,19 @@ public class ExternalRepositoryImpl implements Repository {
     }
 
     public Value getDescriptorValue(String key) {
-        return (Value) repositoryDescriptors.get(key);
+        final Object descriptorObject = repositoryDescriptors.get(key);
+        if (descriptorObject instanceof Value) {
+            return (Value) descriptorObject;
+        }
+        return null;
     }
 
     public Value[] getDescriptorValues(String key) {
-        return (Value[]) repositoryDescriptors.get(key);
+        final Object descriptorObject = repositoryDescriptors.get(key);
+        if (descriptorObject instanceof Value[]) {
+            return (Value[]) descriptorObject;
+        }
+        return null;
     }
 
     public DefaultNamePathResolver getNamePathResolver() {
@@ -243,12 +248,7 @@ public class ExternalRepositoryImpl implements Repository {
     }
 
     public boolean isSingleValueDescriptor(String key) {
-        Object repositoryDescriptor = repositoryDescriptors.get(key);
-        if (repositoryDescriptor instanceof Value) {
-            return true;
-        } else {
-            return false;
-        }
+        return repositoryDescriptors.get(key) instanceof Value;
     }
     
     public boolean isStandardDescriptor(String key) {

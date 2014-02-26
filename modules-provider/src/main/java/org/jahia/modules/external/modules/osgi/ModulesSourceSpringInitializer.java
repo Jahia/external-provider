@@ -61,6 +61,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Service to mount/unmount module sources
+ */
 public class ModulesSourceSpringInitializer implements JahiaAfterInitializationService, BundleContextAware {
     private static Logger logger = LoggerFactory.getLogger(ModulesSourceSpringInitializer.class);
     private BundleContext context;
@@ -68,7 +71,7 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
     private JCRStoreService jcrStoreService;
     private Map<String, ModulesSourceHttpServiceTracker> httpServiceTrackers = new HashMap<String, ModulesSourceHttpServiceTracker>();
 
-    public static ModulesSourceSpringInitializer getInstance() {
+    public static synchronized ModulesSourceSpringInitializer getInstance() {
         if (instance == null) {
             instance = new ModulesSourceSpringInitializer();
         }
@@ -139,7 +142,6 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
 
     public void unmountSourcesProvider(JahiaTemplatesPackage templatePackage) {
         if (context != null) {
-            JCRStoreService jcrStoreService = (JCRStoreService) SpringContextSingleton.getBean("JCRStoreService");
             JCRStoreProvider provider = jcrStoreService.getSessionFactory().getProviders().get(
                     "module-" + templatePackage.getId() + "-" + templatePackage.getVersion().toString());
             if (provider != null) {

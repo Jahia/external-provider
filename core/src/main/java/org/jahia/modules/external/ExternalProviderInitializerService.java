@@ -46,6 +46,10 @@ import java.util.List;
 
 import javax.jcr.RepositoryException;
 
+/**
+ * Shared service for external provider instances
+ * Used for external content for maintaining internal to external ID mappings and provider IDs, and provide extension configuration.
+ */
 public interface ExternalProviderInitializerService {
 
     /**
@@ -135,14 +139,14 @@ public interface ExternalProviderInitializerService {
      *            the new external ID to persist
      * @param providerKey
      *            the underlying provider key
-     * @param includeDescendats
+     * @param includeDescendants
      *            if the external IDs are considered path-like (e.g. file system) and all the entries starting with those IDs should be also
      *            updated (e.g. sub-folders)
      * @throws RepositoryException
      *             in case of a DB operation failure
      */
     void updateExternalIdentifier(String oldExternalId, String newExternalId, String providerKey,
-            boolean includeDescendats) throws RepositoryException;
+            boolean includeDescendants) throws RepositoryException;
 
     /**
      * @return the needed types to be override for locks.

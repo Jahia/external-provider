@@ -55,8 +55,8 @@ import java.util.Calendar;
  */
 public class ExternalValueImpl implements Value {
 
-    Object value;
-    int type;
+    private Object value;
+    private int type;
 
     public ExternalValueImpl(String value) {
         this(value, PropertyType.STRING);

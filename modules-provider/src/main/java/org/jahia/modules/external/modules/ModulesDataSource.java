@@ -750,7 +750,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     if (result.getRows().hasNext()) {
                         Locale locale = UserPreferencesHelper.getPreferredLocale(JCRSessionFactory.getInstance().getCurrentUser());
                         if (locale == null) {
-                            locale = Locale.ENGLISH;
+                            locale = SettingsBean.getInstance().getDefaultLocale();
                         }
                         throw new ItemExistsException(Messages.get("resources.JahiaExternalProviderModules", message, locale));
                     }

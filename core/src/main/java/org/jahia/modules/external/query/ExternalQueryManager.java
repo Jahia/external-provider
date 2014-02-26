@@ -60,6 +60,7 @@ import javax.jcr.query.QueryManager;
 import javax.jcr.query.QueryResult;
 import javax.jcr.query.qom.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -86,7 +87,7 @@ public class ExternalQueryManager implements QueryManager {
     }
 
     public QueryObjectModelFactory getQOMFactory() {
-        return new MyQOMFactory(workspace.getSession().getRepository().getNamePathResolver());
+        return new ExternalQOMFactory(workspace.getSession().getRepository().getNamePathResolver());
     }
 
     public Query getQuery(Node node) throws InvalidQueryException, RepositoryException {
@@ -94,11 +95,14 @@ public class ExternalQueryManager implements QueryManager {
     }
 
     public String[] getSupportedQueryLanguages() throws RepositoryException {
-        return SUPPORTED_LANGUAGES;
+        return Arrays.copyOf(SUPPORTED_LANGUAGES, SUPPORTED_LANGUAGES.length);
     }
 
-    class MyQOMFactory extends QueryObjectModelFactoryImpl implements QueryObjectModelFactory {
-        MyQOMFactory(NamePathResolver resolver) {
+    /**
+     * QOM Factory for external provider
+     */
+    class ExternalQOMFactory extends QueryObjectModelFactoryImpl implements QueryObjectModelFactory {
+        ExternalQOMFactory(NamePathResolver resolver) {
             super(resolver);
         }
 
@@ -138,6 +142,9 @@ public class ExternalQueryManager implements QueryManager {
 
     }
 
+    /**
+     * Query implementation for QOM Factory
+     */
     class ExecutableExternalQuery extends ExternalQuery {
         private boolean nodeTypeSupported;
         private boolean hasExtension;

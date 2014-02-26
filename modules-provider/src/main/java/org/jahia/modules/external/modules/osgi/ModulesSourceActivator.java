@@ -46,8 +46,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author rincevent
- * @since Jahia 7.0
+ * Activator for modules data provider.
+ * Mount and unmount sources at startup/stop of modules
  */
 public class ModulesSourceActivator implements BundleActivator {
     private static Logger logger = LoggerFactory.getLogger(ModulesSourceActivator.class);
@@ -64,13 +64,9 @@ public class ModulesSourceActivator implements BundleActivator {
      * This method must complete and return to its caller in a timely manner.
      *
      * @param context The execution context of the bundle being started.
-     * @throws Exception If this method throws an exception, this
-     *                   bundle is marked as stopped and the Framework will remove this
-     *                   bundle's listeners, unregister all services registered by this
-     *                   bundle, and release all services used by this bundle.
      */
     @Override
-    public void start(BundleContext context) throws Exception {
+    public void start(BundleContext context) {
         if (this.context == null) {
             this.context = context;
         }
@@ -105,13 +101,9 @@ public class ModulesSourceActivator implements BundleActivator {
      * This method must complete and return to its caller in a timely manner.
      *
      * @param context The execution context of the bundle being stopped.
-     * @throws Exception If this method throws an exception, the
-     *                   bundle is still marked as stopped, and the Framework will remove
-     *                   the bundle's listeners, unregister all services registered by the
-     *                   bundle, and release all services used by the bundle.
      */
     @Override
-    public void stop(BundleContext context) throws Exception {
+    public void stop(BundleContext context) {
         if (!JahiaContextLoaderListener.isRunning()) {
             return;
         }

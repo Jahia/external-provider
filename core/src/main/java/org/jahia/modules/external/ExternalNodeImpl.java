@@ -66,6 +66,7 @@ import java.util.*;
  */
 public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
+    private static final String J_TRANSLATION = "j:translation_";
     private ExternalData data;
     private Map<String, ExternalPropertyImpl> properties = null;
 
@@ -178,14 +179,23 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     public String getPath() throws RepositoryException {
         return data.getPath();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String getName() throws RepositoryException {
         return StringUtils.substringAfterLast(data.getPath(), "/");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Node getParent() throws ItemNotFoundException, AccessDeniedException, RepositoryException {
         if (data.getPath().equals("/")) {
             throw new ItemNotFoundException();
@@ -194,10 +204,16 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return session.getNode(path.isEmpty() ? "/" : path);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isNode() {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void remove() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
@@ -232,10 +248,16 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Node addNode(String relPath) throws ItemExistsException, PathNotFoundException, VersionException, ConstraintViolationException, LockException, RepositoryException {
         return addNode(relPath,null);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
         Node extendedNode = getExtensionNode(true);
         if (extendedNode != null && canItemBeExtended(getChildNodeDefinition(relPath, primaryNodeTypeName))) {
@@ -250,13 +272,16 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             throw new UnsupportedRepositoryOperationException();
         }
         String separator = StringUtils.equals(this.data.getId(),"/")?"":"/";
-        ExternalData data = new ExternalData(this.data.getId() + separator + relPath ,getPath() + ( getPath().equals("/")? "" : "/" ) + relPath,primaryNodeTypeName,new HashMap<String, String[]>());
-        final ExternalNodeImpl newNode = new ExternalNodeImpl(data, session);
-        session.getChangedData().put(data.getPath(),data);
+        ExternalData subNodeData = new ExternalData(this.data.getId() + separator + relPath ,getPath() + ( getPath().equals("/")? "" : "/" ) + relPath,primaryNodeTypeName,new HashMap<String, String[]>());
+        final ExternalNodeImpl newNode = new ExternalNodeImpl(subNodeData, session);
+        session.getChangedData().put(subNodeData.getPath(), subNodeData);
         session.setNewItem(newNode);
         return newNode;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void orderBefore(String srcChildRelPath, String destChildRelPath) throws UnsupportedRepositoryOperationException, VersionException, ConstraintViolationException, ItemNotFoundException, LockException, RepositoryException {
         if (srcChildRelPath.equals(destChildRelPath)) {
             return;
@@ -273,6 +298,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         session.getOrderedData().put(getPath(), children);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
             return new ExtensionProperty(getExtensionNode(true).setProperty(name, value), getPath()+"/"+name, session, this);
@@ -281,31 +309,26 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             throw new UnsupportedRepositoryOperationException();
         }
         if (value == null) {
-            Property p = getProperty(name);
             if (hasProperty(name)) {
                 removeProperty(name);
-                return p;
-            } else  {
-                String s = null;
-                return new ExternalPropertyImpl(new Name(name, NodeTypeRegistry.getInstance().getNamespaces()), this, session, new ExternalValueImpl(s));
             }
+            return null;
         }
         ExtendedPropertyDefinition epd = getPropertyDefinition(name);
 
         if (!hasProperty(name) || (hasProperty(name) && !getProperty(name).getValue().equals(value))) {
-            if (name.equals(Constants.JCR_DATA)) {
+            if (epd.getRequiredType() == PropertyType.BINARY) {
                 if (data.getBinaryProperties() == null) {
                     data.setBinaryProperties(new HashMap<String, Binary[]>());
                 }
                 data.getBinaryProperties().put(name, new Binary[]{value.getBinary()});
             } else if (epd.isInternationalized()) {
                 Map<String,String[]> valMap = new HashMap<String, String[]>();
-                if (StringUtils.substringAfterLast(getPath(), "/").startsWith("j:translation_")) {
-                    String lang = StringUtils.substringAfterLast(getPath(), "_");
+                if (getName().startsWith(J_TRANSLATION)) {
+                    String lang = StringUtils.substringAfter(getName(), "_");
                     valMap.put(lang,new String[]{value.getString()});
                     data.getI18nProperties().put(name,valMap);
                 }
-
             } else {
                 data.getProperties().put(name, new String[]{value.getString()});
             }
@@ -317,10 +340,16 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return getProperty(name);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, Value value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         return setProperty(name,value);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
             return new ExtensionProperty(getExtensionNode(true).setProperty(name, values), getPath()+ "/" + name, session, this);
@@ -329,26 +358,41 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             throw new UnsupportedRepositoryOperationException();
         }
         if (values == null) {
-            Property p = getProperty(name);
             if (hasProperty(name)) {
                 removeProperty(name);
-                return p;
-            } else  {
-                String s = null;
-                return new ExternalPropertyImpl(new Name(name, NodeTypeRegistry.getInstance().getNamespaces()), this, session, new ExternalValueImpl(s));
             }
+            return null;
         }
 
+        ExtendedPropertyDefinition epd = getPropertyDefinition(name);
+
         if (!hasProperty(name) || (hasProperty(name) && !Arrays.equals(getProperty(name).getValues(),values))) {
-            String[] s = new String[values.length];
-            for (int i = 0; i < values.length; i ++) {
-                if (values[i] != null)  {
-                    s[i] = values[i].getString();
-                }   else {
-                    s[i] = null;
+            if (epd.getRequiredType() == PropertyType.BINARY) {
+                if (data.getBinaryProperties() == null) {
+                    data.setBinaryProperties(new HashMap<String, Binary[]>());
+                }
+
+                Binary[] b = new Binary[values.length];
+                for (int i = 0; i < values.length; i ++) {
+                    b[i] = values[i] != null ? values[i].getBinary() : null;
+                }
+                data.getBinaryProperties().put(name, b);
+            } else {
+                String[] s = new String[values.length];
+                for (int i = 0; i < values.length; i ++) {
+                    s[i] = values[i] != null ? values[i].getString() : null;
+                }
+                if (epd.isInternationalized()) {
+                    Map<String,String[]> valMap = new HashMap<String, String[]>();
+                    if (getName().startsWith(J_TRANSLATION)) {
+                        String lang = StringUtils.substringAfter(getName(), "_");
+                        valMap.put(lang,s);
+                        data.getI18nProperties().put(name,valMap);
+                    }
+                } else {
+                    data.getProperties().put(name,s);
                 }
             }
-            data.getProperties().put(name,s);
             final ExternalPropertyImpl newProperty = new ExternalPropertyImpl(new Name(name, NodeTypeRegistry.getInstance().getNamespaces()), this, session, values);
             properties.put(name, newProperty);
             session.setNewItem(newProperty);
@@ -357,29 +401,37 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return getProperty(name);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, Value[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         return setProperty(name,values);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, String[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value[] v = null;
         if (values != null) {
             v = new Value[values.length];
             for (int i =0; i < values.length; i ++ ) {
-                if (values[i] != null) {
-                    v[i] = getSession().getValueFactory().createValue(values[i]);
-                }  else {
-                    v[i] = null;
-                }
+                v[i] = values[i] != null ? getSession().getValueFactory().createValue(values[i]) : null;
             }
         }
         return setProperty(name,v);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, String[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         return setProperty(name, values);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, String value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = null;
         if (value != null) {
@@ -388,10 +440,16 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return setProperty(name, v);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, String value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         return setProperty(name,value);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("deprecation")
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
@@ -402,15 +460,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
         if (value == null) {
             if (hasProperty(name)) {
-                Property p = getProperty(name);
                 removeProperty(name);
-                return p;
-            } else {
-                Binary b = null;
-                final ExternalPropertyImpl newProperty = new ExternalPropertyImpl(new Name(name, NodeTypeRegistry.getInstance().getNamespaces()), this, session, new ExternalValueImpl(b));
-                session.setNewItem(newProperty);
-                return newProperty;
             }
+            return null;
         }
         Value v = null;
         Binary binary = null;
@@ -429,21 +481,33 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return setProperty(name, v);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, boolean value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = getSession().getValueFactory().createValue(value);
         return setProperty(name, v);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, double value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = getSession().getValueFactory().createValue(value);
         return setProperty(name, v);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, long value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = getSession().getValueFactory().createValue(value);
         return setProperty(name, v);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, Calendar value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = null;
         if (value != null) {
@@ -452,6 +516,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return setProperty(name, v);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, Node value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = null;
         if (value != null) {
@@ -460,6 +527,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return setProperty(name, v);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Node getNode(String s) throws RepositoryException {
         Node n = session.getNode(getPath().endsWith("/") ? getPath() + s : getPath() + "/" + s);
         if (n != null) {
@@ -472,6 +542,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         throw new PathNotFoundException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public NodeIterator getNodes() throws RepositoryException {
         List<String> l = new ArrayList<String>(session.getRepository().getDataSource().getChildren(getPath()));
         Set<String> languages = new HashSet<String>();
@@ -482,7 +555,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             languages.addAll(data.getLazyI18nProperties().keySet());
         }
         for (String lang : languages) {
-            l.add("j:translation_" + lang);
+            l.add(J_TRANSLATION + lang);
         }
 
         Node n = getExtensionNode(false);
@@ -492,6 +565,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return new ExternalNodeIterator(l);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public NodeIterator getNodes(String namePattern) throws RepositoryException {
         final List<String> filteredList = new ArrayList<String>();
 
@@ -511,8 +587,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             languages.addAll(data.getLazyI18nProperties().keySet());
         }
         for (String lang : languages) {
-            if (ChildrenCollectorFilter.matches("j:translation_" + lang, namePattern)) {
-                filteredList.add("j:translation_" + lang);
+            if (ChildrenCollectorFilter.matches(J_TRANSLATION + lang, namePattern)) {
+                filteredList.add(J_TRANSLATION + lang);
             }
         }
 
@@ -523,6 +599,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return new ExternalNodeIterator(filteredList);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property getProperty(String s) throws PathNotFoundException, RepositoryException {
         Node n = getExtensionNode(false);
         if (n != null && n.hasProperty(s)  && canItemBeExtended(getPropertyDefinition(s))) {
@@ -566,6 +645,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return property;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public PropertyIterator getProperties() throws RepositoryException {
         Node n = getExtensionNode(false);
         if (n != null) {
@@ -574,6 +656,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return new ExternalPropertyIterator(properties, data.getLazyProperties(), data.getLazyBinaryProperties(), this);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public PropertyIterator getProperties(String namePattern) throws RepositoryException {
         final Map<String, ExternalPropertyImpl> filteredList = new HashMap<String, ExternalPropertyImpl>();
         for (Map.Entry<String, ExternalPropertyImpl> entry : properties.entrySet()) {
@@ -606,26 +691,44 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return new ExternalPropertyIterator(filteredList, lazyProperties, lazyBinaryProperties, this);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Item getPrimaryItem() throws ItemNotFoundException, RepositoryException {
         throw new ItemNotFoundException("External node does not support getPrimaryItem");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String getUUID() throws UnsupportedRepositoryOperationException, RepositoryException {
         return getIdentifier();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int getIndex() throws RepositoryException {
-        return 0;
+        return 1;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public PropertyIterator getReferences() throws RepositoryException {
-        return new ExternalPropertyIterator(new HashMap<String, ExternalPropertyImpl>(), this);
+        throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean hasNode(String s) throws RepositoryException {
         return session.itemExists(getPath().endsWith("/") ? getPath() + s : getPath() + "/" + s);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean hasProperty(String relPath) throws RepositoryException {
         return properties.containsKey(relPath) ||
                 (data.getLazyProperties() != null && data.getLazyProperties().contains(relPath)) ||
@@ -633,10 +736,16 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 (getExtensionNode(false) != null && getPropertyDefinition(relPath) != null && canItemBeExtended(getPropertyDefinition(relPath)) && getExtensionNode(false).hasProperty(relPath));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean hasNodes() throws RepositoryException {
         return getNodes().hasNext();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean hasProperties() throws RepositoryException {
         return !properties.isEmpty() ||
                 (data.getLazyProperties() != null && !data.getLazyProperties().isEmpty()) ||
@@ -644,6 +753,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 getProperties().hasNext();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public NodeType getPrimaryNodeType() throws RepositoryException {
         return getExtendedPrimaryNodeType();
     }
@@ -652,6 +764,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return NodeTypeRegistry.getInstance().getNodeType(data.getType());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public NodeType[] getMixinNodeTypes() throws RepositoryException {
         return getMixinNodeTypes(true);
     }
@@ -676,6 +791,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return nt.toArray(new NodeType[nt.size()]);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isNodeType(String nodeTypeName) throws RepositoryException {
         if (getPrimaryNodeType().isNodeType(nodeTypeName)) {
             return true;
@@ -688,6 +806,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void addMixin(String mixinName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
         if (isNodeType(mixinName)) {
             return;
@@ -702,6 +823,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void removeMixin(String mixinName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
         Node extensionNode = getExtensionNode(false);
         if (extensionNode != null) {
@@ -770,6 +894,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean canAddMixin(String mixinName) throws NoSuchNodeTypeException, RepositoryException {
         Node extensionNode = getExtensionNode(true);
         if (extensionNode != null) {
@@ -778,6 +905,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public NodeDefinition getDefinition() throws RepositoryException {
         ExternalNodeImpl parentNode = (ExternalNodeImpl) getParent();
         ExtendedNodeType parentNodeType = parentNode.getExtendedPrimaryNodeType();
@@ -793,83 +923,143 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Version checkin() throws VersionException, UnsupportedRepositoryOperationException, InvalidItemStateException, LockException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void checkout() throws UnsupportedRepositoryOperationException, LockException, RepositoryException {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void doneMerge(Version version) throws VersionException, InvalidItemStateException, UnsupportedRepositoryOperationException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void cancelMerge(Version version) throws VersionException, InvalidItemStateException, UnsupportedRepositoryOperationException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void update(String s) throws NoSuchWorkspaceException, AccessDeniedException, LockException, InvalidItemStateException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public NodeIterator merge(String s, boolean b) throws NoSuchWorkspaceException, AccessDeniedException, MergeException, LockException, InvalidItemStateException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String getCorrespondingNodePath(String workspaceName) throws ItemNotFoundException, NoSuchWorkspaceException, AccessDeniedException, RepositoryException {
         return getPath();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isCheckedOut() throws RepositoryException {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void restore(String s, boolean b) throws VersionException, ItemExistsException, UnsupportedRepositoryOperationException, LockException, InvalidItemStateException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void restore(Version version, boolean b) throws VersionException, ItemExistsException, UnsupportedRepositoryOperationException, LockException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void restore(Version version, String s, boolean b) throws PathNotFoundException, ItemExistsException, VersionException, ConstraintViolationException, UnsupportedRepositoryOperationException, LockException, InvalidItemStateException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void restoreByLabel(String s, boolean b) throws VersionException, ItemExistsException, UnsupportedRepositoryOperationException, LockException, InvalidItemStateException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public VersionHistory getVersionHistory() throws UnsupportedRepositoryOperationException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Version getBaseVersion() throws UnsupportedRepositoryOperationException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Lock lock(boolean b, boolean b1) throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
         return session.getWorkspace().getLockManager().lock(getPath(),b,b1, Long.MAX_VALUE, null);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Lock getLock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, RepositoryException {
         return session.getWorkspace().getLockManager()!= null ?session.getWorkspace().getLockManager().getLock(getPath()):null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void unlock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
         if (session.getWorkspace().getLockManager()!=null) {
             session.getWorkspace().getLockManager().unlock(getPath());
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean holdsLock() throws RepositoryException {
         return session.getWorkspace().getLockManager()!=null && session.getWorkspace().getLockManager().getLock(getPath()) != null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isLocked() throws RepositoryException {
         return  session.getWorkspace().getLockManager()!=null && session.getWorkspace().getLockManager().isLocked(getPath());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = null;
         if (value != null) {
@@ -883,6 +1073,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return setProperty(name, v);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Property setProperty(String name, BigDecimal value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = null;
         if (value != null) {
@@ -891,6 +1084,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return setProperty(name, v);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public NodeIterator getNodes(String[] nameGlobs) throws RepositoryException {
         final List<String> l = session.getRepository().getDataSource().getChildren(getPath());
         final List<String> filteredList = new ArrayList<String>();
@@ -907,8 +1103,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             languages.addAll(data.getLazyI18nProperties().keySet());
         }
         for (String lang : languages) {
-            if (ChildrenCollectorFilter.matches("j:translation_" + lang, nameGlobs)) {
-                filteredList.add("j:translation_" + lang);
+            if (ChildrenCollectorFilter.matches(J_TRANSLATION + lang, nameGlobs)) {
+                filteredList.add(J_TRANSLATION + lang);
             }
         }
 
@@ -919,6 +1115,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return new ExternalNodeIterator(filteredList);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public PropertyIterator getProperties(String[] nameGlobs) throws RepositoryException {
         final Map<String, ExternalPropertyImpl> filteredList = new HashMap<String, ExternalPropertyImpl>();
         for (Map.Entry<String, ExternalPropertyImpl> entry : properties.entrySet()) {
@@ -951,7 +1150,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return new ExternalPropertyIterator(filteredList, lazyProperties, lazyBinaryProperties, this);
     }
 
-    public String getIdentifier() throws RepositoryException {
+    /**
+     * {@inheritDoc}
+     */
+    public final String getIdentifier() throws RepositoryException {
         if (uuid == null) {
             if (!session.getRepository().getDataSource().isSupportsUuid() || data.getId().startsWith(ExternalSessionImpl.TRANSLATION_PREFIX)) {
                 uuid = getStoreProvider().getInternalIdentifier(data.getId());
@@ -967,38 +1169,65 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return uuid;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public PropertyIterator getReferences(String name) throws RepositoryException {
-        return new ExternalPropertyIterator(new HashMap<String, ExternalPropertyImpl>(), this);
+        throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public PropertyIterator getWeakReferences() throws RepositoryException {
-        return new ExternalPropertyIterator(new HashMap<String, ExternalPropertyImpl>(), this);
+        throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public PropertyIterator getWeakReferences(String name) throws RepositoryException {
-        return new ExternalPropertyIterator(new HashMap<String, ExternalPropertyImpl>(), this);
+        throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void setPrimaryType(String nodeTypeName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public NodeIterator getSharedSet() throws RepositoryException {
         return new ExternalNodeIterator(new ArrayList<String>());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void removeSharedSet() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void removeShare() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void followLifecycleTransition(String transition) throws UnsupportedRepositoryOperationException, InvalidLifecycleTransitionException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String[] getAllowedLifecycleTransistions() throws UnsupportedRepositoryOperationException, RepositoryException {
         return new String[0];
     }
@@ -1087,6 +1316,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return false;
     }
 
+    /**
+     * Property iterator implementation
+     */
     private class ExternalPropertyIterator implements PropertyIterator {
         private int pos = 0;
         private Iterator<ExternalPropertyImpl> it;
@@ -1204,6 +1436,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
     }
 
+    /**
+     * Node iterator implementation
+     */
     private class ExternalNodeIterator implements NodeIterator {
         private int pos = 0;
         private Iterator<String> it;

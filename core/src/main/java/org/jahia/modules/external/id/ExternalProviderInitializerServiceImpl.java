@@ -51,14 +51,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Node identifier mapping service for external content for maintaining internal to external ID mappings and provider IDs.
- *
- * @author Sergiy Shyrkov
+ * {@inheritDoc}
  */
 public class ExternalProviderInitializerServiceImpl implements ExternalProviderInitializerService {
 
@@ -79,7 +78,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
 
     @Override
-    public void delete(List<String> externalIds, String providerKey, boolean includeDescendats)
+    public void delete(List<String> externalIds, String providerKey, boolean includeDescendants)
             throws RepositoryException {
         if (externalIds.isEmpty()) {
             return;
@@ -90,7 +89,6 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
             for (String externalId : externalIds) {
                 int hash = externalId.hashCode();
                 hashes.add(hash);
-                invalidateCache(hash, providerKey);
             }
             session = hibernateSessionFactory.openStatelessSession();
             session.beginTransaction();
@@ -100,19 +98,28 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                     "delete from UuidMapping where providerKey=:providerKey and externalIdHash in (:externalIds)")
                     .setString("providerKey", providerKey).setParameterList("externalIds", hashes).executeUpdate();
 
-            if (includeDescendats) {
+            if (includeDescendants) {
                 // delete descendants
-                Query deleteStmt = session.createQuery(
-                        "delete from UuidMapping where providerKey=? and externalId like ?").setString(0, providerKey);
+                Query selectStmt = session.createQuery("from UuidMapping where providerKey=? and externalId like ?").setString(0, providerKey);
                 for (String externalId : externalIds) {
-                    deleteStmt.setString(1, externalId + "/%");
-                    deleteStmt.executeUpdate();
-                    // TODO how to invalidate cache here?
+                    selectStmt.setString(1, externalId + "/%");
+                    List<?> descendants = selectStmt.list();
+
+                    for (Object mapping : descendants) {
+                        UuidMapping m = (UuidMapping) mapping;
+                        session.delete(m);
+                        invalidateCache(m.getExternalIdHash(), providerKey);
+                    }
                 }
             }
 
             session.getTransaction().commit();
-        } catch (HibernateException e) {
+
+            for (String externalId : externalIds) {
+                int hash = externalId.hashCode();
+                invalidateCache(hash, providerKey);
+            }
+        } catch (Exception e) {
             if (session != null) {
                 session.getTransaction().rollback();
             }
@@ -140,7 +147,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                 externalId = mapping.getExternalId();
             }
             session.getTransaction().commit();
-        } catch (HibernateException e) {
+        } catch (Exception e) {
             if (session != null) {
                 session.getTransaction().rollback();
             }
@@ -222,7 +229,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                     session.beginTransaction();
                     session.save(providerId);
                     session.getTransaction().commit();
-                } catch (HibernateException e) {
+                } catch (Exception e) {
                     session.getTransaction().rollback();
                     throw new RepositoryException("Issue when storing external provider ID for provider " + providerId,
                             e);
@@ -263,7 +270,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
             // cache it
             getIdentifierCache().put(new Element(getCacheKey(externalId.hashCode(), providerKey), uuidMapping.getInternalUuid(), true));
-        } catch (HibernateException e) {
+        } catch (Exception e) {
             if (session != null) {
                 session.getTransaction().rollback();
             }
@@ -297,7 +304,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                 logger.info("No external provider entry found for key {}", providerKey);
             }
             session.getTransaction().commit();
-        } catch (HibernateException e) {
+        } catch (Exception e) {
             if (session != null) {
                 session.getTransaction().rollback();
             }
@@ -321,9 +328,10 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
     @Override
     public void updateExternalIdentifier(String oldExternalId, String newExternalId, String providerKey,
-                                         boolean includeDescendats) throws RepositoryException {
+                                         boolean includeDescendants) throws RepositoryException {
         Session session = null;
         try {
+            List<String> invalidate = new ArrayList<String>();
             session = getHibernateSessionFactory().openSession();
             session.beginTransaction();
             List<?> list = session.createQuery("from UuidMapping where providerKey=? and externalIdHash=?")
@@ -331,21 +339,24 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
             if (list.size() > 0) {
                 for (Object mapping : list) {
                     ((UuidMapping) mapping).setExternalId(newExternalId);
-                    invalidateCache(oldExternalId, providerKey);
+                    invalidate.add(oldExternalId);
                 }
             }
-            if (includeDescendats) {
+            if (includeDescendants) {
                 // update descendants
                 List<?> descendants = session.createQuery("from UuidMapping where providerKey=? and externalId like ?")
                         .setString(0, providerKey).setString(1, oldExternalId + "/%").list();
                 for (Object mapping : descendants) {
                     UuidMapping m = (UuidMapping) mapping;
                     m.setExternalId(newExternalId + StringUtils.substringAfter(m.getExternalId(), oldExternalId));
-                    invalidateCache(m.getExternalIdHash(), providerKey);
+                    invalidate.add(m.getExternalId());
                 }
             }
             session.getTransaction().commit();
-        } catch (HibernateException e) {
+            for (String id : invalidate) {
+                invalidateCache(id, providerKey);
+            }
+        } catch (Exception e) {
             if (session != null) {
                 session.getTransaction().rollback();
             }
