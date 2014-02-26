@@ -913,6 +913,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             }
         } catch (NoSuchNodeTypeException e) {
             logger.error("Unknown type", e);
+            throw e;
         }
         SourceControlManagement sourceControl = module.getSourceControl();
         if (sourceControl != null) {
@@ -1099,7 +1100,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         } catch (NoSuchNodeTypeException e) {
             logger.error("Failed to save child node definition", e);
             nodeTypeRegistryMap.remove(cndPath);
-            return;
+            throw e;
         }
         writeDefinitionFile(nodeTypeRegistry, cndPath);
 
