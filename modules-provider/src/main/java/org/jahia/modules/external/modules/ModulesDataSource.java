@@ -601,7 +601,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     @Override
-    public void removeItemByPath(String path) throws RepositoryException {
+    public synchronized void removeItemByPath(String path) throws RepositoryException {
         SourceControlManagement sourceControl = module.getSourceControl();
         String pathLowerCase = path.toLowerCase();
         if (pathLowerCase.contains(CND_SLASH)) {
@@ -692,7 +692,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
      * @throws PathNotFoundException
      */
     @Override
-    public void move(String oldPath, String newPath) throws RepositoryException {
+    public synchronized void move(String oldPath, String newPath) throws RepositoryException {
         SourceControlManagement sourceControl = module.getSourceControl();
         final String lowerCaseOldPath = oldPath.toLowerCase();
         if (lowerCaseOldPath.contains(CND_SLASH) && newPath.toLowerCase().contains(CND_SLASH)) {
@@ -764,7 +764,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         });
     }
 
-    private void moveCndItems(String oldPath, String newPath) throws RepositoryException {
+    private synchronized void moveCndItems(String oldPath, String newPath) throws RepositoryException {
         checkCndItemUsage(oldPath,"modulesDataSource.errors.move");
         if (itemExists(newPath)) {
             throw new ItemExistsException("Item " + newPath + " already exists");
@@ -950,7 +950,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private boolean saveEditableFile(ExternalData data, ExtendedNodeType type) throws RepositoryException {
+    private synchronized boolean saveEditableFile(ExternalData data, ExtendedNodeType type) throws RepositoryException {
         boolean hasProperties = false;
         // Handle source code
         OutputStream outputStream = null;
@@ -1022,7 +1022,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private void saveNodeType(ExternalData data) throws RepositoryException {
+    private synchronized void saveNodeType(ExternalData data) throws RepositoryException {
         String path = data.getPath();
         String pathLowerCase = path.toLowerCase();
         String cndPath = getCndPath(path, pathLowerCase);
@@ -1180,7 +1180,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private void savePropertyDefinition(ExternalData data) throws RepositoryException {
+    private synchronized void savePropertyDefinition(ExternalData data) throws RepositoryException {
         String path = data.getPath();
         String pathLowerCase = path.toLowerCase();
         String cndPath = getCndPath(path, pathLowerCase);
@@ -1413,7 +1413,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private void saveChildNodeDefinition(ExternalData data) throws RepositoryException {
+    private synchronized void saveChildNodeDefinition(ExternalData data) throws RepositoryException {
         String path = data.getPath();
         String pathLowerCase = path.toLowerCase();
         String cndPath = getCndPath(path, pathLowerCase);
@@ -1770,7 +1770,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private void writeDefinitionFile(NodeTypeRegistry nodeTypeRegistry, String path) throws RepositoryException {
+    private synchronized void writeDefinitionFile(NodeTypeRegistry nodeTypeRegistry, String path) throws RepositoryException {
         try {
             Writer writer = null;
             try {
@@ -1814,7 +1814,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private void registerNamespace(ExternalData data) throws RepositoryException {
+    private synchronized void registerNamespace(ExternalData data) throws RepositoryException {
         String prefix = data.getProperties().get("j:prefix")[0];
         String uri = data.getProperties().get("j:uri")[0];
         NamespaceRegistry nsRegistry = JCRSessionFactory.getInstance().getNamespaceRegistry();
