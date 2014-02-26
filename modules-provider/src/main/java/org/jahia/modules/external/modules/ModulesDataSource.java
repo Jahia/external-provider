@@ -847,10 +847,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         String pathLowerCase = path.toLowerCase();
         String cndPath = getCndPath(path, pathLowerCase);
         String subPath = getSubPath(path, pathLowerCase);
-        String[] splitPath = StringUtils.split(subPath, "/");
+        String splitPath = StringUtils.substringBefore(subPath, "/");
 
         NodeTypeRegistry ntr = loadRegistry(cndPath);
-        ExtendedNodeType type = ntr.getNodeType(splitPath[0]);
+        ExtendedNodeType type = ntr.getNodeType(splitPath);
         Comparator<ExtendedItemDefinition> c = new Comparator<ExtendedItemDefinition>() {
             @Override
             public int compare(ExtendedItemDefinition o1, ExtendedItemDefinition o2) {
