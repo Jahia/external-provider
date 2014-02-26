@@ -44,8 +44,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ChildrenCollectorFilter;
 import org.apache.jackrabbit.value.BinaryImpl;
-import org.jahia.api.Constants;
 import org.jahia.services.content.nodetypes.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.*;
 import javax.jcr.lock.Lock;
@@ -65,6 +66,7 @@ import java.util.*;
  * @author Thomas Draier
  */
 public class ExternalNodeImpl extends ExternalItemImpl implements Node {
+    private static final Logger logger = LoggerFactory.getLogger(ExternalNodeImpl.class);
 
     private static final String J_TRANSLATION = "j:translation_";
     private ExternalData data;
@@ -229,6 +231,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (data.getBinaryProperties() != null && data.getBinaryProperties().containsKey(name)) {
             hasProperty = true;
             data.getBinaryProperties().remove(name);
+            properties.remove(name);
         }
         if (data.getProperties() != null && data.getProperties().containsKey(name)) {
             hasProperty = true;
@@ -263,7 +266,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (extendedNode != null && canItemBeExtended(getChildNodeDefinition(relPath, primaryNodeTypeName))) {
             Node n = extendedNode.addNode(relPath, primaryNodeTypeName);
             n.addMixin("jmix:externalProviderExtension");
-            n.setProperty("j:extendedType",primaryNodeTypeName);
+            List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), primaryNodeTypeName);
+            n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
             n.setProperty("j:isExternalProviderRoot", false);
             return new ExtensionNode(n,getPath() + "/" + relPath,getSession());
         }
@@ -302,8 +306,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
-            return new ExtensionProperty(getExtensionNode(true).setProperty(name, value), getPath()+"/"+name, session, this);
+        if (canItemBeExtended(getPropertyDefinition(name))) {
+            final Node extensionNode = getExtensionNode(true);
+            if (extensionNode != null) {
+                return new ExtensionProperty(extensionNode.setProperty(name, value), getPath()+"/"+name, session, this);
+            }
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
@@ -328,6 +335,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                     String lang = StringUtils.substringAfter(getName(), "_");
                     valMap.put(lang,new String[]{value.getString()});
                     data.getI18nProperties().put(name,valMap);
+                } else {
+                    throw new ConstraintViolationException("Property " + name + " is internationalized");
                 }
             } else {
                 data.getProperties().put(name, new String[]{value.getString()});
@@ -351,8 +360,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
-            return new ExtensionProperty(getExtensionNode(true).setProperty(name, values), getPath()+ "/" + name, session, this);
+        if (canItemBeExtended(getPropertyDefinition(name))) {
+            final Node extensionNode = getExtensionNode(true);
+            if (extensionNode != null) {
+                return new ExtensionProperty(extensionNode.setProperty(name, values), getPath()+ "/" + name, session, this);
+            }
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
@@ -388,6 +400,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                         String lang = StringUtils.substringAfter(getName(), "_");
                         valMap.put(lang,s);
                         data.getI18nProperties().put(name,valMap);
+                    } else {
+                        throw new ConstraintViolationException("Property " + name + " is internationalized");
                     }
                 } else {
                     data.getProperties().put(name,s);
@@ -452,8 +466,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      */
     @SuppressWarnings("deprecation")
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        if (canItemBeExtended(getPropertyDefinition(name)) && getExtensionNode(true) != null) {
-            return new ExtensionProperty(getExtensionNode(true).setProperty(name, value), getPath()+ "/" + name, session, this);
+        if (canItemBeExtended(getPropertyDefinition(name))) {
+            final Node extensionNode = getExtensionNode(true);
+            if (extensionNode != null) {
+                return new ExtensionProperty(extensionNode.setProperty(name, value), getPath()+ "/" + name, session, this);
+            }
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
@@ -1263,7 +1280,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 takeLockToken(extParent);
                 extParent.addMixin("jmix:hasExternalProviderExtension");
                 Node n = extParent.addNode(StringUtils.substringAfterLast(mountPoint, "/"), "jnt:externalProviderExtension");
-                n.setProperty("j:extendedType", getPrimaryNodeType().getName());
+                List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), getPrimaryNodeType().getName());
+                n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
                 n.addMixin("jmix:externalProviderExtension");
                 n.setProperty("j:isExternalProviderRoot", true);
                 n.setProperty("j:externalNodeIdentifier", getIdentifier());
@@ -1271,7 +1289,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 final Node extParent = ((ExternalNodeImpl) getParent()).getExtensionNode(true);
                 takeLockToken(extParent);
                 Node n = extParent.addNode(getName(), "jnt:externalProviderExtension");
-                n.setProperty("j:extendedType", getPrimaryNodeType().getName());
+                List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), getPrimaryNodeType().getName());
+                n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
                 n.addMixin("jmix:externalProviderExtension");
                 n.setProperty("j:isExternalProviderRoot", false);
                 n.setProperty("j:externalNodeIdentifier", getIdentifier());
@@ -1368,7 +1387,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                             return;
                         }
                     } catch (RepositoryException e) {
-                        e.printStackTrace();
+                        logger.error("Cannot get property", e);
                     }
                 }
             }

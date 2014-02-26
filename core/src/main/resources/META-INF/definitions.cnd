@@ -18,5 +18,5 @@
 [jmix:externalProviderExtension] mixin
  - j:isExternalProviderRoot (boolean)
  - j:externalNodeIdentifier (string)
- - j:extendedType (string)
+ - j:extendedType (string) multiple
 

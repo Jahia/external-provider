@@ -54,6 +54,9 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.Calendar;
 
+/**
+ * Wrapper for extension Property
+ */
 public class ExtensionProperty extends ExtensionItem implements Property {
     private Property property;
     private Node parentNode;

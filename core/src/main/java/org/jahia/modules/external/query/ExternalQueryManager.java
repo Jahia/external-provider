@@ -229,7 +229,8 @@ public class ExternalQueryManager implements QueryManager {
             if (nodeTypeSupported && (getLimit() == -1 || results == null || results.size() < getLimit())) {
                 ExternalDataSource dataSource = workspace.getSession().getRepository().getDataSource();
                 try {
-                    if (getLimit() > -1 && results != null) {
+                    final long originalLimit = getLimit();
+                    if (originalLimit > -1 && results != null) {
                         // Remove results found. Extend limit with total size of extended result to skip duplicate results
                         setLimit(getLimit() - results.size() + allExtendedResults.size());
                     }
@@ -249,13 +250,12 @@ public class ExternalQueryManager implements QueryManager {
                                     skips--;
                                 } else {
                                     results.add(s);
+                                    if (originalLimit > -1 && results.size() >= originalLimit) {
+                                        break;
+                                    }
                                 }
                             }
                         }
-                    }
-                    // Finally , strip results to limit
-                    if (getLimit() > -1 && results.size() > getLimit()) {
-                        results = results.subList(0, (int) getLimit());
                     }
                 } catch (UnsupportedRepositoryOperationException e) {
                     logger.warn("Unsupported query ", e);
@@ -275,18 +275,19 @@ public class ExternalQueryManager implements QueryManager {
         }
 
         private Constraint addPathConstraints(Constraint constraint, Source source, String mountPoint, QueryObjectModelFactory f) throws RepositoryException {
+            Constraint result = constraint;
             if (source instanceof Selector) {
                 DescendantNode descendantNode = f.descendantNode(((Selector) source).getSelectorName(), mountPoint);
-                if (constraint == null) {
-                    constraint = descendantNode;
+                if (result == null) {
+                    result = descendantNode;
                 } else {
-                    constraint = f.and(constraint, descendantNode);
+                    result = f.and(result, descendantNode);
                 }
             } else if (source instanceof Join) {
-                constraint = addPathConstraints(constraint, ((Join) source).getLeft(), mountPoint, f);
-                constraint = addPathConstraints(constraint, ((Join) source).getRight(), mountPoint, f);
+                result = addPathConstraints(result, ((Join) source).getLeft(), mountPoint, f);
+                result = addPathConstraints(result, ((Join) source).getRight(), mountPoint, f);
             }
-            return constraint;
+            return result;
         }
 
         private Constraint convertExistingPathConstraints(Constraint constraint, String mountPoint, QueryObjectModelFactory f) throws RepositoryException {

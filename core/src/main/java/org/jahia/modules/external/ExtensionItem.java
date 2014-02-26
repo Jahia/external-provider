@@ -47,6 +47,9 @@ import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.version.VersionException;
 
+/**
+ * Wrapper for extension Item
+ */
 public class ExtensionItem extends ExternalItemImpl implements Item {
     private Item item;
     private String path;

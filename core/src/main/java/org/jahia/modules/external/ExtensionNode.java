@@ -40,7 +40,10 @@
 
 package org.jahia.modules.external;
 
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.*;
 import javax.jcr.lock.Lock;
@@ -55,17 +58,18 @@ import javax.jcr.version.VersionException;
 import javax.jcr.version.VersionHistory;
 import java.io.InputStream;
 import java.math.BigDecimal;
-
-
-
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Wrapper for extension Node
  */
 @SuppressWarnings("deprecation")
 public class ExtensionNode extends ExtensionItem implements Node {
+    private static final Logger logger = LoggerFactory.getLogger(ExtensionNode.class);
+
     private Node node;
     private String uuid;
     private String path;
@@ -90,8 +94,24 @@ public class ExtensionNode extends ExtensionItem implements Node {
         Node subNode = node.addNode(relPath, primaryNodeTypeName);
         subNode.addMixin("jmix:externalProviderExtension");
         subNode.setProperty("j:isExternalProviderRoot", false);
-        subNode.setProperty("j:extendedType",primaryNodeTypeName);
+        List<Value> values = createNodeTypeValues(session.getValueFactory(), primaryNodeTypeName);
+        subNode.setProperty("j:extendedType",values.toArray(new Value[values.size()]));
         return new ExtensionNode(subNode, path + "/" + relPath,session);
+    }
+
+    /**
+     * Create a list of values containing all inherited node type names
+     * @param primaryNodeTypeName base type
+     * @return
+     * @throws RepositoryException
+     */
+    public static List<Value> createNodeTypeValues(ValueFactory valueFactory, String primaryNodeTypeName) throws RepositoryException {
+        List<Value> values = new ArrayList<Value>();
+        values.add(valueFactory.createValue(primaryNodeTypeName));
+        for (ExtendedNodeType type : NodeTypeRegistry.getInstance().getNodeType(primaryNodeTypeName).getSupertypes()) {
+            values.add(valueFactory.createValue(type.getName()));
+        }
+        return values;
     }
 
     @Override
@@ -448,6 +468,9 @@ public class ExtensionNode extends ExtensionItem implements Node {
         return node.getAllowedLifecycleTransistions();
     }
 
+    /**
+     * Implementation for property iterator
+     */
     private class ExtensionPropertyIterator implements PropertyIterator {
         private int pos = 0;
         private PropertyIterator extensionPropertiesIterator;
@@ -517,6 +540,9 @@ public class ExtensionNode extends ExtensionItem implements Node {
         }
     }
 
+    /**
+     * Implementation for node iterator
+     */
     private class ExtensionNodeIterator implements NodeIterator {
         private int pos = 0;
         private NodeIterator extensionNodeIterator;
@@ -536,7 +562,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
                         nextNode = new ExtensionNode(n,getPath() + "/" + n.getName(),getSession());
                         return  nextNode;
                     } catch (RepositoryException e) {
-                        e.printStackTrace();
+                        logger.error("Cannot get node",e);
                     }
                 }
             }
