@@ -217,7 +217,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     public void saveItem(ExternalData data) throws RepositoryException {
         try {
             ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(data.getType());
-            if (nodeType.isNodeType(Constants.NT_RESOURCE)) {
+            if (nodeType.isNodeType(Constants.NT_RESOURCE) && StringUtils.contains(data.getPath(),Constants.JCR_CONTENT)) {
                 OutputStream outputStream = null;
                 try {
                     final Binary[] binaries = data.getBinaryProperties().get(Constants.JCR_DATA);
@@ -300,7 +300,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
         String path = content.getFile().getName().getPath().substring(rootPath.length());
         String jcrContentPath = path + "/"+Constants.JCR_CONTENT;
-        ExternalData externalData = new ExternalData(jcrContentPath, jcrContentPath, Constants.NT_RESOURCE, properties);
+        ExternalData externalData = new ExternalData(jcrContentPath, jcrContentPath, Constants.JAHIANT_RESOURCE, properties);
 
         Map<String,Binary[]> binaryProperties = new HashMap<String, Binary[]>(1);
         binaryProperties.put(Constants.JCR_DATA, new Binary[] {new VFSBinaryImpl(content)});
