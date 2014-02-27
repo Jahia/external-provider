@@ -1406,7 +1406,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 try {
                     nextProperty = getProperty(propertyName);
                 } catch (RepositoryException e) {
-                    e.printStackTrace();
+                    logger.error(e.getMessage(),e);
                 }
                 return;
             }
@@ -1483,7 +1483,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 try {
                     next = getNode(it.next());
                 } catch (RepositoryException e) {
-                    e.printStackTrace();
+                    logger.error(e.getMessage(),e);
                 }
                 nextNode = next;
                 return nextNode;
@@ -1506,7 +1506,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                             return  nextNode;
                         }
                     } catch (RepositoryException e) {
-                        e.printStackTrace();
+                        logger.error(e.getMessage(),e);
                     }
                 }
             }

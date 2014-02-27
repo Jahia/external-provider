@@ -250,7 +250,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                                 }
                             });
                         } catch (RepositoryException e) {
-                            e.printStackTrace();
+                            logger.error(e.getMessage(),e);
                         }
                     } else if (type.equals(JNT_DEFINITION_FILE)) {
                         try {
