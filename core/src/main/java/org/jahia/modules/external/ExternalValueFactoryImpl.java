@@ -53,6 +53,8 @@ import javax.jcr.ValueFactory;
 import javax.jcr.ValueFormatException;
 
 import org.apache.jackrabbit.util.ISO8601;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the {@link javax.jcr.ValueFactory} for the {@link org.jahia.modules.external.ExternalData}.
@@ -62,6 +64,8 @@ import org.apache.jackrabbit.util.ISO8601;
  * 
  */
 public class ExternalValueFactoryImpl implements ValueFactory {
+    private static final Logger logger = LoggerFactory.getLogger(ExternalValueFactoryImpl.class);
+
     private ExternalSessionImpl session;
 
     public ExternalValueFactoryImpl(ExternalSessionImpl session) {
@@ -102,7 +106,7 @@ public class ExternalValueFactoryImpl implements ValueFactory {
                         }
                     }
                 } catch (RepositoryException e) {
-                    e.printStackTrace();
+                    logger.error(e.getMessage(), e);
                 }
                 return new ExternalValueImpl(value, type);
             case PropertyType.STRING :
