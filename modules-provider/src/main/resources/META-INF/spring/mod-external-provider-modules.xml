@@ -27,6 +27,7 @@
                 <value>jnt:templateTypeFolder</value>
                 <value>jnt:cssFolder</value>
                 <value>jnt:cssFile</value>
+                <value>jnt:lessFile</value>
                 <value>jnt:javascriptFolder</value>
                 <value>jnt:propertiesFile</value>
                 <value>jnt:xmlFile</value>
@@ -56,6 +57,7 @@
                 <entry key="java" value="jnt:javaSourceFile"/>
                 <entry key="cnd" value="jnt:definitionFile"/>
                 <entry key="css" value="jnt:cssFile"/>
+                <entry key="less" value="jnt:lessFile"/>
                 <entry key="js" value="jnt:javascriptFile"/>
                 <entry key="jsp" value="jnt:viewFile"/>
                 <entry key="groovy" value="jnt:viewFile"/>
