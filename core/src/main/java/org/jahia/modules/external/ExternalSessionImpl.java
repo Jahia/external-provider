@@ -555,6 +555,10 @@ public class ExternalSessionImpl implements Session {
         return extensionAllowedTypes;
     }
 
+    /**
+     * Return the properties that can be overridden for extendable nodetypes
+     * @return a map of list of properties (value) by nodetype (key)
+     */
     public Map<String,List<String>> getOverridableProperties() {
         if (overridableProperties == null) {
             overridableProperties = new HashMap<String,List<String>>();
