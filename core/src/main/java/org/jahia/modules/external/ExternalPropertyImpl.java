@@ -288,7 +288,10 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public int getType() throws RepositoryException {
-        return getDefinition().getRequiredType();
+        if (isMultiple()) {
+            return getValues()[0].getType();
+        }
+        return getValue().getType();
     }
 
     public void setValue(Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
