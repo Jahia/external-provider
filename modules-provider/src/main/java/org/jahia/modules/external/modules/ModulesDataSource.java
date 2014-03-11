@@ -157,7 +157,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private static final int NODETYPE_FOLDER_DEPTH_TOKEN = 4;
     private static final int TEMPLATE_TYPE_FOLDER_DEPTH_TOKEN = 5;
     private static final int VIEWS_FOLDER_DEPTH_TOKEN = 5;
-    private static final String SRC_MAIN_RESOURCES = "/src/main/resources/";
+    private static final String SRC_MAIN_RESOURCES = File.separator + "src" + File.separator + "main" + File.separator + "resources"  + File.separator;
 
     private JahiaTemplatesPackage module;
 
@@ -184,7 +184,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         final String importFilesRootFolder = fullFolderPath + "src" + File.separator + "main" + File.separator + "import" +
                 File.separator + "content" + File.separator + "modules" + File.separator + module.getId() + File.separator + "files" + File.separator;
         final String filesNodePath = "/modules/" + module.getIdWithVersion() + "/files";
-        
+
         FileMonitor monitor = new FileMonitor(new FileMonitorCallback() {
             @Override
             public void process(FileMonitorResult result) {
@@ -253,29 +253,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                             logger.error(e.getMessage(),e);
                         }
                     } else if (type.equals(JNT_DEFINITION_FILE)) {
-                        try {
-                            String cndPath = StringUtils.substringAfter(file.getPath(), SRC_MAIN_RESOURCES);
-                            List<String> definitionsFiles = module.getDefinitionsFiles();
-                            if (file.exists() && !definitionsFiles.contains(cndPath)) {
-                                definitionsFiles.add(cndPath);
-                            } else if (!file.exists() && definitionsFiles.contains(cndPath)) {
-                                definitionsFiles.remove(cndPath);
-                            }
-                            String systemId = module.getId();
-                            NodeTypeRegistry nodeTypeRegistry = NodeTypeRegistry.getInstance();
-                            nodeTypeRegistry.unregisterNodeTypes(systemId);
-                            for (String path : definitionsFiles) {
-                                nodeTypeRegistry.addDefinitionsFile(getRealFile(SRC_MAIN_RESOURCES + path), systemId, module.getVersion());
-                            }
-                            if (SettingsBean.getInstance().isProcessingServer()) {
-                                jcrStoreService.deployDefinitions(systemId);
-                            }
-                            logger.info("Registered definitions from file {} for bundle {}", file, module.getBundle());
-                        } catch (IOException e) {
-                            logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
-                        } catch (ParseException e) {
-                            logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
-                        }
+                        registerCndFiles(file);
                     } else if (type.equals("jnt:viewFile")) {
                         ModulesSourceHttpServiceTracker httpServiceTracker = modulesSourceSpringInitializer.getHttpServiceTracker(module.getId());
                         if (result.getCreated().contains(file)) {
@@ -296,6 +274,34 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         monitor.addFile(module.getSourcesFolder());
         fileMonitorJobName = "ModuleSourcesJob-" + module.getId();
         FileMonitorJob.schedule(fileMonitorJobName, 5000, monitor);
+        for(String cndFilePath : module.getDefinitionsFiles()) {
+            registerCndFiles(new File(fullFolderPath + "src" + File.separator + "main" + File.separator + "resources" + File.separator + cndFilePath));
+        }
+    }
+
+    private void registerCndFiles(File file) {
+        try {
+            String cndPath = StringUtils.substringAfter(file.getPath(), SRC_MAIN_RESOURCES);
+            List<String> definitionsFiles = module.getDefinitionsFiles();
+            if (file.exists() && !definitionsFiles.contains(cndPath)) {
+                definitionsFiles.add(cndPath);
+            } else if (!file.exists() && definitionsFiles.contains(cndPath)) {
+                definitionsFiles.remove(cndPath);
+            }
+            String systemId = module.getId();
+            NodeTypeRegistry nodeTypeRegistry = NodeTypeRegistry.getInstance();
+            nodeTypeRegistry.unregisterNodeTypes(systemId);
+            for (String path : definitionsFiles) {
+                nodeTypeRegistry.addDefinitionsFile(getRealFile(SRC_MAIN_RESOURCES + path), systemId, module.getVersion());
+            }
+            if (SettingsBean.getInstance().isProcessingServer()) {
+                jcrStoreService.deployDefinitions(systemId);
+            }
+        } catch (IOException e) {
+            logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
+        } catch (ParseException e) {
+            logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
+        }
     }
 
     protected void invalidateVfsParentCache(String fullFolderPath, File file) {
