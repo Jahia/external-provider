@@ -280,7 +280,13 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
             return propertyDefinition;
         }
         for (Map.Entry<Integer, ExtendedPropertyDefinition> entry : parentNodeType.getUnstructuredPropertyDefinitions().entrySet()) {
-            if (entry.getKey() == getType()) {
+            int type = 0;
+            if (isMultiple() && getValues().length > 0) {
+                type =  getValues()[0].getType();
+            } else if (getValue() != null) {
+                type =getValue().getType();
+            }
+            if (entry.getKey() == type) {
                 return entry.getValue();
             }
         }
@@ -288,10 +294,8 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public int getType() throws RepositoryException {
-        if (isMultiple()) {
-            return getValues()[0].getType();
-        }
-        return getValue().getType();
+        return getDefinition().getRequiredType();
+
     }
 
     public void setValue(Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
