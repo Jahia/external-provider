@@ -294,7 +294,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public int getType() throws RepositoryException {
-        return getDefinition().getRequiredType();
+        return getDefinition()!=null?getDefinition().getRequiredType():0;
 
     }
 
