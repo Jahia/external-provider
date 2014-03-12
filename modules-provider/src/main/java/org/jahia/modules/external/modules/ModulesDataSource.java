@@ -180,8 +180,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private ModulesImportExportHelper modulesImportExportHelper;
 
     public void start() {
-        final String fullFolderPath = module.getSourcesFolder().getPath() + "/";
-        final String importFilesRootFolder = fullFolderPath + "src/main/import/content/modules/" + module.getId() + "/files/";
+        final String fullFolderPath = module.getSourcesFolder().getPath() + File.separator;
+        final String importFilesRootFolder = fullFolderPath + "src" + File.separator + "main" + File.separator + "import" +
+                File.separator + "content" + File.separator + "modules" + File.separator + module.getId() + File.separator + "files" + File.separator;
         final String filesNodePath = "/modules/" + module.getIdWithVersion() + "/files";
 
         FileMonitor monitor = new FileMonitor(new FileMonitorCallback() {
@@ -274,13 +275,16 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         fileMonitorJobName = "ModuleSourcesJob-" + module.getId();
         FileMonitorJob.schedule(fileMonitorJobName, 5000, monitor);
         for(String cndFilePath : module.getDefinitionsFiles()) {
-            registerCndFiles(new File(fullFolderPath + "src/main/resources/" + cndFilePath));
+            registerCndFiles(new File(fullFolderPath + "src" + File.separator + "main" + File.separator + "resources" + File.separator + cndFilePath));
         }
     }
 
     private void registerCndFiles(File file) {
         try {
-            String cndPath = StringUtils.substringAfter(file.getPath(), SRC_MAIN_RESOURCES);
+            String cndPath = StringUtils.substringAfter(file.getPath(), File.separator + "src" + File.separator + "main" + File.separator + "resources" + File.separator);
+            // transform \ to / for windows filesystem compatibility
+           cndPath = StringUtils.replace(cndPath,File.separator,"/");
+
             List<String> definitionsFiles = module.getDefinitionsFiles();
             if (file.exists() && !definitionsFiles.contains(cndPath)) {
                 definitionsFiles.add(cndPath);
