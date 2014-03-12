@@ -157,7 +157,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private static final int NODETYPE_FOLDER_DEPTH_TOKEN = 4;
     private static final int TEMPLATE_TYPE_FOLDER_DEPTH_TOKEN = 5;
     private static final int VIEWS_FOLDER_DEPTH_TOKEN = 5;
-    private static final String SRC_MAIN_RESOURCES = File.separator + "src" + File.separator + "main" + File.separator + "resources"  + File.separator;
+    private static final String SRC_MAIN_RESOURCES = "/src/main/resources/";
 
     private JahiaTemplatesPackage module;
 
