@@ -261,7 +261,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         try {
             getFile(oldPath).moveTo(getFile(newPath));
         } catch (FileSystemException e) {
-            throw new RepositoryException(oldPath);
+            throw new RepositoryException(oldPath,e);
         }
     }
 

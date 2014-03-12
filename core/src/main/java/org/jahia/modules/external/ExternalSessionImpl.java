@@ -182,7 +182,7 @@ public class ExternalSessionImpl implements Session {
                 return getNode(parentPath).getProperty(StringUtils.substringAfterLast(path, "/"));
             } else if (StringUtils.substringAfterLast(path, "/").startsWith(TRANSLATION_NODE_NAME_BASE)) {
                 // Getting translation node
-                String lang = StringUtils.substringAfterLast(path, "_");
+                String lang = StringUtils.substringAfterLast(path, TRANSLATION_NODE_NAME_BASE);
                 ExternalData parentObject = repository.getDataSource().getItemByPath(parentPath);
                 if ((parentObject.getI18nProperties() == null || !parentObject.getI18nProperties().containsKey(lang)) &&
                         (parentObject.getLazyI18nProperties() == null || !parentObject.getLazyI18nProperties().containsKey(lang))) {
