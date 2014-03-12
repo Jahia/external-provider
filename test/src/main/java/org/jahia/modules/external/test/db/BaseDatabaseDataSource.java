@@ -277,8 +277,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
                     }
                 }
             }
-            stmt = conn.prepareStatement(sql.toString());
-            rs = stmt.executeQuery();
+            rs = conn.createStatement().executeQuery(sql.toString());
             int position = 0;
             while (rs.next()) {
                 position++;
