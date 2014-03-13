@@ -300,7 +300,7 @@ public class ExternalSessionImpl implements Session {
         for (Map.Entry<String, ExternalData> entry : changedData.entrySet()) {
             String path = entry.getKey();
             ExternalData externalData = entry.getValue();
-            if (path.startsWith(TRANSLATION_NODE_NAME_BASE,path.lastIndexOf("/"))) {
+            if (path.startsWith(TRANSLATION_NODE_NAME_BASE,path.lastIndexOf("/") + 1)) {
                 String lang = StringUtils.substringAfterLast(path, TRANSLATION_NODE_NAME_BASE);
                 String parentPath = StringUtils.substringBeforeLast(path, "/");
                 ExternalData parentData;
