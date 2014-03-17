@@ -909,6 +909,11 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             if (type.isNodeType(JNT_DEFINITION_FILE)) {
                 checkCndFormat(data);
                 hasProperties = saveEditableFile(data, type);
+                try {
+                    registerCndFiles(getRealFile(data.getPath()));
+                } catch (FileSystemException e) {
+                    throw new RepositoryException("Failed to read file " + data.getPath(), e);
+                }
             } else if (type.isNodeType(JNT_EDITABLE_FILE)) {
                 hasProperties = saveEditableFile(data, type);
             } else if (type.isNodeType(JNT_NODE_TYPE)) {
@@ -1809,6 +1814,13 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             } finally {
                 IOUtils.closeQuietly(writer);
             }
+
+            try {
+                registerCndFiles(getRealFile(path));
+            } catch (FileSystemException e) {
+                throw new RepositoryException("Failed to read file " + path,e);
+            }
+
         } catch (IOException e) {
             throw new RepositoryException("Failed to write definition file", e);
         }
