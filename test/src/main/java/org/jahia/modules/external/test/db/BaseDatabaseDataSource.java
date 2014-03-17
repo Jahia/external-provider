@@ -270,6 +270,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
                             default:
                                 sql.append(next).append(entry.getKey()).append("='")
                                         .append(entry.getValue().getString()).append("'");
+                                break;                                
                         }
                         next = " and ";
                     } catch (RepositoryException e) {
