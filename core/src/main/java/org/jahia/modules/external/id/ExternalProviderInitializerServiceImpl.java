@@ -166,16 +166,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
     }
 
     public Cache getIdentifierCache() {
-        if (idCache == null) {
-            idCache = cacheProvider.getCacheManager().getCache(ID_CACHE_NAME);
-            if (idCache == null) {
-                cacheProvider.getCacheManager().addCache(ID_CACHE_NAME);
-                idCache = cacheProvider.getCacheManager().getCache(ID_CACHE_NAME);
-            }
-        }
-
         return idCache;
-
     }
 
     @Override
@@ -324,6 +315,11 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
     public void setCacheProvider(EhCacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
+        idCache = cacheProvider.getCacheManager().getCache(ID_CACHE_NAME);
+        if (idCache == null) {
+            cacheProvider.getCacheManager().addCache(ID_CACHE_NAME);
+            idCache = cacheProvider.getCacheManager().getCache(ID_CACHE_NAME);
+        }
     }
 
     @Override
