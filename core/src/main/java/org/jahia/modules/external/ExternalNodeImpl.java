@@ -112,9 +112,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             ExtendedPropertyDefinition definition = getPropertyDefinition(entry.getKey());
             if (definition != null) {
                 int requiredType = definition.getRequiredType();
-                if (requiredType == PropertyType.UNDEFINED) {
-                    requiredType = PropertyType.STRING;
-                }
                 if (definition.isMultiple()) {
                     Value[] values = new Value[entry.getValue().length];
                     for (int i = 0; i < entry.getValue().length; i++) {
@@ -182,7 +179,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return null;
     }
 
-    private ExtendedPropertyDefinition getPropertyDefinition(String name) throws RepositoryException {
+    public ExtendedPropertyDefinition getPropertyDefinition(String name) throws RepositoryException {
         Map<String, ExtendedPropertyDefinition> propertyDefinitionsAsMap = getExtendedPrimaryNodeType().getPropertyDefinitionsAsMap();
         if (propertyDefinitionsAsMap.containsKey(name)) {
             return propertyDefinitionsAsMap.get(name);
@@ -802,7 +799,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
-    public NodeType getPrimaryNodeType() throws RepositoryException {
+    public ExtendedNodeType getPrimaryNodeType() throws RepositoryException {
         return getExtendedPrimaryNodeType();
     }
 
@@ -813,12 +810,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
-    public NodeType[] getMixinNodeTypes() throws RepositoryException {
+    public ExtendedNodeType[] getMixinNodeTypes() throws RepositoryException {
         return getMixinNodeTypes(true);
     }
 
-    private NodeType[] getMixinNodeTypes(boolean withExtension) throws RepositoryException {
-        List<NodeType> nt = new ArrayList<NodeType>();
+    private ExtendedNodeType[] getMixinNodeTypes(boolean withExtension) throws RepositoryException {
+        List<ExtendedNodeType> nt = new ArrayList<ExtendedNodeType>();
         if (data.getMixin() != null) {
             for (String s : data.getMixin()) {
                 nt.add(NodeTypeRegistry.getInstance().getNodeType(s));
@@ -834,7 +831,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 }
             }
         }
-        return nt.toArray(new NodeType[nt.size()]);
+        return nt.toArray(new ExtendedNodeType[nt.size()]);
     }
 
     /**

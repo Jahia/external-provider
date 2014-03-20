@@ -169,7 +169,7 @@ public interface ExternalDataSource {
     }
 
     /**
-     * Implemented by a service that needs initialization/finalization logic during service life cycle. 
+     * Implemented by a service that needs initialization/finalization logic during service life cycle.
      */
     public interface Initializable {
         /**
@@ -207,14 +207,14 @@ public interface ExternalDataSource {
 
     /**
      * Returns a set of supported node types.
-     * 
+     *
      * @return a set of supported node types
      */
     Set<String> getSupportedNodeTypes();
 
     /**
      * Indicates if this data source has path-like hierarchical external identifiers, e.g. IDs that are using file system paths.
-     * 
+     *
      * @return <code>true</code> if this data source has path-like hierarchical external identifiers, e.g. IDs that are using file system
      *         paths; <code>false</code> otherwise.
      */
@@ -222,14 +222,14 @@ public interface ExternalDataSource {
 
     /**
      * Indicates if the data source supports UUIDs.
-     * 
+     *
      * @return <code>true</code> if the data source supports UUIDs
      */
     boolean isSupportsUuid();
 
     /**
      * Returns <code>true</code> if an item exists at <code>path</code>; otherwise returns <code>false</code>.
-     * 
+     *
      * @param path
      *            item path
      * @return <code>true</code> if an item exists at <code>path</code>; otherwise returns <code>false</code>

@@ -142,7 +142,7 @@ public class ExternalQuery implements QueryObjectModel {
 
     /**
      * Returns the maximum size of the result set.
-     * 
+     *
      * @return the maximum size of the result set
      */
     public long getLimit() {
@@ -151,7 +151,7 @@ public class ExternalQuery implements QueryObjectModel {
 
     /**
      * Returns the start offset of the result set.
-     * 
+     *
      * @return the start offset of the result set
      */
     public long getOffset() {

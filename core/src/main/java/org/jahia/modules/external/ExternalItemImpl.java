@@ -79,7 +79,7 @@ import java.util.regex.Pattern;
 
 /**
  * Implementation of the {@link javax.jcr.Item} for the {@link org.jahia.modules.external.ExternalData}.
- * 
+ *
  * @author Thomas Draier
  */
 public abstract class ExternalItemImpl implements Item {
@@ -98,15 +98,15 @@ public abstract class ExternalItemImpl implements Item {
 
     /**
      * Returns the underlying instance of the store provider.
-     * 
+     *
      * @return the underlying instance of the store provider
      */
     protected ExternalContentStoreProvider getStoreProvider() {
         return getSession().getRepository().getStoreProvider();
     }
-    
+
     public boolean isNode() {
-        return false;  
+        return false;
     }
 
     void setNew(boolean isNew) {
@@ -118,11 +118,11 @@ public abstract class ExternalItemImpl implements Item {
     }
 
     public boolean isModified() {
-        return false;  
+        return false;
     }
 
     public boolean isSame(Item item) throws RepositoryException {
-        return false;  
+        return false;
     }
 
     public void accept(ItemVisitor itemVisitor) throws RepositoryException {

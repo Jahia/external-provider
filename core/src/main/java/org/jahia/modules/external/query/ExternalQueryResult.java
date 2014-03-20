@@ -88,7 +88,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of the query result, returned by the external provider search.
- * 
+ *
  * @author Sergiy Shyrkov
  */
 class ExternalQueryResult implements QueryResult {
@@ -107,7 +107,7 @@ class ExternalQueryResult implements QueryResult {
 
     /**
      * Initializes an instance of this class.
-     * 
+     *
      * @param qom
      *            the query object modules used for the search
      * @param results

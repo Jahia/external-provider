@@ -83,7 +83,7 @@ public interface ExternalProviderInitializerService {
 
     /**
      * Deletes mappings for the specified items.
-     * 
+     *
      * @param externalIds
      *            the list of external IDs to be removed from the mapping table
      * @param providerKey
@@ -99,7 +99,7 @@ public interface ExternalProviderInitializerService {
     /**
      * Reads external identifier for the specified node via mapping table using internal UUID. If the mapping is not found <code>null</code>
      * is returned.
-     * 
+     *
      * @param internalId
      *            the internal UUID of the item
      * @return external identifier for the specified node via mapping table using internal UUID or <code>null</code> if the mapping cannot
@@ -111,7 +111,7 @@ public interface ExternalProviderInitializerService {
 
     /**
      * Reads internal UUID of the specified node via mapping table, using external ID and provider key.
-     * 
+     *
      * @param externalId
      *            the external ID to retrieve UUID for
      * @param providerKey
@@ -125,7 +125,7 @@ public interface ExternalProviderInitializerService {
     /**
      * Returns internal provider ID for the specified provider. If the provider is not registered yet, creates an ID for it and stores an
      * entry in the database.
-     * 
+     *
      * @param providerKey
      *            a unique provider key
      * @return the internal provider ID for the specified provider
@@ -136,7 +136,7 @@ public interface ExternalProviderInitializerService {
 
     /**
      * Generates the internal UUID for the specified node in the mapping table, using external ID and provider key.
-     * 
+     *
      * @param externalId
      *            the external ID to generate UUID for
      * @param providerKey
@@ -151,7 +151,7 @@ public interface ExternalProviderInitializerService {
 
     /**
      * Removes the provider entry from the DB table and also all the corresponding ID mappings.
-     * 
+     *
      * @param providerKey
      *            the provider key
      * @throws RepositoryException
@@ -161,7 +161,7 @@ public interface ExternalProviderInitializerService {
 
     /**
      * Updates the external ID data for the specified entry, e.g. as a result of a move operation.
-     * 
+     *
      * @param oldExternalId
      *            the original external ID
      * @param newExternalId

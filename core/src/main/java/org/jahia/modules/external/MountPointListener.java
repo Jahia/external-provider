@@ -80,7 +80,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Listener for the deletion of a mount point nodes to be able to clean up external provider ID mappings.
- * 
+ *
  * @author Sergiy Shyrkov
  */
 public class MountPointListener extends DefaultEventListener {

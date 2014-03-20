@@ -78,7 +78,7 @@ import java.util.*;
 
 /**
  * Implementation of the {@link javax.jcr.Repository} for the {@link org.jahia.modules.external.ExternalData}.
- * 
+ *
  * @author toto
  */
 public class ExternalRepositoryImpl implements Repository {
@@ -147,7 +147,7 @@ public class ExternalRepositoryImpl implements Repository {
     private NamespaceRegistry namespaceRegistry;
 
     private String providerKey;
-    
+
     private Map<String, Object> repositoryDescriptors = new HashMap<String, Object>();
     private ExternalContentStoreProvider storeProvider;
 
@@ -279,7 +279,7 @@ public class ExternalRepositoryImpl implements Repository {
     public boolean isSingleValueDescriptor(String key) {
         return repositoryDescriptors.get(key) instanceof Value;
     }
-    
+
     public boolean isStandardDescriptor(String key) {
         return STANDARD_KEYS.contains(key);
     }

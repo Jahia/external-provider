@@ -74,24 +74,22 @@ import org.apache.jackrabbit.value.BinaryImpl;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.Name;
+
 import javax.jcr.*;
 import javax.jcr.lock.LockException;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.PropertyDefinition;
 import javax.jcr.version.VersionException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.util.Calendar;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Implementation of the {@link javax.jcr.Property} for the {@link org.jahia.modules.external.ExternalData}.
  * User: toto
  * Date: Apr 23, 2008
  * Time: 11:46:28 AM
- *
  */
 public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
 
@@ -113,6 +111,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
         this.node = node;
         this.values = values;
     }
+
     public ExternalPropertyImpl(Name name, ExternalNodeImpl node, ExternalSessionImpl session) {
         super(session);
         this.name = name;
@@ -129,7 +128,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
 
     public void setValue(String s) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         if (s != null) {
-            setValue(getSession().getValueFactory().createValue(s));
+            setValue(getSession().getValueFactory().createValue(s, getType()));
         } else {
             remove();
         }
@@ -140,7 +139,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
             Value[] v = new Value[strings.length];
             for (int i = 0; i < strings.length; i++) {
                 if (strings[i] != null) {
-                    v[i] = getSession().getValueFactory().createValue(strings[i]);
+                    v[i] = getSession().getValueFactory().createValue(strings[i], getType());
                 } else {
                     v[i] = null;
                 }
@@ -176,7 +175,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
             } catch (IOException e) {
                 throw new RepositoryException(e);
             } finally {
-                if (b != null ) {
+                if (b != null) {
                     b.dispose();
                 }
             }
@@ -303,28 +302,11 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public PropertyDefinition getDefinition() throws RepositoryException {
-        ExtendedNodeType parentNodeType = node.getExtendedPrimaryNodeType();
-        ExtendedPropertyDefinition propertyDefinition = parentNodeType.getPropertyDefinitionsAsMap().get(getName());
-        if (propertyDefinition != null) {
-            return propertyDefinition;
-        }
-        for (Map.Entry<Integer, ExtendedPropertyDefinition> entry : parentNodeType.getUnstructuredPropertyDefinitions().entrySet()) {
-            int type = 0;
-            if (isMultiple() && getValues().length > 0) {
-                type =  getValues()[0].getType();
-            } else if (getValue() != null) {
-                type =getValue().getType();
-            }
-            if (entry.getKey() == type) {
-                return entry.getValue();
-            }
-        }
-        return null;
+        return node.getPropertyDefinition(getName());
     }
 
     public int getType() throws RepositoryException {
-        return getDefinition()!=null?getDefinition().getRequiredType():0;
-
+        return getDefinition().getRequiredType();
     }
 
     public void setValue(Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {

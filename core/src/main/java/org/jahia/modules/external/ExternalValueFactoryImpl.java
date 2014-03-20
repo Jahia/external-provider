@@ -90,7 +90,7 @@ import org.slf4j.LoggerFactory;
  * User: loom
  * Date: Aug 12, 2010
  * Time: 3:03:58 PM
- * 
+ *
  */
 public class ExternalValueFactoryImpl implements ValueFactory {
     private static final Logger logger = LoggerFactory.getLogger(ExternalValueFactoryImpl.class);
@@ -106,6 +106,10 @@ public class ExternalValueFactoryImpl implements ValueFactory {
     }
 
     public ExternalValueImpl createValue(String value, int type) throws ValueFormatException {
+        if (type == PropertyType.UNDEFINED) {
+            type = PropertyType.STRING;
+        }
+
         switch (type) {
             case PropertyType.BINARY :
                 throw new ValueFormatException("Not allowed to convert string ["+value+"] to binary value");
@@ -185,7 +189,7 @@ public class ExternalValueFactoryImpl implements ValueFactory {
     }
 
     public Binary createBinary(InputStream stream) throws RepositoryException {
-        return new ExternalBinaryImpl(stream);  
+        return new ExternalBinaryImpl(stream);
     }
 
 }
