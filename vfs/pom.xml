@@ -70,65 +70,61 @@
         please contact the sales department at sales@jahia.com.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <artifactId>external-provider-parent</artifactId>
-        <groupId>org.jahia.modules</groupId>
-        <version>2.0.0-SNAPSHOT</version>
-    </parent>
-    <artifactId>external-provider-vfs</artifactId>
-    <name>Jahia External Provider VFS</name>
-    <packaging>bundle</packaging>
-    <description>Provides an implementation of the VFS external provider.</description>
-    <scm>
-        <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
-        <url>scm:git:git@github.com:Jahia/external-provider.git</url>
-        <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
-    </scm>
-    <repositories>
-        <repository>
-            <id>jahia-public</id>
-            <name>Jahia Public Repository</name>
-            <url>https://devtools.jahia.com/nexus/content/groups/public</url>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.jahia.modules</groupId>
-            <artifactId>external-provider</artifactId>
-            <version>${project.version}</version>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Jahia-Depends>external-provider</Jahia-Depends>
-                        <Jahia-Module-Type>system</Jahia-Module-Type>
-                        <Export-Package>org.jahia.modules.external.vfs</Export-Package>
-                        <_removeheaders>
-                            ${jahia.modules.bundle.removeheaders},
-                            Jahia-Static-Resources
-                        </_removeheaders>
-                    </instructions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.jahia.modules</groupId>
+    <artifactId>external-provider-parent</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>external-provider-vfs</artifactId>
+  <packaging>bundle</packaging>
+  <name>Jahia External Provider VFS</name>
+  <description>Provides an implementation of the VFS external provider.</description>
+  <scm>
+    <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
+    <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
+    <url>scm:git:git@github.com:Jahia/external-provider.git</url>
+  </scm>
+  <dependencies>
+    <dependency>
+      <groupId>org.jahia.modules</groupId>
+      <artifactId>external-provider</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+        <updatePolicy>never</updatePolicy>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>jahia-public</id>
+      <name>Jahia Public Repository</name>
+      <url>https://devtools.jahia.com/nexus/content/groups/public</url>
+    </repository>
+  </repositories>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Jahia-Depends>external-provider</Jahia-Depends>
+            <Jahia-Module-Type>system</Jahia-Module-Type>
+            <Export-Package>org.jahia.modules.external.vfs</Export-Package>
+            <_removeheaders>${jahia.modules.bundle.removeheaders},
+                            Jahia-Static-Resources</_removeheaders>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
