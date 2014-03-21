@@ -1287,6 +1287,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 selectorType = SelectorType.valueFromName(values[0]);
             } else if (propertyDefinition.getRequiredType() == PropertyType.WEAKREFERENCE) {
                 selectorType = SelectorType.CONTENTPICKER;
+            } else if (propertyDefinition.getRequiredType() == PropertyType.DATE) {
+                selectorType = SelectorType.DATETIMEPICKER;
             }
             propertyDefinition.setSelector(selectorType);
             values = properties.get(J_SELECTOR_OPTIONS);
