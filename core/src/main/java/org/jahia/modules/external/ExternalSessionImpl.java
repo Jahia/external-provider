@@ -164,6 +164,15 @@ public class ExternalSessionImpl implements Session {
     }
 
     private Node getNodeByLocalIdentifier(String uuid) throws RepositoryException {
+        for (ExternalItemImpl i : newItems) {
+            if (i instanceof ExternalNodeImpl) {
+                ExternalNodeImpl n = (ExternalNodeImpl) i;
+                if (uuid.equals(n.getIdentifier())) {
+                    return n;
+                }
+            }
+        }
+
         for (ExternalData d : changedData.values()) {
             if (uuid.equals(d.getId())) {
                 return new ExternalNodeImpl(d, this);
