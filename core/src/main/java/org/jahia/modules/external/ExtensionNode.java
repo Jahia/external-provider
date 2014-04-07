@@ -113,6 +113,10 @@ public class ExtensionNode extends ExtensionItem implements Node {
         this.session = session;
     }
 
+    public Node getJcrNode() {
+        return node;
+    }
+
     @Override
     public Node addNode(String relPath) throws RepositoryException {
         return addNode(relPath,null);

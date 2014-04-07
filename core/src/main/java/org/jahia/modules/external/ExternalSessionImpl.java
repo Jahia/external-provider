@@ -293,7 +293,34 @@ public class ExternalSessionImpl implements Session {
 
     public void move(String source, String dest)
             throws ItemExistsException, PathNotFoundException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+        Item sourceNode = getItem(source);
+        if (!sourceNode.isNode()) {
+            throw new PathNotFoundException(source);
+        }
+        if (sourceNode instanceof ExtensionNode) {
+            String targetName = StringUtils.substringAfterLast(dest, "/");
+            String parentPath = StringUtils.substringBeforeLast(dest,"/");
+            Node targetNode = (Node) getItem(parentPath);
+            final String srcAbsPath = ((ExtensionNode) sourceNode).getJcrNode().getPath();
+            Node jcrNode = null;
+            if (targetNode instanceof ExtensionNode) {
+                jcrNode = ((ExtensionNode) targetNode).getJcrNode();
+            } else if (targetNode instanceof ExternalNodeImpl) {
+                final ExternalNodeImpl externalNode = (ExternalNodeImpl) targetNode;
+                Node extendedNode = externalNode.getExtensionNode(true);
+                if (extendedNode != null && externalNode.canItemBeExtended(targetName, ((ExtensionNode) sourceNode).getPrimaryNodeType().getName())) {
+                    jcrNode = extendedNode;
+                }
+            }
+            if (jcrNode != null) {
+                getExtensionSession().move(srcAbsPath, jcrNode.getPath() + "/" + targetName);
+                return;
+            }
+            throw new UnsupportedRepositoryOperationException();
+        }
+
         //todo : store move in session and move node in save
+
         if (!(repository.getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }

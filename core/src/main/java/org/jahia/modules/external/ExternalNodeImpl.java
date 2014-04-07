@@ -289,7 +289,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      */
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
         Node extendedNode = getExtensionNode(true);
-        if (extendedNode != null && canItemBeExtended(getChildNodeDefinition(relPath, primaryNodeTypeName))) {
+        if (extendedNode != null && canItemBeExtended(relPath, primaryNodeTypeName)) {
             Node n = extendedNode.addNode(relPath, primaryNodeTypeName);
             n.addMixin("jmix:externalProviderExtension");
             List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), primaryNodeTypeName);
@@ -1332,7 +1332,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
     }
 
-    private boolean canItemBeExtended(ItemDefinition definition) throws RepositoryException {
+    public boolean canItemBeExtended(String relPath, String primaryNodeTypeName) throws RepositoryException {
+        return canItemBeExtended(getChildNodeDefinition(relPath, primaryNodeTypeName));
+    }
+
+    public boolean canItemBeExtended(ItemDefinition definition) throws RepositoryException {
         if (definition == null) {
             throw new ConstraintViolationException();
         }
