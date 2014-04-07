@@ -84,10 +84,7 @@ import org.jahia.services.content.nodetypes.SelectorType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.Binary;
-import javax.jcr.PathNotFoundException;
-import javax.jcr.RepositoryException;
-import javax.jcr.Value;
+import javax.jcr.*;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.query.qom.Constraint;
 import java.sql.Connection;
@@ -280,11 +277,15 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
     private List<String> doSearch(ExternalQuery query, String dataType) throws RepositoryException {
         List<String> result = null;
         if (dataType.equals(DATA_TYPE_CATALOG)) {
-            result = Arrays.asList("/");
+            if (QueryHelper.getSimpleAndConstraints(query.getConstraint()).isEmpty()) {
+                result = Arrays.asList("/");
+            }
         } else if (dataType.equals(DATA_TYPE_DIRECTORY)) {
-            result = new LinkedList<String>();
-            for (String table : getTableNames()) {
-                result.add("/" + table);
+            if (QueryHelper.getSimpleAndConstraints(query.getConstraint()).isEmpty()) {
+                result = new LinkedList<String>();
+                for (String table : getTableNames()) {
+                    result.add("/" + table);
+                }
             }
         } else if (dataType.equals(DATA_TYPE_AIRLINE) || dataType.equals(DATA_TYPE_CITY) || dataType.equals(DATA_TYPE_COUNTRY)
                 || dataType.equals(DATA_TYPE_FLIGHT)) {
@@ -295,6 +296,9 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
             if (language != null) {
                 ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(dataType);
                 for (String propertyName : new HashSet<String>(simpleAndConstraints.keySet())) {
+                    if (propertyName == null) {
+                        throw new UnsupportedRepositoryOperationException("Unsupported constraint : " + constraint.toString());
+                    }
                     ExtendedPropertyDefinition propertyDefinition = nodeType.getPropertyDefinition(propertyName);
                     if (propertyDefinition != null && propertyDefinition.isInternationalized()) {
                         Value value = simpleAndConstraints.get(propertyName);
