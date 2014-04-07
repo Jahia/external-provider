@@ -287,8 +287,11 @@ public class ExternalQueryManager implements QueryManager {
                         }
                     }
                 } catch (UnsupportedRepositoryOperationException e) {
-                    logger.warn("Unsupported query ", e);
+                    logger.debug("Unsupported query ", e);
                 }
+            }
+            if (results == null) {
+                results = new ArrayList<String>();
             }
             return new ExternalQueryResult(this, results, workspace);
         }
