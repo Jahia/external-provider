@@ -331,6 +331,18 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
+    public void testQueryPaths() throws RepositoryException {
+        assertEquals(87, getResultCount("select * from [jtestnt:city] where ischildnode('/external-database-mapped/CITIES')"));
+        assertEquals(0, getResultCount("select * from [jtestnt:city] where ischildnode('/external-database-mapped/AIRLINES')"));
+        assertEquals(0, getResultCount("select * from [jtestnt:city] where ischildnode('/external-database-mapped')"));
+        assertEquals(0, getResultCount("select * from [jtestnt:city] where ischildnode('/sites/systemsite')"));
+        assertEquals(87, getResultCount("select * from [jtestnt:city] where isdescendantnode('/external-database-mapped/CITIES')"));
+        assertEquals(0, getResultCount("select * from [jtestnt:city] where isdescendantnode('/external-database-mapped/AIRLINES')"));
+        assertEquals(87, getResultCount("select * from [jtestnt:city] where isdescendantnode('/external-database-mapped/')"));
+        assertEquals(0, getResultCount("select * from [jtestnt:city] where isdescendantnode('/sites/systemsite')"));
+    }
+
+    @Test
     public void testQueryLimitAndOffset() throws RepositoryException {
         String queryDirs = "select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "]";
 

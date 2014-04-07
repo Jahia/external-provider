@@ -316,7 +316,17 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
             }
 
         }
-
+        if (result != null && QueryHelper.getRootPath(query.getConstraint()) != null) {
+            List filteredResults = new ArrayList<String>();
+            String root = QueryHelper.getRootPath(query.getConstraint()) + "/";
+            boolean includeSubNodes = QueryHelper.includeSubChild(query.getConstraint());
+            for (String s : result) {
+                if (s.startsWith(root) && (includeSubNodes || !s.substring(root.length()).contains("/"))) {
+                    filteredResults.add(s);
+                }
+            }
+            result = filteredResults;
+        }
         return result != null ? result : Collections.<String>emptyList();
     }
 
