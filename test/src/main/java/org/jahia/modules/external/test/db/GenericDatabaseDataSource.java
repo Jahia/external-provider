@@ -147,7 +147,7 @@ public class GenericDatabaseDataSource extends BaseDatabaseDataSource {
                 props.put(columnName.toLowerCase(), new String[] { value });
             }
         }
-        return new ExternalData(path, path, type, props);
+        return new ExternalData(path.replace('/','_'), path, type, props);
     }
 
     @Override

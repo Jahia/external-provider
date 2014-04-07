@@ -70,6 +70,8 @@
 package org.jahia.modules.external;
 
 import javax.jcr.Binary;
+import javax.jcr.RepositoryException;
+import javax.jcr.UnsupportedRepositoryOperationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -80,8 +82,10 @@ import java.util.Set;
 
 public class ExternalData {
     private String id;
+    private String tmpId;
     private String path;
     private String type;
+    private boolean isNew = false;
     private List<String> mixin;
     private Map<String,String[]> properties;
     private Map<String,Map<String,String[]>> i18nProperties;
@@ -91,14 +95,34 @@ public class ExternalData {
     private Map<String, Set<String>> lazyI18nProperties;
 
     public ExternalData(String id, String path, String type, Map<String, String[]> properties) {
+        this(id, path, type, properties, false);
+    }
+
+    public ExternalData(String id, String path, String type, Map<String, String[]> properties, boolean isNew) {
         this.id = id;
         this.path = path;
         this.type = type;
         this.properties = properties;
+        this.isNew = isNew;
+        if (isNew) {
+            this.tmpId = id;
+        }
     }
 
     public String getId() {
         return id;
+    }
+
+    protected String getTmpId() {
+        return tmpId;
+    }
+
+    public void setId(String id) throws RepositoryException {
+        if (isNew) {
+            this.id = id;
+        } else {
+            throw new UnsupportedRepositoryOperationException();
+        }
     }
 
     public String getPath() {
@@ -107,6 +131,15 @@ public class ExternalData {
 
     public String getType() {
         return type;
+    }
+
+    public boolean isNew() {
+        return isNew;
+    }
+
+    protected void markSaved() {
+        this.isNew = false;
+        this.tmpId = null;
     }
 
     public Map<String,String[]> getProperties() {

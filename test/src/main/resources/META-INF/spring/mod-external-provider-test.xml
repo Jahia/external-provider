@@ -52,4 +52,18 @@
             <bean class="org.jahia.modules.external.test.db.MappedDatabaseDataSource"/>
         </property>
     </bean>
+
+    <bean id="ExternalWriteableMappedDatabaseProvider" class="org.jahia.modules.external.ExternalContentStoreProvider" parent="AbstractJCRStoreProvider">
+        <property name="key" value="WritableDatabaseDataSource"/>
+        <property name="mountPoint" value="/external-writeable-database-mapped"/>
+        <property name="externalProviderInitializerService" ref="ExternalProviderInitializerService"/>
+        <property name="extendableTypes">
+            <list>
+                <value>nt:base</value>
+            </list>
+        </property>
+        <property name="dataSource">
+            <bean class="org.jahia.modules.external.test.db.WriteableMappedDatabaseProvider"/>
+        </property>
+    </bean>
 </beans>

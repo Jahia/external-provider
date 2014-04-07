@@ -211,7 +211,7 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
             }
         }
 
-        ExternalData data = new ExternalData(path, path, type, properties);
+        ExternalData data = new ExternalData(path.replace('/','_'), path, type, properties);
         data.setI18nProperties(i18nProperties);
         data.setLazyProperties(lazyProperties);
         data.setLazyI18nProperties(lazyI18nProperties);

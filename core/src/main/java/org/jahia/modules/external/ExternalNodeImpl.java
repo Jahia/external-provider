@@ -239,6 +239,17 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return true;
     }
 
+    @Override
+    void setNew(boolean isNew) throws RepositoryException {
+        super.setNew(isNew);
+        if (!isNew) {
+            if (!data.getTmpId().equals(data.getId())) {
+                getSession().getRepository().getStoreProvider().getExternalProviderInitializerService().updateExternalIdentifier(data.getTmpId(), data.getId(), getSession().getRepository().getProviderKey(), false);
+            }
+            data.markSaved();
+        }
+     }
+
     /**
      * {@inheritDoc}
      */
@@ -302,7 +313,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             throw new UnsupportedRepositoryOperationException();
         }
         String separator = StringUtils.equals(this.data.getId(),"/")?"":"/";
-        ExternalData subNodeData = new ExternalData(this.data.getId() + separator + relPath ,getPath() + ( getPath().equals("/")? "" : "/" ) + relPath,primaryNodeTypeName,new HashMap<String, String[]>());
+        ExternalData subNodeData = new ExternalData(this.data.getId() + separator + relPath ,getPath() + ( getPath().equals("/")? "" : "/" ) + relPath,primaryNodeTypeName,new HashMap<String, String[]>(), true);
         final ExternalNodeImpl newNode = new ExternalNodeImpl(subNodeData, session);
         session.getChangedData().put(subNodeData.getPath(), subNodeData);
         session.setNewItem(newNode);
@@ -589,7 +600,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public NodeIterator getNodes() throws RepositoryException {
-        List<String> l = new ArrayList<String>(session.getRepository().getDataSource().getChildren(getPath()));
+        List<String> l;
+        if (!data.isNew()) {
+            l = new ArrayList<String>(session.getRepository().getDataSource().getChildren(getPath()));
+        } else {
+            l = new ArrayList<String>();
+        }
         Set<String> languages = new HashSet<String>();
         if (data.getI18nProperties() != null) {
             languages.addAll(data.getI18nProperties().keySet());
@@ -600,7 +616,22 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         for (String lang : languages) {
             l.add(J_TRANSLATION + lang);
         }
-
+        for (ExternalItemImpl item : session.getNewItems()) {
+            if (item.getPath().startsWith(getPath()+"/") && item.isNode()) {
+                String n = item.getPath().substring(getPath().length()+1);
+                if (!n.contains("/"))  {
+                    l.add(n);
+                }
+            }
+        }
+        for (String s : session.getDeletedData().keySet()) {
+            if (s.startsWith(getPath()+"/")) {
+                String n = s.substring(getPath().length()+1);
+                if (!n.contains("/"))  {
+                    l.remove(n);
+                }
+            }
+        }
         Node n = getExtensionNode(false);
         if (n != null && n.hasNodes()) {
             return  new ExternalNodeIterator(l,n.getNodes());
@@ -1436,6 +1467,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 try {
                     nextProperty = getProperty(propertyName);
                 } catch (RepositoryException e) {
+                    logger.error(e.getMessage(),e);
                     logger.error(e.getMessage(),e);
                 }
                 return;

@@ -538,7 +538,11 @@ public class ExternalSessionImpl implements Session {
         return orderedData;
     }
 
-    public void setNewItem(ExternalItemImpl newItem) {
+    public Set<ExternalItemImpl> getNewItems() {
+        return newItems;
+    }
+
+    public void setNewItem(ExternalItemImpl newItem) throws RepositoryException {
         newItem.setNew(true);
         newItems.add(newItem);
     }

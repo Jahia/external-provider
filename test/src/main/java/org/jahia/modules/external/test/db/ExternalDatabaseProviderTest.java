@@ -305,29 +305,29 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     @Test
     public void testQueryConstraints() throws RepositoryException {
         assertEquals(1, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [language] = 'Dutch'"));
+                + "] where [language] = 'Dutch' and isdescendantnode('/external-database-mapped')"));
 
         assertEquals(3, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [language] = 'Arabic'"));
+                + "] where [language] = 'Arabic' and isdescendantnode('/external-database-mapped')"));
         assertEquals(1, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [language] = 'Arabic' and [city_name] = 'Cairo'"));
+                + "] where [language] = 'Arabic' and [city_name] = 'Cairo' and isdescendantnode('/external-database-mapped')"));
         assertEquals(0, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [language] = 'Arabic' and [city_name] = 'Amstaredam'"));
+                + "] where [language] = 'Arabic' and [city_name] = 'Amstaredam' and isdescendantnode('/external-database-mapped')"));
 
         assertEquals(37, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [country_iso_code] = 'US'"));
+                + "] where [country_iso_code] = 'US' and isdescendantnode('/external-database-mapped')"));
         assertEquals(
                 17,
                 getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                        + "] where [country_iso_code] = 'US'", 0, 20));
+                        + "] where [country_iso_code] = 'US' and isdescendantnode('/external-database-mapped')", 0, 20));
         assertEquals(
                 3,
                 getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                        + "] where [country_iso_code] = 'US'", 3, 20));
+                        + "] where [country_iso_code] = 'US' and isdescendantnode('/external-database-mapped')", 3, 20));
         assertEquals(
                 0,
                 getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                        + "] where [country_iso_code] = 'US'", 3, 100));
+                        + "] where [country_iso_code] = 'US' and isdescendantnode('/external-database-mapped')", 3, 100));
     }
 
     @Test
@@ -344,7 +344,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @Test
     public void testQueryLimitAndOffset() throws RepositoryException {
-        String queryDirs = "select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "]";
+        String queryDirs = "select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "] where isdescendantnode('/external-database-mapped')";
 
         assertEquals(4, getResultCount(queryDirs, 0, 0));
 
@@ -377,11 +377,11 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     @Test
     public void testQueryNodeType() throws RepositoryException {
         // count
-        assertEquals(4, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "]"));
-        assertEquals(2, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "]"));
-        assertEquals(0, getResultCount("select * from [" + GenericDatabaseDataSource.DATA_TYPE_TABLE + "]"));
+        assertEquals(4, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "] where isdescendantnode('/external-database-mapped')"));
+        assertEquals(2, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "] where isdescendantnode('/external-database-mapped')"));
+        assertEquals(0, getResultCount("select * from [" + GenericDatabaseDataSource.DATA_TYPE_TABLE + "] where isdescendantnode('/external-database-mapped')"));
 
-        for (NodeIterator ni = query("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "]", 0, 0)
+        for (NodeIterator ni = query("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "] where isdescendantnode('/external-database-mapped')", 0, 0)
                 .getNodes(); ni.hasNext();) {
             assertTrue(ni.nextNode().isNodeType(MappedDatabaseDataSource.DATA_TYPE_AIRLINE));
         }
@@ -516,4 +516,28 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         assertFalse(city.getPath() + " : Node not unlocked", city.isLocked());
     }
 
+    @Test
+    public void testWritableAddNode() throws RepositoryException {
+        final JCRNodeWrapper parent = session.getNode("/external-writeable-database-mapped/AIRLINES");
+        JCRNodeWrapper n = parent.addNode("TS", "jtestnt:airline");
+//        JCRNodeWrapper n = session.getNode("/external-writeable-database-mapped/AIRLINES/AT")
+        n.setProperty("airline","TS");
+        n.setProperty("airline_full","air transat");
+        n.setProperty("basic_rate","0.15");
+        n.setProperty("distance_discount","0.01");
+
+        assertEquals(3,parent.getNodes().getSize());
+
+        session.save();
+
+        assertEquals(3,parent.getNodes().getSize());
+
+        n.setProperty("basic_rate","0.20");
+        session.save();
+
+        n.remove();
+        assertEquals(2,parent.getNodes().getSize());
+        session.save();
+        assertEquals(2,parent.getNodes().getSize());
+    }
 }

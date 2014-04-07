@@ -135,9 +135,9 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
 
     @Override
     public final ExternalData getItemByIdentifier(String identifier) throws ItemNotFoundException {
-        if (identifier.startsWith("/") && !identifier.contains(":")) {
+        if (identifier.startsWith("_") && !identifier.contains(":")) {
             try {
-                return getItemByPath(identifier);
+                return getItemByPath(identifier.replace("_","/"));
             } catch (PathNotFoundException e) {
                 throw new ItemNotFoundException(identifier, e);
             }
@@ -154,7 +154,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
                 if (type.equals(getTableNodeType()) &&  !getTableNames().contains(path.substring(1))) {
                     throw new PathNotFoundException(path);
                 }
-                return new ExternalData(path, path, type, Collections.<String, String[]>emptyMap());
+                return new ExternalData(path.replace('/','_'), path, type, Collections.<String, String[]>emptyMap());
             } else {
                 return getPropertiesForRow(path, type);
             }
@@ -162,7 +162,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
         throw new PathNotFoundException(path);
     }
 
-    private String getNodeTypeName(String path) throws PathNotFoundException {
+    protected String getNodeTypeName(String path) throws PathNotFoundException {
         if (path.length() <= 1) {
             return getSchemaNodeType();
         } else {
@@ -401,7 +401,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
     }
 
     @Override
-    public final void start() {
+    public void start() {
         long timer = System.currentTimeMillis();
         Connection connection = null;
         try {
@@ -423,7 +423,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
     }
 
     @Override
-    public final void stop() {
+    public void stop() {
         try {
             DriverManager.getConnection(DB_URI + ";shutdown=true");
         } catch (Exception e) {

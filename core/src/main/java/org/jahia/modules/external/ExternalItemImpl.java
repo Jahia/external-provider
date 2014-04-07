@@ -109,7 +109,7 @@ public abstract class ExternalItemImpl implements Item {
         return false;
     }
 
-    void setNew(boolean isNew) {
+    void setNew(boolean isNew) throws RepositoryException {
         this.isNew = isNew;
     }
 
