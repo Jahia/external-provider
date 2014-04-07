@@ -318,7 +318,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
             }
             return ids;
         } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
+            logger.debug(e.getMessage(), e);
             return Collections.emptyList();
         } finally {
             DbUtility.close(conn, stmt, rs);
