@@ -527,17 +527,40 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         n.setProperty("distance_discount","0.01");
 
         assertEquals(3,parent.getNodes().getSize());
+        assertEquals(1,parent.getNodes("TS*").getSize());
+        JCRNodeWrapper n2 = parent.getNode("TS");
+        assertTrue(n.equals(n2));
 
         session.save();
 
         assertEquals(3,parent.getNodes().getSize());
+        assertEquals(1,parent.getNodes("TS*").getSize());
+        n2 = parent.getNode("TS");
+        assertTrue(n.equals(n2));
 
         n.setProperty("basic_rate","0.20");
         session.save();
 
         n.remove();
         assertEquals(2,parent.getNodes().getSize());
+        assertEquals(0,parent.getNodes("TS*").getSize());
+
+        try {
+            parent.getNode("TS");
+            fail("node still exists");
+        } catch (PathNotFoundException e) {
+            // ok
+        }
+
         session.save();
         assertEquals(2,parent.getNodes().getSize());
+        assertEquals(0,parent.getNodes("TS").getSize());
+        try {
+            parent.getNode("TS");
+            fail("node still exists");
+        } catch (PathNotFoundException e) {
+            // ok
+        }
+
     }
 }

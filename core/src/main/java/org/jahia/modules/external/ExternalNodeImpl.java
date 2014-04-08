@@ -99,6 +99,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     private static final String J_TRANSLATION = "j:translation_";
     private ExternalData data;
+    private List<String> externalChildren;
     private Map<String, ExternalPropertyImpl> properties = null;
 
     private String uuid;
@@ -206,6 +207,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return null;
     }
 
+    public ExternalData getData() {
+        return data;
+    }
 
     /**
      * {@inheritDoc}
@@ -230,6 +234,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
         String path = StringUtils.substringBeforeLast(data.getPath(), "/");
         return session.getNode(path.isEmpty() ? "/" : path);
+    }
+
+    public List<String> getExternalChildren() throws RepositoryException {
+        if (externalChildren == null) {
+            externalChildren = session.getRepository().getDataSource().getChildren(getPath());
+        }
+        return externalChildren;
     }
 
     /**
@@ -257,7 +268,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }
+
+        if (!data.getPath().equals("/")) {
+            ((ExternalNodeImpl)getParent()).getExternalChildren().remove(getName());
+        }
+
         session.getDeletedData().put(getPath(),data);
+        session.unregisterNode(this);
     }
 
     protected void removeProperty(String name) throws RepositoryException {
@@ -315,8 +332,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         String separator = StringUtils.equals(this.data.getId(),"/")?"":"/";
         ExternalData subNodeData = new ExternalData(this.data.getId() + separator + relPath ,getPath() + ( getPath().equals("/")? "" : "/" ) + relPath,primaryNodeTypeName,new HashMap<String, String[]>(), true);
         final ExternalNodeImpl newNode = new ExternalNodeImpl(subNodeData, session);
+        session.registerNode(newNode);
         session.getChangedData().put(subNodeData.getPath(), subNodeData);
         session.setNewItem(newNode);
+        getExternalChildren().add(relPath);
         return newNode;
     }
 
@@ -327,7 +346,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (srcChildRelPath.equals(destChildRelPath)) {
             return;
         }
-        List<String> children = session.getOrderedData().containsKey(getPath()) ? session.getOrderedData().get(getPath()) : session.getRepository().getDataSource().getChildren(getPath());
+        List<String> children = getExternalChildren();
 
         children.remove(srcChildRelPath);
         if (destChildRelPath == null || !children.contains(destChildRelPath)) {
@@ -470,7 +489,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 v[i] = values[i] != null ? getSession().getValueFactory().createValue(values[i]) : null;
             }
         }
-        return setProperty(name,v);
+        return setProperty(name, v);
     }
 
     /**
@@ -600,55 +619,17 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public NodeIterator getNodes() throws RepositoryException {
-        List<String> l;
-        if (!data.isNew()) {
-            l = new ArrayList<String>(session.getRepository().getDataSource().getChildren(getPath()));
-        } else {
-            l = new ArrayList<String>();
-        }
-        Set<String> languages = new HashSet<String>();
-        if (data.getI18nProperties() != null) {
-            languages.addAll(data.getI18nProperties().keySet());
-        }
-        if (data.getLazyI18nProperties() != null) {
-            languages.addAll(data.getLazyI18nProperties().keySet());
-        }
-        for (String lang : languages) {
-            l.add(J_TRANSLATION + lang);
-        }
-        for (ExternalItemImpl item : session.getNewItems()) {
-            if (item.getPath().startsWith(getPath()+"/") && item.isNode()) {
-                String n = item.getPath().substring(getPath().length()+1);
-                if (!n.contains("/"))  {
-                    l.add(n);
-                }
-            }
-        }
-        for (String s : session.getDeletedData().keySet()) {
-            if (s.startsWith(getPath()+"/")) {
-                String n = s.substring(getPath().length()+1);
-                if (!n.contains("/"))  {
-                    l.remove(n);
-                }
-            }
-        }
-        Node n = getExtensionNode(false);
-        if (n != null && n.hasNodes()) {
-            return  new ExternalNodeIterator(l,n.getNodes());
-        }
-        return new ExternalNodeIterator(l);
+        return getNodes("*");
     }
 
     /**
      * {@inheritDoc}
      */
     public NodeIterator getNodes(String namePattern) throws RepositoryException {
-        final List<String> filteredList = new ArrayList<String>();
-
-        if (!namePattern.equals("j:translation*")) {
-            final List<String> l = session.getRepository().getDataSource().getChildren(getPath());
-            for (String path : l) {
-                if (ChildrenCollectorFilter.matches(path,namePattern)) {
+        List<String> filteredList = new ArrayList<String>();
+        if (!namePattern.equals("j:translation*") && !data.isNew()) {
+            for (String path : getExternalChildren()) {
+                if (namePattern.equals("*") || ChildrenCollectorFilter.matches(path,namePattern)) {
                     filteredList.add(path);
                 }
             }
@@ -661,17 +642,49 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             languages.addAll(data.getLazyI18nProperties().keySet());
         }
         for (String lang : languages) {
-            if (ChildrenCollectorFilter.matches(J_TRANSLATION + lang, namePattern)) {
+            if (namePattern.equals("*") || ChildrenCollectorFilter.matches(J_TRANSLATION + lang, namePattern)) {
                 filteredList.add(J_TRANSLATION + lang);
             }
         }
 
         Node n = getExtensionNode(false);
         if (n != null) {
-            return  new ExternalNodeIterator(filteredList,n.getNodes(namePattern));
+            return  new ExternalNodeIterator(filteredList, namePattern.equals("*") ? n.getNodes() : n.getNodes(namePattern));
         }
         return new ExternalNodeIterator(filteredList);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public NodeIterator getNodes(String[] nameGlobs) throws RepositoryException {
+        final List<String> filteredList = new ArrayList<String>();
+        for (String path : getExternalChildren()) {
+            if (ChildrenCollectorFilter.matches(path,nameGlobs)) {
+                filteredList.add(path);
+            }
+        }
+        Set<String> languages = new HashSet<String>();
+        if (data.getI18nProperties() != null) {
+            languages.addAll(data.getI18nProperties().keySet());
+        }
+        if (data.getLazyI18nProperties() != null) {
+            languages.addAll(data.getLazyI18nProperties().keySet());
+        }
+        for (String lang : languages) {
+            if (ChildrenCollectorFilter.matches(J_TRANSLATION + lang, nameGlobs)) {
+                filteredList.add(J_TRANSLATION + lang);
+            }
+        }
+
+        Node n = getExtensionNode(false);
+        if (n != null) {
+            return new ExternalNodeIterator(filteredList,n.getNodes(nameGlobs));
+        }
+        return new ExternalNodeIterator(filteredList);
+    }
+
+
 
     /**
      * {@inheritDoc}
@@ -1156,37 +1169,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             v = getSession().getValueFactory().createValue(value);
         }
         return setProperty(name, v);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public NodeIterator getNodes(String[] nameGlobs) throws RepositoryException {
-        final List<String> l = session.getRepository().getDataSource().getChildren(getPath());
-        final List<String> filteredList = new ArrayList<String>();
-        for (String path : l) {
-            if (ChildrenCollectorFilter.matches(path,nameGlobs)) {
-                filteredList.add(path);
-            }
-        }
-        Set<String> languages = new HashSet<String>();
-        if (data.getI18nProperties() != null) {
-            languages.addAll(data.getI18nProperties().keySet());
-        }
-        if (data.getLazyI18nProperties() != null) {
-            languages.addAll(data.getLazyI18nProperties().keySet());
-        }
-        for (String lang : languages) {
-            if (ChildrenCollectorFilter.matches(J_TRANSLATION + lang, nameGlobs)) {
-                filteredList.add(J_TRANSLATION + lang);
-            }
-        }
-
-        Node n = getExtensionNode(false);
-        if (n != null) {
-            return new ExternalNodeIterator(filteredList,n.getNodes(nameGlobs));
-        }
-        return new ExternalNodeIterator(filteredList);
     }
 
     /**

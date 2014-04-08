@@ -103,10 +103,12 @@ public class ExternalSessionImpl implements Session {
     private ExternalRepositoryImpl repository;
     private ExternalWorkspaceImpl workspace;
     private Credentials credentials;
+    private Map<String, ExternalNodeImpl> nodesByPath = new LinkedHashMap<String, ExternalNodeImpl>();
+    private Map<String, ExternalNodeImpl> nodesByIdentifier = new LinkedHashMap<String, ExternalNodeImpl>();
+    private Set<ExternalItemImpl> newItems = new HashSet<ExternalItemImpl>();
     private Map<String, ExternalData> changedData = new LinkedHashMap<String, ExternalData>();
     private Map<String, ExternalData> deletedData = new LinkedHashMap<String, ExternalData>();
     private Map<String, List<String>> orderedData = new LinkedHashMap<String, List<String>>();
-    private Set<ExternalItemImpl> newItems = new HashSet<ExternalItemImpl>();
     private Session extensionSession;
     private List<String> extensionAllowedTypes;
     private Map<String,List<String>> overridableProperties;
@@ -144,11 +146,19 @@ public class ExternalSessionImpl implements Session {
     }
 
     public Node getRootNode() throws RepositoryException {
+        if (nodesByPath.containsKey("/")) {
+            return nodesByPath.get("/");
+        }
         ExternalData rootFileObject = repository.getDataSource().getItemByPath("/");
-        return new ExternalNodeImpl(rootFileObject, this);
+        final ExternalNodeImpl externalNode = new ExternalNodeImpl(rootFileObject, this);
+        registerNode(externalNode);
+        return externalNode;
     }
 
     public Node getNodeByUUID(String uuid) throws ItemNotFoundException, RepositoryException {
+        if (nodesByIdentifier.containsKey(uuid)) {
+            return nodesByIdentifier.get(uuid);
+        }
         if (!repository.getDataSource().isSupportsUuid() || uuid.startsWith(TRANSLATION_PREFIX)) {
             if (!uuid.startsWith(getRepository().getStoreProvider().getId())) {
                 throw new ItemNotFoundException("Item " + uuid + " could not be found in this repository");
@@ -207,8 +217,8 @@ public class ExternalSessionImpl implements Session {
         if (deletedData.containsKey(path)) {
             throw new PathNotFoundException("This node has been deleted");
         }
-        if (changedData.containsKey(path)) {
-            return new ExternalNodeImpl(changedData.get(path), this);
+        if (nodesByPath.containsKey(path)) {
+            return nodesByPath.get(path);
         }
         String parentPath = StringUtils.substringBeforeLast(path, "/");
         if (parentPath.equals("")) {
@@ -236,17 +246,26 @@ public class ExternalSessionImpl implements Session {
                 if (parentObject.getLazyI18nProperties() != null && parentObject.getLazyI18nProperties().containsKey(lang)) {
                     i18n.setLazyProperties(parentObject.getLazyI18nProperties().get(lang));
                 }
-                return new ExternalNodeImpl(i18n, this);
+
+                final ExternalNodeImpl node = new ExternalNodeImpl(i18n, this);
+                registerNode(node);
+                return node;
             } else {
                 // Try to get the item as a node
                 try {
                     ExternalData data = repository.getDataSource().getItemByPath(path);
-                    return new ExternalNodeImpl(data, this);
+                    final ExternalNodeImpl node = new ExternalNodeImpl(data, this);
+                    registerNode(node);
+                    return node;
                 } catch (PathNotFoundException e) {
                     // Or a property in the parent node
-                    ExternalData data = repository.getDataSource().getItemByPath(parentPath);
                     String propertyName = StringUtils.substringAfterLast(path, "/");
-                    return new ExternalNodeImpl(data, this).getProperty(propertyName);
+                    if (!nodesByPath.containsKey(parentPath)) {
+                        ExternalData data = repository.getDataSource().getItemByPath(parentPath);
+                        final ExternalNodeImpl node = new ExternalNodeImpl(data, this);
+                        registerNode(node);
+                    }
+                    return nodesByPath.get(parentPath).getProperty(propertyName);
                 }
             }
         } catch (PathNotFoundException e) {
@@ -325,30 +344,39 @@ public class ExternalSessionImpl implements Session {
                 getExtensionSession().move(srcAbsPath, jcrNode.getPath() + "/" + targetName);
                 return;
             }
-            throw new UnsupportedRepositoryOperationException();
-        }
+        } else if (sourceNode instanceof ExternalNodeImpl) {
+            if (!(repository.getDataSource() instanceof ExternalDataSource.Writable)) {
+                throw new UnsupportedRepositoryOperationException();
+            }
 
-        //todo : store move in session and move node in save
+            if (source.equals(dest)) {
+                return;
+            }
 
-        if (!(repository.getDataSource() instanceof ExternalDataSource.Writable)) {
-            throw new UnsupportedRepositoryOperationException();
-        }
-        if (source.equals(dest)) {
+            final ExternalNodeImpl externalNode = (ExternalNodeImpl) sourceNode;
+
+            //todo : store move in session and move node in save
+            ((ExternalDataSource.Writable) repository.getDataSource()).move(source, dest);
+            unregisterNode(externalNode);
+
+            ExternalData newData = repository.getDataSource().getItemByPath(dest);
+
+            registerNode(new ExternalNodeImpl(newData, this));
+
+            final ExternalData oldData = externalNode.getData();
+            if (oldData.getId().equals(newData.getId())) {
+                return;
+            }
+            getRepository()
+                    .getStoreProvider()
+                    .getExternalProviderInitializerService()
+                    .updateExternalIdentifier(oldData.getId(), newData.getId(), getRepository().getProviderKey(),
+                            getRepository().getDataSource().isSupportsHierarchicalIdentifiers());
             return;
         }
-        ExternalData oldData = repository.getDataSource().getItemByPath(source);
-        ((ExternalDataSource.Writable) repository.getDataSource()).move(source, dest);
-        ExternalData newData = repository.getDataSource().getItemByPath(dest);
 
-        if (oldData.getId().equals(newData.getId())) {
-            return;
-        }
-        getRepository()
-                .getStoreProvider()
-                .getExternalProviderInitializerService()
-                .updateExternalIdentifier(oldData.getId(), newData.getId(), getRepository().getProviderKey(),
-                        getRepository().getDataSource().isSupportsHierarchicalIdentifiers());
-    }
+        throw new UnsupportedRepositoryOperationException();
+     }
 
     public void save()
             throws AccessDeniedException, ItemExistsException, ConstraintViolationException, InvalidItemStateException, VersionException, LockException, NoSuchNodeTypeException, RepositoryException {
@@ -545,6 +573,19 @@ public class ExternalSessionImpl implements Session {
 
     public Map<String, List<String>> getOrderedData() {
         return orderedData;
+    }
+
+    public void registerNode(ExternalNodeImpl node) throws RepositoryException {
+        nodesByPath.put(node.getPath(), node);
+        nodesByIdentifier.put(node.getIdentifier(), node);
+    }
+
+    public void unregisterNode(ExternalNodeImpl node) throws RepositoryException {
+        nodesByPath.remove(node.getPath());
+        nodesByIdentifier.remove(node.getIdentifier());
+        changedData.remove(node.getPath());
+        orderedData.remove(node.getPath());
+        newItems.remove(node);
     }
 
     public Set<ExternalItemImpl> getNewItems() {
