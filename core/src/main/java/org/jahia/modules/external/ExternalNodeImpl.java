@@ -1378,6 +1378,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return false;
     }
 
+    @Override
+    public String toString() {
+        return "external node " + data.getPath();
+    }
+
     /**
      * Property iterator implementation
      */

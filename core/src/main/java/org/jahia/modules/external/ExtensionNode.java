@@ -87,10 +87,7 @@ import javax.jcr.version.VersionException;
 import javax.jcr.version.VersionHistory;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * Wrapper for extension Node
@@ -348,7 +345,13 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public NodeType[] getMixinNodeTypes() throws RepositoryException {
-        return node.getMixinNodeTypes();
+        List<NodeType> nt = new ArrayList<NodeType>();
+        for (NodeType nodeType : node.getMixinNodeTypes()) {
+            if (!nodeType.getName().equals("jmix:externalProviderExtension")) {
+                nt.add(NodeTypeRegistry.getInstance().getNodeType(nodeType.getName()));
+            }
+        }
+        return nt.toArray(new NodeType[nt.size()]);
     }
 
     @Override
