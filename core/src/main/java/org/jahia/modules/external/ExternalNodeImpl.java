@@ -238,7 +238,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
     public List<String> getExternalChildren() throws RepositoryException {
         if (externalChildren == null) {
-            externalChildren = session.getRepository().getDataSource().getChildren(getPath());
+            externalChildren = new ArrayList<String>(session.getRepository().getDataSource().getChildren(getPath()));
         }
         return externalChildren;
     }
