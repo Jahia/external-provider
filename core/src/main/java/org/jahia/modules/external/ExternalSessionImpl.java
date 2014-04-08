@@ -355,13 +355,28 @@ public class ExternalSessionImpl implements Session {
 
             final ExternalNodeImpl externalNode = (ExternalNodeImpl) sourceNode;
 
+
+            final ExternalNodeImpl previousParent = (ExternalNodeImpl) externalNode.getParent();
+            final List<String> previousParentChildren = previousParent.getExternalChildren();
+
             //todo : store move in session and move node in save
             ((ExternalDataSource.Writable) repository.getDataSource()).move(source, dest);
+
+            int oldIndex =  previousParentChildren.indexOf(externalNode.getName());
+            previousParentChildren.remove(externalNode.getName());
             unregisterNode(externalNode);
 
             ExternalData newData = repository.getDataSource().getItemByPath(dest);
 
-            registerNode(new ExternalNodeImpl(newData, this));
+            final ExternalNodeImpl newExternalNode = new ExternalNodeImpl(newData, this);
+            registerNode(newExternalNode);
+
+            final ExternalNodeImpl newParent = (ExternalNodeImpl) newExternalNode.getParent();
+            if (newParent.equals(previousParent)) {
+                previousParentChildren.add(oldIndex, newExternalNode.getName());
+            } else if (!newParent.getExternalChildren().contains(newExternalNode.getName())) {
+                newParent.getExternalChildren().add(newExternalNode.getName());
+            }
 
             final ExternalData oldData = externalNode.getData();
             if (oldData.getId().equals(newData.getId())) {
