@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.springframework.org/schema/webflow
+                          http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd">
+
+    <var name="externalProvidersHandler" class="org.jahia.modules.external.admin.ExternalProviderAdminFlow"/>
+
+    <view-state id="view" >
+        <on-render>
+            <evaluate expression="externalProvidersHandler.mountedProviders" result="requestScope.mountedProviders"/>
+        </on-render>
+
+        <transition on="viewDataSource" to="viewDataSource"/>
+
+        <transition on="unmountProvider" to="unmountProvider"/>
+
+    </view-state>
+
+    <view-state id="viewDataSource" >
+        <on-entry>
+            <evaluate expression="externalProvidersHandler.getDatasourceInfo(requestParameters.mountpoint)" result="flowScope.datasourceInfo"/>
+        </on-entry>
+
+        <transition on="back" to="view"/>
+
+    </view-state>
+
+    <action-state id="unmountProvider">
+        <evaluate expression="externalProvidersHandler.unmountProvider(requestParameters.mountpoint)"/>
+        <transition to="view"/>
+    </action-state>
+
+</flow>

@@ -5,6 +5,7 @@
                          j:modulePriority="0"
                          j:moduleType="system"
                          j:title="Jahia External Provider"
+                         jcr:mixinTypes="jmix:hasExternalProviderExtension"
                          jcr:primaryType="jnt:module">
                 
                 <portlets jcr:primaryType="jnt:portletFolder"/>
@@ -13,6 +14,23 @@
                 <templates jcr:primaryType="jnt:templatesFolder">
                     <files jcr:primaryType="jnt:folder"/>
                     <contents jcr:primaryType="jnt:contentFolder"/>
+                    <server-settings-base j:view="serverSettings"
+                                  jcr:mixinTypes="jmix:useUILocale"
+                                  jcr:primaryType="jnt:template">
+                        <system-components jcr:primaryType="jnt:template">
+                            <external-provider j:applyOn="jnt:globalSettings"
+                                       j:defaultTemplate="false"
+                                       j:hiddenTemplate="false"
+                                       j:requiredPermissionNames="adminRoles"
+                                     j:titleKey="label.externalProviderAdmin"
+                                       jcr:mixinTypes="jmix:rbTitle"
+                                       jcr:primaryType="jnt:contentTemplate">
+                                <pagecontent jcr:primaryType="jnt:contentList">
+                                    <serversettingsexternalproviders jcr:primaryType="jnt:serverSettingsExternalProviders"/>
+                                </pagecontent>
+                            </external-provider>
+                        </system-components>
+                    </server-settings-base>
                 </templates>
                 
             </external-provider>

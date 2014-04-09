@@ -109,6 +109,9 @@ public class QueryHelper {
      * @throws UnsupportedRepositoryOperationException If the constraint contains disjunction or cannot be parsed
      */
     public static String getRootPath(Constraint constraint) throws UnsupportedRepositoryOperationException {
+        if (constraint == null) {
+            return null;
+        }
         if (constraint instanceof And) {
             String result1 = getRootPath(((And) constraint).getConstraint1());
             if (result1 != null) {
@@ -136,6 +139,9 @@ public class QueryHelper {
      * @throws UnsupportedRepositoryOperationException If the constraint contains disjunction or cannot be parsed
      */
     public static Boolean includeSubChild(Constraint constraint) throws UnsupportedRepositoryOperationException {
+        if (constraint == null) {
+            return null;
+        }
         if (constraint instanceof And) {
             Boolean result1 = includeSubChild(((And) constraint).getConstraint1());
             if (result1 != null) {

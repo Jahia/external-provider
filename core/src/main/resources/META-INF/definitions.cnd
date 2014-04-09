@@ -20,3 +20,4 @@
  - j:externalNodeIdentifier (string)
  - j:extendedType (string) multiple
 
+[jnt:serverSettingsExternalProviders] > jnt:content, jmix:siteComponent, mix:title, jmix:studioOnly

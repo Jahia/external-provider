@@ -183,6 +183,10 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         this.readOnly = readOnly;
     }
 
+    public ExternalDataSource getDataSource() {
+        return dataSource;
+    }
+
     public void setDataSource(ExternalDataSource dataSource) {
         this.dataSource = dataSource;
     }
