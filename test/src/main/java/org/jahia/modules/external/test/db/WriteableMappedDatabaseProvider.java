@@ -247,7 +247,7 @@ public class WriteableMappedDatabaseProvider extends MappedDatabaseDataSource im
             }
             logger.info("Provider successfully started in {} ms", System.currentTimeMillis() - timer);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Cannot start",e);
         }
     }
 
@@ -265,7 +265,7 @@ public class WriteableMappedDatabaseProvider extends MappedDatabaseDataSource im
 
             logger.info("Provider stopped");
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Cannot stop",e);
         }
     }
 
@@ -276,9 +276,13 @@ public class WriteableMappedDatabaseProvider extends MappedDatabaseDataSource im
                 extract(p, resource, new File(f, resource.getFilename()));
             }
         } else {
-            final FileOutputStream output = new FileOutputStream(f);
-            IOUtils.copy(r.getInputStream(), output);
-            output.close();
+            FileOutputStream output = null;
+            try {
+                output = new FileOutputStream(f);
+                IOUtils.copy(r.getInputStream(), output);
+            } finally {
+                IOUtils.closeQuietly(output);
+            }
         }
     }
 }
