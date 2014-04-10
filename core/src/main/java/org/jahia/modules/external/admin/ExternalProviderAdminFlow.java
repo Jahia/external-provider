@@ -6,6 +6,8 @@ import org.jahia.services.content.*;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.services.query.QueryWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.jcr.RepositoryException;
@@ -16,6 +18,7 @@ import java.io.Serializable;
 import java.util.*;
 
 public class ExternalProviderAdminFlow implements Serializable {
+    private static final Logger logger = LoggerFactory.getLogger(ExternalProviderAdminFlow.class);
 
     private transient JCRStoreService jcrStoreService;
     private transient ExternalProviderInitializerService initializationService;
@@ -76,7 +79,7 @@ public class ExternalProviderAdminFlow implements Serializable {
                 ExtendedNodeType type = NodeTypeRegistry.getInstance().getNodeType(factory.getNodeTypeName());
                 l.add(factory.getNodeTypeName());
             } catch (NoSuchNodeTypeException e) {
-                e.printStackTrace();
+                logger.error("Cannot find factory type",e);
             }
 
         }
