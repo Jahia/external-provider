@@ -109,12 +109,13 @@
         <configuration>
           <instructions>
             <Jahia-Module-Type>system</Jahia-Module-Type>
+            <Jahia-Depends>serverSettings</Jahia-Depends>
+            <Jahia-Deploy-On-Site>system</Jahia-Deploy-On-Site>
             <Import-Package>javassist.util.proxy,
                             ${jahia.plugin.projectPackageImport},
                             *</Import-Package>
             <Export-Package>org.jahia.modules.external,org.jahia.modules.external.query</Export-Package>
             <_removeheaders>${jahia.modules.bundle.removeheaders},
-                            Jahia-Depends,
                             Jahia-Static-Resources</_removeheaders>
           </instructions>
         </configuration>
