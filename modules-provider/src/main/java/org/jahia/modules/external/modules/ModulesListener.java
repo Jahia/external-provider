@@ -90,11 +90,11 @@ public class ModulesListener extends DefaultEventListener {
 
     private final Set<String> modules = new HashSet<String>();
 
-    public ModulesListener() {
+    private ModulesListener() {
         setWorkspace("default");
     }
 
-    // Initialization on demand idiom: thread-safe singleton initialization
+    // Initialization on demand holder idiom: thread-safe singleton initialization
     private static class Holder {
         static final ModulesListener INSTANCE = new ModulesListener();
     }
@@ -121,7 +121,7 @@ public class ModulesListener extends DefaultEventListener {
 
     @Override
     public void onEvent(EventIterator events) {
-        if (((JCREventIterator)events).getSession().isSystem()) {
+        if (((JCREventIterator) events).getSession().isSystem()) {
             // skip internal module operations -> initial import and initialization / cleanup
             return;
         }
@@ -132,7 +132,7 @@ public class ModulesListener extends DefaultEventListener {
                 if (!isExternal(event)) {
                     try {
                         String m = StringUtils.substringAfter(event.getPath(), "/modules/");
-                        m  = StringUtils.substringBefore(m, "/");
+                        m = StringUtils.substringBefore(m, "/");
                         if (!StringUtils.isEmpty(m)) {
                             modules.add(m);
                         }
