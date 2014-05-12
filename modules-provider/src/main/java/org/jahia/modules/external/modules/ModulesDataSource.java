@@ -774,6 +774,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             ExternalData item = getCndItemByPath(path);
             if (!NODETYPES_TYPES.contains(item.getType())) {
                 item = getCndItemByPath(StringUtils.substringBeforeLast(path, "/"));
+                if ("modulesDataSource.errors.delete".equals(message)
+                        || "modulesDataSource.errors.move".equals(message)) {
+                    message += ".property";
+                }
             }
             final String type = StringUtils.substringAfterLast(item.getPath(), "/");
             // Check for usage of the nodetype before moving it
@@ -822,54 +826,76 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         String newSubPath = getSubPath(newPath, newPathlowerCase);
         String[] splitNewPath = StringUtils.split(newSubPath, "/");
 
-        if ((splitOldPath.length == 1) && (splitNewPath.length == 1)) {
-            String oldNodeTypeName = splitOldPath[0];
-            String newNodeTypeName = splitNewPath[0];
-
-            try {
-                NodeTypeRegistry oldNodeTypeRegistry = loadRegistry(oldCndPath);
-                ExtendedNodeType nodeType = oldNodeTypeRegistry.getNodeType(oldNodeTypeName);
-
-                NodeTypeIterator declaredSubtypes = nodeType.getDeclaredSubtypes();
-                List<ExtendedNodeType> n = new ArrayList<ExtendedNodeType>();
-
-                while (declaredSubtypes.hasNext()) {
-                    n.add((ExtendedNodeType) declaredSubtypes.nextNodeType());
-                }
-
-                for (ExtendedNodeType sub : n) {
-                    List<String> s = Lists.newArrayList(sub.getDeclaredSupertypeNames());
-                    s.remove(oldNodeTypeName);
-                    sub.setDeclaredSupertypes(s.toArray(new String[s.size()]));
-                    sub.validate();
-                }
-
-                oldNodeTypeRegistry.unregisterNodeType(oldNodeTypeName);
-
-                Name name = new Name(newNodeTypeName, oldNodeTypeRegistry.getNamespaces());
-                nodeType.setName(name);
-                NodeTypeRegistry newNodeTypeRegistry = loadRegistry(newCndPath);
-                newNodeTypeRegistry.addNodeType(name, nodeType);
-                nodeType.validate();
-
-                for (ExtendedNodeType sub : n) {
-                    List<String> s = Lists.newArrayList(sub.getDeclaredSupertypeNames());
-                    s.add(newNodeTypeName);
-                    sub.setDeclaredSupertypes(s.toArray(new String[s.size()]));
-                    sub.validate();
-                }
-
-                writeDefinitionFile(oldNodeTypeRegistry, newCndPath);
-                if (!oldCndPath.equals(newCndPath)) {
-                    writeDefinitionFile(newNodeTypeRegistry, oldCndPath);
-                }
-            } catch (RepositoryException e) {
-                nodeTypeRegistryMap.remove(newCndPath);
-                nodeTypeRegistryMap.remove(oldCndPath);
-                throw e;
-            }
+        if (splitOldPath.length == 1 && splitNewPath.length == 1) {
+            renameNodeType(oldCndPath, splitOldPath[0], newCndPath, splitNewPath[0]);
+        } if (splitOldPath.length == 2 && splitNewPath.length == 2) {
+            renameNodeTypeProperty(oldCndPath, splitOldPath[0], splitOldPath[1], splitNewPath[1]);
         } else {
             throw new RepositoryException("Cannot move cnd items");
+        }
+    }
+
+    private void renameNodeTypeProperty(String cndPath, String nodeTypeName, String oldPropertyName,
+            String newPropertyName) throws RepositoryException {
+        try {
+            NodeTypeRegistry ntRegistry = loadRegistry(cndPath);
+            ExtendedNodeType nodeType = ntRegistry.getNodeType(nodeTypeName);
+            ExtendedPropertyDefinition propDef = nodeType.getPropertyDefinition(oldPropertyName);
+            propDef.remove();
+            propDef.setName(new Name(newPropertyName, ntRegistry.getNamespaces()));
+            propDef.setDeclaringNodeType(nodeType);
+            nodeType.validate();
+
+            writeDefinitionFile(ntRegistry, cndPath);
+        } catch (RepositoryException e) {
+            nodeTypeRegistryMap.remove(cndPath);
+            throw e;
+        }
+    }
+
+    private void renameNodeType(String oldCndPath, String oldNodeTypeName, String newCndPath, String newNodeTypeName)
+            throws RepositoryException {
+        try {
+            NodeTypeRegistry oldNodeTypeRegistry = loadRegistry(oldCndPath);
+            ExtendedNodeType nodeType = oldNodeTypeRegistry.getNodeType(oldNodeTypeName);
+
+            NodeTypeIterator declaredSubtypes = nodeType.getDeclaredSubtypes();
+            List<ExtendedNodeType> n = new ArrayList<ExtendedNodeType>();
+
+            while (declaredSubtypes.hasNext()) {
+                n.add((ExtendedNodeType) declaredSubtypes.nextNodeType());
+            }
+
+            for (ExtendedNodeType sub : n) {
+                List<String> s = Lists.newArrayList(sub.getDeclaredSupertypeNames());
+                s.remove(oldNodeTypeName);
+                sub.setDeclaredSupertypes(s.toArray(new String[s.size()]));
+                sub.validate();
+            }
+
+            oldNodeTypeRegistry.unregisterNodeType(oldNodeTypeName);
+
+            Name name = new Name(newNodeTypeName, oldNodeTypeRegistry.getNamespaces());
+            nodeType.setName(name);
+            NodeTypeRegistry newNodeTypeRegistry = loadRegistry(newCndPath);
+            newNodeTypeRegistry.addNodeType(name, nodeType);
+            nodeType.validate();
+
+            for (ExtendedNodeType sub : n) {
+                List<String> s = Lists.newArrayList(sub.getDeclaredSupertypeNames());
+                s.add(newNodeTypeName);
+                sub.setDeclaredSupertypes(s.toArray(new String[s.size()]));
+                sub.validate();
+            }
+
+            writeDefinitionFile(oldNodeTypeRegistry, newCndPath);
+            if (!oldCndPath.equals(newCndPath)) {
+                writeDefinitionFile(newNodeTypeRegistry, oldCndPath);
+            }
+        } catch (RepositoryException e) {
+            nodeTypeRegistryMap.remove(newCndPath);
+            nodeTypeRegistryMap.remove(oldCndPath);
+            throw e;
         }
     }
 
