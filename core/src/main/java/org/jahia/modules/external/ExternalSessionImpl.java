@@ -109,6 +109,7 @@ public class ExternalSessionImpl implements Session {
     private Map<String, ExternalData> changedData = new LinkedHashMap<String, ExternalData>();
     private Map<String, ExternalData> deletedData = new LinkedHashMap<String, ExternalData>();
     private Map<String, List<String>> orderedData = new LinkedHashMap<String, List<String>>();
+    private Set<Binary> tempBinaries = new HashSet<Binary>();
     private Session extensionSession;
     private List<String> extensionAllowedTypes;
     private Map<String,List<String>> overridableProperties;
@@ -446,6 +447,7 @@ public class ExternalSessionImpl implements Session {
         for (ExternalData data : changedDataWithI18n.values()) {
             writableDataSource.saveItem(data);
         }
+
         changedData.clear();
         if (!deletedData.isEmpty()) {
             List<String> toBeDeleted = new LinkedList<String>();
@@ -538,6 +540,9 @@ public class ExternalSessionImpl implements Session {
             extensionSession.logout();
             extensionSession = null;
         }
+        for (Binary binary : tempBinaries) {
+            binary.dispose();
+        }
     }
 
     public boolean isLive() {
@@ -602,6 +607,11 @@ public class ExternalSessionImpl implements Session {
         orderedData.remove(node.getPath());
         newItems.remove(node);
     }
+
+    public void registerTemporaryBinary(Binary binary) throws RepositoryException {
+        tempBinaries.add(binary);
+    }
+
 
     public Set<ExternalItemImpl> getNewItems() {
         return newItems;

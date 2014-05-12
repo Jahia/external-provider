@@ -547,6 +547,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             }
             data.getBinaryProperties().put(name, b);
             v = getSession().getValueFactory().createValue(binary);
+            session.registerTemporaryBinary(binary);
         } catch (IOException e) {
             throw new RepositoryException(e);
         }

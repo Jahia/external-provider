@@ -106,6 +106,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
     /**
      * Defines the root point of the DataSource
+     *
      * @param rootUri
      */
     public void setRoot(String rootUri) {
@@ -138,7 +139,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     public boolean isSupportsHierarchicalIdentifiers() {
         return true;
     }
-    
+
     @Override
     public boolean itemExists(String path) {
         try {
@@ -150,7 +151,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         }
         return false;
     }
-    
+
     @Override
     public void order(String path, List<String> children) throws RepositoryException {
         // ordering is not supported in VFS
@@ -165,7 +166,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             try {
                 return getItemByPath(identifier);
             } catch (PathNotFoundException e) {
-                throw new ItemNotFoundException(identifier,e);
+                throw new ItemNotFoundException(identifier, e);
             }
         }
         throw new ItemNotFoundException(identifier);
@@ -173,8 +174,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
     public ExternalData getItemByPath(String path) throws PathNotFoundException {
         try {
-            if (path.endsWith("/"+Constants.JCR_CONTENT)) {
-                FileContent content = getFile(StringUtils.substringBeforeLast(path,"/"+Constants.JCR_CONTENT)).getContent();
+            if (path.endsWith("/" + Constants.JCR_CONTENT)) {
+                FileContent content = getFile(StringUtils.substringBeforeLast(path, "/" + Constants.JCR_CONTENT)).getContent();
                 return getFileContent(content);
             } else {
                 FileObject fileObject = getFile(path);
@@ -197,7 +198,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
     public List<String> getChildren(String path) throws RepositoryException {
         try {
-            if (!path.endsWith("/"+Constants.JCR_CONTENT)) {
+            if (!path.endsWith("/" + Constants.JCR_CONTENT)) {
                 FileObject fileObject = getFile(path);
                 if (fileObject.getType() == FileType.FILE) {
                     return JCR_CONTENT_LIST;
@@ -222,7 +223,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 }
             }
         } catch (FileSystemException e) {
-            logger.error("Cannot get node children",e);
+            logger.error("Cannot get node children", e);
         }
 
         return Collections.emptyList();
@@ -237,8 +238,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             } else if (!file.delete()) {
                 logger.warn("Failed to delete FileObject {}", getFile(path).toString());
             }
-        }
-        catch (FileSystemException e) {
+        } catch (FileSystemException e) {
             throw new RepositoryException(e);
         }
     }
@@ -246,7 +246,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     public void saveItem(ExternalData data) throws RepositoryException {
         try {
             ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(data.getType());
-            if (nodeType.isNodeType(Constants.NT_RESOURCE) && StringUtils.contains(data.getPath(),Constants.JCR_CONTENT)) {
+            if (nodeType.isNodeType(Constants.NT_RESOURCE) && StringUtils.contains(data.getPath(), Constants.JCR_CONTENT)) {
                 OutputStream outputStream = null;
                 try {
                     final Binary[] binaries = data.getBinaryProperties().get(Constants.JCR_DATA);
@@ -259,14 +259,13 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                                 IOUtils.copy(stream, outputStream);
                             } finally {
                                 IOUtils.closeQuietly(stream);
-                                binary.dispose();
                             }
                         }
                     }
                 } catch (IOException e) {
-                    throw new PathNotFoundException("I/O on file : " + data.getPath(),e);
+                    throw new PathNotFoundException("I/O on file : " + data.getPath(), e);
                 } catch (RepositoryException e) {
-                    throw new PathNotFoundException("unable to get outputStream of : " + data.getPath(),e);
+                    throw new PathNotFoundException("unable to get outputStream of : " + data.getPath(), e);
                 } finally {
                     IOUtils.closeQuietly(outputStream);
                 }
@@ -290,20 +289,20 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         try {
             getFile(oldPath).moveTo(getFile(newPath));
         } catch (FileSystemException e) {
-            throw new RepositoryException(oldPath,e);
+            throw new RepositoryException(oldPath, e);
         }
     }
 
     private ExternalData getFile(FileObject fileObject) throws FileSystemException {
         String type = getDataType(fileObject);
 
-        Map<String,String[]> properties = new HashMap<String, String[]>();
+        Map<String, String[]> properties = new HashMap<String, String[]>();
         if (fileObject.getContent() != null) {
             long lastModifiedTime = fileObject.getContent().getLastModifiedTime();
             if (lastModifiedTime > 0) {
                 Calendar calendar = Calendar.getInstance();
                 calendar.setTimeInMillis(lastModifiedTime);
-                String[] timestamp = new String[] { ISO8601.format(calendar) };
+                String[] timestamp = new String[]{ISO8601.format(calendar)};
                 properties.put(Constants.JCR_CREATED, timestamp);
                 properties.put(Constants.JCR_LASTMODIFIED, timestamp);
             }
@@ -323,18 +322,18 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     protected ExternalData getFileContent(final FileContent content) throws FileSystemException {
-        Map<String,String[]> properties = new HashMap<String, String[]>(1);
+        Map<String, String[]> properties = new HashMap<String, String[]>(1);
 
-        properties.put(Constants.JCR_MIMETYPE, new String[] {getContentType(content)});
+        properties.put(Constants.JCR_MIMETYPE, new String[]{getContentType(content)});
 
         String path = content.getFile().getName().getPath().substring(rootPath.length());
-        String jcrContentPath = path + "/"+Constants.JCR_CONTENT;
+        String jcrContentPath = path + "/" + Constants.JCR_CONTENT;
         ExternalData externalData = new ExternalData(jcrContentPath, jcrContentPath, Constants.JAHIANT_RESOURCE, properties);
 
-        Map<String,Binary[]> binaryProperties = new HashMap<String, Binary[]>(1);
-        binaryProperties.put(Constants.JCR_DATA, new Binary[] {new VFSBinaryImpl(content)});
+        Map<String, Binary[]> binaryProperties = new HashMap<String, Binary[]>(1);
+        binaryProperties.put(Constants.JCR_DATA, new Binary[]{new VFSBinaryImpl(content)});
         externalData.setBinaryProperties(binaryProperties);
-        
+
         return externalData;
     }
 
