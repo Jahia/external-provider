@@ -615,7 +615,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 logger.error("Failed to get SCM status", e);
             }
         }
-        if (data.getPath().startsWith("/src/main/import")) {
+        if (data.getPath().equals("/src/main/import") || data.getPath().startsWith("/src/main/import/")) {
             if (data.getMixin() == null) {
                 data.setMixin(Arrays.asList("jmix:moduleImportFile"));
             } else {
