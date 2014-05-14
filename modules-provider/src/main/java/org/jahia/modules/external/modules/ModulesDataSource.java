@@ -829,24 +829,33 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         if (splitOldPath.length == 1 && splitNewPath.length == 1) {
             renameNodeType(oldCndPath, splitOldPath[0], newCndPath, splitNewPath[0]);
         } if (splitOldPath.length == 2 && splitNewPath.length == 2) {
-            renameNodeTypeProperty(oldCndPath, splitOldPath[0], splitOldPath[1], splitNewPath[1]);
+            renameNodeTypePropertyOrChildNode(oldCndPath, splitOldPath[0], splitOldPath[1], splitNewPath[1]);
         } else {
             throw new RepositoryException("Cannot move cnd items");
         }
     }
 
-    private void renameNodeTypeProperty(String cndPath, String nodeTypeName, String oldPropertyName,
-            String newPropertyName) throws RepositoryException {
+    private void renameNodeTypePropertyOrChildNode(String cndPath, String nodeTypeName, String oldName,
+            String newName) throws RepositoryException {
         try {
             NodeTypeRegistry ntRegistry = loadRegistry(cndPath);
             ExtendedNodeType nodeType = ntRegistry.getNodeType(nodeTypeName);
-            ExtendedPropertyDefinition propDef = nodeType.getPropertyDefinition(oldPropertyName);
-            propDef.remove();
-            propDef.setName(new Name(newPropertyName, ntRegistry.getNamespaces()));
-            propDef.setDeclaringNodeType(nodeType);
-            nodeType.validate();
-
-            writeDefinitionFile(ntRegistry, cndPath);
+            ExtendedItemDefinition childDef = nodeType.getPropertyDefinition(oldName);
+            if (childDef == null) {
+                childDef = nodeType.getNodeDefinition(oldName);
+            }
+            
+            if (childDef != null) {
+                if (childDef instanceof ExtendedNodeDefinition) {
+                    ((ExtendedNodeDefinition) childDef).remove();
+                } else {
+                    ((ExtendedPropertyDefinition) childDef).remove();
+                }
+                childDef.setName(new Name(newName, ntRegistry.getNamespaces()));
+                childDef.setDeclaringNodeType(nodeType);
+                nodeType.validate();
+                writeDefinitionFile(ntRegistry, cndPath);
+            }
         } catch (RepositoryException e) {
             nodeTypeRegistryMap.remove(cndPath);
             throw e;
