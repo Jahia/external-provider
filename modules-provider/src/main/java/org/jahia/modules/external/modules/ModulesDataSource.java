@@ -100,6 +100,7 @@ import org.jahia.services.deamons.filewatcher.FileMonitorCallback;
 import org.jahia.services.deamons.filewatcher.FileMonitorJob;
 import org.jahia.services.deamons.filewatcher.FileMonitorResult;
 import org.jahia.services.preferences.user.UserPreferencesHelper;
+import org.jahia.services.query.QueryWrapper;
 import org.jahia.services.templates.SourceControlManagement;
 import org.jahia.services.templates.SourceControlManagement.Status;
 import org.jahia.settings.SettingsBean;
@@ -792,14 +793,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         JCRTemplate.getInstance().doExecuteWithSystemSession(null, workspace, new JCRCallback<Object>() {
             public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
                 try {
-                    QueryResult result = session.getWorkspace().getQueryManager()
-                            .createQuery("Select * from [" + type + "]", Query.JCR_SQL2).execute();
+                    QueryWrapper query = session.getWorkspace().getQueryManager()
+                            .createQuery("Select * from [" + type + "]", Query.JCR_SQL2);
+                    query.setLimit(1);
+                    QueryResult result = query.execute();
                     if (result.getRows().hasNext()) {
-                        Locale locale = UserPreferencesHelper.getPreferredLocale(JCRSessionFactory.getInstance().getCurrentUser());
-                        if (locale == null) {
-                            locale = SettingsBean.getInstance().getDefaultLocale();
-                        }
-                        throw new ItemExistsException(Messages.get("resources.JahiaExternalProviderModules", message, locale));
+                        throw new ItemExistsException(getMessage(message));
                     }
                 } catch (InvalidQueryException e) {
                     // this can happen if the type just have been created and not used at all.
@@ -809,6 +808,19 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 return null;
             }
         });
+    }
+
+    protected String getMessage(String message) {
+        return Messages.get("resources.JahiaExternalProviderModules", message, getUILocale());
+    }
+
+    protected String getMessage(String message, Object... args) {
+        return Messages.getWithArgs("resources.JahiaExternalProviderModules", message, getUILocale(), args);
+    }
+
+    protected Locale getUILocale() {
+        Locale locale = UserPreferencesHelper.getPreferredLocale(JCRSessionFactory.getInstance().getCurrentUser());
+        return locale != null ? locale : SettingsBean.getInstance().getDefaultLocale();
     }
 
     private synchronized void moveCndItems(String oldPath, String newPath) throws RepositoryException {
@@ -828,7 +840,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
         if (splitOldPath.length == 1 && splitNewPath.length == 1) {
             renameNodeType(oldCndPath, splitOldPath[0], newCndPath, splitNewPath[0]);
-        } if (splitOldPath.length == 2 && splitNewPath.length == 2) {
+        } else if (splitOldPath.length == 2 && splitNewPath.length == 2) {
             renameNodeTypePropertyOrChildNode(oldCndPath, splitOldPath[0], splitOldPath[1], splitNewPath[1]);
         } else {
             throw new RepositoryException("Cannot move cnd items");
@@ -868,33 +880,68 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             NodeTypeRegistry oldNodeTypeRegistry = loadRegistry(oldCndPath);
             ExtendedNodeType nodeType = oldNodeTypeRegistry.getNodeType(oldNodeTypeName);
 
-            NodeTypeIterator declaredSubtypes = nodeType.getDeclaredSubtypes();
-            List<ExtendedNodeType> n = new ArrayList<ExtendedNodeType>();
+            ensureCanRenameNodeType(nodeType);
 
-            while (declaredSubtypes.hasNext()) {
-                n.add((ExtendedNodeType) declaredSubtypes.nextNodeType());
-            }
+            // find sub-types
+            List<ExtendedNodeType> declaredSubtypes = getDeclaredSubtypes(nodeType);
 
-            for (ExtendedNodeType sub : n) {
+            // remove the node type from the super type
+            for (ExtendedNodeType sub : declaredSubtypes) {
                 List<String> s = Lists.newArrayList(sub.getDeclaredSupertypeNames());
                 s.remove(oldNodeTypeName);
                 sub.setDeclaredSupertypes(s.toArray(new String[s.size()]));
                 sub.validate();
             }
 
+            // find node types, where the current one is used in child nodes
+            Map<ExtendedNodeType, Set<ExtendedNodeDefinition>> containingNodeTypes = getContainingNodeTypes(nodeType,
+                    oldNodeTypeRegistry);
+            // remove the node type from the super type of child nodes
+            for (Set<ExtendedNodeDefinition> children : containingNodeTypes.values()) {
+                for (ExtendedNodeDefinition child : children) {
+                    List<String> pts = Lists.newArrayList(child.getRequiredPrimaryTypeNames());
+                    pts.remove(oldNodeTypeName);
+                    if (pts.isEmpty()) {
+                        pts.add("nt:base");
+                    }
+                    child.setRequiredPrimaryTypes(pts.toArray(new String[pts.size()]));
+                }
+                children.iterator().next().getDeclaringNodeType().validate();
+            }
+
+            // unregister the node type with the old name
             oldNodeTypeRegistry.unregisterNodeType(oldNodeTypeName);
 
+            // rename the node type and register it
             Name name = new Name(newNodeTypeName, oldNodeTypeRegistry.getNamespaces());
             nodeType.setName(name);
             NodeTypeRegistry newNodeTypeRegistry = loadRegistry(newCndPath);
             newNodeTypeRegistry.addNodeType(name, nodeType);
             nodeType.validate();
 
-            for (ExtendedNodeType sub : n) {
+            // adjust the super type of the sub-types
+            for (ExtendedNodeType sub : declaredSubtypes) {
                 List<String> s = Lists.newArrayList(sub.getDeclaredSupertypeNames());
                 s.add(newNodeTypeName);
                 sub.setDeclaredSupertypes(s.toArray(new String[s.size()]));
                 sub.validate();
+            }
+
+            // adjust the super types of child nodes
+            for (Set<ExtendedNodeDefinition> children : containingNodeTypes.values()) {
+                for (ExtendedNodeDefinition child : children) {
+                    child.remove();
+                    List<String> pts = Lists.newArrayList(child.getRequiredPrimaryTypeNames());
+                    pts.remove("nt:base");
+                    pts.add(newNodeTypeName);
+                    child.setRequiredPrimaryTypes(pts.toArray(new String[pts.size()]));
+                    if (child.getDefaultPrimaryTypeName() != null && child.getDefaultPrimaryTypeName().equals(oldNodeTypeName)) {
+                        child.setDefaultPrimaryType(newNodeTypeName);
+                    }
+                    child.setDeclaringNodeType(child.getDeclaringNodeType());
+                    
+                }
+                children.iterator().next().getDeclaringNodeType().validate();
             }
 
             writeDefinitionFile(oldNodeTypeRegistry, newCndPath);
@@ -905,6 +952,77 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             nodeTypeRegistryMap.remove(newCndPath);
             nodeTypeRegistryMap.remove(oldCndPath);
             throw e;
+        }
+    }
+
+    private List<ExtendedNodeType> getDeclaredSubtypes(ExtendedNodeType nodeType) {
+        List<ExtendedNodeType> declaredSubtypes = new LinkedList<ExtendedNodeType>();
+        NodeTypeIterator declaredSubtypesIterator = nodeType.getDeclaredSubtypes();
+        while (declaredSubtypesIterator.hasNext()) {
+            declaredSubtypes.add((ExtendedNodeType) declaredSubtypesIterator.nextNodeType());
+        }
+        return declaredSubtypes;
+    }
+
+    private Map<ExtendedNodeType, Set<ExtendedNodeDefinition>> getContainingNodeTypes(ExtendedNodeType nodeType, NodeTypeRegistry ntRegistry) {
+        Map<ExtendedNodeType, Set<ExtendedNodeDefinition>> containingTypes = new LinkedHashMap<ExtendedNodeType, Set<ExtendedNodeDefinition>>();
+        String moduleId = module.getId();
+        String thisNodeTypeName = nodeType.getName();
+        for (ExtendedNodeType containingType : ntRegistry.getAllNodeTypes()) {
+            if (!moduleId.equals(containingType.getSystemId())) {
+                continue;
+            }
+            for (ExtendedNodeDefinition ntd : containingType.getChildNodeDefinitions()) {
+                if (ArrayUtils.contains(ntd.getRequiredPrimaryTypeNames(), thisNodeTypeName)) {
+                    Set<ExtendedNodeDefinition> children = containingTypes.get(containingType);
+                    if (children == null) {
+                        children = new LinkedHashSet<ExtendedNodeDefinition>();
+                        containingTypes.put(containingType, children);
+                    }
+                    children.add(ntd);
+                }
+            }
+            for (ExtendedNodeDefinition ntd : containingType.getUnstructuredChildNodeDefinitions().values()) {
+                if (ArrayUtils.contains(ntd.getRequiredPrimaryTypeNames(), thisNodeTypeName)) {
+                    Set<ExtendedNodeDefinition> children = containingTypes.get(containingType);
+                    if (children == null) {
+                        children = new LinkedHashSet<ExtendedNodeDefinition>();
+                        containingTypes.put(containingType, children);
+                    }
+                    children.add(ntd);
+                }
+            }
+        }
+
+        return containingTypes;
+    }
+
+    private void ensureCanRenameNodeType(ExtendedNodeType nodeType)
+            throws ConstraintViolationException {
+        String thisNodeTypeName = nodeType.getName();
+        String thisModuleId = module.getId();
+        for (ExtendedNodeType type : NodeTypeRegistry.getInstance().getAllNodeTypes()) {
+            if (type.getName().equals(thisNodeTypeName) || type.getSystemId().equals(thisModuleId)) {
+                continue;
+            }
+            for (ExtendedNodeType nt : type.getSupertypes()) {
+                if (nt.getName().equals(thisNodeTypeName)) {
+                    throw new ConstraintViolationException(getMessage("modulesDataSource.errors.rename.supertype",
+                            new Object[] { thisNodeTypeName, type.getName(), type.getSystemId() }));
+                }
+            }
+            for (ExtendedNodeDefinition ntd : type.getChildNodeDefinitions()) {
+                if (ArrayUtils.contains(ntd.getRequiredPrimaryTypeNames(), thisNodeTypeName)) {
+                    throw new ConstraintViolationException(getMessage("modulesDataSource.errors.rename.childtype",
+                            new Object[] { thisNodeTypeName, type.getName(), type.getSystemId() }));
+                }
+            }
+            for (ExtendedNodeDefinition ntd : type.getUnstructuredChildNodeDefinitions().values()) {
+                if (ArrayUtils.contains(ntd.getRequiredPrimaryTypeNames(), thisNodeTypeName)) {
+                    throw new ConstraintViolationException(getMessage("modulesDataSource.errors.rename.childtype",
+                            new Object[] { thisNodeTypeName, type.getName(), type.getSystemId() }));
+                }
+            }
         }
     }
 
