@@ -114,7 +114,7 @@ public class ExternalSessionImpl implements Session {
     private List<String> extensionAllowedTypes;
     private Map<String,List<String>> overridableProperties;
     private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
-
+    private static List<String> reservedNodes = Arrays.asList("j:acl", "j:workflowRules");
 
     public ExternalSessionImpl(ExternalRepositoryImpl repository, Credentials credentials, String workspaceName) {
         this.repository = repository;
@@ -232,7 +232,15 @@ public class ExternalSessionImpl implements Session {
             } else if (StringUtils.substringAfterLast(path, "/").startsWith(TRANSLATION_NODE_NAME_BASE)) {
                 // Getting translation node
                 String lang = StringUtils.substringAfterLast(path, TRANSLATION_NODE_NAME_BASE);
-                ExternalData parentObject = repository.getDataSource().getItemByPath(parentPath);
+
+                ExternalData parentObject;
+                if (nodesByPath.containsKey(parentPath)) {
+                    parentObject = nodesByPath.get(parentPath).getData();
+                } else {
+                    parentObject = repository.getDataSource().getItemByPath(parentPath);
+                    final ExternalNodeImpl node = new ExternalNodeImpl(parentObject, this);
+                    registerNode(node);
+                }
                 if ((parentObject.getI18nProperties() == null || !parentObject.getI18nProperties().containsKey(lang)) &&
                         (parentObject.getLazyI18nProperties() == null || !parentObject.getLazyI18nProperties().containsKey(lang))) {
                     throw new PathNotFoundException(path);
@@ -252,6 +260,10 @@ public class ExternalSessionImpl implements Session {
                 registerNode(node);
                 return node;
             } else {
+                String itemName = StringUtils.substringAfterLast(path, "/");
+                if (reservedNodes.contains(itemName)) {
+                    throw new PathNotFoundException(path);
+                }
                 // Try to get the item as a node
                 try {
                     ExternalData data = repository.getDataSource().getItemByPath(path);
@@ -260,13 +272,12 @@ public class ExternalSessionImpl implements Session {
                     return node;
                 } catch (PathNotFoundException e) {
                     // Or a property in the parent node
-                    String propertyName = StringUtils.substringAfterLast(path, "/");
                     if (!nodesByPath.containsKey(parentPath)) {
                         ExternalData data = repository.getDataSource().getItemByPath(parentPath);
                         final ExternalNodeImpl node = new ExternalNodeImpl(data, this);
                         registerNode(node);
                     }
-                    return nodesByPath.get(parentPath).getProperty(propertyName);
+                    return nodesByPath.get(parentPath).getProperty(itemName);
                 }
             }
         } catch (PathNotFoundException e) {
