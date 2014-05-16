@@ -219,6 +219,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     if (fileObject.exists()) {
                         logger.warn("Found non file or folder entry at path {}, maybe an alias. VFS file type: {}",
                                 fileObject, fileObject.getType());
+                    } else {
+                        throw new PathNotFoundException(path);
                     }
                 }
             }
