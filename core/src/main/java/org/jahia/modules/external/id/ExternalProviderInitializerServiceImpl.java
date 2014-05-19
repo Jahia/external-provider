@@ -129,9 +129,9 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
             if (includeDescendants) {
                 // delete descendants
-                Query selectStmt = session.createQuery("from UuidMapping where providerKey=? and externalId like ?").setString(0, providerKey);
+                Query selectStmt = session.createQuery("from UuidMapping where providerKey=:providerKey and externalId like :externalId").setString("providerKey", providerKey);
                 for (String externalId : externalIds) {
-                    selectStmt.setString(1, externalId + "/%");
+                    selectStmt.setString("externalId", externalId + "/%");
                     List<?> descendants = selectStmt.list();
 
                     for (Object mapping : descendants) {
@@ -237,7 +237,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         Session session = null;
         try {
             session = hibernateSession.openSession();
-            List<?> list = session.createQuery("from ExternalProviderID where providerKey=:providerKey").setString(providerKey, providerKey)
+            List<?> list = session.createQuery("from ExternalProviderID where providerKey=:providerKey").setString("providerKey", providerKey)
                     .setReadOnly(true).setFlushMode(FlushMode.MANUAL).list();
             if (list.size() > 0) {
                 providerId = (ExternalProviderID) list.get(0);
