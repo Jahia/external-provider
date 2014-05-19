@@ -274,6 +274,9 @@ public class ExternalRepositoryImpl implements Repository {
         repositoryDescriptors.put(Repository.OPTION_WORKSPACE_MANAGEMENT_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.OPTION_XML_EXPORT_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.OPTION_XML_IMPORT_SUPPORTED, new ExternalValueImpl(false));
+        if (storeProvider.isSlowConnection()) {
+            repositoryDescriptors.put("jahia.provider.slowConnection", new ExternalValueImpl(true));
+        }
     }
 
     public boolean isSingleValueDescriptor(String key) {

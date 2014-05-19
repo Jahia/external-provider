@@ -82,6 +82,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -101,7 +102,9 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     private List<String> extendableTypes;
     private List<String> overridableItems;
+    private List<String> reservedNodes = Arrays.asList("j:acl", "j:workflowRules", "thumbnail");
 
+    private boolean slowConnection = true;
     private boolean lockSupport = false;
 
     @Override
@@ -258,6 +261,22 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     public void setLockSupport(boolean lockSupport) {
         this.lockSupport = lockSupport;
+    }
+
+    public boolean isSlowConnection() {
+        return slowConnection;
+    }
+
+    public void setSlowConnection(boolean slowConnection) {
+        this.slowConnection = slowConnection;
+    }
+
+    public List<String> getReservedNodes() {
+        return reservedNodes;
+    }
+
+    public void setReservedNodes(List<String> reservedNodes) {
+        this.reservedNodes = reservedNodes;
     }
 
     /**

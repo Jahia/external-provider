@@ -114,7 +114,6 @@ public class ExternalSessionImpl implements Session {
     private List<String> extensionAllowedTypes;
     private Map<String,List<String>> overridableProperties;
     private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
-    private static List<String> reservedNodes = Arrays.asList("j:acl", "j:workflowRules");
 
     public ExternalSessionImpl(ExternalRepositoryImpl repository, Credentials credentials, String workspaceName) {
         this.repository = repository;
@@ -261,7 +260,7 @@ public class ExternalSessionImpl implements Session {
                 return node;
             } else {
                 String itemName = StringUtils.substringAfterLast(path, "/");
-                if (reservedNodes.contains(itemName)) {
+                if (getRepository().getStoreProvider().getReservedNodes().contains(itemName)) {
                     throw new PathNotFoundException(path);
                 }
                 // Try to get the item as a node
@@ -479,11 +478,27 @@ public class ExternalSessionImpl implements Session {
         newItems.clear();
     }
 
-    public void refresh(boolean b) throws RepositoryException {
-        if (!b) {
+    public void refresh(boolean keepChanges) throws RepositoryException {
+        if (!keepChanges) {
             deletedData.clear();
             changedData.clear();
             orderedData.clear();
+            newItems.clear();
+            nodesByPath.clear();
+            nodesByIdentifier.clear();
+        } else {
+            List<String> pathsToKeep = new ArrayList<String>();
+            pathsToKeep.addAll(changedData.keySet());
+            pathsToKeep.addAll(deletedData.keySet());
+            pathsToKeep.addAll(orderedData.keySet());
+            List<String> idsToKeep = new ArrayList<String>();
+            for (String s : pathsToKeep) {
+                if (nodesByPath.containsKey(s)) {
+                    idsToKeep.add(nodesByPath.get(s).getIdentifier());
+                }
+            }
+            nodesByPath.keySet().retainAll(pathsToKeep);
+            nodesByIdentifier.keySet().retainAll(idsToKeep);
         }
     }
 

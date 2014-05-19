@@ -2103,6 +2103,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     loadRegistry("/META-INF/" + s);
                 }
             }
+        } catch (PathNotFoundException e) {
+            // no META-INF folder
         } catch (RepositoryException e) {
             logger.warn("Cannot read definition files for module", e);
         }

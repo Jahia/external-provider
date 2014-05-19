@@ -73,6 +73,7 @@ import org.apache.commons.beanutils.BeanUtils;
 import org.eclipse.gemini.blueprint.context.BundleContextAware;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.exceptions.JahiaInitializationException;
+import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.JahiaAfterInitializationService;
 import org.jahia.services.SpringContextSingleton;
@@ -142,7 +143,7 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
 
                     BeanUtils.populate(dataSource, properties);
 
-                    JCRStoreProvider ex = (JCRStoreProvider) SpringContextSingleton.getBeanInModulesContext(
+                    ExternalContentStoreProvider ex = (ExternalContentStoreProvider) SpringContextSingleton.getBeanInModulesContext(
                             "ExternalStoreProviderPrototype");
                     properties.clear();
                     properties.put("key", "module-" + templatePackage.getId() + "-" +
@@ -150,6 +151,7 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                     properties.put("mountPoint", "/modules/" + templatePackage.getIdWithVersion() + "/sources");
                     properties.put("dataSource", dataSource);
                     properties.put("lockSupport",true);
+                    properties.put("slowConnection",false);
 
                     BeanUtils.populate(ex, properties);
 
