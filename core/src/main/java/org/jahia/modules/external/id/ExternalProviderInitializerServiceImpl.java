@@ -208,8 +208,8 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
             try {
                 session = getHibernateSessionFactory().openStatelessSession();
                 session.beginTransaction();
-                List<?> list = session.createQuery("from UuidMapping where providerKey=? and externalIdHash=?")
-                        .setString(0, providerKey).setLong(1, hash).setReadOnly(true).list();
+                List<?> list = session.createQuery("from UuidMapping where providerKey=:providerKey and externalIdHash=:idHash")
+                        .setString("providerKey", providerKey).setLong("idHash", hash).setReadOnly(true).list();
                 if (list.size() > 0) {
                     uuid = ((UuidMapping) list.get(0)).getInternalUuid();
                     getIdentifierCache().put(new Element(cacheKey, uuid, true));
@@ -237,7 +237,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         Session session = null;
         try {
             session = hibernateSession.openSession();
-            List<?> list = session.createQuery("from ExternalProviderID where providerKey=?").setString(0, providerKey)
+            List<?> list = session.createQuery("from ExternalProviderID where providerKey=:providerKey").setString(providerKey, providerKey)
                     .setReadOnly(true).setFlushMode(FlushMode.MANUAL).list();
             if (list.size() > 0) {
                 providerId = (ExternalProviderID) list.get(0);
@@ -312,12 +312,12 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         try {
             session = hibernateSession.openStatelessSession();
             session.beginTransaction();
-            int deletedCount = session.createQuery("delete from ExternalProviderID where providerKey=?")
-                    .setString(0, providerKey).executeUpdate();
+            int deletedCount = session.createQuery("delete from ExternalProviderID where providerKey=:providerKey")
+                    .setString("providerKey", providerKey).executeUpdate();
             if (deletedCount > 0) {
                 logger.info("Deleted external provider entry for key {}", providerKey);
-                deletedCount = session.createQuery("delete from UuidMapping where providerKey=?")
-                        .setString(0, providerKey).executeUpdate();
+                deletedCount = session.createQuery("delete from UuidMapping where providerKey=:providerKey")
+                        .setString("providerKey", providerKey).executeUpdate();
                 logger.info("Deleted {} identifier mapping entries for external provider with key {}", deletedCount,
                         providerKey);
             } else {
@@ -359,8 +359,8 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
             List<String> invalidate = new ArrayList<String>();
             session = getHibernateSessionFactory().openSession();
             session.beginTransaction();
-            List<?> list = session.createQuery("from UuidMapping where providerKey=? and externalIdHash=?")
-                    .setString(0, providerKey).setLong(1, oldExternalId.hashCode()).list();
+            List<?> list = session.createQuery("from UuidMapping where providerKey=:providerKey and externalIdHash=:idHash")
+                    .setString("providerKey", providerKey).setLong("idHash", oldExternalId.hashCode()).list();
             if (list.size() > 0) {
                 for (Object mapping : list) {
                     ((UuidMapping) mapping).setExternalId(newExternalId);
@@ -369,8 +369,8 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
             }
             if (includeDescendants) {
                 // update descendants
-                List<?> descendants = session.createQuery("from UuidMapping where providerKey=? and externalId like ?")
-                        .setString(0, providerKey).setString(1, oldExternalId + "/%").list();
+                List<?> descendants = session.createQuery("from UuidMapping where providerKey=:providerKey and externalId like :externalId")
+                        .setString("providerKey", providerKey).setString("externalId", oldExternalId + "/%").list();
                 for (Object mapping : descendants) {
                     UuidMapping m = (UuidMapping) mapping;
                     m.setExternalId(newExternalId + StringUtils.substringAfter(m.getExternalId(), oldExternalId));
