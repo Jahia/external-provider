@@ -538,6 +538,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 String nodeTypeName = StringUtils.replace(StringUtils.substringBetween(path, SRC_MAIN_RESOURCES, "/"), "_", ":");
                 // add nodetype only if it is resolved
                 if (nodeTypeName != null) {
+                    nodeTypeName = nodeTypeName.replace('-', '_');
                     data.getProperties().put("nodeTypeName", new String[]{nodeTypeName});
                 }
                 lazyProperties.add(SOURCE_CODE);
@@ -687,6 +688,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         String subPath = getSubPath(path, pathLowerCase);
         String[] splitPath = StringUtils.split(subPath, "/");
         String nodeTypeName = splitPath[0];
+        nodeTypeName = nodeTypeName.replace('-', '_');
         if (splitPath.length == 1) {
             NodeTypeRegistry nodeTypeRegistry = loadRegistry(cndPath);
             nodeTypeRegistry.unregisterNodeType(nodeTypeName);
@@ -1231,6 +1233,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         String cndPath = getCndPath(path, pathLowerCase);
         String subPath = getSubPath(path, pathLowerCase);
         String nodeTypeName = StringUtils.substringBefore(subPath, "/");
+        nodeTypeName = nodeTypeName.replace('-', '_');
         NodeTypeRegistry nodeTypeRegistry = loadRegistry(cndPath);
         ExtendedNodeType nodeType = null;
         try {
@@ -1389,6 +1392,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
         NodeTypeRegistry nodeTypeRegistry = loadRegistry(cndPath);
         String nodeTypeName = splitPath[0];
+        nodeTypeName = nodeTypeName.replace('-', '_');
         String lastPathSegment = splitPath[1];
         try {
             ExtendedNodeType nodeType = nodeTypeRegistry.getNodeType(nodeTypeName);
@@ -1625,6 +1629,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         NodeTypeRegistry nodeTypeRegistry = loadRegistry(cndPath);
 
         String nodeTypeName = splitPath[0];
+        nodeTypeName = nodeTypeName.replace('-', '_');
         String lastPathSegment = splitPath[1];
         try {
             ExtendedNodeType nodeType = nodeTypeRegistry.getNodeType(nodeTypeName);
@@ -1704,6 +1709,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
             if (splitPath.length == 1) {
                 String nodeTypeName = splitPath[0];
+                nodeTypeName = nodeTypeName.replace('-', '_');
                 try {
                     ExtendedNodeType nodeType = loadRegistry(cndPath).getNodeType(nodeTypeName);
                     for (ExtendedItemDefinition itemDefinition : nodeType.getDeclaredItems(true)) {
@@ -1728,10 +1734,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         String[] splitPath = StringUtils.split(subPath, "/");
         if (splitPath.length == 1) {
             String nodeTypeName = splitPath[0];
+            nodeTypeName = nodeTypeName.replace('-', '_');
             ExtendedNodeType nodeType = loadRegistry(cndPath).getNodeType(nodeTypeName);
             return getNodeTypeData(path, nodeType);
         } else if (splitPath.length == 2) {
             String nodeTypeName = splitPath[0];
+            nodeTypeName = nodeTypeName.replace('-', '_');
             String itemDefinitionName = splitPath[1];
             try {
                 ExtendedNodeType nodeType = loadRegistry(cndPath).getNodeType(nodeTypeName);
