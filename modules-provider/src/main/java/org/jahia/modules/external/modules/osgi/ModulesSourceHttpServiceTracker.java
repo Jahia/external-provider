@@ -70,7 +70,10 @@
 package org.jahia.modules.external.modules.osgi;
 
 import com.phloc.commons.io.file.filter.FilenameFilterNotEquals;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.bundles.extender.jahiamodules.BundleHttpResourcesTracker;
 import org.jahia.bundles.extender.jahiamodules.FileHttpContext;
@@ -88,6 +91,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.Collection;
 
 public class ModulesSourceHttpServiceTracker extends ServiceTracker {
     private static Logger logger = LoggerFactory.getLogger(ModulesSourceHttpServiceTracker.class);
@@ -112,6 +116,9 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
     public Object addingService(ServiceReference reference) {
         HttpService httpService = (HttpService) super.addingService(reference);
         this.httpService = httpService;
+
+        registerMissingJsps();
+
         return httpService;
     }
 
@@ -148,6 +155,22 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         }
         if (logger.isDebugEnabled()) {
             logger.debug("Unregister JSP {} in bundle {}", jspPath, bundleName);
+        }
+    }
+
+    public void registerMissingJsps() {
+        File sourcesFolder = module.getSourcesFolder();
+        if (sourcesFolder == null) {
+            return;
+        }
+        File resourcesRoot = new File(sourcesFolder, "src/main/resources");
+        if (!resourcesRoot.exists()) {
+            return;
+        }
+        for (File jsp : FileUtils.listFiles(resourcesRoot, new WildcardFileFilter("*.jsp"), TrueFileFilter.INSTANCE)) {
+            if (bundle.getResource(getJspPath(jsp)) == null) {
+                registerJsp(jsp);
+            }
         }
     }
 
