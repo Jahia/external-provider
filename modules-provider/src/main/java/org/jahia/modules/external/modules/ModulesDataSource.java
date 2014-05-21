@@ -224,11 +224,6 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 if (logger.isDebugEnabled()) {
                     logger.debug(result.getInfo());
                 }
-                SourceControlManagement sourceControl = module.getSourceControl();
-                if (sourceControl != null) {
-                    sourceControl.invalidateStatusCache();
-                    logger.debug("Invalidating SCM status caches for module {}", module.getId());
-                }
                 boolean nodeTypeLabelsFlushed = false;
                 List<File> importFiles = new ArrayList<File>();
                 for (final File file : result.getAllAsList()) {
@@ -298,6 +293,26 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 }
                 if (!importFiles.isEmpty()) {
                     modulesImportExportHelper.updateImportFileNodes(importFiles, importFilesRootFolder, filesNodePath);
+                }
+                SourceControlManagement sourceControl = module.getSourceControl();
+                if (sourceControl != null) {
+                    sourceControl.invalidateStatusCache();
+                    logger.debug("Invalidating SCM status caches for module {}", module.getId());
+
+                    for (File file : result.getDeleted()) {
+                        try {
+                            sourceControl.remove(file);
+                        } catch (IOException e) {
+                            logger.error("An error occurred when trying to remove file from source control", e);
+                        }
+                    }
+                    for (File file : result.getCreated()) {
+                        try {
+                            sourceControl.add(file);
+                        } catch (IOException e) {
+                            logger.error("An error occurred when trying to add file in source control", e);
+                        }
+                    }
                 }
             }
         });
