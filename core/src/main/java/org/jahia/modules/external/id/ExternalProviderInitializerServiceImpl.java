@@ -73,6 +73,7 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
 import org.apache.commons.lang.StringUtils;
 import org.hibernate.*;
+import org.hibernate.internal.util.*;
 import org.jahia.modules.external.ExternalProviderInitializerService;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
 import org.jahia.services.content.JCRStoreProvider;
@@ -282,6 +283,9 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         uuidMapping.setProviderKey(providerKey);
         uuidMapping.setInternalUuid(providerId + "-" + StringUtils.substringAfter(UUID.randomUUID().toString(), "-"));
         org.hibernate.Session session = null;
+        Thread currentThread = Thread.currentThread();
+        ClassLoader previousClassLoader = currentThread.getContextClassLoader();
+        currentThread.setContextClassLoader(this.getClass().getClassLoader());
         try {
             session = getHibernateSessionFactory().openSession();
             session.beginTransaction();
@@ -300,6 +304,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
             if (session != null) {
                 session.close();
             }
+            currentThread.setContextClassLoader(previousClassLoader);
         }
 
         return uuidMapping.getInternalUuid();
