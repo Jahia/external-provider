@@ -74,6 +74,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 import javax.jcr.ItemNotFoundException;
@@ -275,7 +276,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
     protected final List<String> getRowIDs(String tableName, Map<String, Value> constraints) {
         List<String> ids = new LinkedList<String>();
         Connection conn = null;
-        PreparedStatement stmt = null;
+        Statement stmt = null;
         ResultSet rs = null;
 
         try {
@@ -307,7 +308,8 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
                     }
                 }
             }
-            rs = conn.createStatement().executeQuery(sql.toString());
+            stmt = conn.createStatement();
+            rs = stmt.executeQuery(sql.toString());
             int position = 0;
             while (rs.next()) {
                 position++;
