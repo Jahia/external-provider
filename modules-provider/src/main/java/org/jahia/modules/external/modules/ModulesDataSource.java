@@ -341,8 +341,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             String systemId = module.getId();
             NodeTypeRegistry nodeTypeRegistry = NodeTypeRegistry.getInstance();
             nodeTypeRegistry.unregisterNodeTypes(systemId);
+            Properties deploymentProperties = nodeTypeRegistry.getDeploymentProperties();
             for (String path : definitionsFiles) {
                 nodeTypeRegistry.addDefinitionsFile(getRealFile(SRC_MAIN_RESOURCES + path), systemId, module.getVersion());
+                deploymentProperties.put(module.getResource(path).getURI().toString() + ".lastRegistered.default", "0");
             }
             if (SettingsBean.getInstance().isProcessingServer()) {
                 jcrStoreService.deployDefinitions(systemId);
