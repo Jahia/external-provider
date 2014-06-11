@@ -161,8 +161,12 @@ public class ExternalQueryManager implements QueryManager {
                 return true;
             }
             for (String supportedNodeType : supportedNodeTypes) {
-                if (ntRegistry.getNodeType(supportedNodeType).isNodeType(nodeType)) {
-                    return true;
+                try {
+                    if (ntRegistry.getNodeType(supportedNodeType).isNodeType(nodeType)) {
+                        return true;
+                    }
+                } catch (NoSuchNodeTypeException e) {
+                    logger.error("no such node type", e);
                 }
             }
 
@@ -198,14 +202,14 @@ public class ExternalQueryManager implements QueryManager {
                 boolean isMixinOrFacet = NodeTypeRegistry.getInstance().getNodeType(selectorType).isMixin();
                 QueryObjectModelFactory qomFactory = queryManager.getQOMFactory();
                 for (Column c : getColumns()) {
-                    if (StringUtils.startsWith(c.getColumnName(),"rep:facet(")) {
+                    if (StringUtils.startsWith(c.getColumnName(), "rep:facet(")) {
                         isMixinOrFacet = true;
                         break;
                     }
                 }
                 // for extension node,but not mixin , change the type to jnt:externalProviderExtension
-                String selector = isMixinOrFacet?selectorType:"jmix:externalProviderExtension";
-                Source externalSource = qomFactory.selector(selector,selectorName);
+                String selector = isMixinOrFacet ? selectorType : "jmix:externalProviderExtension";
+                Source externalSource = qomFactory.selector(selector, selectorName);
 
                 String mountPoint = workspace.getSession().getRepository().getStoreProvider().getMountPoint();
                 Constraint convertedConstraint = convertExistingPathConstraints(getConstraint(), mountPoint, qomFactory);
@@ -214,8 +218,8 @@ public class ExternalQueryManager implements QueryManager {
                     convertedConstraint = addPathConstraints(convertedConstraint, externalSource, mountPoint, qomFactory);
                 }
                 if (!isMixinOrFacet) {
-                    Comparison c = qomFactory.comparison(qomFactory.propertyValue(selectorName,"j:extendedType"), QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO,qomFactory.literal(extSession.getValueFactory().createValue(selectorType)));
-                    convertedConstraint = qomFactory.and(c,convertedConstraint);
+                    Comparison c = qomFactory.comparison(qomFactory.propertyValue(selectorName, "j:extendedType"), QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO, qomFactory.literal(extSession.getValueFactory().createValue(selectorType)));
+                    convertedConstraint = qomFactory.and(c, convertedConstraint);
                 }
                 Query q = qomFactory.createQuery(externalSource, convertedConstraint, getOrderings(), getColumns());
                 if (!nodeTypeSupported) {
@@ -269,7 +273,7 @@ public class ExternalQueryManager implements QueryManager {
                         results = ((ExternalDataSource.Searchable) dataSource).search(this);
                     } else {
                         // Need to merge, move offset to 0
-                        int skips = Math.max(0,(int) getOffset() - allExtendedResults.size());
+                        int skips = Math.max(0, (int) getOffset() - allExtendedResults.size());
                         setOffset(0);
                         List<String> providerResult = ((ExternalDataSource.Searchable) dataSource).search(this);
                         for (String s : providerResult) {

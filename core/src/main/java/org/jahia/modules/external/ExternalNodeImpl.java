@@ -320,14 +320,16 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
-        Node extendedNode = getExtensionNode(true);
-        if (extendedNode != null && canItemBeExtended(relPath, primaryNodeTypeName)) {
-            Node n = extendedNode.addNode(relPath, primaryNodeTypeName);
-            n.addMixin("jmix:externalProviderExtension");
-            List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), primaryNodeTypeName);
-            n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
-            n.setProperty("j:isExternalProviderRoot", false);
-            return new ExtensionNode(n,getPath() + "/" + relPath,getSession());
+        if (canItemBeExtended(relPath, primaryNodeTypeName)) {
+            Node extendedNode = getExtensionNode(true);
+            if (extendedNode != null) {
+                Node n = extendedNode.addNode(relPath, primaryNodeTypeName);
+                n.addMixin("jmix:externalProviderExtension");
+                List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), primaryNodeTypeName);
+                n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
+                n.setProperty("j:isExternalProviderRoot", false);
+                return new ExtensionNode(n, getPath() + "/" + relPath, getSession());
+            }
         }
 
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
@@ -1324,11 +1326,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 takeLockToken(extParent);
                 extParent.addMixin("jmix:hasExternalProviderExtension");
                 Node n = extParent.addNode(StringUtils.substringAfterLast(mountPoint, "/"), "jnt:externalProviderExtension");
-                List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), getPrimaryNodeType().getName());
-                n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
                 n.addMixin("jmix:externalProviderExtension");
                 n.setProperty("j:isExternalProviderRoot", true);
                 n.setProperty("j:externalNodeIdentifier", getIdentifier());
+                List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), getPrimaryNodeType().getName());
+                n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
             } else {
                 final Node extParent = ((ExternalNodeImpl) getParent()).getExtensionNode(true);
                 takeLockToken(extParent);
@@ -1341,7 +1343,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             }
         }
 
-        return extensionSession.getNode(globalPath);
+        Node node = extensionSession.getNode(globalPath);
+        if (create && isRoot && !node.isNodeType("jmix:hasExternalProviderExtension")) {
+            node.addMixin("jmix:hasExternalProviderExtension");
+        }
+        return node;
     }
 
     public void takeLockToken(Node parentNode) throws RepositoryException {
