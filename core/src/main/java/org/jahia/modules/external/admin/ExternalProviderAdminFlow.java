@@ -121,7 +121,7 @@ public class ExternalProviderAdminFlow implements Serializable {
             testQuery(provider, searchable, dataSourceInfo, queryManager.createQuery("SELECT n.* FROM [nt:base] AS n WHERE CONTAINS(n.n, 'test')", Query.JCR_SQL2));
             testQuery(provider, searchable, dataSourceInfo, queryManager.createQuery("SELECT n.* FROM [nt:base] AS n WHERE ISDESCENDANTNODE(n, [/test])", Query.JCR_SQL2));
             testQuery(provider, searchable, dataSourceInfo, queryManager.createQuery("SELECT n.* FROM [nt:base] AS n WHERE (CONTAINS(n.n, 'test') OR CONTAINS(n.[jcr:title], 'test')) AND (n.[jcr:language] = 'test' OR NOT n.[jcr:language] IS NOT NULL) ORDER BY SCORE(n) DESC", Query.JCR_SQL2));
-
+            testQuery(provider, searchable, dataSourceInfo, queryManager.createQuery("SELECT * from [nt:hierarchyNode] as n WHERE ((CONTAINS(n.[jcr:content],'acme') OR CONTAINS(n.[jcr:description],'acme') OR CONTAINS(n.[jcr:title],'acme') OR CONTAINS(n.[jcr:keywords],'acme') OR LOCALNAME(n) LIKE '%acme%')) ORDER BY SCORE() DESC", Query.JCR_SQL2));
         }
 
 
