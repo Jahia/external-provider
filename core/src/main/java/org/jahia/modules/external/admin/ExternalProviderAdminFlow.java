@@ -137,7 +137,7 @@ public class ExternalProviderAdminFlow implements Serializable {
             } else {
                 dataSourceInfo.getSupportedQueries().put(query.getStatement(), false);
             }
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             dataSourceInfo.getSupportedQueries().put(query.getStatement(), false);
         }
     }
