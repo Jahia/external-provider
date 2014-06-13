@@ -112,7 +112,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         for (Map.Entry<String, String[]> entry : data.getProperties().entrySet()) {
             ExtendedPropertyDefinition definition = getPropertyDefinition(entry.getKey());
 
-            if (definition.getName().equals("*") && data.getType().equals("jnt:translation")) {
+            if (definition != null && definition.getName().equals("*") && data != null && data.getType() != null && data.getType().equals("jnt:translation")) {
                 definition = ((ExternalNodeImpl) getParent()).getPropertyDefinition(entry.getKey());
             }
 
