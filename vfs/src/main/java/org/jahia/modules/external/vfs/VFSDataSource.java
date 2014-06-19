@@ -116,8 +116,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             manager = VFS.getManager();
             root = manager.resolveFile(rootUri);
             rootPath = root.getName().getPath();
-        } catch (FileSystemException e) {
-            logger.error(e.getMessage(), e);
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot set root to " + rootUri, e);
         }
     }
 
