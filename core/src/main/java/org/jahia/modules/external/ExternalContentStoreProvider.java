@@ -299,11 +299,29 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
      *
      * @param externalId
      *            the external ID to generate UUID for
-     * @return an generated internal UUID
+     * @return a generated internal UUID
      * @throws RepositoryException
      *             in case an internal identifier cannot be stored into the database
      */
     protected String mapInternalIdentifier(String externalId) throws RepositoryException {
         return getExternalProviderInitializerService().mapInternalIdentifier(externalId, getKey(), getId());
+    }
+
+    /**
+     * Get internal UUID of the specified node or generate a new if it doesn't exist
+     *
+     * @param externalId
+     *            the external ID to generate UUID for
+     * @return an internal UUID
+     * @throws RepositoryException
+     *             in case an internal identifier cannot be stored into the database
+     */
+    public String getOrCreateInternalIdentifier(String externalId) throws RepositoryException {
+        String internalId = getInternalIdentifier(externalId);
+        if (internalId == null) {
+            // not mapped yet -> store mapping
+            internalId = mapInternalIdentifier(externalId);
+        }
+        return internalId;
     }
 }

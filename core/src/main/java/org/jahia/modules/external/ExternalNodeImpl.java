@@ -1230,11 +1230,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     public final String getIdentifier() throws RepositoryException {
         if (uuid == null) {
             if (!session.getRepository().getDataSource().isSupportsUuid() || data.getId().startsWith(ExternalSessionImpl.TRANSLATION_PREFIX)) {
-                uuid = getStoreProvider().getInternalIdentifier(data.getId());
-                if (uuid == null) {
-                    // not mapped yet -> store mapping
-                    uuid = getStoreProvider().mapInternalIdentifier(data.getId());
-                }
+                uuid = getStoreProvider().getOrCreateInternalIdentifier(data.getId());
             } else {
                 uuid = data.getId();
             }

@@ -285,11 +285,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
     public String getIdentifier() throws RepositoryException {
         if (uuid == null) {
             ExternalContentStoreProvider storeProvider = getSession().getRepository().getStoreProvider();
-            uuid = storeProvider.getInternalIdentifier(node.getIdentifier());
-            if (uuid == null) {
-                // not mapped yet -> store mapping
-                uuid = storeProvider.mapInternalIdentifier(node.getIdentifier());
-            }
+            uuid = storeProvider.getOrCreateInternalIdentifier(node.getIdentifier());
         }
 
         return uuid;
