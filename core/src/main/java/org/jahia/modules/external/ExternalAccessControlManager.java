@@ -76,6 +76,8 @@ import org.apache.jackrabbit.commons.iterator.AccessControlPolicyIteratorAdapter
 import org.apache.jackrabbit.core.security.JahiaPrivilegeRegistry;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.usermanager.JahiaUser;
 
 import javax.jcr.AccessDeniedException;
 import javax.jcr.NamespaceRegistry;
@@ -84,7 +86,6 @@ import javax.jcr.RepositoryException;
 import javax.jcr.lock.LockException;
 import javax.jcr.security.*;
 import javax.jcr.version.VersionException;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -106,11 +107,15 @@ public class ExternalAccessControlManager implements AccessControlManager {
     private String[] privileges;
 
     private boolean readOnly;
+
+    private ExternalDataSource dataSource;
+
     private JahiaPrivilegeRegistry registry;
 
-    public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, boolean readOnly) {
+    public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, boolean readOnly, ExternalDataSource dataSource) {
         super();
         this.readOnly = readOnly;
+        this.dataSource = dataSource;
         try {
             init(namespaceRegistry);
         } catch (RepositoryException e) {
@@ -122,22 +127,22 @@ public class ExternalAccessControlManager implements AccessControlManager {
         registry = new JahiaPrivilegeRegistry(namespaceRegistry);
         if (readOnly) {
             rootNodePrivileges = new String[] {
-                    (JCR_READ + "_" + EDIT_WORKSPACE), (JCR_READ + "_" + LIVE_WORKSPACE),
+                    JCR_READ + "_" + EDIT_WORKSPACE, JCR_READ + "_" + LIVE_WORKSPACE
                     };
             privileges = rootNodePrivileges;
         } else {
             rootNodePrivileges = new String[] {
-                    (JCR_READ + "_" + EDIT_WORKSPACE), (JCR_READ + "_" + LIVE_WORKSPACE),
-                    (JCR_WRITE + "_" + EDIT_WORKSPACE), (JCR_WRITE + "_" + LIVE_WORKSPACE),
-                    (JCR_ADD_CHILD_NODES + "_" + EDIT_WORKSPACE), (JCR_ADD_CHILD_NODES + "_" + LIVE_WORKSPACE),
-                    (JCR_REMOVE_CHILD_NODES + "_" + EDIT_WORKSPACE), (JCR_REMOVE_CHILD_NODES + "_" + LIVE_WORKSPACE),
+                    JCR_READ + "_" + EDIT_WORKSPACE, JCR_READ + "_" + LIVE_WORKSPACE,
+                    JCR_WRITE + "_" + EDIT_WORKSPACE, JCR_WRITE + "_" + LIVE_WORKSPACE,
+                    JCR_ADD_CHILD_NODES + "_" + EDIT_WORKSPACE, JCR_ADD_CHILD_NODES + "_" + LIVE_WORKSPACE,
+                    JCR_REMOVE_CHILD_NODES + "_" + EDIT_WORKSPACE, JCR_REMOVE_CHILD_NODES + "_" + LIVE_WORKSPACE
                     };
             privileges = new String[] {
-                    (JCR_READ + "_" + EDIT_WORKSPACE), (JCR_READ + "_" + LIVE_WORKSPACE),
-                    (JCR_WRITE + "_" + EDIT_WORKSPACE), (JCR_WRITE + "_" + LIVE_WORKSPACE),
-                    (JCR_REMOVE_NODE + "_" + EDIT_WORKSPACE), (JCR_REMOVE_NODE + "_" + LIVE_WORKSPACE),
-                    (JCR_ADD_CHILD_NODES + "_" + EDIT_WORKSPACE), (JCR_ADD_CHILD_NODES + "_" + LIVE_WORKSPACE),
-                    (JCR_REMOVE_CHILD_NODES + "_" + EDIT_WORKSPACE), (JCR_REMOVE_CHILD_NODES + "_" + LIVE_WORKSPACE),
+                    JCR_READ + "_" + EDIT_WORKSPACE, JCR_READ + "_" + LIVE_WORKSPACE,
+                    JCR_WRITE + "_" + EDIT_WORKSPACE, JCR_WRITE + "_" + LIVE_WORKSPACE,
+                    JCR_REMOVE_NODE + "_" + EDIT_WORKSPACE, JCR_REMOVE_NODE + "_" + LIVE_WORKSPACE,
+                    JCR_ADD_CHILD_NODES + "_" + EDIT_WORKSPACE, JCR_ADD_CHILD_NODES + "_" + LIVE_WORKSPACE,
+                    JCR_REMOVE_CHILD_NODES + "_" + EDIT_WORKSPACE, JCR_REMOVE_CHILD_NODES + "_" + LIVE_WORKSPACE
                     };
         }
     }
@@ -171,6 +176,12 @@ public class ExternalAccessControlManager implements AccessControlManager {
     }
 
     private String[] getPrivilegesNames(String absPath) {
+        if (dataSource instanceof ExternalDataSource.AccessControllable) {
+            JahiaUser currentUser = JCRSessionFactory.getInstance().getCurrentUser();
+            if (currentUser != null) {
+                return ((ExternalDataSource.AccessControllable) dataSource).getPrivilegesNames(currentUser.getName(), absPath);
+            }
+        }
         return absPath.length() == 1 && "/".equals(absPath) ? rootNodePrivileges : privileges;
     }
 

@@ -186,6 +186,20 @@ public interface ExternalDataSource {
     }
 
     /**
+     * If implemented, allows for access control
+     */
+    public interface AccessControllable {
+
+        /**
+         * Return the privileges a user has on a specified node
+         * @param username the user name
+         * @param path the node path
+         * @return an array of privilege names
+         */
+        String[] getPrivilegesNames(String username, String path);
+    }
+
+    /**
      * @param path path where to get children
      * @return list of paths as String
      */

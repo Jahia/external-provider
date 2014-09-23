@@ -125,7 +125,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
             }
         }
         ExternalRepositoryImpl instance = new ExternalRepositoryImpl(this, dataSource,
-                new ExternalAccessControlManager(namespaceRegistry, readOnly), namespaceRegistry);
+                new ExternalAccessControlManager(namespaceRegistry, readOnly, dataSource), namespaceRegistry);
         instance.setProviderKey(getKey());
 
         return instance;
