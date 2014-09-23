@@ -96,6 +96,7 @@ import org.jahia.modules.external.vfs.VFSDataSource;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
+import org.jahia.services.content.decorator.JCRUserNode;
 import org.jahia.services.content.nodetypes.*;
 import org.jahia.services.deamons.filewatcher.FileMonitor;
 import org.jahia.services.deamons.filewatcher.FileMonitorCallback;
@@ -105,6 +106,8 @@ import org.jahia.services.preferences.user.UserPreferencesHelper;
 import org.jahia.services.query.QueryWrapper;
 import org.jahia.services.templates.SourceControlManagement;
 import org.jahia.services.templates.SourceControlManagement.Status;
+import org.jahia.services.usermanager.JahiaUser;
+import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.jahia.settings.SettingsBean;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.i18n.Messages;
@@ -840,7 +843,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     protected Locale getUILocale() {
-        Locale locale = UserPreferencesHelper.getPreferredLocale(JCRSessionFactory.getInstance().getCurrentUser());
+        Locale locale = null;
+        JahiaUser currentUser = JCRSessionFactory.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            JCRUserNode userNode = JahiaUserManagerService.getInstance().lookupUserByPath(currentUser.getLocalPath());
+            locale = UserPreferencesHelper.getPreferredLocale(userNode);
+        }
         return locale != null ? locale : SettingsBean.getInstance().getDefaultLocale();
     }
 
