@@ -287,8 +287,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         session.getDeletedData().put(getPath(),data);
         session.unregisterNode(this);
 
-        if (getExtensionNode(false) != null) {
-            getExtensionNode(false).remove();
+        Node extensionNode = getExtensionNode(false);
+        if (extensionNode != null) {
+            extensionNode.remove();
         }
     }
 
