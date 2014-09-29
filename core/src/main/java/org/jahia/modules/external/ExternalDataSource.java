@@ -200,6 +200,22 @@ public interface ExternalDataSource {
     }
 
     /**
+     * If implemented, allows to get weak references
+     */
+    public interface Referenceable {
+
+        /**
+         * Given a node identifier, returns the paths of properties referring this node
+         *
+         * @param identifier the node identifier. If the node is in this external provider, it's an external ID
+         *                   (local ID in the provider). Else, it's an internal ID (global).
+         * @param propertyName the property name (optional)
+         * @return a list of property paths
+         */
+        List<String> getReferringProperties(String identifier, String propertyName);
+    }
+
+    /**
      * @param path path where to get children
      * @return list of paths as String
      */

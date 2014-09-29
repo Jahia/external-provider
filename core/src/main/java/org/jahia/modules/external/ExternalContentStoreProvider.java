@@ -75,15 +75,20 @@ import javax.jcr.*;
 import javax.jcr.query.QueryManager;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.jackrabbit.commons.iterator.PropertyIteratorAdapter;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.exceptions.JahiaRuntimeException;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRStoreProvider;
+import org.jahia.services.content.nodetypes.Name;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -323,5 +328,36 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
             internalId = mapInternalIdentifier(externalId);
         }
         return internalId;
+    }
+
+    public PropertyIterator getWeakReferences(JCRNodeWrapper node, String propertyName, Session session) throws RepositoryException {
+        if (dataSource instanceof ExternalDataSource.Referenceable && session instanceof ExternalSessionImpl) {
+            String identifier = node.getIdentifier();
+            if (this.equals(node.getProvider())) {
+                identifier = ((ExternalNodeImpl) node.getRealNode()).getData().getId();
+            }
+            List<String> referringProperties = ((ExternalDataSource.Referenceable) dataSource).getReferringProperties(identifier, propertyName);
+            if (referringProperties == null) {
+                return null;
+            }
+            if (referringProperties.isEmpty()) {
+                return PropertyIteratorAdapter.EMPTY;
+            }
+            List<Property> l = new ArrayList<Property>();
+            for (String propertyPath : referringProperties) {
+                String nodePath = StringUtils.substringBeforeLast(propertyPath, "/");
+                if (nodePath.isEmpty()) {
+                    nodePath = "/";
+                }
+                ExternalNodeImpl referringNode = (ExternalNodeImpl) session.getNode(nodePath);
+                if (referringNode != null) {
+                    l.add(new ExternalPropertyImpl(
+                            new Name(StringUtils.substringAfterLast(propertyPath, "/"), NodeTypeRegistry.getInstance().getNamespaces()),
+                            referringNode, (ExternalSessionImpl) session));
+                }
+            }
+            return new PropertyIteratorAdapter(l);
+        }
+        return null;
     }
 }
