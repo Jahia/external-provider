@@ -248,7 +248,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             if (isNew) {
                 externalChildren = new ArrayList<String>();
             } else {
-                externalChildren = new ArrayList<String>(session.getRepository().getDataSource().getChildren(getPath()));
+                ExternalContentStoreProvider.setCurrentSession(session);
+                try {
+                    externalChildren = new ArrayList<String>(session.getRepository().getDataSource().getChildren(getPath()));
+                } finally {
+                    ExternalContentStoreProvider.removeCurrentSession();
+                }
             }
         }
         return externalChildren;

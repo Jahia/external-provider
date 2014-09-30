@@ -99,6 +99,8 @@ import java.util.List;
  */
 public class ExternalContentStoreProvider extends JCRStoreProvider implements InitializingBean {
 
+    private static final ThreadLocal<ExternalSessionImpl> currentSession = new ThreadLocal<ExternalSessionImpl>();
+
     private boolean readOnly;
 
     private ExternalDataSource dataSource;
@@ -113,6 +115,18 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     private boolean slowConnection = true;
     private boolean lockSupport = false;
+
+    public static ExternalSessionImpl getCurrentSession() {
+        return currentSession.get();
+    }
+
+    public static void setCurrentSession(ExternalSessionImpl session) {
+        currentSession.set(session);
+    }
+
+    public static void removeCurrentSession() {
+        currentSession.remove();
+    }
 
     @Override
     protected Repository createRepository() {
@@ -129,8 +143,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
                 systemSession.logout();
             }
         }
-        ExternalRepositoryImpl instance = new ExternalRepositoryImpl(this, dataSource,
-                new ExternalAccessControlManager(namespaceRegistry, readOnly, dataSource), namespaceRegistry);
+        ExternalRepositoryImpl instance = new ExternalRepositoryImpl(this, dataSource, namespaceRegistry);
         instance.setProviderKey(getKey());
 
         return instance;
@@ -175,22 +188,6 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     @Override
     public boolean isExportable() {
         return false;
-    }
-
-    /**
-     * Returns <code>true</code> if this is a read-only content provider.
-     *
-     * @return <code>true</code> if this is a read-only content provider
-     */
-    public boolean isReadOnly() {
-        return readOnly;
-    }
-
-    protected void registerNamespaces(Workspace workspace) throws RepositoryException {
-    }
-
-    public void setReadOnly(boolean readOnly) {
-        this.readOnly = readOnly;
     }
 
     public ExternalDataSource getDataSource() {
@@ -336,7 +333,13 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
             if (this.equals(node.getProvider())) {
                 identifier = ((ExternalNodeImpl) node.getRealNode()).getData().getId();
             }
-            List<String> referringProperties = ((ExternalDataSource.Referenceable) dataSource).getReferringProperties(identifier, propertyName);
+            setCurrentSession((ExternalSessionImpl) session);
+            List<String> referringProperties = null;
+            try {
+                referringProperties = ((ExternalDataSource.Referenceable) dataSource).getReferringProperties(identifier, propertyName);
+            } finally {
+                ExternalContentStoreProvider.removeCurrentSession();
+            }
             if (referringProperties == null) {
                 return null;
             }

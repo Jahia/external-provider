@@ -112,10 +112,13 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
     private JahiaPrivilegeRegistry registry;
 
-    public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, boolean readOnly, ExternalDataSource dataSource) {
+    private final ExternalSessionImpl session;
+
+    public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, boolean readOnly, ExternalDataSource dataSource, ExternalSessionImpl session) {
         super();
         this.readOnly = readOnly;
         this.dataSource = dataSource;
+        this.session = session;
         try {
             init(namespaceRegistry);
         } catch (RepositoryException e) {
@@ -177,9 +180,11 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
     private String[] getPrivilegesNames(String absPath) {
         if (dataSource instanceof ExternalDataSource.AccessControllable) {
-            JahiaUser currentUser = JCRSessionFactory.getInstance().getCurrentUser();
-            if (currentUser != null) {
-                return ((ExternalDataSource.AccessControllable) dataSource).getPrivilegesNames(currentUser.getName(), absPath);
+            ExternalContentStoreProvider.setCurrentSession(session);
+            try {
+                return ((ExternalDataSource.AccessControllable) dataSource).getPrivilegesNames(session.getUserID(), absPath);
+            } finally {
+                ExternalContentStoreProvider.removeCurrentSession();
             }
         }
         return absPath.length() == 1 && "/".equals(absPath) ? rootNodePrivileges : privileges;

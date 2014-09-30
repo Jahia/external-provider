@@ -75,6 +75,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.commons.query.sql2.Parser;
 import org.apache.jackrabbit.spi.commons.conversion.NamePathResolver;
 import org.apache.jackrabbit.spi.commons.query.qom.*;
+import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.jahia.modules.external.ExternalDataSource;
 import org.jahia.modules.external.ExternalQuery;
 import org.jahia.modules.external.ExternalWorkspaceImpl;
@@ -262,6 +263,7 @@ public class ExternalQueryManager implements QueryManager {
                 }
             }
             if (nodeTypeSupported && (getLimit() == -1 || results == null || results.size() < getLimit())) {
+                ExternalContentStoreProvider.setCurrentSession(workspace.getSession());
                 ExternalDataSource dataSource = workspace.getSession().getRepository().getDataSource();
                 try {
                     final long originalLimit = getLimit();
@@ -294,6 +296,8 @@ public class ExternalQueryManager implements QueryManager {
                     }
                 } catch (UnsupportedRepositoryOperationException e) {
                     logger.debug("Unsupported query ", e);
+                } finally {
+                    ExternalContentStoreProvider.removeCurrentSession();
                 }
             }
             if (results == null) {
