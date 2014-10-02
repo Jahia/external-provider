@@ -264,7 +264,7 @@ public class ExternalRepositoryImpl implements Repository {
         repositoryDescriptors.put(Repository.OPTION_SIMPLE_VERSIONING_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.OPTION_TRANSACTIONS_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.OPTION_UNFILED_CONTENT_SUPPORTED, new ExternalValueImpl(false));
-        repositoryDescriptors.put(Repository.OPTION_UPDATE_MIXIN_NODE_TYPES_SUPPORTED, new ExternalValueImpl(false));
+        repositoryDescriptors.put(Repository.OPTION_UPDATE_MIXIN_NODE_TYPES_SUPPORTED, new ExternalValueImpl(dataSource instanceof ExternalDataSource.Writable || getStoreProvider().getExtensionProvider() != null));
         repositoryDescriptors.put(Repository.OPTION_UPDATE_PRIMARY_NODE_TYPE_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.OPTION_VERSIONING_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.OPTION_WORKSPACE_MANAGEMENT_SUPPORTED, new ExternalValueImpl(false));
