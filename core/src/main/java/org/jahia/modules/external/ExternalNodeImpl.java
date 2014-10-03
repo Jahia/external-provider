@@ -73,6 +73,7 @@ package org.jahia.modules.external;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.jackrabbit.core.security.JahiaLoginModule;
 import org.apache.jackrabbit.util.ChildrenCollectorFilter;
 import org.apache.jackrabbit.value.BinaryImpl;
 import org.jahia.services.content.nodetypes.*;
@@ -893,7 +894,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             Node extensionNode = getExtensionNode(false);
             if (extensionNode != null) {
                 for (NodeType type : extensionNode.getMixinNodeTypes()) {
-                    if (!type.isNodeType("jmix:externalProviderExtension")) {
+                    if (!type.isNodeType("jmix:externalProviderExtension") || StringUtils.startsWith(session.getUserID(), JahiaLoginModule.SYSTEM)) {
                         nt.add(NodeTypeRegistry.getInstance().getNodeType(type.getName()));
                     }
                 }
@@ -1359,6 +1360,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         Node node = extensionSession.getNode(globalPath);
         if (create && isRoot && !node.isNodeType("jmix:hasExternalProviderExtension")) {
             node.addMixin("jmix:hasExternalProviderExtension");
+        }
+        if (!node.isNodeType("jmix:externalProviderExtension")) {
+            node.addMixin("jmix:externalProviderExtension");
         }
         return node;
     }
