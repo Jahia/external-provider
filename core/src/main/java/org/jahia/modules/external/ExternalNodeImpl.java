@@ -715,7 +715,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      */
     public Property getProperty(String s) throws PathNotFoundException, RepositoryException {
         Node n = getExtensionNode(false);
-        if (n != null && n.hasProperty(s)  && canItemBeExtended(getPropertyDefinition(s))) {
+        if (n != null && n.hasProperty(s) && getPropertyDefinition(s) != null && canItemBeExtended(getPropertyDefinition(s))) {
             return new ExtensionProperty(n.getProperty(s), getPath() + "/" + s, session, this);
         }
         Property property = properties.get(s);
