@@ -212,7 +212,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
 
     public Value getValue() throws ValueFormatException, RepositoryException {
         if (isMultiple()) {
-            throw new ValueFormatException(this + " is a multi-valued property,"
+            throw new ValueFormatException(getName() + " is a multi-valued property,"
                     + " so it's values can only be retrieved as an array");
         }
         return value;
@@ -228,7 +228,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
 
     public Value[] getValues() throws ValueFormatException, RepositoryException {
         if (!isMultiple()) {
-            throw new ValueFormatException(this + " is a single-valued property,"
+            throw new ValueFormatException(getName() + " is a single-valued property,"
                     + " so it's value can not be retrieved as an array");
         }
         return values;

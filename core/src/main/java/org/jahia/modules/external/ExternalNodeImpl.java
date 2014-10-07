@@ -725,7 +725,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 data.getProperties().put(s, values);
                 data.getLazyProperties().remove(s);
                 ExternalPropertyImpl p = new ExternalPropertyImpl(new Name(s, NodeTypeRegistry.getInstance().getNamespaces()), this, session);
-                if (getPropertyDefinition(s).isMultiple()) {
+                ExtendedPropertyDefinition definition = getPropertyDefinition(s);
+                if (definition != null && definition.getName().equals("*") && data != null && data.getType() != null && data.getType().equals("jnt:translation")) {
+                    definition = ((ExternalNodeImpl) getParent()).getPropertyDefinition(s);
+                }
+                if (definition.isMultiple()) {
                     p.setValue(values);
                 } else if (values != null && values.length > 0) {
                     p.setValue(values[0]);
