@@ -71,9 +71,6 @@
  */
 package org.jahia.modules.external;
 
-import javax.jcr.*;
-import javax.jcr.query.QueryManager;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.commons.iterator.PropertyIteratorAdapter;
 import org.jahia.exceptions.JahiaInitializationException;
@@ -84,10 +81,12 @@ import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.content.nodetypes.Name;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
-import org.springframework.beans.BeansException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.config.BeanPostProcessor;
 
+import javax.jcr.*;
+import javax.jcr.query.QueryManager;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -98,6 +97,8 @@ import java.util.List;
  * @author Thomas Draier
  */
 public class ExternalContentStoreProvider extends JCRStoreProvider implements InitializingBean {
+
+    private static final Logger logger = LoggerFactory.getLogger(ExternalContentStoreProvider.class);
 
     private static final ThreadLocal<ExternalSessionImpl> currentSession = new ThreadLocal<ExternalSessionImpl>();
 
@@ -112,6 +113,8 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     private List<String> extendableTypes;
     private List<String> overridableItems;
     private List<String> reservedNodes = Arrays.asList("j:acl", "j:workflowRules", "thumbnail");
+
+    private List<String> ignorePropertiesForExport = Arrays.asList("j:extendedType","j:isExternalProviderRoot","j:externalNodeIdentifier");
 
     private boolean slowConnection = true;
     private boolean lockSupport = false;
@@ -183,11 +186,6 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     @Override
     public QueryManager getQueryManager(JCRSessionWrapper session) throws RepositoryException {
         return dataSource instanceof ExternalDataSource.Searchable ? super.getQueryManager(session) : null;
-    }
-
-    @Override
-    public boolean isExportable() {
-        return false;
     }
 
     public ExternalDataSource getDataSource() {
@@ -362,5 +360,27 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
             return new PropertyIteratorAdapter(l);
         }
         return null;
+    }
+
+    @Override
+    public boolean canExportNode(JCRNodeWrapper node) {
+        try {
+            return node.getRealNode() instanceof ExtensionNode
+                    || (node.getRealNode() instanceof ExternalNodeImpl && ((ExternalNodeImpl) node.getRealNode()).getExtensionNode(false) != null);
+        } catch (RepositoryException e) {
+            logger.error("Error while checking if an extension node exists", e);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean canExportProperty(Property property) {
+        try {
+            return "jcr:primaryType".equals(property.getName()) || "jcr:mixinTypes".equals(property.getName())
+                    || (property instanceof ExtensionProperty && !ignorePropertiesForExport.contains(property.getName()));
+        } catch (RepositoryException e) {
+            logger.error("Error while checking property name", e);
+        }
+        return false;
     }
 }
