@@ -155,6 +155,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         properties.put("jcr:uuid",
                 new ExternalPropertyImpl(new Name("jcr:uuid", NodeTypeRegistry.getInstance().getNamespaces()), this, session,
                         session.getValueFactory().createValue(getIdentifier())));
+        properties.put("jcr:primaryType",
+                new ExternalPropertyImpl(new Name("jcr:primaryType", NodeTypeRegistry.getInstance().getNamespaces()), this, session,
+                        session.getValueFactory().createValue(data.getType())));
     }
 
     private NodeDefinition getChildNodeDefinition(String name, String childType) throws RepositoryException {
@@ -718,6 +721,17 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         Node n = getExtensionNode(false);
         if (n != null && n.hasProperty(s) && getPropertyDefinition(s) != null && canItemBeExtended(getPropertyDefinition(s))) {
             return new ExtensionProperty(n.getProperty(s), getPath() + "/" + s, session, this);
+        }
+        if (StringUtils.equals(s, "jcr:mixinTypes")) {
+            ExtendedNodeType[] mixinNodeTypes = getMixinNodeTypes();
+            Value[] mixinTypes = new Value[mixinNodeTypes.length];
+            int i = 0;
+            for (ExtendedNodeType mixinName : mixinNodeTypes) {
+                mixinTypes[i++] = session.getValueFactory().createValue(mixinName.getName());
+            }
+            if (mixinTypes.length > 0) {
+                properties.put("jcr:mixinTypes", new ExternalPropertyImpl(new Name("jcr:mixinTypes", NodeTypeRegistry.getInstance().getNamespaces()), this, session, mixinTypes));
+            }
         }
         Property property = properties.get(s);
         if (property == null) {
