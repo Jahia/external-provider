@@ -1587,17 +1587,17 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 while (extensionNodeIterator.hasNext()) {
                     Node n = extensionNodeIterator.nextNode();
                     try {
-                        NodeDefinition childNodeDefinition = getChildNodeDefinition(n.getName(), n.getPrimaryNodeType().getName());
-                        if (childNodeDefinition == null) {
-                            for (NodeType t : n.getMixinNodeTypes()) {
-                                childNodeDefinition = getChildNodeDefinition(n.getName(), t.getName());
-                                if (childNodeDefinition != null) {
-                                    break;
-                                }
+                        if (!list.contains(n.getName())) {
+                            String path = getPath();
+                            if (!path.endsWith("/")) {
+                                path += "/";
                             }
-                        }
-                        if (childNodeDefinition != null && canItemBeExtended(childNodeDefinition) && !list.contains(n.getName())) {
-                            nextNode = new ExtensionNode(n,getPath() + "/" + n.getName(),getSession());
+                            path += n.getName();
+                            try {
+                                nextNode = session.getNode(path);
+                            } catch (PathNotFoundException e) {
+                                logger.debug("Cannot find node " + path, e);
+                            }
                             return  nextNode;
                         }
                     } catch (RepositoryException e) {
