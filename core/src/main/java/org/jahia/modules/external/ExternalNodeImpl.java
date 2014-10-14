@@ -1039,7 +1039,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public NodeDefinition getDefinition() throws RepositoryException {
-        ExternalNodeImpl parentNode = (ExternalNodeImpl) getParent();
+        ExternalNodeImpl parentNode;
+        try {
+            parentNode = (ExternalNodeImpl) getParent();
+        } catch (ItemNotFoundException e) {
+            return null;
+        }
         ExtendedNodeType parentNodeType = parentNode.getExtendedPrimaryNodeType();
         ExtendedNodeDefinition nodeDefinition = parentNodeType.getChildNodeDefinitionsAsMap().get(getName());
         if (nodeDefinition != null) {

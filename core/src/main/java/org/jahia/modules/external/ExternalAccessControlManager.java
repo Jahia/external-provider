@@ -73,11 +73,13 @@ package org.jahia.modules.external;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.jackrabbit.commons.iterator.AccessControlPolicyIteratorAdapter;
+import org.apache.jackrabbit.core.security.JahiaLoginModule;
 import org.apache.jackrabbit.core.security.JahiaPrivilegeRegistry;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.usermanager.JahiaUser;
+import org.jahia.services.usermanager.JahiaUserManagerService;
 
 import javax.jcr.AccessDeniedException;
 import javax.jcr.NamespaceRegistry;
@@ -114,6 +116,8 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
     private final ExternalSessionImpl session;
 
+    private String rootUserName;
+
     public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, boolean readOnly, ExternalDataSource dataSource, ExternalSessionImpl session) {
         super();
         this.readOnly = readOnly;
@@ -128,6 +132,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
     private void init(NamespaceRegistry namespaceRegistry) throws RepositoryException {
         registry = new JahiaPrivilegeRegistry(namespaceRegistry);
+        rootUserName = JahiaUserManagerService.getInstance().getRootUserName();
         if (readOnly) {
             rootNodePrivileges = new String[] {
                     JCR_READ + "_" + EDIT_WORKSPACE, JCR_READ + "_" + LIVE_WORKSPACE
@@ -198,6 +203,10 @@ public class ExternalAccessControlManager implements AccessControlManager {
     public boolean hasPrivileges(String absPath, Privilege[] privileges)
             throws PathNotFoundException, RepositoryException {
         if (privileges == null || privileges.length == 0) {
+            return true;
+        }
+        String userID = session.getUserID();
+        if (userID.startsWith(JahiaLoginModule.SYSTEM) || rootUserName.equals(userID)) {
             return true;
         }
         boolean allowed = true;
