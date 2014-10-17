@@ -5,4 +5,14 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
 
     <bean id="vfsProviderFactory" class="org.jahia.modules.external.vfs.VFSProviderFactory"/>
+
+    <bean
+        class="org.jahia.services.content.decorator.validation.JCRNodeValidatorDefinition">
+        <property name="validators">
+            <map>
+                <entry key="jnt:vfsMountPoint"
+                    value="org.jahia.modules.external.vfs.MountPointAvailabilityValidator" />
+            </map>
+        </property>
+    </bean>
 </beans>
