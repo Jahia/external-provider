@@ -925,10 +925,14 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public boolean isNodeType(String nodeTypeName) throws RepositoryException {
+        return isNodeType(nodeTypeName, true);
+    }
+
+    public boolean isNodeType(String nodeTypeName, boolean withExtension) throws RepositoryException {
         if (getPrimaryNodeType().isNodeType(nodeTypeName)) {
             return true;
         }
-        for (NodeType nodeType : getMixinNodeTypes()) {
+        for (NodeType nodeType : getMixinNodeTypes(withExtension)) {
             if (nodeType.isNodeType(nodeTypeName)) {
                 return true;
             }
@@ -1338,12 +1342,17 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             return null;
         }
         List<String> extensionAllowedTypes = getSession().getExtensionAllowedTypes();
+        boolean allowed = false;
         if (extensionAllowedTypes != null) {
             for (String type : extensionAllowedTypes) {
-                if (!isNodeType(type)) {
-                    return null;
+                if (isNodeType(type, false)) {
+                    allowed = true;
+                    break;
                 }
             }
+        }
+        if (!allowed) {
+            return null;
         }
         String path = getPath();
         boolean isRoot = path.equals("/");
