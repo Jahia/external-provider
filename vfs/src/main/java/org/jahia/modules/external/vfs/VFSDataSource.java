@@ -100,7 +100,7 @@ import java.util.*;
  */
 public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Writable {
     private static final List<String> JCR_CONTENT_LIST = Arrays.asList(Constants.JCR_CONTENT);
-    private static final Set<String> SUPPORTED_NODE_TYPES = new HashSet<String>(Arrays.asList(Constants.JAHIANT_FILE, Constants.JAHIANT_FOLDER, Constants.JCR_CONTENT));
+    private static final Set<String> SUPPORTED_NODE_TYPES = new HashSet<String>(Arrays.asList("jnt:myFile", Constants.JAHIANT_FOLDER, Constants.JCR_CONTENT));
     private static final Logger logger = LoggerFactory.getLogger(VFSDataSource.class);
     private FileObject root;
     private String rootPath;
@@ -321,7 +321,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     public String getDataType(FileObject fileObject) throws FileSystemException {
-        return fileObject.getType() == FileType.FILE ? Constants.JAHIANT_FILE
+        return fileObject.getType() == FileType.FILE ? "jnt:myFile"
                 : Constants.JAHIANT_FOLDER;
     }
 
