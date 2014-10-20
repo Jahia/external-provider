@@ -73,7 +73,6 @@ package org.jahia.modules.external;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.commons.iterator.PropertyIteratorAdapter;
-import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -366,9 +365,8 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     @Override
     public boolean canExportNode(JCRNodeWrapper node) {
         try {
-            return Constants.EDIT_WORKSPACE.equals(node.getSession().getWorkspace().getName())
-                    && (node.getRealNode() instanceof ExtensionNode
-                        || (node.getRealNode() instanceof ExternalNodeImpl && ((ExternalNodeImpl) node.getRealNode()).getExtensionNode(false) != null));
+            return node.getRealNode() instanceof ExtensionNode
+                    || (node.getRealNode() instanceof ExternalNodeImpl && ((ExternalNodeImpl) node.getRealNode()).getExtensionNode(false) != null);
         } catch (RepositoryException e) {
             logger.error("Error while checking if an extension node exists", e);
         }
@@ -378,9 +376,8 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     @Override
     public boolean canExportProperty(Property property) {
         try {
-            return Constants.EDIT_WORKSPACE.equals(property.getSession().getWorkspace().getName())
-                    && ("jcr:primaryType".equals(property.getName()) || "jcr:mixinTypes".equals(property.getName())
-                        || (property instanceof ExtensionProperty && !ignorePropertiesForExport.contains(property.getName())));
+            return "jcr:primaryType".equals(property.getName()) || "jcr:mixinTypes".equals(property.getName())
+                    || (property instanceof ExtensionProperty && !ignorePropertiesForExport.contains(property.getName()));
         } catch (RepositoryException e) {
             logger.error("Error while checking property name", e);
         }

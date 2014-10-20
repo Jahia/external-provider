@@ -7,6 +7,3 @@
 
 [jnt:vfsMountPoint] > jnt:mountPoint
  - j:rootPath (string) nofulltext
-
-[jnt:myFile] > jnt:file
- - myProp (string)
