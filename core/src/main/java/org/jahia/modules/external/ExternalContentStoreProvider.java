@@ -71,19 +71,24 @@
  */
 package org.jahia.modules.external;
 
-import javax.jcr.*;
-import javax.jcr.query.QueryManager;
-
 import org.apache.commons.lang.StringUtils;
+import org.apache.jackrabbit.commons.iterator.PropertyIteratorAdapter;
+import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.exceptions.JahiaRuntimeException;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRStoreProvider;
-import org.springframework.beans.BeansException;
+import org.jahia.services.content.nodetypes.Name;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.config.BeanPostProcessor;
 
+import javax.jcr.*;
+import javax.jcr.query.QueryManager;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -93,6 +98,10 @@ import java.util.List;
  * @author Thomas Draier
  */
 public class ExternalContentStoreProvider extends JCRStoreProvider implements InitializingBean {
+
+    private static final Logger logger = LoggerFactory.getLogger(ExternalContentStoreProvider.class);
+
+    private static final ThreadLocal<ExternalSessionImpl> currentSession = new ThreadLocal<ExternalSessionImpl>();
 
     private boolean readOnly;
 
@@ -106,8 +115,22 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     private List<String> overridableItems;
     private List<String> reservedNodes = Arrays.asList("j:acl", "j:workflowRules", "thumbnail");
 
+    private List<String> ignorePropertiesForExport = Arrays.asList("j:extendedType","j:isExternalProviderRoot","j:externalNodeIdentifier");
+
     private boolean slowConnection = true;
     private boolean lockSupport = false;
+
+    public static ExternalSessionImpl getCurrentSession() {
+        return currentSession.get();
+    }
+
+    public static void setCurrentSession(ExternalSessionImpl session) {
+        currentSession.set(session);
+    }
+
+    public static void removeCurrentSession() {
+        currentSession.remove();
+    }
 
     @Override
     protected Repository createRepository() {
@@ -124,8 +147,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
                 systemSession.logout();
             }
         }
-        ExternalRepositoryImpl instance = new ExternalRepositoryImpl(this, dataSource,
-                new ExternalAccessControlManager(namespaceRegistry, readOnly), namespaceRegistry);
+        ExternalRepositoryImpl instance = new ExternalRepositoryImpl(this, dataSource, namespaceRegistry);
         instance.setProviderKey(getKey());
 
         return instance;
@@ -165,27 +187,6 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     @Override
     public QueryManager getQueryManager(JCRSessionWrapper session) throws RepositoryException {
         return dataSource instanceof ExternalDataSource.Searchable ? super.getQueryManager(session) : null;
-    }
-
-    @Override
-    public boolean isExportable() {
-        return false;
-    }
-
-    /**
-     * Returns <code>true</code> if this is a read-only content provider.
-     *
-     * @return <code>true</code> if this is a read-only content provider
-     */
-    public boolean isReadOnly() {
-        return readOnly;
-    }
-
-    protected void registerNamespaces(Workspace workspace) throws RepositoryException {
-    }
-
-    public void setReadOnly(boolean readOnly) {
-        this.readOnly = readOnly;
     }
 
     public ExternalDataSource getDataSource() {
@@ -299,11 +300,90 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
      *
      * @param externalId
      *            the external ID to generate UUID for
-     * @return an generated internal UUID
+     * @return a generated internal UUID
      * @throws RepositoryException
      *             in case an internal identifier cannot be stored into the database
      */
     protected String mapInternalIdentifier(String externalId) throws RepositoryException {
         return getExternalProviderInitializerService().mapInternalIdentifier(externalId, getKey(), getId());
+    }
+
+    /**
+     * Get internal UUID of the specified node or generate a new if it doesn't exist
+     *
+     * @param externalId
+     *            the external ID to generate UUID for
+     * @return an internal UUID
+     * @throws RepositoryException
+     *             in case an internal identifier cannot be stored into the database
+     */
+    public String getOrCreateInternalIdentifier(String externalId) throws RepositoryException {
+        String internalId = getInternalIdentifier(externalId);
+        if (internalId == null) {
+            // not mapped yet -> store mapping
+            internalId = mapInternalIdentifier(externalId);
+        }
+        return internalId;
+    }
+
+    public PropertyIterator getWeakReferences(JCRNodeWrapper node, String propertyName, Session session) throws RepositoryException {
+        if (dataSource instanceof ExternalDataSource.Referenceable && session instanceof ExternalSessionImpl) {
+            String identifier = node.getIdentifier();
+            if (this.equals(node.getProvider())) {
+                identifier = ((ExternalNodeImpl) node.getRealNode()).getData().getId();
+            }
+            setCurrentSession((ExternalSessionImpl) session);
+            List<String> referringProperties = null;
+            try {
+                referringProperties = ((ExternalDataSource.Referenceable) dataSource).getReferringProperties(identifier, propertyName);
+            } finally {
+                ExternalContentStoreProvider.removeCurrentSession();
+            }
+            if (referringProperties == null) {
+                return null;
+            }
+            if (referringProperties.isEmpty()) {
+                return PropertyIteratorAdapter.EMPTY;
+            }
+            List<Property> l = new ArrayList<Property>();
+            for (String propertyPath : referringProperties) {
+                String nodePath = StringUtils.substringBeforeLast(propertyPath, "/");
+                if (nodePath.isEmpty()) {
+                    nodePath = "/";
+                }
+                ExternalNodeImpl referringNode = (ExternalNodeImpl) session.getNode(nodePath);
+                if (referringNode != null) {
+                    l.add(new ExternalPropertyImpl(
+                            new Name(StringUtils.substringAfterLast(propertyPath, "/"), NodeTypeRegistry.getInstance().getNamespaces()),
+                            referringNode, (ExternalSessionImpl) session));
+                }
+            }
+            return new PropertyIteratorAdapter(l);
+        }
+        return null;
+    }
+
+    @Override
+    public boolean canExportNode(JCRNodeWrapper node) {
+        try {
+            return Constants.EDIT_WORKSPACE.equals(node.getSession().getWorkspace().getName())
+                    && (node.getRealNode() instanceof ExtensionNode
+                        || (node.getRealNode() instanceof ExternalNodeImpl && ((ExternalNodeImpl) node.getRealNode()).getExtensionNode(false) != null));
+        } catch (RepositoryException e) {
+            logger.error("Error while checking if an extension node exists", e);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean canExportProperty(Property property) {
+        try {
+            return Constants.EDIT_WORKSPACE.equals(property.getSession().getWorkspace().getName())
+                    && ("jcr:primaryType".equals(property.getName()) || "jcr:mixinTypes".equals(property.getName())
+                        || (property instanceof ExtensionProperty && !ignorePropertiesForExport.contains(property.getName())));
+        } catch (RepositoryException e) {
+            logger.error("Error while checking property name", e);
+        }
+        return false;
     }
 }

@@ -71,6 +71,8 @@
  */
 package org.jahia.modules.external;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.jackrabbit.core.security.JahiaLoginModule;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
@@ -285,11 +287,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
     public String getIdentifier() throws RepositoryException {
         if (uuid == null) {
             ExternalContentStoreProvider storeProvider = getSession().getRepository().getStoreProvider();
-            uuid = storeProvider.getInternalIdentifier(node.getIdentifier());
-            if (uuid == null) {
-                // not mapped yet -> store mapping
-                uuid = storeProvider.mapInternalIdentifier(node.getIdentifier());
-            }
+            uuid = storeProvider.getOrCreateInternalIdentifier(node.getIdentifier());
         }
 
         return uuid;
@@ -349,7 +347,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
     public NodeType[] getMixinNodeTypes() throws RepositoryException {
         List<NodeType> nt = new ArrayList<NodeType>();
         for (NodeType nodeType : node.getMixinNodeTypes()) {
-            if (!nodeType.getName().equals("jmix:externalProviderExtension")) {
+            if (!nodeType.getName().equals("jmix:externalProviderExtension") || StringUtils.startsWith(session.getUserID(), JahiaLoginModule.SYSTEM)) {
                 nt.add(NodeTypeRegistry.getInstance().getNodeType(nodeType.getName()));
             }
         }

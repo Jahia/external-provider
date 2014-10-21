@@ -73,6 +73,7 @@ package org.jahia.modules.external;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.jackrabbit.core.security.JahiaLoginModule;
 import org.apache.jackrabbit.util.ChildrenCollectorFilter;
 import org.apache.jackrabbit.value.BinaryImpl;
 import org.jahia.services.content.nodetypes.*;
@@ -154,6 +155,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         properties.put("jcr:uuid",
                 new ExternalPropertyImpl(new Name("jcr:uuid", NodeTypeRegistry.getInstance().getNamespaces()), this, session,
                         session.getValueFactory().createValue(getIdentifier())));
+        properties.put("jcr:primaryType",
+                new ExternalPropertyImpl(new Name("jcr:primaryType", NodeTypeRegistry.getInstance().getNamespaces()), this, session,
+                        session.getValueFactory().createValue(data.getType())));
     }
 
     private NodeDefinition getChildNodeDefinition(String name, String childType) throws RepositoryException {
@@ -248,7 +252,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             if (isNew) {
                 externalChildren = new ArrayList<String>();
             } else {
-                externalChildren = new ArrayList<String>(session.getRepository().getDataSource().getChildren(getPath()));
+                ExternalContentStoreProvider.setCurrentSession(session);
+                try {
+                    externalChildren = new ArrayList<String>(session.getRepository().getDataSource().getChildren(getPath()));
+                } finally {
+                    ExternalContentStoreProvider.removeCurrentSession();
+                }
             }
         }
         return externalChildren;
@@ -710,8 +719,19 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      */
     public Property getProperty(String s) throws PathNotFoundException, RepositoryException {
         Node n = getExtensionNode(false);
-        if (n != null && n.hasProperty(s)  && canItemBeExtended(getPropertyDefinition(s))) {
+        if (n != null && n.hasProperty(s) && getPropertyDefinition(s) != null && canItemBeExtended(getPropertyDefinition(s))) {
             return new ExtensionProperty(n.getProperty(s), getPath() + "/" + s, session, this);
+        }
+        if (StringUtils.equals(s, "jcr:mixinTypes")) {
+            ExtendedNodeType[] mixinNodeTypes = getMixinNodeTypes();
+            Value[] mixinTypes = new Value[mixinNodeTypes.length];
+            int i = 0;
+            for (ExtendedNodeType mixinName : mixinNodeTypes) {
+                mixinTypes[i++] = session.getValueFactory().createValue(mixinName.getName());
+            }
+            if (mixinTypes.length > 0) {
+                properties.put("jcr:mixinTypes", new ExternalPropertyImpl(new Name("jcr:mixinTypes", NodeTypeRegistry.getInstance().getNamespaces()), this, session, mixinTypes));
+            }
         }
         Property property = properties.get(s);
         if (property == null) {
@@ -729,7 +749,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 if (definition != null && definition.getName().equals("*") && data != null && data.getType() != null && data.getType().equals("jnt:translation")) {
                     definition = ((ExternalNodeImpl) getParent()).getPropertyDefinition(s);
                 }
-                if (definition.isMultiple()) {
+                if (definition.isMultiple()) {                
                     p.setValue(values);
                 } else if (values != null && values.length > 0) {
                     p.setValue(values[0]);
@@ -892,7 +912,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             Node extensionNode = getExtensionNode(false);
             if (extensionNode != null) {
                 for (NodeType type : extensionNode.getMixinNodeTypes()) {
-                    if (!type.isNodeType("jmix:externalProviderExtension")) {
+                    if (!type.isNodeType("jmix:externalProviderExtension") || StringUtils.startsWith(session.getUserID(), JahiaLoginModule.SYSTEM)) {
                         nt.add(NodeTypeRegistry.getInstance().getNodeType(type.getName()));
                     }
                 }
@@ -905,10 +925,14 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public boolean isNodeType(String nodeTypeName) throws RepositoryException {
+        return isNodeType(nodeTypeName, true);
+    }
+
+    public boolean isNodeType(String nodeTypeName, boolean withExtension) throws RepositoryException {
         if (getPrimaryNodeType().isNodeType(nodeTypeName)) {
             return true;
         }
-        for (NodeType nodeType : getMixinNodeTypes()) {
+        for (NodeType nodeType : getMixinNodeTypes(withExtension)) {
             if (nodeType.isNodeType(nodeTypeName)) {
                 return true;
             }
@@ -1019,7 +1043,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public NodeDefinition getDefinition() throws RepositoryException {
-        ExternalNodeImpl parentNode = (ExternalNodeImpl) getParent();
+        ExternalNodeImpl parentNode;
+        try {
+            parentNode = (ExternalNodeImpl) getParent();
+        } catch (ItemNotFoundException e) {
+            return null;
+        }
         ExtendedNodeType parentNodeType = parentNode.getExtendedPrimaryNodeType();
         ExtendedNodeDefinition nodeDefinition = parentNodeType.getChildNodeDefinitionsAsMap().get(getName());
         if (nodeDefinition != null) {
@@ -1235,11 +1264,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     public final String getIdentifier() throws RepositoryException {
         if (uuid == null) {
             if (!session.getRepository().getDataSource().isSupportsUuid() || data.getId().startsWith(ExternalSessionImpl.TRANSLATION_PREFIX)) {
-                uuid = getStoreProvider().getInternalIdentifier(data.getId());
-                if (uuid == null) {
-                    // not mapped yet -> store mapping
-                    uuid = getStoreProvider().mapInternalIdentifier(data.getId());
-                }
+                uuid = getStoreProvider().getOrCreateInternalIdentifier(data.getId());
             } else {
                 uuid = data.getId();
             }
@@ -1317,12 +1342,17 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             return null;
         }
         List<String> extensionAllowedTypes = getSession().getExtensionAllowedTypes();
+        boolean allowed = false;
         if (extensionAllowedTypes != null) {
             for (String type : extensionAllowedTypes) {
-                if (!isNodeType(type)) {
-                    return null;
+                if (isNodeType(type, false)) {
+                    allowed = true;
+                    break;
                 }
             }
+        }
+        if (!allowed) {
+            return null;
         }
         String path = getPath();
         boolean isRoot = path.equals("/");
@@ -1362,6 +1392,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         Node node = extensionSession.getNode(globalPath);
         if (create && isRoot && !node.isNodeType("jmix:hasExternalProviderExtension")) {
             node.addMixin("jmix:hasExternalProviderExtension");
+        }
+        if (!node.isNodeType("jmix:externalProviderExtension")) {
+            node.addMixin("jmix:externalProviderExtension");
         }
         return node;
     }
@@ -1568,17 +1601,17 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 while (extensionNodeIterator.hasNext()) {
                     Node n = extensionNodeIterator.nextNode();
                     try {
-                        NodeDefinition childNodeDefinition = getChildNodeDefinition(n.getName(), n.getPrimaryNodeType().getName());
-                        if (childNodeDefinition == null) {
-                            for (NodeType t : n.getMixinNodeTypes()) {
-                                childNodeDefinition = getChildNodeDefinition(n.getName(), t.getName());
-                                if (childNodeDefinition != null) {
-                                    break;
-                                }
+                        if (!list.contains(n.getName())) {
+                            String path = getPath();
+                            if (!path.endsWith("/")) {
+                                path += "/";
                             }
-                        }
-                        if (childNodeDefinition != null && canItemBeExtended(childNodeDefinition) && !list.contains(n.getName())) {
-                            nextNode = new ExtensionNode(n,getPath() + "/" + n.getName(),getSession());
+                            path += n.getName();
+                            try {
+                                nextNode = session.getNode(path);
+                            } catch (PathNotFoundException e) {
+                                logger.debug("Cannot find node " + path, e);
+                            }
                             return  nextNode;
                         }
                     } catch (RepositoryException e) {
