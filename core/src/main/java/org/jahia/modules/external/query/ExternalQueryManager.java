@@ -242,7 +242,10 @@ public class ExternalQueryManager implements QueryManager {
                     NodeIterator nodes = q.execute().getNodes();
                     while (nodes.hasNext()) {
                         Node node = (Node) nodes.next();
-                        allExtendedResults.add(node.getPath().substring(mountPoint.length()));
+                        String path = node.getPath().substring(mountPoint.length());
+                        if (!node.isNodeType("jnt:externalProviderExtension") || workspace.getSession().itemExists(path)) {
+                            allExtendedResults.add(path);
+                        }
                     }
                     if (allExtendedResults.size() == 0) {
                         // No results at all, ignore search in extension

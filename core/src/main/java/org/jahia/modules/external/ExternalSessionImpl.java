@@ -304,6 +304,9 @@ public class ExternalSessionImpl implements Session {
             // In case item is not found in provider, lookup in extension provider if available
             if (getExtensionSession() != null && !StringUtils.equals("/", path)) {
                 Item item = getExtensionSession().getItem(repository.getStoreProvider().getMountPoint() + path);
+                if ((item.isNode() ? (Node) item : item.getParent()).isNodeType("jnt:externalProviderExtension")) {
+                    throw e;
+                }
                 return item.isNode() ?
                         new ExtensionNode((Node) item, path, this) :
                         new ExtensionProperty((Property) item, path, this, new ExtensionNode(item.getParent(), parentPath, this));
