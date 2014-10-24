@@ -141,11 +141,10 @@ public class ExternalValueFactoryImpl implements ValueFactory {
                 }
                 return new ExternalValueImpl(value, type);
             case PropertyType.STRING :
-                return createValue(value);
             case PropertyType.NAME :
             case PropertyType.PATH :
             case PropertyType.URI :
-                return createValue(value);
+                return new ExternalValueImpl(value, type);
         }
         throw new ValueFormatException("Unsupported value type " + type);
     }
