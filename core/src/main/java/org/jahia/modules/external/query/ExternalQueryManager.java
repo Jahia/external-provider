@@ -154,7 +154,12 @@ public class ExternalQueryManager implements QueryManager {
             }
 
             NodeTypeRegistry ntRegistry = NodeTypeRegistry.getInstance();
-            ExtendedNodeType type = ntRegistry.getNodeType(((Selector) qomTree.getSource()).getNodeTypeName());
+            ExtendedNodeType type = null;
+            try {
+                type = ntRegistry.getNodeType(((Selector) qomTree.getSource()).getNodeTypeName());
+            } catch (NoSuchNodeTypeException e) {
+                return false;
+            }
 
             // check supported node types
             String nodeType = type.getName();

@@ -74,8 +74,10 @@ package org.jahia.modules.external;
 import org.apache.jackrabbit.util.ISO8601;
 
 import javax.jcr.*;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
 import java.util.Calendar;
 
 /**
@@ -150,7 +152,7 @@ public class ExternalValueImpl implements Value {
         if (value instanceof Binary) {
             return (Binary) value;
         }
-        throw new ValueFormatException();
+        return new ExternalBinaryImpl(new ByteArrayInputStream(getString().getBytes(Charset.forName("UTF-8"))));
     }
 
     public long getLong() throws ValueFormatException, RepositoryException {
