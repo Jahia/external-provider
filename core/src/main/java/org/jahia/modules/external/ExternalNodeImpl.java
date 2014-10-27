@@ -157,18 +157,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                         session.getValueFactory().createValue(getIdentifier())));
         properties.put("jcr:primaryType",
                 new ExternalPropertyImpl(new Name("jcr:primaryType", NodeTypeRegistry.getInstance().getNamespaces()), this, session,
-                        session.getValueFactory().createValue(data.getType(), PropertyType.NAME)));
-
-        ExtendedNodeType[] values = getMixinNodeTypes();
-        List<Value> mixins = new ArrayList<Value>();
-        for (ExtendedNodeType value : values) {
-            mixins.add(session.getValueFactory().createValue(value.getName(), PropertyType.NAME));
-        }
-        if (!mixins.isEmpty()) {
-            properties.put("jcr:mixinTypes",
-                    new ExternalPropertyImpl(new Name("jcr:mixinTypes", NodeTypeRegistry.getInstance().getNamespaces()), this, session,
-                            mixins.toArray(new Value[mixins.size()])));
-        }
+                        session.getValueFactory().createValue(data.getType())));
     }
 
     private NodeDefinition getChildNodeDefinition(String name, String childType) throws RepositoryException {
