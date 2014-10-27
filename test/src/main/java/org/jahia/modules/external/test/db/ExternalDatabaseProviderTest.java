@@ -77,22 +77,23 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.File;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.Locale;
 
-import javax.jcr.*;
+import javax.jcr.NodeIterator;
+import javax.jcr.PathNotFoundException;
+import javax.jcr.RepositoryException;
 import javax.jcr.lock.Lock;
 import javax.jcr.lock.LockException;
 import javax.jcr.query.InvalidQueryException;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 
+import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.services.content.*;
-import org.jahia.services.sites.JahiaSite;
 import org.jahia.test.JahiaTestCase;
-import org.jahia.test.TestHelper;
-import org.jahia.test.services.importexport.ImportExportTest;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -109,8 +110,6 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     private final static String GENERIC_PROVIDER_MOUNTPOINT = "/external-database-generic";
 
     private final static String MAPPED_PROVIDER_MOUNTPOINT = "/external-database-mapped";
-
-    private static final String TESTSITE_NAME = "externalProviderExportTest";
 
     @BeforeClass
     public static void oneTimeSetup() {
@@ -566,50 +565,4 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         }
 
     }
-
-    @Test
-    public void testImportExport() throws Exception {
-        try {
-            JahiaSite providerExportTest = TestHelper.createSite(TESTSITE_NAME);
-            JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
-            JCRNodeWrapper airlines = root.getNode("AIRLINES");
-            JCRNodeWrapper aa = airlines.getNode("AA");
-            JCRNodeWrapper us = airlines.getNode("US");
-            aa.setProperty("firstclass_seats", 10);
-            JCRNodeWrapper site = session.getNode(providerExportTest.getJCRLocalPath());
-            JCRNodeWrapper aaReference = site.addNode("aaReference", "jnt:contentReference");
-            aaReference.setProperty("j:node", aa);
-            JCRNodeWrapper usReference = site.addNode("usReference", "jnt:contentReference");
-            usReference.setProperty("j:node", us);
-            session.save();
-
-            File zip = ImportExportTest.exportSite(TESTSITE_NAME);
-            cleanExtension();
-
-            TestHelper.createSite(TESTSITE_NAME, "localhost", TestHelper.WEB_TEMPLATES, zip.getAbsolutePath(), TESTSITE_NAME + ".zip");
-            session.save();
-
-            JCRNodeWrapper AA = session.getNode(MAPPED_PROVIDER_MOUNTPOINT).getNode("AIRLINES").getNode("AA");
-            assertEquals("Property not imported", 10, AA.getProperty("firstclass_seats").getLong());
-        } finally {
-            try {
-                cleanExtension();
-                TestHelper.deleteSite(TESTSITE_NAME);
-                session.save();
-            } catch (Exception e) {}
-        }
-    }
-
-    private void cleanExtension() throws Exception {
-        Session jcrSession = session.getNode("/").getRealNode().getSession();
-        if (jcrSession.nodeExists(MAPPED_PROVIDER_MOUNTPOINT)) {
-            jcrSession.getNode(MAPPED_PROVIDER_MOUNTPOINT).remove();
-        }
-        Node rootNode = jcrSession.getNode("/");
-        if (rootNode.isNodeType("jmix:hasExternalProviderExtension")) {
-            rootNode.removeMixin("jmix:hasExternalProviderExtension");
-        }
-        jcrSession.save();
-    }
-
 }
