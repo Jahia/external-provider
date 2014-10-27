@@ -75,6 +75,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.Predicate;
@@ -104,7 +105,6 @@ import org.jahia.services.preferences.user.UserPreferencesHelper;
 import org.jahia.services.query.QueryWrapper;
 import org.jahia.services.templates.SourceControlManagement;
 import org.jahia.services.templates.SourceControlManagement.Status;
-import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.settings.SettingsBean;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.i18n.Messages;
@@ -124,6 +124,7 @@ import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 import javax.jcr.query.qom.QueryObjectModelConstants;
 import javax.jcr.version.OnParentVersionAction;
+
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
@@ -839,11 +840,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     protected Locale getUILocale() {
-        Locale locale = null;
-        JahiaUser currentUser = JCRSessionFactory.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            locale = UserPreferencesHelper.getPreferredLocale(currentUser);
-        }
+        Locale locale = UserPreferencesHelper.getPreferredLocale(JCRSessionFactory.getInstance().getCurrentUser());
         return locale != null ? locale : SettingsBean.getInstance().getDefaultLocale();
     }
 

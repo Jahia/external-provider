@@ -115,7 +115,6 @@ public class ExternalSessionImpl implements Session {
     private Session extensionSession;
     private List<String> extensionAllowedTypes;
     private Map<String,List<String>> overridableProperties;
-    private Map<String, Object> sessionVariables = new HashMap<String, Object>();
     private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
 
     public ExternalSessionImpl(ExternalRepositoryImpl repository, Credentials credentials, String workspaceName) {
@@ -152,15 +151,10 @@ public class ExternalSessionImpl implements Session {
         if (nodesByPath.containsKey("/")) {
             return nodesByPath.get("/");
         }
-        ExternalContentStoreProvider.setCurrentSession(this);
-        try {
-            ExternalData rootFileObject = repository.getDataSource().getItemByPath("/");
-            final ExternalNodeImpl externalNode = new ExternalNodeImpl(rootFileObject, this);
-            registerNode(externalNode);
-            return externalNode;
-        } finally {
-            ExternalContentStoreProvider.removeCurrentSession();
-        }
+        ExternalData rootFileObject = repository.getDataSource().getItemByPath("/");
+        final ExternalNodeImpl externalNode = new ExternalNodeImpl(rootFileObject, this);
+        registerNode(externalNode);
+        return externalNode;
     }
 
     public Node getNodeByUUID(String uuid) throws ItemNotFoundException, RepositoryException {
@@ -212,16 +206,11 @@ public class ExternalSessionImpl implements Session {
         } catch (RepositoryException e) {
             // do nothing
         }
-        ExternalContentStoreProvider.setCurrentSession(this);
-        try {
-            Node n = new ExternalNodeImpl(repository.getDataSource().getItemByIdentifier(uuid), this);
-            if (deletedData.containsKey(n.getPath())) {
-                throw new ItemNotFoundException("This node has been deleted");
-            }
-            return n;
-        } finally {
-            ExternalContentStoreProvider.removeCurrentSession();
+        Node n = new ExternalNodeImpl(repository.getDataSource().getItemByIdentifier(uuid), this);
+        if (deletedData.containsKey(n.getPath())) {
+            throw new ItemNotFoundException("This node has been deleted");
         }
+        return n;
     }
 
     public Item getItem(String path) throws RepositoryException {
@@ -249,14 +238,9 @@ public class ExternalSessionImpl implements Session {
                 if (nodesByPath.containsKey(parentPath)) {
                     parentObject = nodesByPath.get(parentPath).getData();
                 } else {
-                    ExternalContentStoreProvider.setCurrentSession(this);
-                    try {
-                        parentObject = repository.getDataSource().getItemByPath(parentPath);
-                        final ExternalNodeImpl node = new ExternalNodeImpl(parentObject, this);
-                        registerNode(node);
-                    } finally {
-                        ExternalContentStoreProvider.removeCurrentSession();
-                    }
+                    parentObject = repository.getDataSource().getItemByPath(parentPath);
+                    final ExternalNodeImpl node = new ExternalNodeImpl(parentObject, this);
+                    registerNode(node);
                 }
                 if ((parentObject.getI18nProperties() == null || !parentObject.getI18nProperties().containsKey(lang)) &&
                         (parentObject.getLazyI18nProperties() == null || !parentObject.getLazyI18nProperties().containsKey(lang))) {
@@ -282,7 +266,6 @@ public class ExternalSessionImpl implements Session {
                     throw new PathNotFoundException(path);
                 }
                 // Try to get the item as a node
-                ExternalContentStoreProvider.setCurrentSession(this);
                 try {
                     ExternalData data = repository.getDataSource().getItemByPath(path);
                     final ExternalNodeImpl node = new ExternalNodeImpl(data, this);
@@ -296,8 +279,6 @@ public class ExternalSessionImpl implements Session {
                         registerNode(node);
                     }
                     return nodesByPath.get(parentPath).getProperty(itemName);
-                } finally {
-                    ExternalContentStoreProvider.removeCurrentSession();
                 }
             }
         } catch (PathNotFoundException e) {
@@ -317,12 +298,7 @@ public class ExternalSessionImpl implements Session {
     protected String[] getPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
         ExternalDataSource dataSource = repository.getDataSource();
         if (dataSource instanceof ExternalDataSource.LazyProperty) {
-            ExternalContentStoreProvider.setCurrentSession(this);
-            try {
-                return ((ExternalDataSource.LazyProperty) dataSource).getPropertyValues(data.getPath(), propertyName);
-            } finally {
-                ExternalContentStoreProvider.removeCurrentSession();
-            }
+            return ((ExternalDataSource.LazyProperty) dataSource).getPropertyValues(data.getPath(), propertyName);
         } else {
             throw new PathNotFoundException(repository.getProviderKey() + " doesn't support lazy properties");
         }
@@ -331,12 +307,7 @@ public class ExternalSessionImpl implements Session {
     protected String[] getI18nPropertyValues(ExternalData data, String lang, String propertyName) throws PathNotFoundException {
         ExternalDataSource dataSource = repository.getDataSource();
         if (dataSource instanceof ExternalDataSource.LazyProperty) {
-            ExternalContentStoreProvider.setCurrentSession(this);
-            try {
-                return ((ExternalDataSource.LazyProperty) dataSource).getI18nPropertyValues(StringUtils.substringBeforeLast(data.getPath(), "/"), lang, propertyName);
-            } finally {
-                ExternalContentStoreProvider.removeCurrentSession();
-            }
+            return ((ExternalDataSource.LazyProperty) dataSource).getI18nPropertyValues(StringUtils.substringBeforeLast(data.getPath(),"/"), lang, propertyName);
         } else {
             throw new PathNotFoundException(repository.getProviderKey() + " doesn't support lazy properties");
         }
@@ -345,12 +316,7 @@ public class ExternalSessionImpl implements Session {
     protected Binary[] getBinaryPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
         ExternalDataSource dataSource = repository.getDataSource();
         if (dataSource instanceof ExternalDataSource.LazyProperty) {
-            ExternalContentStoreProvider.setCurrentSession(this);
-            try {
-                return ((ExternalDataSource.LazyProperty) dataSource).getBinaryPropertyValues(data.getPath(), propertyName);
-            } finally {
-                ExternalContentStoreProvider.removeCurrentSession();
-            }
+            return ((ExternalDataSource.LazyProperty) dataSource).getBinaryPropertyValues(data.getPath(), propertyName);
         } else {
             throw new PathNotFoundException(repository.getProviderKey() + " doesn't support lazy properties");
         }
@@ -406,40 +372,35 @@ public class ExternalSessionImpl implements Session {
             final ExternalNodeImpl previousParent = (ExternalNodeImpl) externalNode.getParent();
             final List<String> previousParentChildren = previousParent.getExternalChildren();
 
-            ExternalContentStoreProvider.setCurrentSession(this);
-            try {
-                //todo : store move in session and move node in save
-                ((ExternalDataSource.Writable) repository.getDataSource()).move(source, dest);
+            //todo : store move in session and move node in save
+            ((ExternalDataSource.Writable) repository.getDataSource()).move(source, dest);
 
-                int oldIndex = previousParentChildren.indexOf(externalNode.getName());
-                previousParentChildren.remove(externalNode.getName());
-                unregisterNode(externalNode);
+            int oldIndex =  previousParentChildren.indexOf(externalNode.getName());
+            previousParentChildren.remove(externalNode.getName());
+            unregisterNode(externalNode);
 
-                ExternalData newData = repository.getDataSource().getItemByPath(dest);
+            ExternalData newData = repository.getDataSource().getItemByPath(dest);
 
-                final ExternalNodeImpl newExternalNode = new ExternalNodeImpl(newData, this);
-                registerNode(newExternalNode);
+            final ExternalNodeImpl newExternalNode = new ExternalNodeImpl(newData, this);
+            registerNode(newExternalNode);
 
-                final ExternalNodeImpl newParent = (ExternalNodeImpl) newExternalNode.getParent();
-                if (newParent.equals(previousParent)) {
-                    previousParentChildren.add(oldIndex, newExternalNode.getName());
-                } else if (!newParent.getExternalChildren().contains(newExternalNode.getName())) {
-                    newParent.getExternalChildren().add(newExternalNode.getName());
-                }
-
-                final ExternalData oldData = externalNode.getData();
-                if (oldData.getId().equals(newData.getId())) {
-                    return;
-                }
-                getRepository()
-                        .getStoreProvider()
-                        .getExternalProviderInitializerService()
-                        .updateExternalIdentifier(oldData.getId(), newData.getId(), getRepository().getProviderKey(),
-                                getRepository().getDataSource().isSupportsHierarchicalIdentifiers());
-                return;
-            } finally {
-                ExternalContentStoreProvider.removeCurrentSession();
+            final ExternalNodeImpl newParent = (ExternalNodeImpl) newExternalNode.getParent();
+            if (newParent.equals(previousParent)) {
+                previousParentChildren.add(oldIndex, newExternalNode.getName());
+            } else if (!newParent.getExternalChildren().contains(newExternalNode.getName())) {
+                newParent.getExternalChildren().add(newExternalNode.getName());
             }
+
+            final ExternalData oldData = externalNode.getData();
+            if (oldData.getId().equals(newData.getId())) {
+                return;
+            }
+            getRepository()
+                    .getStoreProvider()
+                    .getExternalProviderInitializerService()
+                    .updateExternalIdentifier(oldData.getId(), newData.getId(), getRepository().getProviderKey(),
+                            getRepository().getDataSource().isSupportsHierarchicalIdentifiers());
+            return;
         }
 
         throw new UnsupportedRepositoryOperationException();
@@ -456,72 +417,67 @@ public class ExternalSessionImpl implements Session {
             orderedData.clear();
             return;
         }
-        ExternalContentStoreProvider.setCurrentSession(this);
-        try {
-            Map<String, ExternalData> changedDataWithI18n = new LinkedHashMap<String, ExternalData>();
-            for (Map.Entry<String, ExternalData> entry : changedData.entrySet()) {
-                String path = entry.getKey();
-                ExternalData externalData = entry.getValue();
-                if (path.startsWith(TRANSLATION_NODE_NAME_BASE, path.lastIndexOf("/") + 1)) {
-                    String lang = StringUtils.substringAfterLast(path, TRANSLATION_NODE_NAME_BASE);
-                    String parentPath = StringUtils.substringBeforeLast(path, "/");
-                    ExternalData parentData;
-                    if (changedDataWithI18n.containsKey(parentPath)) {
-                        parentData = changedDataWithI18n.get(parentPath);
-                    } else {
-                        parentData = repository.getDataSource().getItemByPath(parentPath);
-                    }
-                    Map<String, Map<String, String[]>> i18nProperties = parentData.getI18nProperties();
-                    if (i18nProperties == null) {
-                        i18nProperties = new HashMap<String, Map<String, String[]>>();
-                        parentData.setI18nProperties(i18nProperties);
-                    }
-                    i18nProperties.put(lang, externalData.getProperties());
-
-                    if (externalData.getLazyProperties() != null) {
-                        Map<String, Set<String>> lazyI18nProperties = parentData.getLazyI18nProperties();
-                        if (lazyI18nProperties == null) {
-                            lazyI18nProperties = new HashMap<String, Set<String>>();
-                            parentData.setLazyI18nProperties(lazyI18nProperties);
-                        }
-                        lazyI18nProperties.put(lang, externalData.getLazyProperties());
-                    }
-
-                    changedDataWithI18n.put(parentPath, parentData);
+        Map<String, ExternalData> changedDataWithI18n = new LinkedHashMap<String, ExternalData>();
+        for (Map.Entry<String, ExternalData> entry : changedData.entrySet()) {
+            String path = entry.getKey();
+            ExternalData externalData = entry.getValue();
+            if (path.startsWith(TRANSLATION_NODE_NAME_BASE,path.lastIndexOf("/") + 1)) {
+                String lang = StringUtils.substringAfterLast(path, TRANSLATION_NODE_NAME_BASE);
+                String parentPath = StringUtils.substringBeforeLast(path, "/");
+                ExternalData parentData;
+                if (changedDataWithI18n.containsKey(parentPath)) {
+                    parentData = changedDataWithI18n.get(parentPath);
                 } else {
-                    changedDataWithI18n.put(path, externalData);
+                    parentData = repository.getDataSource().getItemByPath(parentPath);
                 }
-            }
-            ExternalDataSource.Writable writableDataSource = (ExternalDataSource.Writable) repository.getDataSource();
-            for (String path : orderedData.keySet()) {
-                writableDataSource.order(path, orderedData.get(path));
-            }
-            orderedData.clear();
-            for (ExternalData data : changedDataWithI18n.values()) {
-                writableDataSource.saveItem(data);
-            }
+                Map<String, Map<String, String[]>> i18nProperties = parentData.getI18nProperties();
+                if (i18nProperties == null) {
+                    i18nProperties = new HashMap<String, Map<String, String[]>>();
+                    parentData.setI18nProperties(i18nProperties);
+                }
+                i18nProperties.put(lang, externalData.getProperties());
 
-            changedData.clear();
-            if (!deletedData.isEmpty()) {
-                List<String> toBeDeleted = new LinkedList<String>();
-                for (String path : deletedData.keySet()) {
-                    writableDataSource.removeItemByPath(path);
-                    toBeDeleted.add(deletedData.get(path).getId());
+                if (externalData.getLazyProperties() != null) {
+                    Map<String, Set<String>> lazyI18nProperties = parentData.getLazyI18nProperties();
+                    if (lazyI18nProperties == null) {
+                        lazyI18nProperties = new HashMap<String, Set<String>>();
+                        parentData.setLazyI18nProperties(lazyI18nProperties);
+                    }
+                    lazyI18nProperties.put(lang, externalData.getLazyProperties());
                 }
-                getRepository()
-                        .getStoreProvider()
-                        .getExternalProviderInitializerService()
-                        .delete(toBeDeleted, getRepository().getStoreProvider().getKey(),
-                                getRepository().getDataSource().isSupportsHierarchicalIdentifiers());
-                deletedData.clear();
+
+                changedDataWithI18n.put(parentPath, parentData);
+            } else {
+                changedDataWithI18n.put(path, externalData);
             }
-            for (ExternalItemImpl newItem : newItems) {
-                newItem.setNew(false);
-            }
-            newItems.clear();
-        } finally {
-            ExternalContentStoreProvider.removeCurrentSession();
         }
+        ExternalDataSource.Writable writableDataSource = (ExternalDataSource.Writable) repository.getDataSource();
+        for (String path : orderedData.keySet()) {
+            writableDataSource.order(path, orderedData.get(path));
+        }
+        orderedData.clear();
+        for (ExternalData data : changedDataWithI18n.values()) {
+            writableDataSource.saveItem(data);
+        }
+
+        changedData.clear();
+        if (!deletedData.isEmpty()) {
+            List<String> toBeDeleted = new LinkedList<String>();
+            for (String path : deletedData.keySet()) {
+                writableDataSource.removeItemByPath(path);
+                toBeDeleted.add(deletedData.get(path).getId());
+            }
+            getRepository()
+                    .getStoreProvider()
+                    .getExternalProviderInitializerService()
+                    .delete(toBeDeleted, getRepository().getStoreProvider().getKey(),
+                            getRepository().getDataSource().isSupportsHierarchicalIdentifiers());
+            deletedData.clear();
+        }
+        for (ExternalItemImpl newItem : newItems) {
+            newItem.setNew(false);
+        }
+        newItems.clear();
     }
 
     public void refresh(boolean keepChanges) throws RepositoryException {
@@ -731,8 +687,7 @@ public class ExternalSessionImpl implements Session {
 
     public AccessControlManager getAccessControlManager()
             throws UnsupportedRepositoryOperationException, RepositoryException {
-        Value writeSupported = getRepository().getDescriptorValue(Repository.WRITE_SUPPORTED);
-        return new ExternalAccessControlManager(repository.getNamespaceRegistry(), writeSupported != null && !writeSupported.getBoolean(), repository.getDataSource(), this);
+        return repository.getAccessControlManager();
     }
 
     public RetentionManager getRetentionManager() throws UnsupportedRepositoryOperationException, RepositoryException {
@@ -743,7 +698,11 @@ public class ExternalSessionImpl implements Session {
         if (extensionSession == null) {
             JCRStoreProvider extensionProvider = getRepository().getStoreProvider().getExtensionProvider();
             if (extensionProvider != null) {
-                extensionSession = extensionProvider.getSession(JahiaLoginModule.getSystemCredentials(StringUtils.removeStart(getUserID(), JahiaLoginModule.SYSTEM)), "default");
+                if (getUserID().startsWith(" system ")) {
+                    extensionSession = extensionProvider.getSession(JahiaLoginModule.getSystemCredentials(getUserID().substring(" system ".length())), "default");
+                } else {
+                    extensionSession = extensionProvider.getSession(JahiaLoginModule.getCredentials(getUserID()), "default");
+                }
             }
         }
         return extensionSession;
@@ -780,9 +739,4 @@ public class ExternalSessionImpl implements Session {
         }
         return overridableProperties;
     }
-
-    public Map<String, Object> getSessionVariables() {
-        return sessionVariables;
-    }
-
 }

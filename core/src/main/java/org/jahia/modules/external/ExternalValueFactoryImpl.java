@@ -132,8 +132,12 @@ public class ExternalValueFactoryImpl implements ValueFactory {
                         try {
                             UUID.fromString(value);
                         } catch (IllegalArgumentException e) {
-                            String internalId = session.getRepository().getStoreProvider().getOrCreateInternalIdentifier(value);
-                            return new ExternalValueImpl(internalId, type);
+                            String externalId = session.getRepository().getStoreProvider().getInternalIdentifier(value);
+                            if (externalId == null) {
+                                // not mapped yet -> store mapping
+                                externalId = session.getRepository().getStoreProvider().mapInternalIdentifier(value);
+                            }
+                            return new ExternalValueImpl(externalId, type);
                         }
                     }
                 } catch (RepositoryException e) {

@@ -140,6 +140,7 @@ public class ExternalRepositoryImpl implements Repository {
         add(Repository.OPTION_BASELINES_SUPPORTED);
 
     }};
+    private ExternalAccessControlManager accessControlManager;
 
     private ExternalDataSource dataSource;
 
@@ -152,12 +153,17 @@ public class ExternalRepositoryImpl implements Repository {
     private Map<String, Object> repositoryDescriptors = new HashMap<String, Object>();
     private ExternalContentStoreProvider storeProvider;
 
-    public ExternalRepositoryImpl(ExternalContentStoreProvider storeProvider, ExternalDataSource dataSource, NamespaceRegistry nsRegistry) {
+    public ExternalRepositoryImpl(ExternalContentStoreProvider storeProvider, ExternalDataSource dataSource, ExternalAccessControlManager accessControlManager, NamespaceRegistry nsRegistry) {
         this.storeProvider = storeProvider;
         this.dataSource = dataSource;
+        this.accessControlManager = accessControlManager;
         this.namespaceRegistry = nsRegistry;
         this.namePathResolver = new DefaultNamePathResolver(nsRegistry);
         initDescriptors();
+    }
+
+    protected ExternalAccessControlManager getAccessControlManager() {
+        return accessControlManager;
     }
 
     public ExternalDataSource getDataSource() {
@@ -218,7 +224,7 @@ public class ExternalRepositoryImpl implements Repository {
         repositoryDescriptors.put(Repository.REP_VENDOR_URL_DESC, new ExternalValueImpl("http://www.jahia.org"));
         repositoryDescriptors.put(Repository.REP_NAME_DESC, new ExternalValueImpl("The Web Integration Software"));
         repositoryDescriptors.put(Repository.REP_VERSION_DESC, new ExternalValueImpl("1.0"));
-        repositoryDescriptors.put(Repository.WRITE_SUPPORTED, new ExternalValueImpl(dataSource instanceof ExternalDataSource.Writable || getStoreProvider().getExtensionProvider() != null));
+        repositoryDescriptors.put(Repository.WRITE_SUPPORTED, new ExternalValueImpl(true));
         repositoryDescriptors.put(Repository.IDENTIFIER_STABILITY, new ExternalValueImpl(Repository.IDENTIFIER_STABILITY_SESSION_DURATION));
         repositoryDescriptors.put(Repository.NODE_TYPE_MANAGEMENT_INHERITANCE, new ExternalValueImpl(Repository.NODE_TYPE_MANAGEMENT_INHERITANCE_MINIMAL));
         repositoryDescriptors.put(Repository.NODE_TYPE_MANAGEMENT_OVERRIDES_SUPPORTED, new ExternalValueImpl(false));
@@ -264,7 +270,7 @@ public class ExternalRepositoryImpl implements Repository {
         repositoryDescriptors.put(Repository.OPTION_SIMPLE_VERSIONING_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.OPTION_TRANSACTIONS_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.OPTION_UNFILED_CONTENT_SUPPORTED, new ExternalValueImpl(false));
-        repositoryDescriptors.put(Repository.OPTION_UPDATE_MIXIN_NODE_TYPES_SUPPORTED, new ExternalValueImpl(dataSource instanceof ExternalDataSource.Writable || getStoreProvider().getExtensionProvider() != null));
+        repositoryDescriptors.put(Repository.OPTION_UPDATE_MIXIN_NODE_TYPES_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.OPTION_UPDATE_PRIMARY_NODE_TYPE_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.OPTION_VERSIONING_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.OPTION_WORKSPACE_MANAGEMENT_SUPPORTED, new ExternalValueImpl(false));

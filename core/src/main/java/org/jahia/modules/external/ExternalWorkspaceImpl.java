@@ -128,12 +128,7 @@ public class ExternalWorkspaceImpl implements Workspace {
 
     public void move(String source, String dest) throws ConstraintViolationException, VersionException, AccessDeniedException, PathNotFoundException, ItemExistsException, LockException, RepositoryException {
         if (externalSession.getRepository().getDataSource() instanceof ExternalDataSource.Writable) {
-            ExternalContentStoreProvider.setCurrentSession(externalSession);
-            try {
-                ((ExternalDataSource.Writable) externalSession.getRepository().getDataSource()).move(source, dest);
-            } finally {
-                ExternalContentStoreProvider.removeCurrentSession();
-            }
+            ((ExternalDataSource.Writable) externalSession.getRepository().getDataSource()).move(source, dest);
         } else {
             throw new UnsupportedRepositoryOperationException();
         }
