@@ -76,7 +76,10 @@ import org.apache.jackrabbit.commons.iterator.PropertyIteratorAdapter;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.exceptions.JahiaRuntimeException;
-import org.jahia.services.content.*;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.content.nodetypes.Name;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
@@ -361,14 +364,11 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     }
 
     @Override
-    public boolean canExportNode(Node node) {
+    public boolean canExportNode(JCRNodeWrapper node) {
         try {
-            if (node instanceof JCRNodeWrapper) {
-                node = ((JCRNodeWrapper) node).getRealNode();
-            }
             return Constants.EDIT_WORKSPACE.equals(node.getSession().getWorkspace().getName())
-                    && (node instanceof ExtensionNode
-                        || (node instanceof ExternalNodeImpl && ((ExternalNodeImpl) node).getExtensionNode(false) != null));
+                    && (node.getRealNode() instanceof ExtensionNode
+                        || (node.getRealNode() instanceof ExternalNodeImpl && ((ExternalNodeImpl) node.getRealNode()).getExtensionNode(false) != null));
         } catch (RepositoryException e) {
             logger.error("Error while checking if an extension node exists", e);
         }
@@ -378,9 +378,6 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     @Override
     public boolean canExportProperty(Property property) {
         try {
-            if (property instanceof JCRPropertyWrapper) {
-                property = ((JCRNodeWrapper) property.getParent()).getRealNode().getProperty(property.getName());
-            }
             return Constants.EDIT_WORKSPACE.equals(property.getSession().getWorkspace().getName())
                     && ("jcr:primaryType".equals(property.getName()) || "jcr:mixinTypes".equals(property.getName())
                         || (property instanceof ExtensionProperty && !ignorePropertiesForExport.contains(property.getName())));
