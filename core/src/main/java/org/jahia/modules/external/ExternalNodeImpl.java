@@ -160,11 +160,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                         session.getValueFactory().createValue(data.getType(), PropertyType.NAME)));
 
         ExtendedNodeType[] values = getMixinNodeTypes();
-        List<Value> mixins = new ArrayList<Value>();
-        for (ExtendedNodeType value : values) {
-            mixins.add(session.getValueFactory().createValue(value.getName(), PropertyType.NAME));
-        }
-        if (!mixins.isEmpty()) {
+        if (values.length > 0) {
+            List<Value> mixins = new ArrayList<Value>();
+            for (ExtendedNodeType value : values) {
+                mixins.add(session.getValueFactory().createValue(value.getName(), PropertyType.NAME));
+            }
             properties.put("jcr:mixinTypes",
                     new ExternalPropertyImpl(new Name("jcr:mixinTypes", NodeTypeRegistry.getInstance().getNamespaces()), this, session,
                             mixins.toArray(new Value[mixins.size()])));
@@ -733,17 +733,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (n != null && n.hasProperty(s) && getPropertyDefinition(s) != null && canItemBeExtended(getPropertyDefinition(s))) {
             return new ExtensionProperty(n.getProperty(s), getPath() + "/" + s, session, this);
         }
-        if (StringUtils.equals(s, "jcr:mixinTypes")) {
-            ExtendedNodeType[] mixinNodeTypes = getMixinNodeTypes();
-            Value[] mixinTypes = new Value[mixinNodeTypes.length];
-            int i = 0;
-            for (ExtendedNodeType mixinName : mixinNodeTypes) {
-                mixinTypes[i++] = session.getValueFactory().createValue(mixinName.getName());
-            }
-            if (mixinTypes.length > 0) {
-                properties.put("jcr:mixinTypes", new ExternalPropertyImpl(new Name("jcr:mixinTypes", NodeTypeRegistry.getInstance().getNamespaces()), this, session, mixinTypes));
-            }
-        }
         Property property = properties.get(s);
         if (property == null) {
             if (data.getLazyProperties() != null && data.getLazyProperties().contains(s)) {
@@ -923,7 +912,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             Node extensionNode = getExtensionNode(false);
             if (extensionNode != null) {
                 for (NodeType type : extensionNode.getMixinNodeTypes()) {
-                    if (!type.isNodeType("jmix:externalProviderExtension") || StringUtils.startsWith(session.getUserID(), JahiaLoginModule.SYSTEM)) {
+                    if (!type.isNodeType("jmix:externalProviderExtension")) {
                         nt.add(NodeTypeRegistry.getInstance().getNodeType(type.getName()));
                     }
                 }

@@ -347,7 +347,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
     public NodeType[] getMixinNodeTypes() throws RepositoryException {
         List<NodeType> nt = new ArrayList<NodeType>();
         for (NodeType nodeType : node.getMixinNodeTypes()) {
-            if (!nodeType.getName().equals("jmix:externalProviderExtension") || StringUtils.startsWith(session.getUserID(), JahiaLoginModule.SYSTEM)) {
+            if (!nodeType.getName().equals("jmix:externalProviderExtension")) {
                 nt.add(NodeTypeRegistry.getInstance().getNodeType(nodeType.getName()));
             }
         }
