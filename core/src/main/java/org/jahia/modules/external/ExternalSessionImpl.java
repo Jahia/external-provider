@@ -117,6 +117,7 @@ public class ExternalSessionImpl implements Session {
     private Map<String,List<String>> overridableProperties;
     private Map<String, Object> sessionVariables = new HashMap<String, Object>();
     private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
+    private ExternalAccessControlManager accessControlManager;
 
     public ExternalSessionImpl(ExternalRepositoryImpl repository, Credentials credentials, String workspaceName) {
         this.repository = repository;
@@ -618,6 +619,7 @@ public class ExternalSessionImpl implements Session {
         for (Binary binary : tempBinaries) {
             binary.dispose();
         }
+        accessControlManager = null;
     }
 
     public boolean isLive() {
@@ -734,7 +736,10 @@ public class ExternalSessionImpl implements Session {
 
     public AccessControlManager getAccessControlManager()
             throws UnsupportedRepositoryOperationException, RepositoryException {
-        return new ExternalAccessControlManager(repository.getNamespaceRegistry(), getRepository().getStoreProvider().isReadOnly(), repository.getDataSource(), this);
+        if (accessControlManager == null) {
+            accessControlManager = new ExternalAccessControlManager(repository.getNamespaceRegistry(), getRepository().getStoreProvider().isReadOnly(), repository.getDataSource(), this);
+        }
+        return accessControlManager;
     }
 
     public RetentionManager getRetentionManager() throws UnsupportedRepositoryOperationException, RepositoryException {
