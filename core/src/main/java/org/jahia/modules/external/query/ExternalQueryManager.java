@@ -272,8 +272,8 @@ public class ExternalQueryManager implements QueryManager {
             }
             if (nodeTypeSupported && (getLimit() == -1 || results == null || results.size() < getLimit())) {
                 ExternalContentStoreProvider.setCurrentSession(workspace.getSession());
-                ExternalDataSource dataSource = workspace.getSession().getRepository().getDataSource();
                 try {
+                    ExternalDataSource dataSource = workspace.getSession().getRepository().getDataSource();
                     final long originalLimit = getLimit();
                     if (originalLimit > -1 && results != null) {
                         // Remove results found. Extend limit with total size of extended result to skip duplicate results
