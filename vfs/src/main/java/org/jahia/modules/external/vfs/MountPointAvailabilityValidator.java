@@ -75,20 +75,23 @@ import javax.validation.constraints.NotNull;
 
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.decorator.validation.JCRMountPointAvailabilityValidator;
+import org.jahia.services.content.decorator.validation.JCRNodeValidator;
 
 /**
  * VFS mount point validator.
  * 
  * @author Sergiy Shyrkov
  */
-public class MountPointAvailabilityValidator extends JCRMountPointAvailabilityValidator {
+public class MountPointAvailabilityValidator implements JCRNodeValidator {
+
+    private final JCRNodeWrapper node;
 
     public MountPointAvailabilityValidator(JCRNodeWrapper node) {
-        super(node);
+        this.node=node;
     }
 
     @NotNull
     public String getRootPath() {
-        return getNode().getPropertyAsString("j:rootPath");
+        return node.getPropertyAsString("j:rootPath");
     }
 }
