@@ -74,7 +74,6 @@ package org.jahia.modules.external.vfs;
 import javax.validation.constraints.NotNull;
 
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.decorator.validation.JCRMountPointAvailabilityValidator;
 import org.jahia.services.content.decorator.validation.JCRNodeValidator;
 
 /**
