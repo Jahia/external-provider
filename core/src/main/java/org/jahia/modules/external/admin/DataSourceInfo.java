@@ -89,6 +89,7 @@ public class DataSourceInfo implements Serializable {
     private Set<String> supportedTypes;
     private Map<String, Boolean> supportedQueries;
     private List<String> overridableItems;
+    private List<String> nonOverridableItems;
     private List<String> extendableTypes;
 
     public String getClazz() {
@@ -185,6 +186,14 @@ public class DataSourceInfo implements Serializable {
 
     public void setOverridableItems(List<String> overridableItems) {
         this.overridableItems = overridableItems;
+    }
+
+    public List<String> getNonOverridableItems() {
+        return nonOverridableItems;
+    }
+
+    public void setNonOverridableItems(List<String> nonOverridableItems) {
+        this.nonOverridableItems = nonOverridableItems;
     }
 
     public List<String> getExtendableTypes() {

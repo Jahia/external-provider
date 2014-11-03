@@ -1417,9 +1417,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         NodeType type = definition.getDeclaringNodeType();
 
         Map<String,List<String>> overridableProperties = getSession().getOverridableProperties();
+        Map<String,List<String>> nonOverridableProperties = getSession().getNonOverridableProperties();
         for (Map.Entry<String, List<String>> entry : overridableProperties.entrySet()) {
             if ((entry.getKey().equals("*") || type.getName().equals(entry.getKey())) &&
-                    (entry.getValue().contains("*") || entry.getValue().contains(definition.getName()))) {
+                    (entry.getValue().contains("*") || entry.getValue().contains(definition.getName())) &&
+                    !(nonOverridableProperties.containsKey("*") && nonOverridableProperties.get("*").contains(definition.getName())) &&
+                    !(nonOverridableProperties.containsKey(type.getName()) && nonOverridableProperties.get(type.getName()).contains(definition.getName()))) {
                 return true;
             }
         }

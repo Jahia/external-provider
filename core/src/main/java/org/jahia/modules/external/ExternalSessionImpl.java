@@ -115,6 +115,7 @@ public class ExternalSessionImpl implements Session {
     private Session extensionSession;
     private List<String> extensionAllowedTypes;
     private Map<String,List<String>> overridableProperties;
+    private Map<String,List<String>> nonOverridableProperties;
     private Map<String, Object> sessionVariables = new HashMap<String, Object>();
     private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
     private ExternalAccessControlManager accessControlManager;
@@ -786,6 +787,28 @@ public class ExternalSessionImpl implements Session {
             }
         }
         return overridableProperties;
+    }
+
+    /**
+     * Return the properties that can NOT be overridden for extendable nodetypes
+     * @return a map of list of properties (value) by nodetype (key)
+     */
+    public Map<String,List<String>> getNonOverridableProperties() {
+        if (nonOverridableProperties == null) {
+            nonOverridableProperties = new HashMap<String,List<String>>();
+            List<String> nonOverridablePropertiesString = getRepository().getStoreProvider().getNonOverridableItems();
+            if (nonOverridablePropertiesString != null) {
+                for (String s : nonOverridablePropertiesString) {
+                    String nodeType = StringUtils.substringBefore(s,".");
+                    String property = StringUtils.substringAfter(s,".");
+                    if (!nonOverridableProperties.containsKey(nodeType)) {
+                        nonOverridableProperties.put(nodeType, new ArrayList<String>());
+                    }
+                    nonOverridableProperties.get(nodeType).add(property);
+                }
+            }
+        }
+        return nonOverridableProperties;
     }
 
     public Map<String, Object> getSessionVariables() {

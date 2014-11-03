@@ -40,6 +40,7 @@
     <h3><fmt:message key="label.extensions"/></h3>
     <ul>
         <li><fmt:message key="label.overridableItems"/> : ${datasourceInfo.overridableItems}</li>
+        <li><fmt:message key="label.nonOverridableItems"/> : ${datasourceInfo.nonOverridableItems}</li>
         <li><fmt:message key="label.extendableTypes"/>s : ${datasourceInfo.extendableTypes}</li>
     </ul>
 </c:if>

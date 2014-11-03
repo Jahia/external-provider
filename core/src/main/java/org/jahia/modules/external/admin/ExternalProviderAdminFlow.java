@@ -179,6 +179,7 @@ public class ExternalProviderAdminFlow implements Serializable {
 
         dataSourceInfo.setExtendable(provider.getExtensionProvider() != null);
         dataSourceInfo.setOverridableItems(provider.getOverridableItems());
+        dataSourceInfo.setNonOverridableItems(provider.getNonOverridableItems());
         dataSourceInfo.setExtendableTypes(provider.getExtendableTypes());
 
         if (dataSourceInfo.isSearchable()) {
