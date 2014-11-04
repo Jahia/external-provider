@@ -44,9 +44,14 @@
         <property name="overridableItems">
             <list>
                 <value>jtestnt:directory.*</value>
-                <value>jtestnt:airline.firstclass_seats</value>
+                <value>jtestnt:airline.*</value>
             </list>
         </property>
+      <property name="nonOverridableItems">
+        <list>
+          <value>jtestnt:airline.business_seats</value>
+        </list>
+      </property>
         <property name="lockSupport" value="true"/>
         <property name="dataSource">
             <bean class="org.jahia.modules.external.test.db.MappedDatabaseDataSource"/>

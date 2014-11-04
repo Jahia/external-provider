@@ -396,6 +396,13 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
         AA.setProperty("firstclass_seats", 10);
         assertEquals("Property not updated", 10, AA.getProperty("firstclass_seats").getLong());
+        boolean threwException = false;
+        try {
+            AA.setProperty("business_seats", 50);
+        } catch (UnsupportedRepositoryOperationException e) {
+            threwException = true;
+        }
+        assertTrue("Setting a non-overridable property shouldn't be possible", threwException);
     }
 
     @Test
