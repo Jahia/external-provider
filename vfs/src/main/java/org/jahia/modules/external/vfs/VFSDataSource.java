@@ -291,7 +291,15 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             return;
         }
         try {
-            getFile(oldPath).moveTo(getFile(newPath));
+            FileObject origin = getFile(oldPath);
+            if(origin.isContentOpen()) {
+                origin.close();
+            }
+            FileObject destination = getFile(newPath);
+            if(destination.exists() && destination.isContentOpen()){
+                destination.close();
+            }
+            origin.moveTo(destination);
         } catch (FileSystemException e) {
             throw new RepositoryException(oldPath, e);
         }
