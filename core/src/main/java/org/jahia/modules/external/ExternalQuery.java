@@ -201,4 +201,17 @@ public class ExternalQuery implements QueryObjectModel {
             ConstraintViolationException, LockException, UnsupportedRepositoryOperationException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("ExternalQuery{");
+        sb.append("columns=").append(Arrays.toString(columns));
+        sb.append(", constraints=").append(constraints);
+        sb.append(", limit=").append(limit);
+        sb.append(", offset=").append(offset);
+        sb.append(", orderings=").append(Arrays.toString(orderings));
+        sb.append(", source=").append(source);
+        sb.append('}');
+        return sb.toString();
+    }
 }
