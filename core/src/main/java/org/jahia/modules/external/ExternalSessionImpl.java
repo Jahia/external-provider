@@ -134,6 +134,10 @@ public class ExternalSessionImpl implements Session {
         return ((SimpleCredentials) credentials).getUserID();
     }
 
+    public String getRealm() {
+        return (String) ((SimpleCredentials) credentials).getAttribute(JahiaLoginModule.REALM_ATTRIBUTE);
+    }
+
     public Object getAttribute(String s) {
         return null;
     }
@@ -751,7 +755,7 @@ public class ExternalSessionImpl implements Session {
         if (extensionSession == null) {
             JCRStoreProvider extensionProvider = getRepository().getStoreProvider().getExtensionProvider();
             if (extensionProvider != null) {
-                extensionSession = extensionProvider.getSession(JahiaLoginModule.getSystemCredentials(StringUtils.removeStart(getUserID(), JahiaLoginModule.SYSTEM)), "default");
+                extensionSession = extensionProvider.getSession(JahiaLoginModule.getSystemCredentials(StringUtils.removeStart(getUserID(), JahiaLoginModule.SYSTEM), getRealm()), "default");
             }
         }
         return extensionSession;
