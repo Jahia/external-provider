@@ -227,12 +227,12 @@ public interface ExternalDataSource {
      */
     interface CanLoadChildrenInBatch {
         /**
-         * Retrieves a list of {@link org.jahia.modules.external.ExternalData} elements, one per child of the node
-         * represented by this ExternalDataSource.
+         * Retrieves the children of the node represented by this ExternalDataSource, located at the specified path, as ExternalData elements.
          *
-         * @return a list of children data represented by ExternalData elements
+         * @param path the path from where to get children
+         * @return a list of children located at the specified path, represented by ExternalData elements
          */
-        List<ExternalData> getChildrenNodes();
+        List<ExternalData> getChildrenNodes(String path);
     }
 
     /**
