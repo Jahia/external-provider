@@ -269,6 +269,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                     if (dataSource instanceof ExternalDataSource.CanLoadChildrenInBatch) {
                         ExternalDataSource.CanLoadChildrenInBatch childrenLoader = (ExternalDataSource.CanLoadChildrenInBatch) dataSource;
                         final List<ExternalData> childrenNodes = childrenLoader.getChildrenNodes(getPath());
+
+                        if(externalChildren == null) {
+                            externalChildren = new ArrayList<String>(childrenNodes.size());
+                        }
+
                         for (ExternalData child : childrenNodes) {
                             externalChildren.add(child.getPath());
                             final ExternalNodeImpl node = new ExternalNodeImpl(child, session);
