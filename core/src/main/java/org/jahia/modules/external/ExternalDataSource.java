@@ -71,14 +71,12 @@
  */
 package org.jahia.modules.external;
 
+import java.util.List;
+import java.util.Set;
 import javax.jcr.Binary;
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
-
-
-import java.util.List;
-import java.util.Set;
 
 /**
  * Interface to define an external DataSource to handle (@link org.jahia.services.content.impl.external.ExternalData}
@@ -95,7 +93,8 @@ public interface ExternalDataSource {
     public interface LazyProperty {
         /**
          * Get values for a lazy property
-         * @param path Path of the node
+         *
+         * @param path         Path of the node
          * @param propertyName Name of the property to get
          * @return values
          * @throws PathNotFoundException
@@ -104,7 +103,8 @@ public interface ExternalDataSource {
 
         /**
          * Get values for an lazy internationalized property
-         * @param path Path of the node
+         *
+         * @param path         Path of the node
          * @param propertyName Name of the property to get
          * @return values
          * @throws PathNotFoundException
@@ -113,7 +113,8 @@ public interface ExternalDataSource {
 
         /**
          * Get values for a lazy binary property
-         * @param path Path of the node
+         *
+         * @param path         Path of the node
          * @param propertyName Name of the property to get
          * @return values
          * @throws PathNotFoundException
@@ -127,10 +128,11 @@ public interface ExternalDataSource {
     public abstract interface Searchable {
         /**
          * Execute a search query
-         * @see org.jahia.modules.external.query.QueryHelper
+         *
          * @param query The JCR Query, can be parsed with
          * @return List of node path
          * @throws RepositoryException
+         * @see org.jahia.modules.external.query.QueryHelper
          */
         List<String> search(ExternalQuery query) throws RepositoryException;
     }
@@ -141,14 +143,16 @@ public interface ExternalDataSource {
     public interface Writable {
         /**
          * moves ExternalData from oldPath to newPath
-         * @param oldPath  source path
-         * @param newPath  destination path
+         *
+         * @param oldPath source path
+         * @param newPath destination path
          * @throws PathNotFoundException
          */
         void move(String oldPath, String newPath) throws RepositoryException;
 
         /**
          * reorder children nodes according to the list passed as parameter
+         *
          * @param path
          * @param children
          * @throws RepositoryException
@@ -157,6 +161,7 @@ public interface ExternalDataSource {
 
         /**
          * Delete an item
+         *
          * @param path path of the item to delete
          * @throws PathNotFoundException
          */
@@ -164,6 +169,7 @@ public interface ExternalDataSource {
 
         /**
          * saves the data
+         *
          * @param data ExternalData to save
          * @throws PathNotFoundException
          */
@@ -192,8 +198,9 @@ public interface ExternalDataSource {
 
         /**
          * Return the privileges a user has on a specified node
+         *
          * @param username the user name
-         * @param path the node path
+         * @param path     the node path
          * @return an array of privilege names
          */
         String[] getPrivilegesNames(String username, String path);
@@ -207,8 +214,8 @@ public interface ExternalDataSource {
         /**
          * Given a node identifier, returns the paths of properties referring this node
          *
-         * @param identifier the node identifier. If the node is in this external provider, it's an external ID
-         *                   (local ID in the provider). Else, it's an internal ID (global).
+         * @param identifier   the node identifier. If the node is in this external provider, it's an external ID
+         *                     (local ID in the provider). Else, it's an internal ID (global).
          * @param propertyName the property name (optional)
          * @return a list of property paths
          */
@@ -216,13 +223,27 @@ public interface ExternalDataSource {
     }
 
     /**
+     * If implemented, allows for batch access to children data.
+     */
+    interface CanLoadChildrenInBatch {
+        /**
+         * Retrieves a list of {@link org.jahia.modules.external.ExternalData} elements, one per child of the node
+         * represented by this ExternalDataSource.
+         *
+         * @return a list of children data represented by ExternalData elements
+         */
+        List<ExternalData> getChildrenNodes();
+    }
+
+    /**
      * @param path path where to get children
      * @return list of paths as String
      */
-    List<String> getChildren(String path) throws RepositoryException ;
+    List<String> getChildren(String path) throws RepositoryException;
 
     /**
      * identifier is unique for an ExternalData
+     *
      * @param identifier
      * @return ExternalData defined by the identifier
      * @throws ItemNotFoundException
@@ -231,6 +252,7 @@ public interface ExternalDataSource {
 
     /**
      * As getItemByIdentifier, get an ExternalData by its path
+     *
      * @param path
      * @return ExternalData
      * @throws PathNotFoundException
@@ -248,7 +270,7 @@ public interface ExternalDataSource {
      * Indicates if this data source has path-like hierarchical external identifiers, e.g. IDs that are using file system paths.
      *
      * @return <code>true</code> if this data source has path-like hierarchical external identifiers, e.g. IDs that are using file system
-     *         paths; <code>false</code> otherwise.
+     * paths; <code>false</code> otherwise.
      */
     boolean isSupportsHierarchicalIdentifiers();
 
@@ -262,8 +284,7 @@ public interface ExternalDataSource {
     /**
      * Returns <code>true</code> if an item exists at <code>path</code>; otherwise returns <code>false</code>.
      *
-     * @param path
-     *            item path
+     * @param path item path
      * @return <code>true</code> if an item exists at <code>path</code>; otherwise returns <code>false</code>
      */
     boolean itemExists(String path);
