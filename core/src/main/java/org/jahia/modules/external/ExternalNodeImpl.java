@@ -115,7 +115,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         for (Map.Entry<String, String[]> entry : data.getProperties().entrySet()) {
             ExtendedPropertyDefinition definition = getPropertyDefinition(entry.getKey());
 
-            if (definition != null && definition.getName().equals("*") && data != null && data.getType() != null && data.getType().equals("jnt:translation")) {
+            if (definition != null && definition.getName().equals("*") && data.getType() != null && data.getType().equals("jnt:translation")) {
                 definition = ((ExternalNodeImpl) getParent()).getPropertyDefinition(entry.getKey());
             }
 
@@ -265,7 +265,18 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             } else {
                 ExternalContentStoreProvider.setCurrentSession(session);
                 try {
-                    externalChildren = new ArrayList<String>(session.getRepository().getDataSource().getChildren(getPath()));
+                    final ExternalDataSource dataSource = session.getRepository().getDataSource();
+                    if (dataSource instanceof ExternalDataSource.CanLoadChildrenInBatch) {
+                        ExternalDataSource.CanLoadChildrenInBatch childrenLoader = (ExternalDataSource.CanLoadChildrenInBatch) dataSource;
+                        final List<ExternalData> childrenNodes = childrenLoader.getChildrenNodes(getPath());
+                        for (ExternalData child : childrenNodes) {
+                            externalChildren.add(child.getPath());
+                            final ExternalNodeImpl node = new ExternalNodeImpl(child, session);
+                            session.registerNode(node);
+                        }
+                    } else {
+                        externalChildren = new ArrayList<String>(dataSource.getChildren(getPath()));
+                    }
                 } finally {
                     ExternalContentStoreProvider.removeCurrentSession();
                 }
