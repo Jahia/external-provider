@@ -232,7 +232,7 @@ public interface ExternalDataSource {
          * @param path the path from where to get children
          * @return a list of children located at the specified path, represented by ExternalData elements
          */
-        List<ExternalData> getChildrenNodes(String path);
+        List<ExternalData> getChildrenNodes(String path) throws RepositoryException;
     }
 
     /**
