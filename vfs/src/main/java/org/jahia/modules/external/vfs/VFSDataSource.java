@@ -71,37 +71,51 @@
  */
 package org.jahia.modules.external.vfs;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.vfs2.*;
-import org.apache.jackrabbit.util.ISO8601;
-import org.jahia.api.Constants;
-import org.jahia.services.content.JCRContentUtils;
-import org.jahia.modules.external.ExternalData;
-import org.jahia.modules.external.ExternalDataSource;
-import org.jahia.services.content.nodetypes.ExtendedNodeType;
-import org.jahia.services.content.nodetypes.NodeTypeRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.jcr.Binary;
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.*;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.vfs2.FileContent;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemManager;
+import org.apache.commons.vfs2.FileType;
+import org.apache.commons.vfs2.Selectors;
+import org.apache.commons.vfs2.VFS;
+import org.apache.jackrabbit.util.ISO8601;
+import org.jahia.api.Constants;
+import org.jahia.modules.external.ExternalData;
+import org.jahia.modules.external.ExternalDataSource;
+import org.jahia.services.content.JCRContentUtils;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * VFS Implementation of ExternalDataSource
  */
-public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Writable {
+public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Writable, ExternalDataSource.CanLoadChildrenInBatch {
     private static final List<String> JCR_CONTENT_LIST = Arrays.asList(Constants.JCR_CONTENT);
     private static final Set<String> SUPPORTED_NODE_TYPES = new HashSet<String>(Arrays.asList(Constants.JAHIANT_FILE, Constants.JAHIANT_FOLDER, Constants.JCR_CONTENT));
     private static final Logger logger = LoggerFactory.getLogger(VFSDataSource.class);
+    private static final String JCR_CONTENT_SUFFIX = "/" + Constants.JCR_CONTENT;
     private FileObject root;
     private String rootPath;
     private FileSystemManager manager;
@@ -145,8 +159,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     @Override
     public boolean itemExists(String path) {
         try {
-            FileObject file = getFile(path.endsWith("/" + Constants.JCR_CONTENT) ? StringUtils.substringBeforeLast(
-                    path, "/" + Constants.JCR_CONTENT) : path);
+            FileObject file = getFile(path.endsWith(JCR_CONTENT_SUFFIX) ? StringUtils.substringBeforeLast(
+                    path, JCR_CONTENT_SUFFIX) : path);
             return file.exists();
         } catch (FileSystemException e) {
             logger.warn("Unable to check file existence for path " + path, e);
@@ -176,8 +190,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
     public ExternalData getItemByPath(String path) throws PathNotFoundException {
         try {
-            if (path.endsWith("/" + Constants.JCR_CONTENT)) {
-                FileContent content = getFile(StringUtils.substringBeforeLast(path, "/" + Constants.JCR_CONTENT)).getContent();
+            if (path.endsWith(JCR_CONTENT_SUFFIX)) {
+                FileContent content = getFile(StringUtils.substringBeforeLast(path, JCR_CONTENT_SUFFIX)).getContent();
                 return getFileContent(content);
             } else {
                 FileObject fileObject = getFile(path);
@@ -200,7 +214,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
     public List<String> getChildren(String path) throws RepositoryException {
         try {
-            if (!path.endsWith("/" + Constants.JCR_CONTENT)) {
+            if (!path.endsWith(JCR_CONTENT_SUFFIX)) {
                 FileObject fileObject = getFile(path);
                 if (fileObject.getType() == FileType.FILE) {
                     return JCR_CONTENT_LIST;
@@ -211,6 +225,43 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                         for (FileObject object : files) {
                             if (getSupportedNodeTypes().contains(getDataType(object))) {
                                 children.add(object.getName().getBaseName());
+                            }
+                        }
+                        return children;
+                    } else {
+                        return Collections.emptyList();
+                    }
+                } else {
+                    if (fileObject.exists()) {
+                        logger.warn("Found non file or folder entry at path {}, maybe an alias. VFS file type: {}",
+                                fileObject, fileObject.getType());
+                    } else {
+                        throw new PathNotFoundException(path);
+                    }
+                }
+            }
+        } catch (FileSystemException e) {
+            logger.error("Cannot get node children", e);
+        }
+
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<ExternalData> getChildrenNodes(String path) throws RepositoryException {
+        try {
+            if (!path.endsWith(JCR_CONTENT_SUFFIX)) {
+                FileObject fileObject = getFile(path);
+                if (fileObject.getType() == FileType.FILE) {
+                    final FileContent content = fileObject.getContent();
+                    return Collections.singletonList(getFileContent(content));
+                } else if (fileObject.getType() == FileType.FOLDER) {
+                    FileObject[] files = fileObject.getChildren();
+                    if (files.length > 0) {
+                        List<ExternalData> children = new LinkedList<ExternalData>();
+                        for (FileObject object : files) {
+                            if (getSupportedNodeTypes().contains(getDataType(object))) {
+                                children.add(getFile(object));
                             }
                         }
                         return children;
@@ -255,7 +306,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 try {
                     final Binary[] binaries = data.getBinaryProperties().get(Constants.JCR_DATA);
                     if (binaries.length > 0) {
-                        outputStream = getFile(data.getPath().substring(0, data.getPath().indexOf("/" + Constants.JCR_CONTENT))).getContent().getOutputStream();
+                        outputStream = getFile(data.getPath().substring(0, data.getPath().indexOf(JCR_CONTENT_SUFFIX))).getContent().getOutputStream();
                         for (Binary binary : binaries) {
                             InputStream stream = null;
                             try {
