@@ -71,12 +71,12 @@
  */
 package org.jahia.modules.external;
 
-import javax.jcr.Binary;
-import javax.jcr.RepositoryException;
-import javax.jcr.UnsupportedRepositoryOperationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.jcr.Binary;
+import javax.jcr.RepositoryException;
+import javax.jcr.UnsupportedRepositoryOperationException;
 
 /**
  * External Data. Encapsulation of data for external provider
@@ -85,11 +85,11 @@ import java.util.Set;
 public class ExternalData {
     private String id;
     private String tmpId;
-    private String path;
-    private String type;
+    private final String path;
+    private final String type;
     private boolean isNew = false;
     private List<String> mixin;
-    private Map<String,String[]> properties;
+    private final Map<String,String[]> properties;
     private Map<String,Map<String,String[]>> i18nProperties;
     private Map<String,Binary[]> binaryProperties;
     private Set<String> lazyProperties;
