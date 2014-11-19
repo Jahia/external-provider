@@ -120,6 +120,11 @@ public class ExternalSessionImpl implements Session {
     private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
     private ExternalAccessControlManager accessControlManager;
 
+    private static int fromCacheCount = 0;
+    private static int totalCacheChecks = 0;
+    private static int totalSavedCalls = 0;
+    private static final boolean DEBUG = false;
+
     public ExternalSessionImpl(ExternalRepositoryImpl repository, Credentials credentials, String workspaceName) {
         this.repository = repository;
         this.workspace = new ExternalWorkspaceImpl(this, workspaceName);
@@ -154,10 +159,40 @@ public class ExternalSessionImpl implements Session {
         return this;
     }
 
-    public Node getRootNode() throws RepositoryException {
-        if (nodesByPath.containsKey("/")) {
-            return nodesByPath.get("/");
+    private ExternalNodeImpl getFromCacheByPath(String path) {
+        return getFromCache(path, nodesByPath);
+    }
+
+    private ExternalNodeImpl getFromCacheById(String id) {
+        return getFromCache(id, nodesByIdentifier);
+    }
+
+    private ExternalNodeImpl getFromCache(String key, Map<String, ExternalNodeImpl> cache) {
+        totalCacheChecks++;
+
+        if(cache.isEmpty()) {
+            totalSavedCalls += fromCacheCount;
+            if (DEBUG) {
+                logger.debug("Saved " + fromCacheCount + " calls out of " + totalCacheChecks + " since last cache reset. Total saved calls: " + totalSavedCalls);
+            }
+            fromCacheCount = 0;
+            totalCacheChecks = 0;
+            return null;
         }
+
+        final ExternalNodeImpl node = cache.get(key);
+        if(node != null) {
+            fromCacheCount++;
+        }
+        return node;
+    }
+
+    public Node getRootNode() throws RepositoryException {
+        final Node fromCache = getFromCacheByPath("/");
+        if(fromCache != null) {
+            return fromCache;
+        }
+
         ExternalContentStoreProvider.setCurrentSession(this);
         try {
             ExternalData rootFileObject = repository.getDataSource().getItemByPath("/");
@@ -170,9 +205,11 @@ public class ExternalSessionImpl implements Session {
     }
 
     public Node getNodeByUUID(String uuid) throws ItemNotFoundException, RepositoryException {
-        if (nodesByIdentifier.containsKey(uuid)) {
-            return nodesByIdentifier.get(uuid);
+        final ExternalNodeImpl fromCacheById = getFromCacheById(uuid);
+        if(fromCacheById != null) {
+            return fromCacheById;
         }
+
         if (!repository.getDataSource().isSupportsUuid() || uuid.startsWith(TRANSLATION_PREFIX)) {
             if (!uuid.startsWith(getRepository().getStoreProvider().getId())) {
                 throw new ItemNotFoundException("Item " + uuid + " could not be found in this repository");
@@ -236,9 +273,12 @@ public class ExternalSessionImpl implements Session {
         if (deletedData.containsKey(path)) {
             throw new PathNotFoundException("This node has been deleted");
         }
-        if (nodesByPath.containsKey(path)) {
-            return nodesByPath.get(path);
+
+        final Node fromCache = getFromCacheByPath(path);
+        if(fromCache != null) {
+            return fromCache;
         }
+
         String parentPath = StringUtils.substringBeforeLast(path, "/");
         if (parentPath.equals("")) {
             parentPath = "/";
@@ -252,8 +292,9 @@ public class ExternalSessionImpl implements Session {
                 String lang = StringUtils.substringAfterLast(path, TRANSLATION_NODE_NAME_BASE);
 
                 ExternalData parentObject;
-                if (nodesByPath.containsKey(parentPath)) {
-                    parentObject = nodesByPath.get(parentPath).getData();
+                final ExternalNodeImpl parentFromCache = getFromCacheByPath(parentPath);
+                if (parentFromCache != null) {
+                    parentObject = parentFromCache.getData();
                 } else {
                     ExternalContentStoreProvider.setCurrentSession(this);
                     try {
@@ -296,12 +337,14 @@ public class ExternalSessionImpl implements Session {
                     return node;
                 } catch (PathNotFoundException e) {
                     // Or a property in the parent node
-                    if (!nodesByPath.containsKey(parentPath)) {
+                    ExternalNodeImpl parentFromPath = getFromCacheByPath(parentPath);
+                    if (parentFromPath == null) {
                         ExternalData data = repository.getDataSource().getItemByPath(parentPath);
                         final ExternalNodeImpl node = new ExternalNodeImpl(data, this);
                         registerNode(node);
+                        parentFromPath = node;
                     }
-                    return nodesByPath.get(parentPath).getProperty(itemName);
+                    return parentFromPath.getProperty(itemName);
                 } finally {
                     ExternalContentStoreProvider.removeCurrentSession();
                 }
@@ -548,8 +591,9 @@ public class ExternalSessionImpl implements Session {
             pathsToKeep.addAll(orderedData.keySet());
             List<String> idsToKeep = new ArrayList<String>();
             for (String s : pathsToKeep) {
-                if (nodesByPath.containsKey(s)) {
-                    idsToKeep.add(nodesByPath.get(s).getIdentifier());
+                final ExternalNodeImpl node = getFromCacheByPath(s);
+                if (node != null) {
+                    idsToKeep.add(node.getIdentifier());
                 }
             }
             nodesByPath.keySet().retainAll(pathsToKeep);
