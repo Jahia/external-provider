@@ -777,7 +777,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 if (definition != null && definition.getName().equals("*") && data != null && data.getType() != null && data.getType().equals("jnt:translation")) {
                     definition = ((ExternalNodeImpl) getParent()).getPropertyDefinition(s);
                 }
-                if (definition.isMultiple()) {                
+                if (definition != null && definition.isMultiple()) {
                     p.setValue(values);
                 } else if (values != null && values.length > 0) {
                     p.setValue(values[0]);
