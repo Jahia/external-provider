@@ -105,8 +105,8 @@ public class ExternalSessionImpl implements Session {
     private ExternalRepositoryImpl repository;
     private ExternalWorkspaceImpl workspace;
     private Credentials credentials;
-    private Map<String, ExternalNodeImpl> nodesByPath = new LinkedHashMap<String, ExternalNodeImpl>();
-    private Map<String, ExternalNodeImpl> nodesByIdentifier = new LinkedHashMap<String, ExternalNodeImpl>();
+    private Map<String, ExternalNodeImpl> nodesByPath = new HashMap<String, ExternalNodeImpl>();
+    private Map<String, ExternalNodeImpl> nodesByIdentifier = new HashMap<String, ExternalNodeImpl>();
     private Set<ExternalItemImpl> newItems = new HashSet<ExternalItemImpl>();
     private Map<String, ExternalData> changedData = new LinkedHashMap<String, ExternalData>();
     private Map<String, ExternalData> deletedData = new LinkedHashMap<String, ExternalData>();
