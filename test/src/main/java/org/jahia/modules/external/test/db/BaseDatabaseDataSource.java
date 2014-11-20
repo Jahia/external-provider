@@ -77,8 +77,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.*;
-
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.PropertyType;
@@ -106,7 +109,7 @@ abstract class BaseDatabaseDataSource implements ExternalDataSource, Initializab
 
     @Override
     public final List<String> getChildren(String path) {
-        String nodeType = null;
+        String nodeType;
         try {
             nodeType = getNodeTypeName(path);
         } catch (PathNotFoundException e) {

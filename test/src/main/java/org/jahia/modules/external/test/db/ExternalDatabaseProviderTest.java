@@ -71,16 +71,14 @@
  */
 package org.jahia.modules.external.test.db;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.util.Locale;
-
-import javax.jcr.*;
+import javax.jcr.Node;
+import javax.jcr.NodeIterator;
+import javax.jcr.PathNotFoundException;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
+import javax.jcr.UnsupportedRepositoryOperationException;
 import javax.jcr.lock.Lock;
 import javax.jcr.lock.LockException;
 import javax.jcr.query.InvalidQueryException;
@@ -88,7 +86,10 @@ import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 
 import org.jahia.api.Constants;
-import org.jahia.services.content.*;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRPropertyWrapper;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.sites.JahiaSite;
 import org.jahia.test.JahiaTestCase;
 import org.jahia.test.TestHelper;
@@ -98,6 +99,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Integration tests for the external provider implementation.
@@ -109,6 +112,8 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     private final static String GENERIC_PROVIDER_MOUNTPOINT = "/external-database-generic";
 
     private final static String MAPPED_PROVIDER_MOUNTPOINT = "/external-database-mapped";
+
+    private final static String BATCH_CHILDREN_PROVIDER_MOUNTPOINT = "/external-database-mapped-batch-children";
 
     private static final String TESTSITE_NAME = "externalProviderExportTest";
 
@@ -180,6 +185,9 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
                 session.nodeExists(GENERIC_PROVIDER_MOUNTPOINT));
         assertTrue("Cannot find mounted provider at " + MAPPED_PROVIDER_MOUNTPOINT,
                 session.nodeExists(MAPPED_PROVIDER_MOUNTPOINT));
+
+        assertTrue("Cannot find mounted provider at " + BATCH_CHILDREN_PROVIDER_MOUNTPOINT,
+                session.nodeExists(BATCH_CHILDREN_PROVIDER_MOUNTPOINT));
     }
 
     @After
@@ -189,15 +197,20 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @Test
     public void testGenericNodes() throws RepositoryException {
-        JCRNodeWrapper root = session.getNode(GENERIC_PROVIDER_MOUNTPOINT);
+        testGenericNodes(GENERIC_PROVIDER_MOUNTPOINT);
+        testGenericNodes(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+    }
+
+    public void testGenericNodes(String mountpoint) throws RepositoryException {
+        JCRNodeWrapper root = session.getNode(mountpoint);
 
         // node existence
-        assertTrue(session.nodeExists(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES"));
-        assertNotNull(session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES"));
-        assertFalse(session.nodeExists(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES2"));
+        assertTrue(session.nodeExists(mountpoint + "/CITIES"));
+        assertNotNull(session.getNode(mountpoint + "/CITIES"));
+        assertFalse(session.nodeExists(mountpoint + "/CITIES2"));
         try {
-            session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES2");
-            fail("Node " + GENERIC_PROVIDER_MOUNTPOINT + "/CITIES2" + " should not have been found");
+            session.getNode(mountpoint + "/CITIES2");
+            fail("Node " + mountpoint + "/CITIES2" + " should not have been found");
         } catch (PathNotFoundException e) {
 
         }
@@ -222,10 +235,10 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         assertEquals(4, root.getNodes(new String[] { "AIR*", "FLIGHT*" }).getSize());
 
         // node type mapping
-        assertTrue(session.getNode(GENERIC_PROVIDER_MOUNTPOINT).isNodeType(GenericDatabaseDataSource.DATA_TYPE_SCHEMA));
-        assertTrue(session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES").isNodeType(
+        assertTrue(session.getNode(mountpoint).isNodeType(GenericDatabaseDataSource.DATA_TYPE_SCHEMA));
+        assertTrue(session.getNode(mountpoint + "/CITIES").isNodeType(
                 GenericDatabaseDataSource.DATA_TYPE_TABLE));
-        assertTrue(session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES/MQ").isNodeType(
+        assertTrue(session.getNode(mountpoint + "/CITIES/MQ").isNodeType(
                 GenericDatabaseDataSource.DATA_TYPE_ROW));
 
         // UUID and path
@@ -233,12 +246,12 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         String id = amsterdam.getIdentifier();
         String path = amsterdam.getPath();
         assertEquals(id, session.getNodeByIdentifier(id).getIdentifier());
-        assertEquals(id, session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES/MQ").getIdentifier());
-        assertEquals(path, session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES/MQ").getPath());
+        assertEquals(id, session.getNode(mountpoint + "/CITIES/MQ").getIdentifier());
+        assertEquals(path, session.getNode(mountpoint + "/CITIES/MQ").getPath());
         assertEquals(path, root.getNode("CITIES").getNode("MQ").getPath());
         assertEquals(root.getNode("CITIES").getNode("MQ").getIdentifier(),
-                session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES/MQ").getIdentifier());
-        assertEquals(root.getNode("CITIES").getNode("MQ"), session.getNode(GENERIC_PROVIDER_MOUNTPOINT + "/CITIES/MQ"));
+                session.getNode(mountpoint + "/CITIES/MQ").getIdentifier());
+        assertEquals(root.getNode("CITIES").getNode("MQ"), session.getNode(mountpoint + "/CITIES/MQ"));
     }
 
     @Test
@@ -248,15 +261,20 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @Test
     public void testMappedNodes() throws RepositoryException {
-        JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
+        testMappedNodes(MAPPED_PROVIDER_MOUNTPOINT);
+        testMappedNodes(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+    }
+
+    public void testMappedNodes(String mountpoint) throws RepositoryException {
+        JCRNodeWrapper root = session.getNode(mountpoint);
 
         // node existence
-        assertTrue(session.nodeExists(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES"));
-        assertNotNull(session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES"));
-        assertFalse(session.nodeExists(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES2"));
+        assertTrue(session.nodeExists(mountpoint + "/CITIES"));
+        assertNotNull(session.getNode(mountpoint + "/CITIES"));
+        assertFalse(session.nodeExists(mountpoint + "/CITIES2"));
         try {
-            session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES2");
-            fail("Node " + MAPPED_PROVIDER_MOUNTPOINT + "/CITIES2" + " should not have been found");
+            session.getNode(mountpoint + "/CITIES2");
+            fail("Node " + mountpoint + "/CITIES2" + " should not have been found");
         } catch (PathNotFoundException e) {
 
         }
@@ -281,10 +299,10 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         assertEquals(3, root.getNodes(new String[] { "AIR*", "C*" }).getSize());
 
         // node type mapping
-        assertTrue(session.getNode(MAPPED_PROVIDER_MOUNTPOINT).isNodeType(MappedDatabaseDataSource.DATA_TYPE_CATALOG));
-        assertTrue(session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES").isNodeType(
+        assertTrue(session.getNode(mountpoint).isNodeType(MappedDatabaseDataSource.DATA_TYPE_CATALOG));
+        assertTrue(session.getNode(mountpoint + "/CITIES").isNodeType(
                 MappedDatabaseDataSource.DATA_TYPE_DIRECTORY));
-        assertTrue(session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/1").isNodeType(
+        assertTrue(session.getNode(mountpoint + "/CITIES/1").isNodeType(
                 MappedDatabaseDataSource.DATA_TYPE_CITY));
 
         // UUID and path
@@ -292,62 +310,82 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         String id = amsterdam.getIdentifier();
         String path = amsterdam.getPath();
         assertEquals(id, session.getNodeByIdentifier(id).getIdentifier());
-        assertEquals(id, session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/1").getIdentifier());
-        assertEquals(path, session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/1").getPath());
+        assertEquals(id, session.getNode(mountpoint + "/CITIES/1").getIdentifier());
+        assertEquals(path, session.getNode(mountpoint + "/CITIES/1").getPath());
         assertEquals(path, root.getNode("CITIES").getNode("1").getPath());
         assertEquals(root.getNode("CITIES").getNode("1").getIdentifier(),
-                session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/1").getIdentifier());
-        assertEquals(root.getNode("CITIES").getNode("1"), session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/1"));
+                session.getNode(mountpoint + "/CITIES/1").getIdentifier());
+        assertEquals(root.getNode("CITIES").getNode("1"), session.getNode(mountpoint + "/CITIES/1"));
     }
 
     @Test
     public void testMappedProperties() throws RepositoryException {
-        checkProperties(session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/1"), true);
+        testMappedProperties(MAPPED_PROVIDER_MOUNTPOINT);
+        testMappedProperties(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+    }
+
+    public void testMappedProperties(String mountpoint) throws RepositoryException {
+        checkProperties(session.getNode(mountpoint + "/CITIES/1"), true);
     }
 
     @Test
     public void testQueryConstraints() throws RepositoryException {
+        testQueryConstraints(MAPPED_PROVIDER_MOUNTPOINT);
+        testQueryConstraints(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+    }
+
+    public void testQueryConstraints(String mountpoint) throws RepositoryException {
         assertEquals(1, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [language] = 'Dutch' and isdescendantnode('/external-database-mapped')"));
+                + "] where [language] = 'Dutch' and isdescendantnode('" + mountpoint + "')"));
 
         assertEquals(3, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [language] = 'Arabic' and isdescendantnode('/external-database-mapped')"));
+                + "] where [language] = 'Arabic' and isdescendantnode('" + mountpoint + "')"));
         assertEquals(1, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [language] = 'Arabic' and [city_name] = 'Cairo' and isdescendantnode('/external-database-mapped')"));
+                + "] where [language] = 'Arabic' and [city_name] = 'Cairo' and isdescendantnode('" + mountpoint + "')"));
         assertEquals(0, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [language] = 'Arabic' and [city_name] = 'Amstaredam' and isdescendantnode('/external-database-mapped')"));
+                + "] where [language] = 'Arabic' and [city_name] = 'Amstaredam' and isdescendantnode('" + mountpoint + "')"));
 
         assertEquals(37, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [country_iso_code] = 'US' and isdescendantnode('/external-database-mapped')"));
+                + "] where [country_iso_code] = 'US' and isdescendantnode('" + mountpoint + "')"));
         assertEquals(
                 17,
                 getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                        + "] where [country_iso_code] = 'US' and isdescendantnode('/external-database-mapped')", 0, 20));
+                        + "] where [country_iso_code] = 'US' and isdescendantnode('" + mountpoint + "')", 0, 20));
         assertEquals(
                 3,
                 getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                        + "] where [country_iso_code] = 'US' and isdescendantnode('/external-database-mapped')", 3, 20));
+                        + "] where [country_iso_code] = 'US' and isdescendantnode('" + mountpoint + "')", 3, 20));
         assertEquals(
                 0,
                 getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                        + "] where [country_iso_code] = 'US' and isdescendantnode('/external-database-mapped')", 3, 100));
+                        + "] where [country_iso_code] = 'US' and isdescendantnode('" + mountpoint + "')", 3, 100));
     }
 
     @Test
     public void testQueryPaths() throws RepositoryException {
-        assertEquals(87, getResultCount("select * from [jtestnt:city] where ischildnode('/external-database-mapped/CITIES')"));
-        assertEquals(0, getResultCount("select * from [jtestnt:city] where ischildnode('/external-database-mapped/AIRLINES')"));
-        assertEquals(0, getResultCount("select * from [jtestnt:city] where ischildnode('/external-database-mapped')"));
+        testQueryPaths(MAPPED_PROVIDER_MOUNTPOINT);
+        testQueryPaths(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+    }
+
+    public void testQueryPaths(String mountpoint) throws RepositoryException {
+        assertEquals(87, getResultCount("select * from [jtestnt:city] where ischildnode('" + mountpoint + "/CITIES')"));
+        assertEquals(0, getResultCount("select * from [jtestnt:city] where ischildnode('" + mountpoint + "/AIRLINES')"));
+        assertEquals(0, getResultCount("select * from [jtestnt:city] where ischildnode('" + mountpoint + "')"));
         assertEquals(0, getResultCount("select * from [jtestnt:city] where ischildnode('/sites/systemsite')"));
-        assertEquals(87, getResultCount("select * from [jtestnt:city] where isdescendantnode('/external-database-mapped/CITIES')"));
-        assertEquals(0, getResultCount("select * from [jtestnt:city] where isdescendantnode('/external-database-mapped/AIRLINES')"));
-        assertEquals(87, getResultCount("select * from [jtestnt:city] where isdescendantnode('/external-database-mapped/')"));
+        assertEquals(87, getResultCount("select * from [jtestnt:city] where isdescendantnode('" + mountpoint + "/CITIES')"));
+        assertEquals(0, getResultCount("select * from [jtestnt:city] where isdescendantnode('" + mountpoint + "/AIRLINES')"));
+        assertEquals(87, getResultCount("select * from [jtestnt:city] where isdescendantnode('" + mountpoint + "/')"));
         assertEquals(0, getResultCount("select * from [jtestnt:city] where isdescendantnode('/sites/systemsite')"));
     }
 
     @Test
     public void testQueryLimitAndOffset() throws RepositoryException {
-        String queryDirs = "select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "] where isdescendantnode('/external-database-mapped')";
+        testQueryLimitAndOffset(MAPPED_PROVIDER_MOUNTPOINT);
+        testQueryLimitAndOffset(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+    }
+
+    public void testQueryLimitAndOffset(String mountpoint) throws RepositoryException {
+        String queryDirs = "select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "] where isdescendantnode('" + mountpoint + "')";
 
         assertEquals(4, getResultCount(queryDirs, 0, 0));
 
@@ -379,12 +417,17 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @Test
     public void testQueryNodeType() throws RepositoryException {
-        // count
-        assertEquals(4, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "] where isdescendantnode('/external-database-mapped')"));
-        assertEquals(2, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "] where isdescendantnode('/external-database-mapped')"));
-        assertEquals(0, getResultCount("select * from [" + GenericDatabaseDataSource.DATA_TYPE_TABLE + "] where isdescendantnode('/external-database-mapped')"));
+        testQueryNodeType(MAPPED_PROVIDER_MOUNTPOINT);
+        testQueryNodeType(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+    }
 
-        for (NodeIterator ni = query("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "] where isdescendantnode('/external-database-mapped')", 0, 0)
+    public void testQueryNodeType(String mountpoint) throws RepositoryException {
+        // count
+        assertEquals(4, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "] where isdescendantnode('" + mountpoint + "')"));
+        assertEquals(2, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "] where isdescendantnode('" + mountpoint + "')"));
+        assertEquals(0, getResultCount("select * from [" + GenericDatabaseDataSource.DATA_TYPE_TABLE + "] where isdescendantnode('" + mountpoint + "')"));
+
+        for (NodeIterator ni = query("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "] where isdescendantnode('" + mountpoint + "')", 0, 0)
                 .getNodes(); ni.hasNext();) {
             assertTrue(ni.nextNode().isNodeType(MappedDatabaseDataSource.DATA_TYPE_AIRLINE));
         }
@@ -392,7 +435,12 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @Test
     public void testExtensionProperty() throws RepositoryException {
-        JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
+        testExtensionProperty(MAPPED_PROVIDER_MOUNTPOINT);
+        testExtensionProperty(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+    }
+
+    public void testExtensionProperty(String mountpoint) throws RepositoryException {
+        JCRNodeWrapper root = session.getNode(mountpoint);
         JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
         AA.setProperty("firstclass_seats", 10);
         assertEquals("Property not updated", 10, AA.getProperty("firstclass_seats").getLong());
@@ -407,7 +455,12 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @Test
     public void testMixin() throws RepositoryException {
-        JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
+        testMixin(MAPPED_PROVIDER_MOUNTPOINT);
+        testMixin(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+    }
+
+    public void testMixin(String mountpoint) throws RepositoryException {
+        JCRNodeWrapper root = session.getNode(mountpoint);
         JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
         AA.addMixin("jmix:comments");
         AA.setProperty("shortView",true);
@@ -463,13 +516,18 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @Test
     public void testSearchOnExtension() throws RepositoryException {
-        JCRNodeWrapper root = session.getNode(MAPPED_PROVIDER_MOUNTPOINT);
+        testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT);
+        testSearchOnExtension(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+    }
+
+    public void testSearchOnExtension(String mountpoint) throws RepositoryException {
+        JCRNodeWrapper root = session.getNode(mountpoint);
         JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
         AA.addMixin("jmix:comments");
         AA.setProperty("shortView",true);
         session.save();
 
-        assertEquals(1, getResultCount("select * from [jmix:comments] as c where isdescendantnode(c, '"+MAPPED_PROVIDER_MOUNTPOINT+"')",0,0));
+        assertEquals(1, getResultCount("select * from [jmix:comments] as c where isdescendantnode(c, '" + mountpoint + "')", 0, 0));
 
         AA.removeMixin("jmix:comments");
         session.save();
