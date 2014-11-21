@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.springframework.org/schema/webflow
+                          http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd">
+
+    <var name="flowHandler" class="org.jahia.modules.external.vfs.factory.VFSMountPointFactoryHandler"/>
+
+    <view-state id="index" model="target">
+        <transition on="save" to="save"/>
+        <transition on="cancel" to="cancel" bind="false"/>
+    </view-state>
+
+    <action-state id="save">
+        <evaluate expression="flowHandler.getAdminURL(flowRequestContext)" result="conversationScope.adminURL"/>
+        <evaluate expression="flowHandler.save()"/>
+        <transition on="yes" to="redirectToAdmin"/>
+        <transition on="no" to="localForm"/>
+    </action-state>
+
+    <action-state id="cancel">
+        <evaluate expression="flowHandler.getAdminURL(flowRequestContext)" result="conversationScope.adminURL"/>
+        <transition to="redirectToAdmin"/>
+    </action-state>
+
+    <view-state id="redirectToAdmin" view="externalRedirect:#{conversationScope.adminURL}"/>
+</flow>

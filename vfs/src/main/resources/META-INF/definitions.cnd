@@ -7,3 +7,7 @@
 
 [jnt:vfsMountPoint] > jnt:mountPoint
  - j:rootPath (string) nofulltext
+
+[jnt:vfsMountPointFactoryPage] >  jnt:content, jmix:siteComponent, mix:title, jmix:studioOnly, jmix:mountPointFactory
+
+[jnt:vfsPointFactoryForm] >  jnt:content, jmix:siteComponent, mix:title, jmix:studioOnly

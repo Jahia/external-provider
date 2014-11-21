@@ -21,6 +21,14 @@
                             <thumbnail jcr:mimeType="image/png" jcr:primaryType="jnt:resource"/>
                             <thumbnail2 jcr:mimeType="image/png" jcr:primaryType="jnt:resource"/>
                         </data_connection.png>
+                        <mountPoints.png j:height="16"
+                                j:width="16"
+                                jcr:mixinTypes="jmix:image"
+                                jcr:primaryType="jnt:file">
+                            <jcr:content jcr:mimeType="image/png" jcr:primaryType="jnt:resource"/>
+                            <thumbnail jcr:mimeType="image/png" jcr:primaryType="jnt:resource"/>
+                            <thumbnail2 jcr:mimeType="image/png" jcr:primaryType="jnt:resource"/>
+                        </mountPoints.png>
                     </files>
                     <contents jcr:primaryType="jnt:contentFolder"/>
                     <server-settings-base j:view="serverSettings"
@@ -39,6 +47,18 @@
                                     <serversettingsexternalproviders jcr:primaryType="jnt:serverSettingsExternalProviders"/>
                                 </pagecontent>
                             </external-provider>
+                            <manageMountPoints j:applyOn="jnt:globalSettings"
+                                               j:defaultTemplate="false"
+                                               j:hiddenTemplate="false"
+                                     j:icon="/modules/external-provider/templates/files/mountPoints.png"
+                                               j:requiredPermissionNames="adminMountPoints"
+                                               j:titleKey="serverSettings.manageMountPoints"
+                                               jcr:mixinTypes="jmix:rbTitle"
+                                               jcr:primaryType="jnt:contentTemplate">
+                                <pagecontent jcr:primaryType="jnt:contentList">
+                                    <serversettingsmanagemountpoints jcr:primaryType="jnt:serverSettingsManageMountPoints"/>
+                                </pagecontent>
+                            </manageMountPoints>
                         </system-components>
                     </server-settings-base>
                 </templates>
