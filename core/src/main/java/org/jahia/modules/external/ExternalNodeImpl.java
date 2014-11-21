@@ -287,7 +287,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                         }
 
                         for (ExternalData child : childrenNodes) {
-                            externalChildren.add(getName(child));
+                            String parentPath = StringUtils.substringBeforeLast(child.getPath(), "/");
+                            if (parentPath.equals("")) {
+                                parentPath = "/";
+                            }
+                            if (parentPath.equals(getPath())) {
+                                externalChildren.add(getName(child));
+                            }
                             final ExternalNodeImpl node = new ExternalNodeImpl(child, session);
                             session.registerNode(node);
                         }
@@ -466,7 +472,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             final ExternalPropertyImpl newProperty = new ExternalPropertyImpl(new Name(name, NodeTypeRegistry.getInstance().getNamespaces()), this, session, value);
             properties.put(name, newProperty);
             session.setNewItem(newProperty);
-            session.getChangedData().put(getPath(),data);
+            session.getChangedData().put(getPath(), data);
         }
         return getProperty(name);
     }
@@ -475,7 +481,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Property setProperty(String name, Value value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name,value);
+        return setProperty(name, value);
     }
 
     /**

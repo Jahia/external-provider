@@ -262,6 +262,9 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                         for (FileObject object : files) {
                             if (getSupportedNodeTypes().contains(getDataType(object))) {
                                 children.add(getFile(object));
+                                if (object.getType() == FileType.FILE) {
+                                    children.add(getFileContent(object.getContent()));
+                                }
                             }
                         }
                         return children;
