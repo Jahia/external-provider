@@ -71,6 +71,19 @@
  */
 package org.jahia.modules.external.test.db;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import javax.jcr.Binary;
+import javax.jcr.PathNotFoundException;
+import javax.jcr.RepositoryException;
+import javax.jcr.UnsupportedRepositoryOperationException;
+import javax.jcr.Value;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
+import javax.jcr.query.qom.Constraint;
+
 import org.apache.commons.collections.BidiMap;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang.StringUtils;
@@ -86,21 +99,12 @@ import org.jahia.services.content.nodetypes.SelectorType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.*;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.query.qom.Constraint;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-
 /**
  * Implementation of the external data source that uses sample database to fetch the data and predefined node type mappins.
  *
  * @author Sergiy Shyrkov
  */
-public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements ExternalDataSource.Searchable, ExternalDataSource.LazyProperty {
+public class MappedDatabaseDataSource extends GenericDatabaseDataSource implements ExternalDataSource.Searchable, ExternalDataSource.LazyProperty {
 
     static final String DATA_TYPE_AIRLINE = "jtestnt:airline".intern();
 

@@ -198,7 +198,6 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     @Test
     public void testGenericNodes() throws RepositoryException {
         testGenericNodes(GENERIC_PROVIDER_MOUNTPOINT);
-        testGenericNodes(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
     }
 
     public void testGenericNodes(String mountpoint) throws RepositoryException {
@@ -236,10 +235,8 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
         // node type mapping
         assertTrue(session.getNode(mountpoint).isNodeType(GenericDatabaseDataSource.DATA_TYPE_SCHEMA));
-        assertTrue(session.getNode(mountpoint + "/CITIES").isNodeType(
-                GenericDatabaseDataSource.DATA_TYPE_TABLE));
-        assertTrue(session.getNode(mountpoint + "/CITIES/MQ").isNodeType(
-                GenericDatabaseDataSource.DATA_TYPE_ROW));
+        assertTrue(session.getNode(mountpoint + "/CITIES").isNodeType(GenericDatabaseDataSource.DATA_TYPE_TABLE));
+        assertTrue(session.getNode(mountpoint + "/CITIES/MQ").isNodeType(GenericDatabaseDataSource.DATA_TYPE_ROW));
 
         // UUID and path
         JCRNodeWrapper amsterdam = root.getNode("CITIES").getNode("MQ");

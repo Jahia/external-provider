@@ -84,6 +84,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.jcr.PathNotFoundException;
 
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.binary.Base64;
@@ -134,12 +135,12 @@ public class GenericDatabaseDataSource extends BaseDatabaseDataSource {
     }
 
     @Override
-    protected String getRowNodeTypeName(String tableName) {
+    protected String getRowNodeTypeName(String tableName) throws PathNotFoundException {
         return DATA_TYPE_ROW;
     }
 
     @Override
-    protected ExternalData getRowProperties(String path, String type, String table, ResultSet rs) throws SQLException {
+    protected ExternalData getRowProperties(String path, String type, String table, ResultSet rs) throws SQLException, PathNotFoundException {
         Map<String, String[]> props = new LinkedHashMap<String, String[]>();
         ResultSetMetaData metaData = rs.getMetaData();
         for (int i = 1; i <= metaData.getColumnCount(); i++) {
