@@ -131,12 +131,12 @@
             </td>
             <td>
                 <c:if test="${mountPoint.showMountAction}">
-                    <button class="btn btn-info" type="button" onclick="submitEvent('mount', '${mountPoint.name}')">
+                    <button class="btn btn-info" type="button" onclick="submitEvent('mount', '${mountPoint.realName}')">
                         <i class="icon-download icon-white"></i>&nbsp;<fmt:message key="serverSettings.mountPointsManagement.action.mount"/>
                     </button>
                 </c:if>
                 <c:if test="${mountPoint.showUnmountAction}">
-                    <button class="btn btn-info" type="button" onclick="submitEvent('unmount', '${mountPoint.name}')">
+                    <button class="btn btn-info" type="button" onclick="submitEvent('unmount', '${mountPoint.realName}')">
                         <i class="icon-upload icon-white"></i>&nbsp;<fmt:message key="serverSettings.mountPointsManagement.action.unmount"/>
                     </button>
                 </c:if>
@@ -150,7 +150,7 @@
                     </a>
                 </c:if>
                 <button class="btn btn-danger" type="button"
-                        onclick="submitEventWithConfirm('delete', '${mountPoint.name}', '${functions:escapeJavaScript(confirmDelete)}')">
+                        onclick="submitEventWithConfirm('delete', '${mountPoint.realName}', '${functions:escapeJavaScript(confirmDelete)}')">
                     <i class="icon-remove icon-white"></i>&nbsp;<fmt:message key="label.delete"/>
                 </button>
             </td>

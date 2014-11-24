@@ -84,6 +84,7 @@ public class MountPoint implements Serializable{
     private static final long serialVersionUID = 4618846382714016491L;
 
     String name;
+    String realName;
     String path;
     String displayStatusClass;
     JCRMountPointNode.MountStatus status;
@@ -93,6 +94,7 @@ public class MountPoint implements Serializable{
     boolean showUnmountAction = false;
 
     public MountPoint(JCRMountPointNode node) throws RepositoryException {
+        this.realName = node.getName();
         this.name = StringUtils.removeEnd(node.getName(), JCRMountPointNode.MOUNT_SUFFIX);
         this.path = node.getTargetMountPointPath();
         this.status = node.getMountStatus();
@@ -182,5 +184,13 @@ public class MountPoint implements Serializable{
 
     public void setNodetype(String nodetype) {
         this.nodetype = nodetype;
+    }
+
+    public String getRealName() {
+        return realName;
+    }
+
+    public void setRealName(String realName) {
+        this.realName = realName;
     }
 }
