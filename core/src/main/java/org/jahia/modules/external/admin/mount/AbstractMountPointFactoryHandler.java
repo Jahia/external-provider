@@ -44,6 +44,7 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
                 // create mount node
                 JCRNodeWrapper jcrMountPointNode;
                 JCRNodeWrapper mounts = session.getNode("/mounts");
+                String name = mountPoint.getName() + JCRMountPointNode.MOUNT_SUFFIX;
                 if (mountPoint.isEdit()) {
                     jcrMountPointNode = session.getNode(mountPoint.getInEditMountPointNodePath());
 
@@ -53,13 +54,11 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
                     }
 
                     // rename if necessary
-                    if (!jcrMountPointNode.getName().equals(mountPoint.getName())) {
-                        String name = JCRContentUtils.findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(mountPoint.getName()));
-                        jcrMountPointNode.rename(name);
+                    if (!jcrMountPointNode.getName().equals(name)) {
+                        jcrMountPointNode.rename(JCRContentUtils.findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(name)));
                     }
                 } else {
-                    String name = JCRContentUtils.findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(mountPoint.getName()));
-                    jcrMountPointNode = mounts.addNode(name, "jnt:remoteJcrMountPoint");
+                    jcrMountPointNode = mounts.addNode(JCRContentUtils.findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(name)), "jnt:remoteJcrMountPoint");
                 }
 
                 // local path

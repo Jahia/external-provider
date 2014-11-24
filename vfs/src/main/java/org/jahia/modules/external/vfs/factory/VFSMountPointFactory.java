@@ -75,7 +75,6 @@ import org.hibernate.validator.constraints.NotEmpty;
 import org.jahia.modules.external.admin.mount.AbstractMountPointFactory;
 import org.jahia.services.content.JCRNodeWrapper;
 
-import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import java.io.Serializable;
 

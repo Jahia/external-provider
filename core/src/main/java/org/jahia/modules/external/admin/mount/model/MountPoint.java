@@ -105,16 +105,16 @@ public class MountPoint implements Serializable{
                 break;
             case mounted:
                 showUnmountAction = true;
-                displayStatusClass = "badge-success";
+                displayStatusClass = "label-success";
                 break;
             case error:
-                displayStatusClass = "badge-important";
+                displayStatusClass = "label-important";
                 break;
             case waiting:
-                displayStatusClass = "badge-warning";
+                displayStatusClass = "label-warning";
                 break;
             case unknown:
-                displayStatusClass = "badge-inverse";
+                displayStatusClass = "label-inverse";
                 break;
         }
     }

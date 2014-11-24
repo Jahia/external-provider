@@ -125,7 +125,7 @@
                     ${mountPoint.path}
             </td>
             <td>
-                <span class="badge ${mountPoint.displayStatusClass}">
+                <span class="label ${mountPoint.displayStatusClass}">
                     <fmt:message key="serverSettings.mountPointsManagement.mountStatus.${mountPoint.status}"/>
                 </span>
             </td>

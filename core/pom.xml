@@ -118,7 +118,8 @@
                             *</Import-Package>
             <Export-Package>org.jahia.modules.external,
                 org.jahia.modules.external.query,
-                org.jahia.modules.external.admin.mount</Export-Package>
+                org.jahia.modules.external.admin.mount,
+                org.jahia.modules.external.admin.mount.validator</Export-Package>
             <_removeheaders>${jahia.modules.bundle.removeheaders},
                             Jahia-Static-Resources</_removeheaders>
           </instructions>

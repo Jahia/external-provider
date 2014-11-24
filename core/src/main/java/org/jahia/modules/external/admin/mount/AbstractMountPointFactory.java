@@ -2,8 +2,8 @@ package org.jahia.modules.external.admin.mount;
 
 import org.apache.commons.lang.StringUtils;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.decorator.JCRMountPointNode;
 
-import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import java.io.Serializable;
 import java.lang.String;
@@ -24,6 +24,10 @@ public abstract class AbstractMountPointFactory implements Serializable{
     }
     public boolean isEdit() {
         return StringUtils.isNotEmpty(inEditMountPointNodePath);
+    }
+    public String getName(String suffixedName) {
+        return suffixedName.endsWith(JCRMountPointNode.MOUNT_SUFFIX) ?
+                suffixedName.substring(0, suffixedName.length() - JCRMountPointNode.MOUNT_SUFFIX.length()) : suffixedName;
     }
 
     public abstract String getName();
