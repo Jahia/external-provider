@@ -58,7 +58,7 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
                         jcrMountPointNode.rename(JCRContentUtils.findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(name)));
                     }
                 } else {
-                    jcrMountPointNode = mounts.addNode(JCRContentUtils.findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(name)), "jnt:remoteJcrMountPoint");
+                    jcrMountPointNode = mounts.addNode(JCRContentUtils.findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(name)), mountPoint.getMountNodeType());
                 }
 
                 // local path

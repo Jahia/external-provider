@@ -6,7 +6,14 @@
 
     <var name="flowHandler" class="org.jahia.modules.external.vfs.factory.VFSMountPointFactoryHandler"/>
 
-    <view-state id="index" model="target">
+    <on-start>
+        <evaluate expression="flowHandler.init(flowRequestContext)" />
+    </on-start>
+
+    <view-state id="index" model="vfsFactory">
+        <on-entry>
+            <evaluate expression="flowHandler.getFolderList()" result="flowScope.localFolders"/>
+        </on-entry>
         <transition on="save" to="save"/>
         <transition on="cancel" to="cancel" bind="false"/>
     </view-state>
@@ -15,7 +22,7 @@
         <evaluate expression="flowHandler.getAdminURL(flowRequestContext)" result="conversationScope.adminURL"/>
         <evaluate expression="flowHandler.save()"/>
         <transition on="yes" to="redirectToAdmin"/>
-        <transition on="no" to="localForm"/>
+        <transition on="no" to="index"/>
     </action-state>
 
     <action-state id="cancel">

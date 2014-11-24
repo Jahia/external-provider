@@ -32,6 +32,7 @@ public abstract class AbstractMountPointFactory implements Serializable{
 
     public abstract String getName();
     public abstract String getLocalPath();
+    public abstract String getMountNodeType();
     public abstract void setProperties(JCRNodeWrapper mountNode) throws RepositoryException;
 
     public String getInEditMountPointNodePath() {

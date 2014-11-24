@@ -73,6 +73,7 @@ package org.jahia.modules.external.vfs.factory;
 
 import org.jahia.modules.external.admin.mount.AbstractMountPointFactoryHandler;
 import org.jahia.services.content.JCRCallback;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRTemplate;
 import org.json.JSONArray;
@@ -107,7 +108,7 @@ public class VFSMountPointFactoryHandler extends AbstractMountPointFactoryHandle
         } catch (RepositoryException e) {
             logger.error("Error retrieving mount point", e);
         }
-        requestContext.getFlowScope().put("vfsFactoryForm", vfsMountPointFactory);
+        requestContext.getFlowScope().put("vfsFactory", vfsMountPointFactory);
     }
 
     public String getFolderList() {
@@ -122,7 +123,7 @@ public class VFSMountPointFactoryHandler extends AbstractMountPointFactoryHandle
 
             result.put("folders", folders);
         } catch (RepositoryException e) {
-            logger.error("Error trying to retrieve local folders on remote repository", e);
+            logger.error("Error trying to retrieve local folders", e);
         } catch (JSONException e) {
             logger.error("Error trying to construct JSON from local folders", e);
         }
@@ -151,7 +152,9 @@ public class VFSMountPointFactoryHandler extends AbstractMountPointFactoryHandle
             NodeIterator siteFolders = siteFoldersQuery.execute().getNodes();
             while (siteFolders.hasNext()) {
                 Node siteFolder = siteFolders.nextNode();
-                folders.put(siteFolder.getPath());
+                if(((JCRNodeWrapper) siteFolder).getProvider().isDefault()){
+                    folders.put(siteFolder.getPath());
+                }
             }
         }
 

@@ -71,6 +71,7 @@
  */
 package org.jahia.modules.external.admin.mount.model;
 
+import org.apache.commons.lang.StringUtils;
 import org.jahia.services.content.decorator.JCRMountPointNode;
 
 import javax.jcr.RepositoryException;
@@ -92,8 +93,8 @@ public class MountPoint implements Serializable{
     boolean showUnmountAction = false;
 
     public MountPoint(JCRMountPointNode node) throws RepositoryException {
-        this.name = node.getDisplayableName();
-        this.path = node.getPath();
+        this.name = StringUtils.removeEnd(node.getName(), JCRMountPointNode.MOUNT_SUFFIX);
+        this.path = node.getTargetMountPointPath();
         this.status = node.getMountStatus();
         this.identifier = node.getIdentifier();
         this.nodetype = node.getPrimaryNodeType().getName();

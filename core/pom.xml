@@ -113,6 +113,7 @@
             <Jahia-Module-Type>system</Jahia-Module-Type>
             <Jahia-Depends>serverSettings</Jahia-Depends>
             <Jahia-Deploy-On-Site>system</Jahia-Deploy-On-Site>
+            <Jahia-Static-Resources>/css,/javascript</Jahia-Static-Resources>
             <Import-Package>javassist.util.proxy,
                             ${jahia.plugin.projectPackageImport},
                             *</Import-Package>
@@ -120,8 +121,7 @@
                 org.jahia.modules.external.query,
                 org.jahia.modules.external.admin.mount,
                 org.jahia.modules.external.admin.mount.validator</Export-Package>
-            <_removeheaders>${jahia.modules.bundle.removeheaders},
-                            Jahia-Static-Resources</_removeheaders>
+            <_removeheaders>${jahia.modules.bundle.removeheaders}</_removeheaders>
           </instructions>
         </configuration>
       </plugin>
