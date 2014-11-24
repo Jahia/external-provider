@@ -1,3 +1,5 @@
+<input name="{{propName}}" type="hidden" value="" ng-disabled="enablePicker"/>
+
 <script type="text/ng-template" id="treeItem.html">
     <input name="{{propName}}" type="radio" ng-if="isFolder(item)" ng-model="selectedPath" ng-value="item.path" ng-disabled="!enablePicker" />&nbsp;
 
