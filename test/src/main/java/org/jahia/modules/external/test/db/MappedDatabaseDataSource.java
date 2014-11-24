@@ -196,7 +196,13 @@ public class MappedDatabaseDataSource extends BaseDatabaseDataSource implements 
                             }
                             String val = rs.getString(col_name);
                             if (val != null) {
-                                propsForLang.put(def.getName(), new String[]{val});
+                            	String[] vals;
+                            	if (val.contains(",")) { 
+                            		vals = StringUtils.split(val, ",");
+                            	} else {
+                            		vals = new String[] { val };
+                            	}                            	
+                                propsForLang.put(def.getName(), vals);
                             }
                         }
                     }

@@ -35,6 +35,7 @@
  - economy_seats (long)
  - business_seats (long)
  - firstclass_seats (long)
+ - maintenance_center (string) multiple i18n
 
 [jtestnt:country] > jnt:content, jmix:basicContent, jtestmix:item
  - country_iso_code (string)
@@ -61,4 +62,3 @@
  - flying_time (double)
  - miles (long)
  - aircraft (string)
- 
