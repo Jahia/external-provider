@@ -76,6 +76,7 @@ import org.jahia.modules.external.admin.mount.AbstractMountPointFactory;
 import org.jahia.modules.external.admin.mount.validator.LocalJCRFolder;
 import org.jahia.services.content.JCRNodeWrapper;
 
+import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import java.io.Serializable;
 
@@ -110,8 +111,12 @@ public class VFSMountPointFactory extends AbstractMountPointFactory implements S
     @Override
     public void populate(JCRNodeWrapper nodeWrapper) throws RepositoryException {
         super.populate(nodeWrapper);
-        this.name = nodeWrapper.getName();
-        this.localPath = nodeWrapper.getProperty("mountPoint").getNode().getPath();
+        this.name = getName(nodeWrapper.getName());
+        try {
+            this.localPath = nodeWrapper.getProperty("mountPoint").getNode().getPath();
+        }catch (PathNotFoundException e) {
+            // no local path defined for this mount point
+        }
         this.root = nodeWrapper.getPropertyAsString("j:rootPath");
     }
 

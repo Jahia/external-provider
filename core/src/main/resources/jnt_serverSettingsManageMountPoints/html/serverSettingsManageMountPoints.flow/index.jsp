@@ -104,7 +104,7 @@
             <fmt:message key="label.name"/>
         </th>
         <th>
-            <fmt:message key="label.path"/>
+            <fmt:message key="label.mountPoint"/>
         </th>
         <th width="100px">
             <fmt:message key="label.status"/>

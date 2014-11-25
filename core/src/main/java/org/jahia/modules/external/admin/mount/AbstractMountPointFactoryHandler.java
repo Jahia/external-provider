@@ -4,10 +4,15 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.services.content.JCRCallback;import org.jahia.services.content.JCRContentUtils;import org.jahia.services.content.JCRNodeWrapper;import org.jahia.services.content.JCRSessionWrapper;import org.jahia.services.content.JCRStoreProvider;import org.jahia.services.content.JCRStoreService;import org.jahia.services.content.JCRTemplate;import org.jahia.services.content.ProviderFactory;import org.jahia.services.content.decorator.JCRMountPointNode;
 import org.jahia.services.render.RenderContext;
 import org.jahia.utils.Url;
+import org.json.JSONArray;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.webflow.execution.RequestContext;
 
+import javax.jcr.Node;
+import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
+import javax.jcr.Workspace;
+import javax.jcr.query.Query;
 import java.io.Serializable;
 import java.lang.Boolean;import java.lang.Override;import java.lang.String;
 import java.util.Locale;
@@ -17,6 +22,7 @@ import java.util.Locale;
  */
 public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPointFactory> implements Serializable{
     private static final long serialVersionUID = 6394236759186947423L;
+    private static final String SITES_QUERY = "select * from [jnt:virtualsite] as f where ischildnode(f,['/sites'])";
 
     public T init(RequestContext requestContext, final T mountPointFactory) throws RepositoryException {
         if(mountPointFactory == null){
@@ -37,7 +43,7 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
         }
     }
 
-    public Boolean save(final AbstractMountPointFactory mountPoint) throws RepositoryException {
+    public Boolean save(final T mountPoint) throws RepositoryException {
         return JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Boolean>() {
             @Override
             public Boolean doInJCR(JCRSessionWrapper session) throws RepositoryException {
@@ -95,5 +101,40 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
 
     private RenderContext getRenderContext(RequestContext requestContext) {
         return (RenderContext) requestContext.getExternalContext().getRequestMap().get("renderContext");
+    }
+
+    protected JSONArray getSiteFolders(Workspace workspace) throws RepositoryException {
+        return getSiteFolders(workspace, true);
+    }
+
+    protected JSONArray getSiteFolders(Workspace workspace, boolean local) throws RepositoryException {
+        JSONArray folders = new JSONArray();
+        Query sitesQuery = workspace.getQueryManager().createQuery(SITES_QUERY, Query.JCR_SQL2);
+        NodeIterator sites = sitesQuery.execute().getNodes();
+
+        while (sites.hasNext()) {
+            Node site = sites.nextNode();
+            Node siteFiles;
+            try {
+                siteFiles = site.getNode("files");
+                folders.put(siteFiles.getPath());
+            } catch (RepositoryException e) {
+                // no files under the site
+                continue;
+            }
+            Query siteFoldersQuery = workspace.getQueryManager().createQuery("select * from [jnt:folder] as f where " +
+                    "isdescendantnode(f,['" + siteFiles.getPath() + "'])", Query.JCR_SQL2);
+
+            NodeIterator siteFolders = siteFoldersQuery.execute().getNodes();
+            while (siteFolders.hasNext()) {
+                Node siteFolder = siteFolders.nextNode();
+                // only show the nodes from the default provider to avoid mounting into already mounted nodes
+                if(local && ((JCRNodeWrapper) siteFolder).getProvider().isDefault()){
+                    folders.put(siteFolder.getPath());
+                }
+            }
+        }
+
+        return folders;
     }
 }

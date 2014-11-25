@@ -83,11 +83,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.webflow.execution.RequestContext;
 
-import javax.jcr.Node;
-import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
-import javax.jcr.Workspace;
-import javax.jcr.query.Query;
 import java.io.Serializable;
 
 /**
@@ -95,7 +91,6 @@ import java.io.Serializable;
  */
 public class VFSMountPointFactoryHandler extends AbstractMountPointFactoryHandler<VFSMountPointFactory> implements Serializable {
     private static final Logger logger = LoggerFactory.getLogger(VFSMountPointFactoryHandler.class);
-    private static final String SITES_QUERY = "select * from [jnt:virtualsite] as f where ischildnode(f,['/sites'])";
 
     private static final long serialVersionUID = 7189210242067838479L;
 
@@ -129,36 +124,6 @@ public class VFSMountPointFactoryHandler extends AbstractMountPointFactoryHandle
         }
 
         return result.toString();
-    }
-
-    private JSONArray getSiteFolders(Workspace workspace) throws RepositoryException {
-        JSONArray folders = new JSONArray();
-        Query sitesQuery = workspace.getQueryManager().createQuery(SITES_QUERY, Query.JCR_SQL2);
-        NodeIterator sites = sitesQuery.execute().getNodes();
-
-        while (sites.hasNext()) {
-            Node site = sites.nextNode();
-            Node siteFiles;
-            try {
-                siteFiles = site.getNode("files");
-                folders.put(siteFiles.getPath());
-            } catch (RepositoryException e) {
-                // no files under the site
-                continue;
-            }
-            Query siteFoldersQuery = workspace.getQueryManager().createQuery("select * from [jnt:folder] as f where " +
-                    "isdescendantnode(f,['" + siteFiles.getPath() + "'])", Query.JCR_SQL2);
-
-            NodeIterator siteFolders = siteFoldersQuery.execute().getNodes();
-            while (siteFolders.hasNext()) {
-                Node siteFolder = siteFolders.nextNode();
-                if(((JCRNodeWrapper) siteFolder).getProvider().isDefault()){
-                    folders.put(siteFolder.getPath());
-                }
-            }
-        }
-
-        return folders;
     }
 
     public Boolean save() {
