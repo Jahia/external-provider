@@ -3,6 +3,8 @@ package org.jahia.modules.external.admin.mount;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.services.content.JCRCallback;import org.jahia.services.content.JCRContentUtils;import org.jahia.services.content.JCRNodeWrapper;import org.jahia.services.content.JCRSessionWrapper;import org.jahia.services.content.JCRStoreProvider;import org.jahia.services.content.JCRStoreService;import org.jahia.services.content.JCRTemplate;import org.jahia.services.content.ProviderFactory;import org.jahia.services.content.decorator.JCRMountPointNode;
 import org.jahia.services.render.RenderContext;
+import org.jahia.settings.SettingsBean;
+import org.jahia.utils.Patterns;
 import org.jahia.utils.Url;
 import org.json.JSONArray;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -50,7 +52,6 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
                 // create mount node
                 JCRNodeWrapper jcrMountPointNode;
                 JCRNodeWrapper mounts = session.getNode("/mounts");
-                String name = mountPoint.getName() + JCRMountPointNode.MOUNT_SUFFIX;
                 if (mountPoint.isEdit()) {
                     jcrMountPointNode = session.getNode(mountPoint.getInEditMountPointNodePath());
 
@@ -60,16 +61,19 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
                     }
 
                     // rename if necessary
-                    if (!jcrMountPointNode.getName().equals(name)) {
-                        jcrMountPointNode.rename(JCRContentUtils.findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(name)));
+                    if (!jcrMountPointNode.getName().equals(mountPoint.getName() + JCRMountPointNode.MOUNT_SUFFIX)) {
+                        jcrMountPointNode.rename(findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(mountPoint.getName()), JCRMountPointNode.MOUNT_SUFFIX));
                     }
                 } else {
-                    jcrMountPointNode = mounts.addNode(JCRContentUtils.findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(name)), mountPoint.getMountNodeType());
+                    jcrMountPointNode = mounts.addNode(findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(mountPoint.getName()), JCRMountPointNode.MOUNT_SUFFIX),
+                            mountPoint.getMountNodeType());
                 }
 
                 // local path
                 if(StringUtils.isNotEmpty(mountPoint.getLocalPath())){
                     jcrMountPointNode.setProperty("mountPoint", session.getNode(mountPoint.getLocalPath()).getIdentifier());
+                } else if (mountPoint.isEdit()){
+                    jcrMountPointNode.getProperty("mountPoint").remove();
                 }
 
                 // mount point properties
@@ -136,5 +140,39 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
         }
 
         return folders;
+    }
+
+    private String findAvailableNodeName(Node dest, String name, String suffix) {
+        int i = 1;
+
+        String basename = name;
+        int dot = basename.lastIndexOf('.');
+        String ext = "";
+        if (dot > 0) {
+            ext = basename.substring(dot);
+            basename = basename.substring(0, dot);
+        }
+        int und = basename.lastIndexOf('-');
+        if (und > -1 && Patterns.NUMBERS.matcher(basename.substring(und + 1)).matches()) {
+            basename = basename.substring(0, und);
+        }
+
+        do {
+            try {
+                dest.getNode(name + suffix);
+                String newSuffix = "-" + (i++) + ext;
+                name = basename + newSuffix;
+                //name has a sizelimit of 32 chars
+                int maxNameSize = SettingsBean.getInstance().getMaxNameSize();
+                if (name.length() > maxNameSize) {
+                    name = basename.substring(0, (basename.length() <= maxNameSize ? basename.length() : maxNameSize) - newSuffix.length()) + newSuffix;
+                }
+            } catch (RepositoryException e) {
+                break;
+            }
+
+        } while (true);
+
+        return name + suffix;
     }
 }

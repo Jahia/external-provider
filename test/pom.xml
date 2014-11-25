@@ -117,6 +117,12 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>external-provider-vfs</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>org.apache.derby</groupId>
             <artifactId>derby</artifactId>
             <version>${driver.derby.version}</version>
@@ -131,7 +137,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Jahia-Depends>default,external-provider,rating</Jahia-Depends>  
+                        <Jahia-Depends>default,external-provider,external-provider-vfs,rating</Jahia-Depends>
                         <Jahia-Module-Type>system</Jahia-Module-Type>
                         <Import-Package>
 							com.ibm.jvm;resolution:=optional,
