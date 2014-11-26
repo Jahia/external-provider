@@ -72,7 +72,7 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
                 // local path
                 if(StringUtils.isNotEmpty(mountPoint.getLocalPath())){
                     jcrMountPointNode.setProperty("mountPoint", session.getNode(mountPoint.getLocalPath()).getIdentifier());
-                } else if (mountPoint.isEdit()){
+                } else if (mountPoint.isEdit() && jcrMountPointNode.hasProperty("mountPoint")){
                     jcrMountPointNode.getProperty("mountPoint").remove();
                 }
 
@@ -132,8 +132,8 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
             NodeIterator siteFolders = siteFoldersQuery.execute().getNodes();
             while (siteFolders.hasNext()) {
                 Node siteFolder = siteFolders.nextNode();
-                // only show the nodes from the default provider to avoid mounting into already mounted nodes
-                if(local && ((JCRNodeWrapper) siteFolder).getProvider().isDefault()){
+                // only show the nodes from the default provider to avoid mounting into already mounted nodes in case of local
+                if ((local && ((JCRNodeWrapper) siteFolder).getProvider().isDefault()) || !local){
                     folders.put(siteFolder.getPath());
                 }
             }
