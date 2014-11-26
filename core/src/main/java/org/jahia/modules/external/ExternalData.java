@@ -71,6 +71,8 @@
  */
 package org.jahia.modules.external;
 
+import org.apache.commons.lang.StringUtils;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -86,6 +88,7 @@ public class ExternalData {
     private String id;
     private String tmpId;
     private final String path;
+    private final String name;
     private final String type;
     private boolean isNew = false;
     private List<String> mixin;
@@ -103,6 +106,7 @@ public class ExternalData {
     public ExternalData(String id, String path, String type, Map<String, String[]> properties, boolean isNew) {
         this.id = id;
         this.path = path;
+        this.name = StringUtils.substringAfterLast(path, "/");
         this.type = type;
         this.properties = properties;
         this.isNew = isNew;
@@ -129,6 +133,10 @@ public class ExternalData {
 
     public String getPath() {
         return path;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public String getType() {

@@ -143,7 +143,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private static final Predicate FILTER_OUT_FILES_WITH_STARTING_DOT = new Predicate() {
         @Override
         public boolean evaluate(Object object) {
-            return !object.toString().startsWith(".");
+            return object instanceof ExternalData && !((ExternalData) object).getName().startsWith(".");
         }
     };
     private static final List<String> JMIX_IMAGE_LIST = new ArrayList<String>();
@@ -392,9 +392,29 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     public List<String> getChildren(String path) throws RepositoryException {
         String pathLowerCase = path.toLowerCase();
         if (pathLowerCase.endsWith(CND) || pathLowerCase.contains(CND_SLASH)) {
-            return getCndChildren(path, pathLowerCase);
+            return getCndChildrenNames(path, pathLowerCase);
         } else {
             List<String> children = super.getChildren(path);
+            if (children.size() > 0) {
+                CollectionUtils.filter(children, FILTER_OUT_FILES_WITH_STARTING_DOT);
+            }
+            return children;
+        }
+    }
+
+    /**
+     * Return the children of the specified path.
+     *
+     * @param path path of which we want to know the children
+     * @return the children of the specified path
+     */
+    @Override
+    public List<ExternalData> getChildrenNodes(String path) throws RepositoryException {
+        String pathLowerCase = path.toLowerCase();
+        if (pathLowerCase.endsWith(CND) || pathLowerCase.contains(CND_SLASH)) {
+            return getCndChildren(path, pathLowerCase);
+        } else {
+            List<ExternalData> children = super.getChildrenNodes(path);
             if (children.size() > 0) {
                 CollectionUtils.filter(children, FILTER_OUT_FILES_WITH_STARTING_DOT);
             }
@@ -1719,7 +1739,42 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private List<String> getCndChildren(String path, String pathLowerCase) throws RepositoryException {
+    private List<ExternalData> getCndChildren(String path, String pathLowerCase) throws RepositoryException {
+        if (pathLowerCase.endsWith(CND)) {
+            List<ExternalData> children = new ArrayList<>();
+            NodeTypeIterator nodeTypes = loadRegistry(path).getNodeTypes(module.getId());
+            while (nodeTypes.hasNext()) {
+                children.add(getCndItemByPath(path + "/" + nodeTypes.nextNodeType().getName()));
+            }
+            return children;
+        } else {
+            String cndPath = getCndPath(path, pathLowerCase);
+            String subPath = getSubPath(path, pathLowerCase);
+            String[] splitPath = StringUtils.split(subPath, "/");
+
+            List<ExternalData> children = new ArrayList<>();
+
+            if (splitPath.length == 1) {
+                String nodeTypeName = splitPath[0];
+                nodeTypeName = nodeTypeName.replace('-', '_');
+                try {
+                    ExtendedNodeType nodeType = loadRegistry(cndPath).getNodeType(nodeTypeName);
+                    for (ExtendedItemDefinition itemDefinition : nodeType.getDeclaredItems(true)) {
+                        if (itemDefinition.isUnstructured()) {
+                            children.add(getCndItemByPath(path + "/" + computeUnstructuredItemName(itemDefinition)));
+                        } else {
+                            children.add(getCndItemByPath(path + "/" +  itemDefinition.getName()));
+                        }
+                    }
+                } catch (NoSuchNodeTypeException e) {
+                    // Ignore non-existing nodetype, no children
+                }
+            }
+            return children;
+        }
+    }
+
+    private List<String> getCndChildrenNames(String path, String pathLowerCase) throws RepositoryException {
         if (pathLowerCase.endsWith(CND)) {
             List<String> children = new ArrayList<String>();
             NodeTypeIterator nodeTypes = loadRegistry(path).getNodeTypes(module.getId());

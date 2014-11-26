@@ -252,11 +252,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public String getName() throws RepositoryException {
-        return getName(data);
-    }
-
-    private static String getName(ExternalData data) {
-        return StringUtils.substringAfterLast(data.getPath(), "/");
+        return data.getName();
     }
 
     /**
@@ -292,7 +288,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                                 parentPath = "/";
                             }
                             if (parentPath.equals(getPath())) {
-                                externalChildren.add(getName(child));
+                                externalChildren.add(child.getName());
                             }
                             final ExternalNodeImpl node = new ExternalNodeImpl(child, session);
                             session.registerNode(node);
