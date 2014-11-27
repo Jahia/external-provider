@@ -81,6 +81,7 @@ import org.jahia.modules.external.vfs.factory.VFSMountPointFactory;
 import org.jahia.modules.external.vfs.factory.VFSMountPointFactoryHandler;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
+import org.jahia.services.content.decorator.JCRMountPointNode;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.sites.JahiaSite;
 import org.jahia.services.usermanager.JahiaUser;
@@ -277,14 +278,14 @@ public class VFSContentStoreProviderTest {
         // now let's unmount.
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(jahiaRootUser, null, null, new JCRCallback<Object>() {
             public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
-                JCRNodeWrapper mountNode = null;
+                JCRMountPointNode mountNode = null;
                 try {
-                    mountNode = session.getNode(MOUNTS_DYNAMIC_MOUNT_POINT_TARGET);
+                    mountNode = (JCRMountPointNode) session.getNode(MOUNTS_DYNAMIC_MOUNT_POINT_TARGET);
                 } catch (PathNotFoundException pnfe) {
                 }
                 if (mountNode != null) {
-                    boolean unmounted = session.getNode(MOUNTS_DYNAMIC_MOUNT_POINT_TARGET).getProvider().unmount();
-                    assertTrue("Failed to unmount mountnode: " + mountNode.getPath(), unmounted);
+                    mountNode.getMountProvider().stop();
+                    assertTrue("Failed to unmount mountnode: " + mountNode.getPath(), mountNode.getMountProvider() == null);
                 }
                 return null;
             }
