@@ -185,8 +185,9 @@ public class MountPointsManagementFlowHandler implements Serializable {
                             logger.error(detail);
                             return false;
                         }
-                        ProviderFactory providerFactory = JCRStoreService.getInstance().getProviderFactories().get(mountPointNode.getPrimaryNodeTypeName());
-                        JCRStoreProvider mountProvider = providerFactory.mountProvider(mountPointNode.getVirtualMountPointNode());
+                        mountPointNode.setMountStatus(JCRMountPointNode.MountStatus.mounted);
+                        session.save();
+                        JCRStoreProvider mountProvider = mountPointNode.getMountProvider();
                         return mountProvider.isAvailable();
                     } else {
                         logger.error("Can't mount " + mountPointName + ", no mount point node found");
@@ -213,7 +214,9 @@ public class MountPointsManagementFlowHandler implements Serializable {
                             return false;
                         }
 
-                        return mountPointNode.getMountProvider().unmount();
+                        mountPointNode.setMountStatus(JCRMountPointNode.MountStatus.unmounted);
+                        session.save();
+                        return mountPointNode.getMountProvider() == null;
                     } else {
                         logger.error("Can't mount " + mountPointName + ", no mount point node found");
                         return false;
@@ -274,9 +277,9 @@ public class MountPointsManagementFlowHandler implements Serializable {
     }
 
     private String getMountPointQuery(String name) {
-        String query = "select * from [" + Constants.JAHIANT_MOUNTPOINT + "] as mount";
+        String query = "select * from [" + Constants.JAHIANT_MOUNTPOINT + "] as mount where ischildnode('/mounts')";
         if (StringUtils.isNotEmpty(name)) {
-            query += (" where ['j:nodename'] = '" + name + "'");
+            query += (" and ['j:nodename'] = '" + name + "'");
         }
         return query;
     }

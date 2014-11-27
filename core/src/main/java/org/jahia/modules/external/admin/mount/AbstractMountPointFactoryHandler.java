@@ -50,24 +50,21 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
             @Override
             public Boolean doInJCR(JCRSessionWrapper session) throws RepositoryException {
                 // create mount node
-                JCRNodeWrapper jcrMountPointNode;
+                JCRMountPointNode jcrMountPointNode;
                 JCRNodeWrapper mounts = session.getNode("/mounts");
                 if (mountPoint.isEdit()) {
-                    jcrMountPointNode = session.getNode(mountPoint.getInEditMountPointNodePath());
-
-                    // unmount
-                    if (((JCRMountPointNode) jcrMountPointNode).getMountStatus() == JCRMountPointNode.MountStatus.mounted) {
-                        ((JCRMountPointNode) jcrMountPointNode).getMountProvider().unmount();
-                    }
+                    jcrMountPointNode = (JCRMountPointNode) session.getNode(mountPoint.getInEditMountPointNodePath());
 
                     // rename if necessary
                     if (!jcrMountPointNode.getName().equals(mountPoint.getName() + JCRMountPointNode.MOUNT_SUFFIX)) {
                         jcrMountPointNode.rename(findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(mountPoint.getName()), JCRMountPointNode.MOUNT_SUFFIX));
                     }
                 } else {
-                    jcrMountPointNode = mounts.addNode(findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(mountPoint.getName()), JCRMountPointNode.MOUNT_SUFFIX),
+                    jcrMountPointNode = (JCRMountPointNode) mounts.addNode(findAvailableNodeName(mounts, JCRContentUtils.escapeLocalNodeName(mountPoint.getName()), JCRMountPointNode.MOUNT_SUFFIX),
                             mountPoint.getMountNodeType());
                 }
+
+                jcrMountPointNode.setMountStatus(JCRMountPointNode.MountStatus.mounted);
 
                 // local path
                 if(StringUtils.isNotEmpty(mountPoint.getLocalPath())){
@@ -80,17 +77,8 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
                 mountPoint.setProperties(jcrMountPointNode);
                 session.save();
 
-                // mount
-                if (mountPoint.isEdit()) {
-                    ProviderFactory providerFactory = JCRStoreService.getInstance().getProviderFactories().get(jcrMountPointNode.getPrimaryNodeTypeName());
-                    JCRStoreProvider mountProvider = providerFactory.mountProvider(((JCRMountPointNode) jcrMountPointNode).getVirtualMountPointNode());
-                    return mountProvider.isAvailable();
-                } else {
-                    final JCRMountPointNode remoteJCRMountPointNode = (JCRMountPointNode) session.getNode(jcrMountPointNode.getPath());
-                    final JCRStoreProvider provider = remoteJCRMountPointNode.getMountProvider();
-                    provider.mount();
-                    return provider.isAvailable();
-                }
+                JCRStoreProvider provider = jcrMountPointNode.getMountProvider();
+                return provider != null && provider.isAvailable();
             }
         });
     }
