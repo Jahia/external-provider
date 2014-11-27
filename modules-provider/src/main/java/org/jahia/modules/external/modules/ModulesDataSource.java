@@ -143,7 +143,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private static final Predicate FILTER_OUT_FILES_WITH_STARTING_DOT = new Predicate() {
         @Override
         public boolean evaluate(Object object) {
-            return object instanceof ExternalData && !((ExternalData) object).getName().startsWith(".");
+            if(object instanceof String) {
+                return !object.toString().startsWith(".");
+            } else if(object instanceof ExternalData) {
+                return !((ExternalData) object).getName().startsWith(".");
+            }
+            return true;
         }
     };
     private static final List<String> JMIX_IMAGE_LIST = new ArrayList<String>();
@@ -1740,38 +1745,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     private List<ExternalData> getCndChildren(String path, String pathLowerCase) throws RepositoryException {
-        if (pathLowerCase.endsWith(CND)) {
-            List<ExternalData> children = new ArrayList<>();
-            NodeTypeIterator nodeTypes = loadRegistry(path).getNodeTypes(module.getId());
-            while (nodeTypes.hasNext()) {
-                children.add(getCndItemByPath(path + "/" + nodeTypes.nextNodeType().getName()));
-            }
-            return children;
-        } else {
-            String cndPath = getCndPath(path, pathLowerCase);
-            String subPath = getSubPath(path, pathLowerCase);
-            String[] splitPath = StringUtils.split(subPath, "/");
-
-            List<ExternalData> children = new ArrayList<>();
-
-            if (splitPath.length == 1) {
-                String nodeTypeName = splitPath[0];
-                nodeTypeName = nodeTypeName.replace('-', '_');
-                try {
-                    ExtendedNodeType nodeType = loadRegistry(cndPath).getNodeType(nodeTypeName);
-                    for (ExtendedItemDefinition itemDefinition : nodeType.getDeclaredItems(true)) {
-                        if (itemDefinition.isUnstructured()) {
-                            children.add(getCndItemByPath(path + "/" + computeUnstructuredItemName(itemDefinition)));
-                        } else {
-                            children.add(getCndItemByPath(path + "/" +  itemDefinition.getName()));
-                        }
-                    }
-                } catch (NoSuchNodeTypeException e) {
-                    // Ignore non-existing nodetype, no children
-                }
-            }
-            return children;
+        List<ExternalData> children = new ArrayList<ExternalData>();
+        List<String> childrenNames = getCndChildrenNames(path, pathLowerCase);
+        for (String childrenName : childrenNames) {
+            children.add(getCndItemByPath(path + "/" + childrenName));
         }
+        return children;
     }
 
     private List<String> getCndChildrenNames(String path, String pathLowerCase) throws RepositoryException {
