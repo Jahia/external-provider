@@ -71,22 +71,31 @@
  */
 package org.jahia.modules.external.admin;
 
-import org.apache.jackrabbit.core.query.QOMQueryFactory;
-import org.jahia.modules.external.*;
-import org.jahia.services.content.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import javax.jcr.RepositoryException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
+import javax.jcr.query.Query;
+
+import org.jahia.modules.external.ExternalContentStoreProvider;
+import org.jahia.modules.external.ExternalData;
+import org.jahia.modules.external.ExternalDataSource;
+import org.jahia.modules.external.ExternalProviderInitializerService;
+import org.jahia.modules.external.ExternalQuery;
+import org.jahia.services.content.JCRStoreProvider;
+import org.jahia.services.content.JCRStoreService;
+import org.jahia.services.content.ProviderFactory;
+import org.jahia.services.content.QueryManagerWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.services.query.QueryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.jcr.RepositoryException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.query.Query;
-import javax.jcr.query.qom.*;
-import java.io.Serializable;
-import java.util.*;
 
 public class ExternalProviderAdminFlow implements Serializable {
     private static final Logger logger = LoggerFactory.getLogger(ExternalProviderAdminFlow.class);
@@ -155,17 +164,6 @@ public class ExternalProviderAdminFlow implements Serializable {
 
         }
         return l;
-    }
-
-    public void unmountProvider(String mountpoint) throws RepositoryException {
-        JCRStoreProvider provider =  jcrStoreService.getSessionFactory().getMountPoints().get(mountpoint);
-        if (provider != null && provider.isDynamicallyMounted()) {
-            provider.stop();
-        }
-        JCRSessionWrapper session = jcrStoreService.getSessionFactory().getCurrentUserSession();
-        JCRNodeWrapper node = session.getNode(mountpoint);
-        node.remove();
-        session.save();
     }
 
     public DataSourceInfo getDatasourceInfo(String mountpoint) throws RepositoryException {

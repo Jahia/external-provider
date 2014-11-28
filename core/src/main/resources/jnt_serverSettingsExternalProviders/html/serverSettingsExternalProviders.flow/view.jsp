@@ -78,15 +78,6 @@
                         <i class=" "></i>&nbsp;<fmt:message key="label.info"/>
                     </button>
                 </form>
-                <%--<c:if test="${mount.dynamic}">--%>
-                <%--<form style="margin: 0;" action="${flowExecutionUrl}" method="post">--%>
-                    <%--<input type="hidden" name="mountpoint" value="${mount.mountPoint}"/>--%>
-
-                    <%--<button class="btn btn-danger" type="submit" name="_eventId_unmountProvider" onclick="">--%>
-                        <%--<i class=" icon-stop icon-white"></i>&nbsp;<fmt:message key="label.unmount"/>--%>
-                    <%--</button>--%>
-                <%--</form>--%>
-                <%--</c:if>--%>
             </td>
         </tr>
     </c:forEach>

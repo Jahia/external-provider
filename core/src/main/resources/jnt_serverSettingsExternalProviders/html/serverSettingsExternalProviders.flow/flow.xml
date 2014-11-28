@@ -12,9 +12,6 @@
         </on-render>
 
         <transition on="viewDataSource" to="viewDataSource"/>
-
-        <transition on="unmountProvider" to="unmountProvider"/>
-
     </view-state>
 
     <view-state id="viewDataSource" >
@@ -25,10 +22,4 @@
         <transition on="back" to="view"/>
 
     </view-state>
-
-    <action-state id="unmountProvider">
-        <evaluate expression="externalProvidersHandler.unmountProvider(requestParameters.mountpoint)"/>
-        <transition to="view"/>
-    </action-state>
-
 </flow>
