@@ -1241,9 +1241,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         OutputStream outputStream = null;
         try {
             ExtendedNodeType propertiesType = NodeTypeRegistry.getInstance().getNodeType(Constants.JAHIAMIX_VIEWPROPERTIES);
+            Map<String, ExtendedPropertyDefinition> propertyDefinitionMap = propertiesType.getDeclaredPropertyDefinitionsAsMap();
             Properties properties = new SortedProperties();
             for (Map.Entry<String, String[]> property : data.getProperties().entrySet()) {
-                Map<String, ExtendedPropertyDefinition> propertyDefinitionMap = propertiesType.getDeclaredPropertyDefinitionsAsMap();
                 if (propertyDefinitionMap.containsKey(property.getKey())) {
                     String[] v = property.getValue();
                     if (v != null) {
@@ -1256,6 +1256,14 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 }
             }
             FileObject file = getFile(StringUtils.substringBeforeLast(data.getPath(), ".") + PROPERTIES_EXTENSION);
+            Properties original = new Properties();
+            if(file.exists()) {
+                original.load(file.getContent().getInputStream());
+                for (String s : propertyDefinitionMap.keySet()) {
+                    original.remove(s);
+                }
+            }
+            properties.putAll(original);
             if (!properties.isEmpty()) {
                 outputStream = file.getContent().getOutputStream();
                 properties.store(outputStream, data.getPath());
