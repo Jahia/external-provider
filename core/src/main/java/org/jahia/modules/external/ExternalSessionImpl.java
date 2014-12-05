@@ -195,6 +195,13 @@ public class ExternalSessionImpl implements Session {
 
         ExternalContentStoreProvider.setCurrentSession(this);
         try {
+            // check provider availability if possible
+            if(repository.getDataSource() instanceof ExternalDataSource.CanCheckAvailability){
+                boolean available = ((ExternalDataSource.CanCheckAvailability) repository.getDataSource()).isAvailable();
+                if(!available) {
+                    throw new RepositoryException("Provider '" + repository.getProviderKey() + "' is currently unavailable");
+                }
+            }
             ExternalData rootFileObject = repository.getDataSource().getItemByPath("/");
             final ExternalNodeImpl externalNode = new ExternalNodeImpl(rootFileObject, this);
             registerNode(externalNode);

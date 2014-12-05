@@ -236,6 +236,18 @@ public interface ExternalDataSource {
     }
 
     /**
+     * If implemented, allows to check availability of the provider when the "/" node is read
+     */
+    interface CanCheckAvailability {
+        /**
+         * @return true if the provider is correctly available
+         * can return false or throw a RepositoryException with a custom message in case of provider unavailable
+         * @throws RepositoryException
+         */
+        boolean isAvailable() throws RepositoryException;
+    }
+
+    /**
      * @param path path where to get children
      * @return list of paths as String
      */

@@ -116,9 +116,6 @@ public class MountPoint implements Serializable{
             case waiting:
                 displayStatusClass = "label-warning";
                 break;
-            case unknown:
-                displayStatusClass = "label-inverse";
-                break;
         }
     }
 
