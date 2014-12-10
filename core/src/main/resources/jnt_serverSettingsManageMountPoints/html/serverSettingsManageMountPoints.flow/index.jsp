@@ -106,6 +106,9 @@
         <th>
             <fmt:message key="label.mountPoint"/>
         </th>
+        <th>
+            <fmt:message key="label.MountPointProperties"/>
+        </th>
         <th width="100px">
             <fmt:message key="label.status"/>
         </th>
@@ -123,6 +126,13 @@
             </td>
             <td>
                     ${mountPoint.path}
+            </td>
+            <td>
+                    <c:forEach items="${mountPoint.remoteProperties}" var="prop">
+                        <ul>
+                            <li>${prop.key} : ${prop.value}</li>
+                        </ul>
+                    </c:forEach>
             </td>
             <td>
                 <span class="label ${mountPoint.displayStatusClass}">

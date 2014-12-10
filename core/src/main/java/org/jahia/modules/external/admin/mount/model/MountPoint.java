@@ -72,16 +72,27 @@
 package org.jahia.modules.external.admin.mount.model;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.decorator.JCRMountPointNode;
+import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
-import java.io.Serializable;import java.lang.String;
+import javax.jcr.Value;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
+import javax.jcr.nodetype.PropertyDefinition;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author kevan
  */
 public class MountPoint implements Serializable{
     private static final long serialVersionUID = 4618846382714016491L;
+    private static Logger logger = LoggerFactory.getLogger(MountPoint.class);
 
     String name;
     String realName;
@@ -90,6 +101,7 @@ public class MountPoint implements Serializable{
     JCRMountPointNode.MountStatus status;
     String identifier;
     String nodetype;
+    Map<String,String> mountPointProperties;
     boolean showMountAction = false;
     boolean showUnmountAction = false;
 
@@ -116,6 +128,28 @@ public class MountPoint implements Serializable{
             case waiting:
                 displayStatusClass = "label-warning";
                 break;
+        }
+        try {
+            mountPointProperties = new HashMap<>();
+            for (PropertyDefinition def : NodeTypeRegistry.getInstance().getNodeType(nodetype).getDeclaredPropertyDefinitions()) {
+                JCRPropertyWrapper mountPointProperty = node.getProperty(def.getName());
+                if (!((ExtendedPropertyDefinition) mountPointProperty.getDefinition()).isHidden()) {
+                    if (mountPointProperty.isMultiple()) {
+                        StringBuffer sb = new StringBuffer();
+                        for (Value v : mountPointProperty.getValues()) {
+                            if (sb.length() > 0) {
+                                sb.append(" - ");
+                            }
+                            sb.append(v.getString());
+                        }
+                        mountPointProperties.put(def.getName(), sb.toString());
+                    } else {
+                        mountPointProperties.put(def.getName(), mountPointProperty.getValue().getString());
+                    }
+                }
+            }
+        } catch (NoSuchNodeTypeException e) {
+            logger.warn("unable to get declared properties for " + nodetype);
         }
     }
 
@@ -189,5 +223,9 @@ public class MountPoint implements Serializable{
 
     public void setRealName(String realName) {
         this.realName = realName;
+    }
+
+    public Map<String,String> getRemoteProperties() {
+        return mountPointProperties;
     }
 }
