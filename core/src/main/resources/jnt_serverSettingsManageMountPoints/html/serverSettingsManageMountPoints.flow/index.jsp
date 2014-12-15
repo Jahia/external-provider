@@ -130,7 +130,7 @@
             <td>
                     <c:forEach items="${mountPoint.remoteProperties}" var="prop">
                         <ul>
-                            <li>${prop.key} : ${prop.value}</li>
+                            <li>${prop.key}: ${prop.value}</li>
                         </ul>
                     </c:forEach>
             </td>
