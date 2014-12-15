@@ -78,13 +78,17 @@ import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.nodetype.PropertyDefinition;
+
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -130,21 +134,24 @@ public class MountPoint implements Serializable{
                 break;
         }
         try {
-            mountPointProperties = new HashMap<>();
+            Locale locale = LocaleContextHolder.getLocale();
+            mountPointProperties = new LinkedHashMap<>();
             for (PropertyDefinition def : NodeTypeRegistry.getInstance().getNodeType(nodetype).getDeclaredPropertyDefinitions()) {
                 JCRPropertyWrapper mountPointProperty = node.getProperty(def.getName());
-                if (!((ExtendedPropertyDefinition) mountPointProperty.getDefinition()).isHidden()) {
+                ExtendedPropertyDefinition extPropDef = (ExtendedPropertyDefinition) mountPointProperty.getDefinition();
+                if (!extPropDef.isHidden()) {
+                    String key = extPropDef.getLabel(locale) + " (" + def.getName() + ")";
                     if (mountPointProperty.isMultiple()) {
-                        StringBuffer sb = new StringBuffer();
+                        StringBuilder sb = new StringBuilder();
                         for (Value v : mountPointProperty.getValues()) {
                             if (sb.length() > 0) {
                                 sb.append(" - ");
                             }
                             sb.append(v.getString());
                         }
-                        mountPointProperties.put(def.getName(), sb.toString());
+                        mountPointProperties.put(key, sb.toString());
                     } else {
-                        mountPointProperties.put(def.getName(), mountPointProperty.getValue().getString());
+                        mountPointProperties.put(key, mountPointProperty.getValue().getString());
                     }
                 }
             }
