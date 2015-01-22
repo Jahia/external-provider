@@ -89,6 +89,11 @@
         <url>scm:git:git@github.com:Jahia/external-provider.git</url>
         <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
     </scm>
+    <properties>
+        <jahia-depends>default,external-provider,external-provider-vfs,rating</jahia-depends>
+        <jahia-module-type>system</jahia-module-type>
+        <embed-dependency>derby;scope=runtime;inline=false</embed-dependency>
+    </properties>
     <repositories>
         <repository>
             <id>jahia-public</id>
@@ -129,29 +134,4 @@
             <scope>runtime</scope>
         </dependency>
     </dependencies>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Jahia-Depends>default,external-provider,external-provider-vfs,rating</Jahia-Depends>
-                        <Jahia-Module-Type>system</Jahia-Module-Type>
-                        <Import-Package>
-							com.ibm.jvm;resolution:=optional,
-							org.apache.derby.iapi.services.sanity;resolution:=optional,
-							org.apache.derby.shared.common.sanity;resolution:=optional,
-							org.apache.derby.impl.drda;resolution:=optional,
-							${jahia.plugin.projectPackageImport},
-							*
-						</Import-Package>  
-                        <Embed-Dependency>derby;scope=runtime;inline=false</Embed-Dependency>
-                        <_removeheaders>${jahia.modules.bundle.removeheaders}, Jahia-Static-Resources</_removeheaders> 
-                    </instructions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

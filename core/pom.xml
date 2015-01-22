@@ -88,6 +88,23 @@
     <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
     <url>scm:git:git@github.com:Jahia/external-provider.git</url>
   </scm>
+    <properties>
+        <jahia-module-type>system</jahia-module-type>
+        <jahia-depends>serverSettings</jahia-depends>
+        <jahia-deploy-on-site>system</jahia-deploy-on-site>
+        <jahia-static-resources>/css,/javascript</jahia-static-resources>
+        <export-package>org.jahia.modules.external,
+            org.jahia.modules.external.query,
+            org.jahia.modules.external.admin.mount,
+            org.jahia.modules.external.admin.mount.validator
+        </export-package>
+        <jahia.modules.importPackage>
+            org.jahia.defaults.config.spring,
+            org.jahia.exceptions,
+            org.jahia.services,
+            javassist.util.proxy
+        </jahia.modules.importPackage>
+    </properties>
   <repositories>
     <repository>
       <releases>
@@ -102,31 +119,6 @@
       <url>https://devtools.jahia.com/nexus/content/groups/public</url>
     </repository>
   </repositories>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <configuration>
-          <instructions>
-            <Jahia-Module-Type>system</Jahia-Module-Type>
-            <Jahia-Depends>serverSettings</Jahia-Depends>
-            <Jahia-Deploy-On-Site>system</Jahia-Deploy-On-Site>
-            <Jahia-Static-Resources>/css,/javascript</Jahia-Static-Resources>
-            <Import-Package>javassist.util.proxy,
-                            ${jahia.plugin.projectPackageImport},
-                            *</Import-Package>
-            <Export-Package>org.jahia.modules.external,
-                org.jahia.modules.external.query,
-                org.jahia.modules.external.admin.mount,
-                org.jahia.modules.external.admin.mount.validator</Export-Package>
-            <_removeheaders>${jahia.modules.bundle.removeheaders}</_removeheaders>
-          </instructions>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   <profiles>
     <profile>
       <id>generate-ddl</id>

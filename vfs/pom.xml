@@ -88,6 +88,11 @@
     <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
     <url>scm:git:git@github.com:Jahia/external-provider.git</url>
   </scm>
+    <properties>
+        <jahia-depends>external-provider,serverSettings</jahia-depends>
+        <jahia-module-type>system</jahia-module-type>
+        <export-package>org.jahia.modules.external.vfs,org.jahia.modules.external.vfs.factory</export-package>
+    </properties>
   <dependencies>
     <dependency>
       <groupId>org.jahia.modules</groupId>
@@ -110,26 +115,4 @@
       <url>https://devtools.jahia.com/nexus/content/groups/public</url>
     </repository>
   </repositories>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <configuration>
-          <instructions>
-            <Jahia-Depends>external-provider,serverSettings</Jahia-Depends>
-            <Jahia-Module-Type>system</Jahia-Module-Type>
-              <Import-Package>
-                  org.jahia.modules.external.admin.mount,
-                  ${jahia.plugin.projectPackageImport},
-                  *</Import-Package>
-            <Export-Package>org.jahia.modules.external.vfs,org.jahia.modules.external.vfs.factory</Export-Package>
-            <_removeheaders>${jahia.modules.bundle.removeheaders},
-                            Jahia-Static-Resources</_removeheaders>
-          </instructions>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

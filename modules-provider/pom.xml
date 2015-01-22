@@ -88,6 +88,13 @@
     <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
     <url>scm:git:git@github.com:Jahia/external-provider.git</url>
   </scm>
+    <properties>
+        <jahia-module-type>system</jahia-module-type>
+        <jahia-depends>external-provider,external-provider-vfs</jahia-depends>
+        <jahia-deploy-on-site>system</jahia-deploy-on-site>
+        <jahia-static-resources>/css,/javascript</jahia-static-resources>
+        <export-package>org.jahia.modules.external.modules,org.jahia.modules.external.modules.osgi</export-package>
+    </properties>
   <dependencies>
     <dependency>
       <groupId>org.jahia.modules</groupId>
@@ -157,13 +164,6 @@
         <configuration>
           <instructions>
             <Bundle-Activator>org.jahia.modules.external.modules.osgi.ModulesSourceActivator</Bundle-Activator>
-            <Jahia-Depends>external-provider,external-provider-vfs</Jahia-Depends>
-            <Jahia-Module-Type>system</Jahia-Module-Type>
-            <Export-Package>org.jahia.modules.external.modules</Export-Package>
-            <Export-Package>org.jahia.modules.external.modules.osgi</Export-Package>
-            <_removeheaders>${jahia.modules.bundle.removeheaders},
-                            Jahia-Static-Resources</_removeheaders>
-            <Jahia-Depends />
           </instructions>
         </configuration>
       </plugin>

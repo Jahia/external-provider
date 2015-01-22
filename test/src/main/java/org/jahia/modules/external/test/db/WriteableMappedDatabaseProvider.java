@@ -79,6 +79,7 @@ import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.ExternalDataSource;
+import org.jahia.osgi.BundleResource;
 import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -341,9 +342,10 @@ public class WriteableMappedDatabaseProvider extends MappedDatabaseDataSource im
     }
 
     private static void extract(JahiaTemplatesPackage p, org.springframework.core.io.Resource r, File f) throws Exception {
-        if (r.contentLength() == 0) {
+        if ((r instanceof BundleResource && r.contentLength() == 0) || (!(r instanceof BundleResource) && r.getFile().isDirectory())) {
             f.mkdirs();
-            for (org.springframework.core.io.Resource resource : p.getResources(r.getURI().getPath())) {
+            String path = r.getURI().getPath();
+            for (org.springframework.core.io.Resource resource : p.getResources(path.substring(path.indexOf("/toursdb")))) {
                 extract(p, resource, new File(f, resource.getFilename()));
             }
         } else {
