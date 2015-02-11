@@ -71,30 +71,39 @@
  */
 package org.jahia.modules.external.query;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.jackrabbit.commons.query.sql2.Parser;
-import org.apache.jackrabbit.spi.commons.conversion.NamePathResolver;
-import org.apache.jackrabbit.spi.commons.query.qom.*;
-import org.jahia.modules.external.ExternalContentStoreProvider;
-import org.jahia.modules.external.ExternalDataSource;
-import org.jahia.modules.external.ExternalQuery;
-import org.jahia.modules.external.ExternalWorkspaceImpl;
-import org.jahia.services.content.nodetypes.ExtendedNodeType;
-import org.jahia.services.content.nodetypes.NodeTypeRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.jcr.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import javax.jcr.Node;
+import javax.jcr.NodeIterator;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
+import javax.jcr.UnsupportedRepositoryOperationException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.query.InvalidQueryException;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.QueryResult;
+import javax.jcr.query.Row;
+import javax.jcr.query.RowIterator;
 import javax.jcr.query.qom.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.jackrabbit.commons.iterator.NodeIteratorAdapter;
+import org.apache.jackrabbit.commons.query.sql2.Parser;
+import org.apache.jackrabbit.spi.commons.conversion.NamePathResolver;
+import org.apache.jackrabbit.spi.commons.query.qom.QueryObjectModelFactoryImpl;
+import org.apache.jackrabbit.spi.commons.query.qom.QueryObjectModelTree;
+import org.jahia.modules.external.ExternalContentStoreProvider;
+import org.jahia.modules.external.ExternalDataSource;
+import org.jahia.modules.external.ExternalQuery;
+import org.jahia.modules.external.ExternalSessionImpl;
+import org.jahia.modules.external.ExternalWorkspaceImpl;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the {@link javax.jcr.query.QueryManager} for the {@link org.jahia.modules.external.ExternalData}.
@@ -199,44 +208,55 @@ public class ExternalQueryManager implements QueryManager {
 
         @Override
         public QueryResult execute() throws InvalidQueryException, RepositoryException {
-            List<String> allExtendedResults = new ArrayList<String>();
+            List<String> allExtendedResults = new ArrayList<>();
             List<String> results = null;
+            final ExternalSessionImpl session = workspace.getSession();
             if (hasExtension) {
-                Session extSession = workspace.getSession().getExtensionSession();
+                Session extSession = session.getExtensionSession();
                 QueryManager queryManager = extSession.getWorkspace().getQueryManager();
 
-                String selectorType = ((Selector) getSource()).getNodeTypeName();
-                String selectorName = ((Selector) getSource()).getSelectorName();
-                boolean isMixinOrFacet = NodeTypeRegistry.getInstance().getNodeType(selectorType).isMixin();
-                QueryObjectModelFactory qomFactory = queryManager.getQOMFactory();
-                for (Column c : getColumns()) {
-                    if (StringUtils.startsWith(c.getColumnName(), "rep:facet(")) {
-                        isMixinOrFacet = true;
-                        break;
-                    }
-                }
-                // for extension node,but not mixin , change the type to jnt:externalProviderExtension
-                String selector = isMixinOrFacet ? selectorType : "jmix:externalProviderExtension";
-                Source externalSource = qomFactory.selector(selector, selectorName);
+                final QueryObjectModelFactory qomFactory = queryManager.getQOMFactory();
 
-                String mountPoint = workspace.getSession().getRepository().getStoreProvider().getMountPoint();
+                Source source = getSource();
+                boolean isMixinOrFacet = false;
+                String selectorType = null;
+                String selectorName = null;
+                if (source instanceof Selector) {
+                    selectorType = ((Selector) source).getNodeTypeName();
+                    selectorName = ((Selector) source).getSelectorName();
+                    isMixinOrFacet = NodeTypeRegistry.getInstance().getNodeType(selectorType).isMixin();
+                    for (Column c : getColumns()) {
+                        if (StringUtils.startsWith(c.getColumnName(), "rep:facet(")) {
+                            isMixinOrFacet = true;
+                            break;
+                        }
+                    }
+                    // for extension node,but not mixin , change the type to jnt:externalProviderExtension
+                    String selector = isMixinOrFacet ? selectorType : "jmix:externalProviderExtension";
+                    source = qomFactory.selector(selector, selectorName);
+                }
+
+                final ExternalContentStoreProvider storeProvider = session.getRepository().getStoreProvider();
+                String mountPoint = storeProvider.getMountPoint();
                 Constraint convertedConstraint = convertExistingPathConstraints(getConstraint(), mountPoint, qomFactory);
                 if (!hasDescendantNode(convertedConstraint)) {
                     // Multiple IsDescendantNode queries are not supported
-                    convertedConstraint = addPathConstraints(convertedConstraint, externalSource, mountPoint, qomFactory);
+                    convertedConstraint = addPathConstraints(convertedConstraint, source, mountPoint, qomFactory);
                 }
-                if (!isMixinOrFacet) {
+
+                if (!isMixinOrFacet && selectorName != null && selectorType != null) {
                     Comparison c = qomFactory.comparison(qomFactory.propertyValue(selectorName, "j:extendedType"), QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO, qomFactory.literal(extSession.getValueFactory().createValue(selectorType)));
                     convertedConstraint = qomFactory.and(c, convertedConstraint);
                 }
-                Query q = qomFactory.createQuery(externalSource, convertedConstraint, getOrderings(), getColumns());
+
+                Query q = qomFactory.createQuery(source, convertedConstraint, getOrderings(), getColumns());
                 if (!nodeTypeSupported) {
                     // Query is only done in JCR, directly pass limit and offset
                     if (getLimit() > -1) {
                         q.setLimit(getLimit());
                     }
                     q.setOffset(getOffset());
-                    NodeIterator nodes = q.execute().getNodes();
+                    NodeIterator nodes = new QueryResultAdapter(q.execute()).getNodes();
                     while (nodes.hasNext()) {
                         Node node = (Node) nodes.next();
                         allExtendedResults.add(node.getPath().substring(mountPoint.length()));
@@ -244,11 +264,11 @@ public class ExternalQueryManager implements QueryManager {
                     results = allExtendedResults;
                 } else {
                     // Need to get all results to prepare merge
-                    NodeIterator nodes = q.execute().getNodes();
+                    NodeIterator nodes = new QueryResultAdapter(q.execute()).getNodes();
                     while (nodes.hasNext()) {
                         Node node = (Node) nodes.next();
                         String path = node.getPath().substring(mountPoint.length());
-                        if (!node.isNodeType("jnt:externalProviderExtension") || workspace.getSession().itemExists(path)) {
+                        if (!node.isNodeType("jnt:externalProviderExtension") || session.itemExists(path)) {
                             allExtendedResults.add(path);
                         }
                     }
@@ -271,9 +291,9 @@ public class ExternalQueryManager implements QueryManager {
                 }
             }
             if (nodeTypeSupported && (getLimit() == -1 || results == null || results.size() < getLimit())) {
-                ExternalContentStoreProvider.setCurrentSession(workspace.getSession());
+                ExternalContentStoreProvider.setCurrentSession(session);
                 try {
-                    ExternalDataSource dataSource = workspace.getSession().getRepository().getDataSource();
+                    ExternalDataSource dataSource = session.getRepository().getDataSource();
                     final long originalLimit = getLimit();
                     if (originalLimit > -1 && results != null) {
                         // Remove results found. Extend limit with total size of extended result to skip duplicate results
@@ -362,6 +382,48 @@ public class ExternalQueryManager implements QueryManager {
             return constraint;
         }
 
+
+        private class QueryResultAdapter implements QueryResult {
+            private final QueryResult result;
+
+            public QueryResultAdapter(QueryResult result) {
+                this.result = result;
+            }
+
+            @Override
+            public String[] getColumnNames() throws RepositoryException {
+                return result.getColumnNames();
+            }
+
+            @Override
+            public RowIterator getRows() throws RepositoryException {
+                return result.getRows();
+            }
+
+            @Override
+            public NodeIterator getNodes() throws RepositoryException {
+                if (result.getSelectorNames().length <= 1) {
+                    return result.getNodes();
+                } else {
+                    return new NodeIteratorAdapter(result.getRows()) {
+                        @Override
+                        public Object next() {
+                            Row row = (Row) super.next();
+                            try {
+                                return row.getNode(result.getSelectorNames()[0]);
+                            } catch (RepositoryException e) {
+                                throw new UnsupportedOperationException("Unable to access the node in " + row, e);
+                            }
+                        }
+                    };
+                }
+            }
+
+            @Override
+            public String[] getSelectorNames() throws RepositoryException {
+                return result.getSelectorNames();
+            }
+        }
 
     }
 }
