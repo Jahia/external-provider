@@ -145,4 +145,15 @@ public class VFSBinaryImpl implements Binary {
         return read;
     }
 
+    public boolean equals(Object obj) {
+        if(this == obj) {
+            return true;
+        } else if(obj instanceof VFSBinaryImpl) {
+            VFSBinaryImpl other = (VFSBinaryImpl)obj;
+            return this.fileContent == other.fileContent;
+        } else {
+            return false;
+        }
+    }
+
 }

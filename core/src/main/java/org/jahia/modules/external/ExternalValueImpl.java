@@ -205,4 +205,13 @@ public class ExternalValueImpl implements Value {
     public int getType() {
         return type;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof ExternalValueImpl) {
+            return value.equals(((ExternalValueImpl) obj).value);
+        } else {
+            return obj != null && obj instanceof Value && obj.equals(value);
+        }
+    }
 }
