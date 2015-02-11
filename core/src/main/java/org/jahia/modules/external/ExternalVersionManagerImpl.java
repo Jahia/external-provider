@@ -112,7 +112,7 @@ public class ExternalVersionManagerImpl implements VersionManager {
 
     @Override
     public VersionHistory getVersionHistory(String absPath) throws UnsupportedRepositoryOperationException, RepositoryException {
-        return null;
+        throw new UnsupportedRepositoryOperationException();
     }
 
     @Override
