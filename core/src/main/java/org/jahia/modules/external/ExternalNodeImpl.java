@@ -109,6 +109,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     private static final Logger logger = LoggerFactory.getLogger(ExternalNodeImpl.class);
 
     private static final String J_TRANSLATION = "j:translation_";
+    public static final String MATCH_ALL_PATTERN = "*";
     private ExternalData data;
     private List<String> externalChildren;
     private Map<String, ExternalPropertyImpl> properties = null;
@@ -123,7 +124,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         for (Map.Entry<String, String[]> entry : data.getProperties().entrySet()) {
             ExtendedPropertyDefinition definition = getPropertyDefinition(entry.getKey());
 
-            if (definition != null && definition.getName().equals("*") && data.getType() != null && data.getType().equals("jnt:translation")) {
+            if (definition != null && definition.getName().equals(MATCH_ALL_PATTERN) && data.getType() != null && data.getType().equals("jnt:translation")) {
                 definition = ((ExternalNodeImpl) getParent()).getPropertyDefinition(entry.getKey());
             }
 
@@ -688,22 +689,33 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public NodeIterator getNodes() throws RepositoryException {
-        return getNodes("*");
+        return getNodes(MATCH_ALL_PATTERN);
     }
 
     /**
      * {@inheritDoc}
      */
     public NodeIterator getNodes(String namePattern) throws RepositoryException {
-        List<String> filteredList = new ArrayList<String>();
-        if (!namePattern.equals("j:translation*") && !data.isNew()) {
-            for (String path : getExternalChildren()) {
-                if (namePattern.equals("*") || ChildrenCollectorFilter.matches(path,namePattern)) {
-                    filteredList.add(path);
+        final List<String> externalChildren = getExternalChildren();
+        final boolean matchAll = MATCH_ALL_PATTERN.equals(namePattern);
+
+        List<String> filteredList = new ArrayList<>();
+        if (!externalChildren.isEmpty()) {
+            if (!namePattern.equals("j:translation*") && !data.isNew()) {
+                if (!matchAll) {
+                    for (String path : externalChildren) {
+                        if (ChildrenCollectorFilter.matches(path, namePattern)) {
+                            filteredList.add(path);
+                        }
+                    }
+                } else {
+                    filteredList.addAll(externalChildren);
                 }
             }
         }
-        Set<String> languages = new HashSet<String>();
+
+
+        Set<String> languages = new HashSet<>();
         if (data.getI18nProperties() != null) {
             languages.addAll(data.getI18nProperties().keySet());
         }
@@ -711,14 +723,14 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             languages.addAll(data.getLazyI18nProperties().keySet());
         }
         for (String lang : languages) {
-            if (namePattern.equals("*") || ChildrenCollectorFilter.matches(J_TRANSLATION + lang, namePattern)) {
+            if (matchAll || ChildrenCollectorFilter.matches(J_TRANSLATION + lang, namePattern)) {
                 filteredList.add(J_TRANSLATION + lang);
             }
         }
 
         Node n = getExtensionNode(false);
         if (n != null) {
-            return  new ExternalNodeIterator(filteredList, namePattern.equals("*") ? n.getNodes() : n.getNodes(namePattern));
+            return new ExternalNodeIterator(filteredList, matchAll ? n.getNodes() : n.getNodes(namePattern));
         }
         return new ExternalNodeIterator(filteredList);
     }
@@ -776,7 +788,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 data.getLazyProperties().remove(s);
                 ExternalPropertyImpl p = new ExternalPropertyImpl(new Name(s, NodeTypeRegistry.getInstance().getNamespaces()), this, session);
                 ExtendedPropertyDefinition definition = getPropertyDefinition(s);
-                if (definition != null && definition.getName().equals("*") && data != null && data.getType() != null && data.getType().equals("jnt:translation")) {
+                if (definition != null && definition.getName().equals(MATCH_ALL_PATTERN) && data != null && data.getType() != null && data.getType().equals("jnt:translation")) {
                     definition = ((ExternalNodeImpl) getParent()).getPropertyDefinition(s);
                 }
                 if (definition != null && definition.isMultiple()) {
@@ -1449,9 +1461,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         Map<String,List<String>> overridableProperties = getSession().getOverridableProperties();
         Map<String,List<String>> nonOverridableProperties = getSession().getNonOverridableProperties();
         for (Map.Entry<String, List<String>> entry : overridableProperties.entrySet()) {
-            if ((entry.getKey().equals("*") || type.getName().equals(entry.getKey())) &&
-                    (entry.getValue().contains("*") || entry.getValue().contains(definition.getName())) &&
-                    !(nonOverridableProperties.containsKey("*") && nonOverridableProperties.get("*").contains(definition.getName())) &&
+            if ((entry.getKey().equals(MATCH_ALL_PATTERN) || type.getName().equals(entry.getKey())) &&
+                    (entry.getValue().contains(MATCH_ALL_PATTERN) || entry.getValue().contains(definition.getName())) &&
+                    !(nonOverridableProperties.containsKey(MATCH_ALL_PATTERN) && nonOverridableProperties.get(MATCH_ALL_PATTERN).contains(definition.getName())) &&
                     !(nonOverridableProperties.containsKey(type.getName()) && nonOverridableProperties.get(type.getName()).contains(definition.getName()))) {
                 return true;
             }
