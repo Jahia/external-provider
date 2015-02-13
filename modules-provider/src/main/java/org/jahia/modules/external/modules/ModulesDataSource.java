@@ -71,11 +71,42 @@
  */
 package org.jahia.modules.external.modules;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.*;
+import javax.annotation.Nullable;
+import javax.imageio.ImageIO;
+import javax.jcr.Binary;
+import javax.jcr.ItemExistsException;
+import javax.jcr.ItemNotFoundException;
+import javax.jcr.NamespaceException;
+import javax.jcr.NamespaceRegistry;
+import javax.jcr.PathNotFoundException;
+import javax.jcr.PropertyType;
+import javax.jcr.RepositoryException;
+import javax.jcr.Value;
+import javax.jcr.nodetype.ConstraintViolationException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
+import javax.jcr.nodetype.NodeTypeIterator;
+import javax.jcr.query.InvalidQueryException;
+import javax.jcr.query.Query;
+import javax.jcr.query.QueryResult;
+import javax.jcr.query.qom.QueryObjectModelConstants;
+import javax.jcr.version.OnParentVersionAction;
+
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
+import org.apache.commons.collections.Closure;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.Predicate;
@@ -84,7 +115,11 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.vfs2.*;
+import org.apache.commons.vfs2.FileContent;
+import org.apache.commons.vfs2.FileName;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.provider.local.LocalFileName;
 import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
@@ -94,7 +129,12 @@ import org.jahia.modules.external.modules.osgi.ModulesSourceHttpServiceTracker;
 import org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer;
 import org.jahia.modules.external.vfs.VFSDataSource;
 import org.jahia.services.SpringContextSingleton;
-import org.jahia.services.content.*;
+import org.jahia.services.content.JCRCallback;
+import org.jahia.services.content.JCRContentUtils;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.JCRStoreService;
+import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.content.decorator.JCRUserNode;
 import org.jahia.services.content.nodetypes.*;
@@ -116,22 +156,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 
-import javax.annotation.Nullable;
-import javax.imageio.ImageIO;
-import javax.jcr.*;
-import javax.jcr.nodetype.ConstraintViolationException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.nodetype.NodeTypeIterator;
-import javax.jcr.query.InvalidQueryException;
-import javax.jcr.query.Query;
-import javax.jcr.query.QueryResult;
-import javax.jcr.query.qom.QueryObjectModelConstants;
-import javax.jcr.version.OnParentVersionAction;
-
-import java.awt.image.BufferedImage;
-import java.io.*;
-import java.util.*;
-
 /**
  * Data source provider that is mapped to the /modules filesystem folder with deployed Jahia modules.
  *
@@ -151,6 +175,15 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             return true;
         }
     };
+
+    private final Closure ENHANCE = new Closure() {
+        @Override
+        public void execute(Object input) {
+            ExternalData child = (ExternalData) input;
+            enhanceData(child.getPath(), child);
+        }
+    };
+
     private static final List<String> JMIX_IMAGE_LIST = new ArrayList<String>();
 
     static {
@@ -359,9 +392,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             if (SettingsBean.getInstance().isProcessingServer()) {
                 jcrStoreService.deployDefinitions(systemId);
             }
-        } catch (IOException e) {
-            logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
-        } catch (ParseException e) {
+        } catch (IOException | ParseException e) {
             logger.error("Error registering node type definition file " + file + " for bundle " + module.getBundle(), e);
         }
     }
@@ -400,7 +431,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             return getCndChildrenNames(path, pathLowerCase);
         } else {
             List<String> children = super.getChildren(path);
-            if (children.size() > 0) {
+            if (!children.isEmpty()) {
                 CollectionUtils.filter(children, FILTER_OUT_FILES_WITH_STARTING_DOT);
             }
             return children;
@@ -420,8 +451,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             return getCndChildren(path, pathLowerCase);
         } else {
             List<ExternalData> children = super.getChildrenNodes(path);
-            if (children.size() > 0) {
+            if (!children.isEmpty()) {
                 CollectionUtils.filter(children, FILTER_OUT_FILES_WITH_STARTING_DOT);
+                CollectionUtils.forAllDo(children, ENHANCE);
             }
             return children;
         }
@@ -532,7 +564,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
      */
     @Override
     public ExternalData getItemByIdentifier(String identifier) throws ItemNotFoundException {
-        return super.getItemByIdentifier(identifier);
+        final ExternalData item = super.getItemByIdentifier(identifier);
+        return enhanceData(item.getPath(), item);
     }
 
     /**
@@ -559,9 +592,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     public boolean itemExists(String path) {
         if (path.toLowerCase().contains(CND_SLASH)) {
             try {
-                getItemByPath(path);
+                getCndItemByPath(path);
                 return true;
-            } catch (PathNotFoundException e) {
+            } catch (RepositoryException e) {
                 return false;
             }
         }
