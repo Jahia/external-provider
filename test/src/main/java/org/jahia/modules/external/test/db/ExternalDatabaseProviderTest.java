@@ -71,14 +71,22 @@
  */
 package org.jahia.modules.external.test.db;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.util.Locale;
+
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.UnsupportedRepositoryOperationException;
+import javax.jcr.ValueFormatException;
 import javax.jcr.lock.Lock;
 import javax.jcr.lock.LockException;
 import javax.jcr.query.InvalidQueryException;
@@ -90,6 +98,7 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.sites.JahiaSite;
 import org.jahia.test.JahiaTestCase;
 import org.jahia.test.TestHelper;
@@ -99,8 +108,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /**
  * Integration tests for the external provider implementation.
@@ -156,6 +163,19 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
             // property is not present
         }
     }
+    
+    public void checkMultipleI18nProperties(JCRNodeWrapper amazonAirline) throws RepositoryException {
+    	assertTrue(amazonAirline.hasProperty("maintenance_center"));
+    	JCRPropertyWrapper centers = amazonAirline.getProperty("maintenance_center");
+    	JCRValueWrapper[] center_names = centers.getValues();
+    	assertTrue(center_names.length == 2);
+    	for (int i = 0; i < center_names.length; i++) {
+    		assertTrue(center_names[i].getString().equals( "Centre Technique de Washington DC") || center_names[i].getString().equals("Centre Technique de Portland"));
+    	}
+    	
+    	// should throw a ValueFormatException
+    	amazonAirline.getProperty("maintenance_center").getValue();
+	}
 
     private long getResultCount(String query) throws RepositoryException, InvalidQueryException {
         return getResultCount(query, 0, 0);
@@ -325,6 +345,18 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         checkProperties(session.getNode(mountpoint + "/CITIES/1"), true);
     }
 
+    /**
+    * QA-6426
+    * @throws RepositoryException
+    */
+    @Test(expected=ValueFormatException.class)
+    public void testMultipleI18nMappedProperties() throws RepositoryException {
+    	JCRSessionWrapper frenchSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE, Locale.FRENCH);
+    	JCRNodeWrapper root = frenchSession.getNode(MAPPED_PROVIDER_MOUNTPOINT);
+    	JCRNodeWrapper US = root.getNode("AIRLINES").getNode("US");
+    	checkMultipleI18nProperties(US);
+    }
+    
     @Test
     public void testQueryConstraints() throws RepositoryException {
         testQueryConstraints(MAPPED_PROVIDER_MOUNTPOINT);
