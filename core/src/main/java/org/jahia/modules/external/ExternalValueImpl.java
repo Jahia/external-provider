@@ -214,4 +214,9 @@ public class ExternalValueImpl implements Value {
             return obj != null && obj instanceof Value && obj.equals(value);
         }
     }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
 }
