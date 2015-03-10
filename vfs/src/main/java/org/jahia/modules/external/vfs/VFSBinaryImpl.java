@@ -145,6 +145,7 @@ public class VFSBinaryImpl implements Binary {
         return read;
     }
 
+    @Override
     public boolean equals(Object obj) {
         if(this == obj) {
             return true;
@@ -156,4 +157,8 @@ public class VFSBinaryImpl implements Binary {
         }
     }
 
+    @Override
+    public int hashCode() {
+        return fileContent.hashCode();
+    }
 }
