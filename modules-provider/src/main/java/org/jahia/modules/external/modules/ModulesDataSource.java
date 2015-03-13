@@ -75,7 +75,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.Predicate;
@@ -124,7 +123,6 @@ import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 import javax.jcr.query.qom.QueryObjectModelConstants;
 import javax.jcr.version.OnParentVersionAction;
-
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
@@ -1501,7 +1499,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             List<Value> valueConstraints = new ArrayList<Value>();
             if (values != null) {
                 for (String valueConstraint : values) {
-                    valueConstraints.add(getValueFromString(valueConstraint, requiredType, propertyDefinition));
+                    valueConstraints.add(getValueFromString(valueConstraint, requiredType));
                 }
             }
             propertyDefinition.setValueConstraints(valueConstraints.toArray(new Value[valueConstraints.size()]));
@@ -1509,7 +1507,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             List<Value> defaultValues = new ArrayList<Value>();
             if (values != null) {
                 for (String defaultValue : values) {
-                    defaultValues.add(getValueFromString(defaultValue, requiredType, propertyDefinition));
+                    defaultValues.add(getValueFromString(defaultValue, requiredType));
                 }
             }
             propertyDefinition.setDefaultValues(defaultValues.toArray(new Value[defaultValues.size()]));
@@ -1621,29 +1619,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private Value getValueFromString(String value, int requiredType, ExtendedPropertyDefinition propertyDefinition) {
-        if (value.contains("(")) {
-            String fn = StringUtils.substringBefore(value, "(");
-            fn = fn.replace("\\\\", "\\");
-            fn = fn.replace("\\'", "'");
-            String[] params = StringUtils.split(StringUtils.substringBetween(value, "(", ")"), " ");
-            List<String> paramList = new ArrayList<String>();
-            for (String param : params) {
-                param = param.trim();
-                param = StringUtils.removeEnd(StringUtils.removeStart(param, "'"), "'");
-                if (!"".equals(param)) {
-                    param = param.replace("\\\\", "\\");
-                    param = param.replace("\\'", "'");
-                    paramList.add(param);
-                }
-            }
-            return new DynamicValueImpl(fn, paramList, requiredType, false, propertyDefinition);
-        } else {
-            String v = StringUtils.removeEnd(StringUtils.removeStart(value, "'"), "'");
-            v = v.replace("\\\\", "\\");
-            v = v.replace("\\'", "'");
-            return new ValueImpl(v, requiredType, false);
-        }
+    private Value getValueFromString(String value, int requiredType) {
+        String v = value.replace("\\\\", "\\");
+        v = v.replace("\\'", "'");
+        return new ValueImpl(v, requiredType, false);
     }
 
     private synchronized void saveChildNodeDefinition(ExternalData data) throws RepositoryException {
