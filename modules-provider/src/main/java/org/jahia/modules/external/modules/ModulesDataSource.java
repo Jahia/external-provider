@@ -71,37 +71,6 @@
  */
 package org.jahia.modules.external.modules;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.util.*;
-import javax.annotation.Nullable;
-import javax.imageio.ImageIO;
-import javax.jcr.Binary;
-import javax.jcr.ItemExistsException;
-import javax.jcr.ItemNotFoundException;
-import javax.jcr.NamespaceException;
-import javax.jcr.NamespaceRegistry;
-import javax.jcr.PathNotFoundException;
-import javax.jcr.PropertyType;
-import javax.jcr.RepositoryException;
-import javax.jcr.Value;
-import javax.jcr.nodetype.ConstraintViolationException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.nodetype.NodeTypeIterator;
-import javax.jcr.query.InvalidQueryException;
-import javax.jcr.query.Query;
-import javax.jcr.query.QueryResult;
-import javax.jcr.query.qom.QueryObjectModelConstants;
-import javax.jcr.version.OnParentVersionAction;
-
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
@@ -115,11 +84,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.vfs2.FileContent;
-import org.apache.commons.vfs2.FileName;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileType;
+import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.provider.local.LocalFileName;
 import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
@@ -129,12 +94,7 @@ import org.jahia.modules.external.modules.osgi.ModulesSourceHttpServiceTracker;
 import org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer;
 import org.jahia.modules.external.vfs.VFSDataSource;
 import org.jahia.services.SpringContextSingleton;
-import org.jahia.services.content.JCRCallback;
-import org.jahia.services.content.JCRContentUtils;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.JCRStoreService;
-import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.content.decorator.JCRUserNode;
 import org.jahia.services.content.nodetypes.*;
@@ -155,6 +115,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+
+import javax.annotation.Nullable;
+import javax.imageio.ImageIO;
+import javax.jcr.*;
+import javax.jcr.nodetype.ConstraintViolationException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
+import javax.jcr.nodetype.NodeTypeIterator;
+import javax.jcr.query.InvalidQueryException;
+import javax.jcr.query.Query;
+import javax.jcr.query.QueryResult;
+import javax.jcr.query.qom.QueryObjectModelConstants;
+import javax.jcr.version.OnParentVersionAction;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.util.*;
 
 /**
  * Data source provider that is mapped to the /modules filesystem folder with deployed Jahia modules.
@@ -1567,7 +1542,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             List<Value> valueConstraints = new ArrayList<Value>();
             if (values != null) {
                 for (String valueConstraint : values) {
-                    valueConstraints.add(getValueFromString(valueConstraint, requiredType, propertyDefinition));
+                    valueConstraints.add(getValueFromString(valueConstraint, requiredType));
                 }
             }
             propertyDefinition.setValueConstraints(valueConstraints.toArray(new Value[valueConstraints.size()]));
@@ -1575,7 +1550,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             List<Value> defaultValues = new ArrayList<Value>();
             if (values != null) {
                 for (String defaultValue : values) {
-                    defaultValues.add(getValueFromString(defaultValue, requiredType, propertyDefinition));
+                    defaultValues.add(getValueFromString(defaultValue, requiredType));
                 }
             }
             propertyDefinition.setDefaultValues(defaultValues.toArray(new Value[defaultValues.size()]));
@@ -1687,29 +1662,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
     }
 
-    private Value getValueFromString(String value, int requiredType, ExtendedPropertyDefinition propertyDefinition) {
-        if (value.contains("(")) {
-            String fn = StringUtils.substringBefore(value, "(");
-            fn = fn.replace("\\\\", "\\");
-            fn = fn.replace("\\'", "'");
-            String[] params = StringUtils.split(StringUtils.substringBetween(value, "(", ")"), " ");
-            List<String> paramList = new ArrayList<String>();
-            for (String param : params) {
-                param = param.trim();
-                param = StringUtils.removeEnd(StringUtils.removeStart(param, "'"), "'");
-                if (!"".equals(param)) {
-                    param = param.replace("\\\\", "\\");
-                    param = param.replace("\\'", "'");
-                    paramList.add(param);
-                }
-            }
-            return new DynamicValueImpl(fn, paramList, requiredType, false, propertyDefinition);
-        } else {
-            String v = StringUtils.removeEnd(StringUtils.removeStart(value, "'"), "'");
-            v = v.replace("\\\\", "\\");
-            v = v.replace("\\'", "'");
-            return new ValueImpl(v, requiredType, false);
-        }
+    private Value getValueFromString(String value, int requiredType) {
+        String v = value.replace("\\\\", "\\");
+        v = v.replace("\\'", "'");
+        return new ValueImpl(v, requiredType, false);
     }
 
     private synchronized void saveChildNodeDefinition(ExternalData data) throws RepositoryException {
