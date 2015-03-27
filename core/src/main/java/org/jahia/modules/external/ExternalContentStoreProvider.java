@@ -103,6 +103,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     private ExternalProviderInitializerService externalProviderInitializerService;
 
     private List<String> extendableTypes;
+    private List<String> nonExtendableMixins;
     private List<String> overridableItems;
     private List<String> reservedNodes = Arrays.asList("j:acl", "j:workflowRules", "thumbnail");
 
@@ -259,6 +260,14 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     public void setOverridableItems(List<String> overridableItems) {
         this.overridableItems = overridableItems;
+    }
+
+    public List<String> getNonExtendableMixins() {
+        return nonExtendableMixins;
+    }
+
+    public void setNonExtendableMixins(List<String> nonExtendableMixins) {
+        this.nonExtendableMixins = nonExtendableMixins;
     }
 
     public void setLockSupport(boolean lockSupport) {

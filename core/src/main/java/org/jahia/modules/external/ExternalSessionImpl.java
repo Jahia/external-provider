@@ -114,6 +114,7 @@ public class ExternalSessionImpl implements Session {
     private Set<Binary> tempBinaries = new HashSet<Binary>();
     private Session extensionSession;
     private List<String> extensionAllowedTypes;
+    private List<String> extensionForbiddenMixins;
     private Map<String,List<String>> overridableProperties;
     private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
 
@@ -738,5 +739,15 @@ public class ExternalSessionImpl implements Session {
             }
         }
         return overridableProperties;
+    }
+
+    public List<String> getExtensionForbiddenMixins() throws RepositoryException {
+        if (extensionForbiddenMixins == null) {
+            extensionForbiddenMixins = getRepository().getStoreProvider().getNonExtendableMixins();
+            if (extensionForbiddenMixins == null) {
+                extensionForbiddenMixins = Collections.emptyList();
+            }
+        }
+        return extensionForbiddenMixins;
     }
 }
