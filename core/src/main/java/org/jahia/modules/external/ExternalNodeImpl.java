@@ -929,7 +929,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
 
         if(getSession().getExtensionForbiddenMixins().contains(mixinName) && !(data.getMixin() != null && data.getMixin().contains(mixinName))) {
-            List<String> mixins = data.getMixin() == null ? new ArrayList<String>() : new ArrayList<>(data.getMixin());
+            List<String> mixins = data.getMixin() == null ? new ArrayList<String>() : new ArrayList<String>(data.getMixin());
             mixins.add(mixinName);
             data.setMixin(mixins);
             return;
@@ -949,7 +949,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      */
     public void removeMixin(String mixinName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
         if(getSession().getExtensionForbiddenMixins().contains(mixinName) && data.getMixin() != null && data.getMixin().contains(mixinName)) {
-            List<String> mixins = new ArrayList<>(data.getMixin());
+            List<String> mixins = new ArrayList<String>(data.getMixin());
             mixins.remove(mixinName);
             data.setMixin(mixins);
             return;
