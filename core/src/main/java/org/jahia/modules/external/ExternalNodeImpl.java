@@ -990,6 +990,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             return;
         }
 
+        if(getSession().getExtensionForbiddenMixins().contains(mixinName) && !(data.getMixin() != null && data.getMixin().contains(mixinName))) {
+            List<String> mixins = data.getMixin() == null ? new ArrayList<String>() : new ArrayList<>(data.getMixin());
+            mixins.add(mixinName);
+            data.setMixin(mixins);
+            return;
+        }
+
         Node extensionNode = getExtensionNode(true);
         if (extensionNode != null) {
             extensionNode.addMixin(mixinName);
@@ -1003,6 +1010,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public void removeMixin(String mixinName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+        if(getSession().getExtensionForbiddenMixins().contains(mixinName) && data.getMixin() != null && data.getMixin().contains(mixinName)) {
+            List<String> mixins = new ArrayList<>(data.getMixin());
+            mixins.remove(mixinName);
+            data.setMixin(mixins);
+            return;
+        }
+
         Node extensionNode = getExtensionNode(false);
         if (extensionNode != null) {
             extensionNode.removeMixin(mixinName);
@@ -1074,6 +1088,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public boolean canAddMixin(String mixinName) throws NoSuchNodeTypeException, RepositoryException {
+        if(getSession().getExtensionForbiddenMixins().contains(mixinName)) {
+            return true;
+        }
+
         Node extensionNode = getExtensionNode(true);
         if (extensionNode != null) {
             return extensionNode.canAddMixin(mixinName);
