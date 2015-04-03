@@ -270,6 +270,9 @@ public class ExternalQueryManager implements QueryManager {
                         String path = node.getPath().substring(mountPoint.length());
                         if (!node.isNodeType("jnt:externalProviderExtension") || session.itemExists(path)) {
                             allExtendedResults.add(path);
+                            if (getLimit() > -1 && allExtendedResults.size() > getOffset() + getLimit()) {
+                                break;
+                            }
                         }
                     }
                     if (allExtendedResults.size() == 0) {
@@ -297,7 +300,7 @@ public class ExternalQueryManager implements QueryManager {
                     final long originalLimit = getLimit();
                     if (originalLimit > -1 && results != null) {
                         // Remove results found. Extend limit with total size of extended result to skip duplicate results
-                        setLimit(getLimit() - results.size() + allExtendedResults.size());
+                        setLimit(getOffset() + getLimit() - results.size() + allExtendedResults.size());
                     }
 
                     if (results == null) {
