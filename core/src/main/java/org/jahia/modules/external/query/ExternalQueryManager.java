@@ -211,6 +211,17 @@ public class ExternalQueryManager implements QueryManager {
             List<String> allExtendedResults = new ArrayList<>();
             List<String> results = null;
             final ExternalSessionImpl session = workspace.getSession();
+
+            boolean noConstraints = false;
+            try {
+                // Check if query has
+                if (QueryHelper.getSimpleAndConstraints(getConstraint()).size() == 0) {
+                    noConstraints = true;
+                }
+            } catch (UnsupportedRepositoryOperationException e) {
+                // Query has complex constraints, continue
+            }
+
             if (hasExtension) {
                 Session extSession = session.getExtensionSession();
                 QueryManager queryManager = extSession.getWorkspace().getQueryManager();
@@ -268,7 +279,8 @@ public class ExternalQueryManager implements QueryManager {
                     while (nodes.hasNext()) {
                         Node node = (Node) nodes.next();
                         String path = node.getPath().substring(mountPoint.length());
-                        if (!node.isNodeType("jnt:externalProviderExtension") || session.itemExists(path)) {
+                        // If no constraint was set, only take extended nodes, as the datasource will return them all anyway
+                        if (!node.isNodeType("jnt:externalProviderExtension") || (!noConstraints && session.itemExists(path))) {
                             allExtendedResults.add(path);
                             if (getLimit() > -1 && allExtendedResults.size() > getOffset() + getLimit()) {
                                 break;
@@ -298,15 +310,24 @@ public class ExternalQueryManager implements QueryManager {
                 try {
                     ExternalDataSource dataSource = session.getRepository().getDataSource();
                     final long originalLimit = getLimit();
-                    if (originalLimit > -1 && results != null) {
-                        // Remove results found. Extend limit with total size of extended result to skip duplicate results
-                        setLimit(getOffset() + getLimit() - results.size() + allExtendedResults.size());
-                    }
 
                     if (results == null) {
                         // No previous results, no merge to do
                         results = ((ExternalDataSource.Searchable) dataSource).search(this);
+                    } else if (noConstraints) {
+                        // Previous results, but only in extended nodes, no merge required - concat only
+                        if (getOffset() >= allExtendedResults.size()) {
+                            setOffset(getOffset() - allExtendedResults.size());
+                        } else {
+                            setOffset(0);
+                            setLimit(getLimit() - results.size());
+                        }
+                        results.addAll(((ExternalDataSource.Searchable) dataSource).search(this));
                     } else {
+                        if (originalLimit > -1) {
+                            // Remove results found. Extend limit with total size of extended result to skip duplicate results
+                            setLimit(getOffset() + getLimit());
+                        }
                         // Need to merge, move offset to 0
                         int skips = Math.max(0, (int) getOffset() - allExtendedResults.size());
                         setOffset(0);
