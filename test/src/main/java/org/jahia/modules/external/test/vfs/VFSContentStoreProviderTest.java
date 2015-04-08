@@ -81,7 +81,6 @@ import org.jahia.modules.external.vfs.factory.VFSMountPointFactory;
 import org.jahia.modules.external.vfs.factory.VFSMountPointFactoryHandler;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
-import org.jahia.services.content.decorator.JCRMountPointNode;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.sites.JahiaSite;
 import org.jahia.services.usermanager.JahiaUser;
@@ -95,6 +94,7 @@ import org.slf4j.Logger;
 
 import javax.jcr.*;
 import javax.jcr.nodetype.NodeType;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
@@ -162,14 +162,14 @@ public class VFSContentStoreProviderTest {
             dynamicMountDir.mkdir();
         }
         JahiaUser jahiaRootUser = JahiaAdminUser.getAdminUser(null);
-        unMountDynamicMountPoint(jahiaRootUser);
+        unMountDynamicMountPoint();
         removeDynamicMountPoint(jahiaRootUser);
     }
 
     @AfterClass
     public static void oneTimeTearDown() throws Exception {
         JahiaUser jahiaRootUser = JahiaAdminUser.getAdminUser(null);
-        unMountDynamicMountPoint(jahiaRootUser);
+        unMountDynamicMountPoint();
         removeDynamicMountPoint(jahiaRootUser);
         TestHelper.deleteSite(TESTSITE_NAME);
         try {
@@ -252,7 +252,7 @@ public class VFSContentStoreProviderTest {
                     sameMountNode.getClass());
             assertEquals("Real nodes are not the same", targetMountNode.getRealNode(), sameMountNode.getRealNode());
 
-            unMountDynamicMountPoint(jahiaRootUser);
+            unMountDynamicMountPoint();
             removeDynamicMountPoint(jahiaRootUser);
 
             // we must recycle session because of internal session caches.
@@ -269,27 +269,17 @@ public class VFSContentStoreProviderTest {
             assertFalse("Dynamic mount node should have been removed but is still present in repository !", mountNodeStillExists);
         } finally {
             if (mountNodeStillExists) {
-                unMountDynamicMountPoint(jahiaRootUser);
+                unMountDynamicMountPoint();
             }
         }
     }
 
-    private static void unMountDynamicMountPoint(JahiaUser jahiaRootUser) throws RepositoryException {
+    private static void unMountDynamicMountPoint() throws RepositoryException {
         // now let's unmount.
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(jahiaRootUser, null, null, new JCRCallback<Object>() {
-            public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
-                JCRMountPointNode mountNode = null;
-                try {
-                    mountNode = (JCRMountPointNode) session.getNode(MOUNTS_DYNAMIC_MOUNT_POINT_TARGET);
-                } catch (PathNotFoundException pnfe) {
-                }
-                if (mountNode != null) {
-                    mountNode.getMountProvider().stop();
-                    assertTrue("Failed to unmount mountnode: " + mountNode.getPath(), mountNode.getMountProvider() == null);
-                }
-                return null;
-            }
-        });
+        JCRStoreProvider provider = JCRStoreService.getInstance().getSessionFactory().getProvider(MOUNTS_DYNAMIC_MOUNT_POINT_TARGET, false);
+        if (provider != null) {
+            provider.stop();
+        }
     }
 
     private static void removeDynamicMountPoint(JahiaUser jahiaRootUser) throws RepositoryException {
@@ -463,7 +453,7 @@ public class VFSContentStoreProviderTest {
 
             // TODO add tests for handling missing reference targets.
         } finally {
-            unMountDynamicMountPoint(jahiaRootUser);
+            unMountDynamicMountPoint();
             removeDynamicMountPoint(jahiaRootUser);
         }
     }
@@ -527,7 +517,7 @@ public class VFSContentStoreProviderTest {
             }
             assertTrue("Unmark for deletion should not be allowed", unsupportedRepositoryOperation);
         } finally {
-            unMountDynamicMountPoint(jahiaRootUser);
+            unMountDynamicMountPoint();
             removeDynamicMountPoint(jahiaRootUser);
         }
     }
