@@ -262,7 +262,7 @@ public class VFSContentStoreProviderTest {
 
             mountNodeStillExists = false;
             try {
-                targetMountNode = session.getNode(MOUNTS_DYNAMIC_MOUNT_POINT_TARGET);
+                session.getNode(MOUNTS_DYNAMIC_MOUNT_POINT_TARGET);
                 mountNodeStillExists = true;
             } catch (PathNotFoundException pnfe) {
             }
@@ -463,7 +463,6 @@ public class VFSContentStoreProviderTest {
         JahiaUser jahiaRootUser = JahiaAdminUser.getAdminUser(null);
         try {
             JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession();
-            GWTJahiaNodeProperty p = new GWTJahiaNodeProperty("j:rootPath","file://" + dynamicMountDir.getAbsolutePath());
             VFSMountPointFactory vfsMountPointFactory = new VFSMountPointFactory();
             vfsMountPointFactory.setName(MOUNTS_DYNAMIC_MOUNT_POINT_NAME);
             vfsMountPointFactory.setRoot("file://" + dynamicMountDir.getAbsolutePath());
@@ -479,17 +478,20 @@ public class VFSContentStoreProviderTest {
 
             String name1 = "test1_" + System.currentTimeMillis() + ".txt";
             JCRNodeWrapper vfsTestFile1 = mountNode.uploadFile(name1, is, mimeType);
+            assertNotNull(vfsTestFile1);
 
             is = new ByteArrayInputStream(value.getBytes("UTF-8"));
 
             String name2 = "test2_" + System.currentTimeMillis() + ".txt";
             JCRNodeWrapper vfsTestFile2 = mountNode.uploadFile(name2, is, mimeType);
+            assertNotNull(vfsTestFile2);
 
             session.save();
 
             getCleanSession();
 
             JCRSiteNode siteNode = (JCRSiteNode) englishEditSession.getNode(SITECONTENT_ROOT_NODE);
+            assertNotNull(siteNode);
             vfsTestFile1 = getNode(englishEditSession, MOUNTS_DYNAMIC_MOUNT_POINT_TARGET + "/" + name1);
             assertFalse("Node should not allow mark for deletion", vfsTestFile1.canMarkForDeletion());
 
