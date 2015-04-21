@@ -202,10 +202,16 @@ public class ExternalQueryManager implements QueryManager {
                 String selectorType = ((Selector) getSource()).getNodeTypeName();
                 String selectorName = ((Selector) getSource()).getSelectorName();
                 boolean isMixinOrFacet = NodeTypeRegistry.getInstance().getNodeType(selectorType).isMixin();
+                boolean isCount = false;
                 QueryObjectModelFactory qomFactory = queryManager.getQOMFactory();
                 for (Column c : getColumns()) {
-                    if (StringUtils.startsWith(c.getColumnName(), "rep:facet(")) {
+                    final String columnName = c.getColumnName();
+                    if (StringUtils.startsWith(columnName, "rep:facet(")) {
                         isMixinOrFacet = true;
+                        break;
+                    }
+                    if (StringUtils.startsWith(columnName, "rep:count(")) {
+                        isCount = true;
                         break;
                     }
                 }
@@ -230,18 +236,28 @@ public class ExternalQueryManager implements QueryManager {
                         q.setLimit(getLimit());
                     }
                     q.setOffset(getOffset());
-                    NodeIterator nodes = q.execute().getNodes();
-                    while (nodes.hasNext()) {
-                        Node node = (Node) nodes.next();
-                        allExtendedResults.add(node.getPath().substring(mountPoint.length()));
+                    final QueryResult result = q.execute();
+                    if (!isCount) {
+                        NodeIterator nodes = result.getNodes();
+                        while (nodes.hasNext()) {
+                            Node node = (Node) nodes.next();
+                            allExtendedResults.add(node.getPath().substring(mountPoint.length()));
+                        }
+                        results = allExtendedResults;
+                    } else {
+                        return result;
                     }
-                    results = allExtendedResults;
                 } else {
                     // Need to get all results to prepare merge
-                    NodeIterator nodes = q.execute().getNodes();
-                    while (nodes.hasNext()) {
-                        Node node = (Node) nodes.next();
-                        allExtendedResults.add(node.getPath().substring(mountPoint.length()));
+                    final QueryResult result = q.execute();
+                    if (!isCount) {
+                        NodeIterator nodes = result.getNodes();
+                        while (nodes.hasNext()) {
+                            Node node = (Node) nodes.next();
+                            allExtendedResults.add(node.getPath().substring(mountPoint.length()));
+                        }
+                    } else {
+                        return result;
                     }
                     if (allExtendedResults.size() == 0) {
                         // No results at all, ignore search in extension
