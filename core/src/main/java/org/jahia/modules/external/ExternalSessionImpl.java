@@ -699,11 +699,7 @@ public class ExternalSessionImpl implements Session {
         if (extensionSession == null) {
             JCRStoreProvider extensionProvider = getRepository().getStoreProvider().getExtensionProvider();
             if (extensionProvider != null) {
-                if (getUserID().startsWith(" system ")) {
-                    extensionSession = extensionProvider.getSession(JahiaLoginModule.getSystemCredentials(getUserID().substring(" system ".length())), "default");
-                } else {
-                    extensionSession = extensionProvider.getSession(JahiaLoginModule.getCredentials(getUserID()), "default");
-                }
+                extensionSession = extensionProvider.getSession(JahiaLoginModule.getSystemCredentials(StringUtils.removeStart(getUserID(), JahiaLoginModule.SYSTEM)), "default");
             }
         }
         return extensionSession;
