@@ -1552,7 +1552,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             List<Value> valueConstraints = new ArrayList<Value>();
             if (values != null) {
                 for (String valueConstraint : values) {
-                    valueConstraints.add(getValueFromString(valueConstraint, requiredType));
+                    valueConstraints.add(getValueFromString(valueConstraint, requiredType, true));
                 }
             }
             propertyDefinition.setValueConstraints(valueConstraints.toArray(new Value[valueConstraints.size()]));
@@ -1560,7 +1560,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             List<Value> defaultValues = new ArrayList<Value>();
             if (values != null) {
                 for (String defaultValue : values) {
-                    defaultValues.add(getValueFromString(defaultValue, requiredType));
+                    defaultValues.add(getValueFromString(defaultValue, requiredType, false));
                 }
             }
             propertyDefinition.setDefaultValues(defaultValues.toArray(new Value[defaultValues.size()]));
@@ -1669,13 +1669,15 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         } catch (NoSuchNodeTypeException e) {
             nodeTypeRegistryMap.remove(cndPath);
             throw e;
+        } catch (Exception e) {
+            throw new RepositoryException(e);
         }
     }
 
-    private Value getValueFromString(String value, int requiredType) {
+    private Value getValueFromString(String value, int requiredType, boolean isConstraint) {
         String v = value.replace("\\\\", "\\");
         v = v.replace("\\'", "'");
-        return new ValueImpl(v, requiredType, false);
+        return new ValueImpl(v, requiredType, isConstraint);
     }
 
     private synchronized void saveChildNodeDefinition(ExternalData data) throws RepositoryException {
