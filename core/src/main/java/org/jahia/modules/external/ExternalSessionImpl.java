@@ -610,7 +610,8 @@ public class ExternalSessionImpl implements Session {
     }
 
     public boolean hasPendingChanges() throws RepositoryException {
-        return false;
+        return extensionSession != null && extensionSession.hasPendingChanges() ||
+                repository.getDataSource() instanceof ExternalDataSource.Writable && (!deletedData.isEmpty() || !changedData.isEmpty() || !orderedData.isEmpty());
     }
 
     public ExternalValueFactoryImpl getValueFactory()
