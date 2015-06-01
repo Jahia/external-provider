@@ -77,10 +77,10 @@
     <parent>
         <artifactId>jahia-modules</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>7.1.0.0-SNAPSHOT</version>
+        <version>7.1.0.0-RC</version>
         <relativePath />
     </parent>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.0.0-RC</version>
     <artifactId>external-provider-parent</artifactId>
     <name>Jahia External Provider Parent</name>
     <packaging>pom</packaging>
@@ -89,7 +89,8 @@
         <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
         <url>scm:git:git@github.com:Jahia/external-provider.git</url>
         <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
-    </scm>
+      <tag>3_0_0_RC</tag>
+  </scm>
     <repositories>
         <repository>
             <id>jahia-public</id>
