@@ -13,7 +13,7 @@
             <list>
                <value>org.jahia.modules.external.test.vfs.VFSContentStoreProviderTest</value>
                <value>org.jahia.modules.external.test.db.ExternalDatabaseProviderTest</value>
-               <value>org.jahia.modules.external.test.db.QOMTest</value>
+               <value>org.jahia.modules.external.test.qom.QOMTest</value>
             </list>
         </property>
     </bean>

@@ -69,7 +69,7 @@
  *
  *     For more information, please visit http://www.jahia.com
  */
-package org.jahia.modules.external.test.db;
+package org.jahia.modules.external.test.qom;
 
 import static org.junit.Assert.assertEquals;
 
