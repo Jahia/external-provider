@@ -100,8 +100,12 @@ import java.util.*;
  * @author Thomas Draier
  */
 public class ExternalSessionImpl implements Session {
+
     static final String TRANSLATION_PREFIX = "translation:";
     static final String TRANSLATION_NODE_NAME_BASE = "j:translation_";
+
+    private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
+
     private ExternalRepositoryImpl repository;
     private ExternalWorkspaceImpl workspace;
     private Credentials credentials;
@@ -118,12 +122,11 @@ public class ExternalSessionImpl implements Session {
     private Map<String,List<String>> overridableProperties;
     private Map<String,List<String>> nonOverridableProperties;
     private Map<String, Object> sessionVariables = new HashMap<String, Object>();
-    private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
     private ExternalAccessControlManager accessControlManager;
 
-    private static int fromCacheCount = 0;
-    private static int totalCacheChecks = 0;
-    private static int totalSavedCalls = 0;
+    private static volatile int fromCacheCount = 0;
+    private static volatile int totalCacheChecks = 0;
+    private static volatile int totalSavedCalls = 0;
     private static final boolean DEBUG = false;
 
     public ExternalSessionImpl(ExternalRepositoryImpl repository, Credentials credentials, String workspaceName) {
@@ -168,10 +171,11 @@ public class ExternalSessionImpl implements Session {
         return getFromCache(id, nodesByIdentifier);
     }
 
-    private ExternalNodeImpl getFromCache(String key, Map<String, ExternalNodeImpl> cache) {
+    private static ExternalNodeImpl getFromCache(String key, Map<String, ExternalNodeImpl> cache) {
+
         totalCacheChecks++;
 
-        if(cache.isEmpty()) {
+        if (cache.isEmpty()) {
             totalSavedCalls += fromCacheCount;
             if (DEBUG) {
                 logger.debug("Saved " + fromCacheCount + " calls out of " + totalCacheChecks + " since last cache reset. Total saved calls: " + totalSavedCalls);
@@ -185,6 +189,7 @@ public class ExternalSessionImpl implements Session {
         if(node != null) {
             fromCacheCount++;
         }
+
         return node;
     }
 
