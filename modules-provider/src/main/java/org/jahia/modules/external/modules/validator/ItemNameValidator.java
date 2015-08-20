@@ -94,7 +94,7 @@ public class ItemNameValidator implements JCRNodeValidator {
     }
 
 
-    @Pattern(regexp = "[A-Za-z]+[A-Za-z0-9:_]*")
+    @Pattern(regexp = "^\\*$|^[A-Za-z]+[A-Za-z0-9:_]*")
     public String getName() {
         return node.getName();
     }
