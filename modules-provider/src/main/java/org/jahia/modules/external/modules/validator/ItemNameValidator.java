@@ -71,6 +71,8 @@
  */
 package org.jahia.modules.external.modules.validator;
 
+import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.external.modules.ModulesDataSource;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.decorator.validation.JCRNodeValidator;
 
@@ -96,6 +98,8 @@ public class ItemNameValidator implements JCRNodeValidator {
 
     @Pattern(regexp = "^\\*$|^[A-Za-z]+[A-Za-z0-9:_]*")
     public String getName() {
-        return node.getName();
+        return StringUtils.startsWith(node.getName(), ModulesDataSource.UNSTRUCTURED_PROPERTY) ||
+                StringUtils.startsWith(node.getName(), ModulesDataSource.UNSTRUCTURED_CHILD_NODE) ?
+                "*" : node.getName();
     }
 }

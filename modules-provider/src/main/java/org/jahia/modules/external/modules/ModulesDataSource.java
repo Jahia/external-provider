@@ -167,8 +167,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private static final Logger logger = LoggerFactory.getLogger(ModulesDataSource.class);
     private static final String PROPERTIES_EXTENSION = ".properties";
-    protected static final String UNSTRUCTURED_PROPERTY = "__prop__";
-    protected static final String UNSTRUCTURED_CHILD_NODE = "__node__";
+    public static final String UNSTRUCTURED_PROPERTY = "__prop__";
+    public static final String UNSTRUCTURED_CHILD_NODE = "__node__";
     public static final String CND = ".cnd";
     public static final String CND_SLASH = ".cnd/";
     public static final String JNT_EDITABLE_FILE = "jnt:editableFile";
