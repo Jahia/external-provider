@@ -279,11 +279,15 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                                     Set<String> langs = new HashSet<String>(site.getLanguages());
                                     boolean changed = false;
                                     if (file.getParentFile().listFiles() != null) {
-                                        for (File f : file.getParentFile().listFiles()) {
-                                            String s = StringUtils.substringAfterLast(StringUtils.substringBeforeLast(f.getName(), "."), "_");
-                                            if (!StringUtils.isEmpty(s) && !langs.contains(s)) {
-                                                langs.add(s);
-                                                changed = true;
+                                        File[] files = file.getParentFile().listFiles();
+                                        if (files != null) {
+                                            for (File f : files) {
+                                                String s = StringUtils.substringAfterLast(
+                                                        StringUtils.substringBeforeLast(f.getName(), "."), "_");
+                                                if (!StringUtils.isEmpty(s) && !langs.contains(s)) {
+                                                    langs.add(s);
+                                                    changed = true;
+                                                }
                                             }
                                         }
                                         if (changed) {

@@ -147,9 +147,9 @@ public class VFSBinaryImpl implements Binary {
 
     @Override
     public boolean equals(Object obj) {
-        if(this == obj) {
+        if (this == obj) {
             return true;
-        } else if(obj instanceof VFSBinaryImpl) {
+        } else if (obj != null && this.getClass() == obj.getClass()) {
             VFSBinaryImpl other = (VFSBinaryImpl)obj;
             return this.fileContent == other.fileContent;
         } else {

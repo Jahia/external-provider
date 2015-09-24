@@ -208,7 +208,7 @@ public class ExternalValueImpl implements Value {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof ExternalValueImpl) {
+        if (obj != null && this.getClass() == obj.getClass()) {
             return value.equals(((ExternalValueImpl) obj).value);
         } else {
             return obj != null && obj instanceof Value && obj.equals(value);
