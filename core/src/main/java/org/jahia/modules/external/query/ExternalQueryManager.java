@@ -327,7 +327,9 @@ public class ExternalQueryManager implements QueryManager {
                             setOffset(getOffset() - allExtendedResults.size());
                         } else {
                             setOffset(0);
-                            setLimit(getLimit() - results.size());
+                            if (getLimit() != -1) {
+                                setLimit(getLimit() - results.size());
+                            }
                         }
                         results.addAll(((ExternalDataSource.Searchable) dataSource).search(this));
                     } else {
