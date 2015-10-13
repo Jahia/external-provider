@@ -20,7 +20,7 @@
 
     <action-state id="save">
         <evaluate expression="flowHandler.getAdminURL(flowRequestContext)" result="conversationScope.adminURL"/>
-        <evaluate expression="flowHandler.save()"/>
+        <evaluate expression="flowHandler.save(messageContext)"/>
         <transition on="yes" to="redirectToAdmin"/>
         <transition on="no" to="index"/>
     </action-state>
