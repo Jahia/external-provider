@@ -157,7 +157,7 @@ public class VFSMountPointFactoryHandler extends AbstractMountPointFactoryHandle
             if (available) {
                 return true;
             } else {
-                logger.error("Error saving mount point : " + vfsMountPointFactory.getName() + "with the root : " + vfsMountPointFactory.getRoot());
+                logger.warning("Mount point availability problem : " + vfsMountPointFactory.getName() + "with the root : " + vfsMountPointFactory.getRoot() + "the mount point is created but unmounted");
                 MessageBuilder messageBuilder = new MessageBuilder().warning().defaultText(Messages.get(BUNDLE, "serverSettings.vfsMountPointFactory.save.unavailable", locale));
                 messageContext.addMessage(messageBuilder.build());
             }
