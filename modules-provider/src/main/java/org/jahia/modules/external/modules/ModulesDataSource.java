@@ -502,12 +502,13 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
         String contentType = getContentType(fileObject.getContent());
         if (type == null && isFile) {
-            boolean isMedia = contentType != null && (contentType.contains("image") || contentType.contains("video") || contentType.contains("audio") || contentType.contains("flash"));
-            if (!isMedia) {
+            // Test if MimeType is of type "text", binary mimetypes shouldn't be editable.
+            String mimeType = JCRContentUtils.getMimeType(fileObject.getName().getBaseName());
+            boolean isTextMimeType = mimeType != null && mimeType.contains("text");
+            if (isTextMimeType) {
                 type = JNT_EDITABLE_FILE;
             }
         }
-
 
         return type != null ? type : super.getDataType(fileObject);
     }
@@ -926,7 +927,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             if (childDef == null) {
                 childDef = nodeType.getNodeDefinition(oldName);
             }
-            
+
             if (childDef != null) {
                 if (childDef instanceof ExtendedNodeDefinition) {
                     ((ExtendedNodeDefinition) childDef).remove();
@@ -1009,7 +1010,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         child.setDefaultPrimaryType(newNodeTypeName);
                     }
                     child.setDeclaringNodeType(child.getDeclaringNodeType());
-                    
+
                 }
                 children.iterator().next().getDeclaringNodeType().validate();
             }
