@@ -92,7 +92,9 @@ import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 import java.io.Serializable;
+import java.lang.System;
 import java.util.*;
+import org.springframework.webflow.execution.RequestContext;
 
 /**
  * @author kevan
@@ -108,6 +110,33 @@ public class MountPointsManagementFlowHandler implements Serializable {
 
     @Autowired
     private transient JCRStoreService jcrStoreService;
+
+    public void init(RequestContext requestContext, MessageContext messageContext) throws RepositoryException {
+
+        String stateCode = requestContext.getRequestParameters().get("stateCode");
+        String messageKey = requestContext.getRequestParameters().get("messageKey");
+        if(stateCode != null && messageKey != null)
+        {
+            Locale locale = LocaleContextHolder.getLocale();
+
+            MessageBuilder messageBuilder = null;
+            String message = Messages.get(BUNDLE, messageKey, locale);
+            if("ERROR".equals(stateCode) &&  message != null)
+            {
+                messageBuilder = new MessageBuilder().error().defaultText(message);
+            }
+            if("WARNING".equals(stateCode))
+            {
+                messageBuilder = new MessageBuilder().warning().defaultText(message);
+            }
+            if("SUCCESS".equals(stateCode))
+            {
+                messageBuilder = new MessageBuilder().info().defaultText(message);
+            }
+            messageContext.addMessage(messageBuilder.build());
+        }
+    }
+
 
     public MountPointManager getMountPointManagerModel() {
         try {

@@ -92,6 +92,7 @@ import org.springframework.webflow.execution.RequestContext;
 
 import javax.jcr.RepositoryException;
 import java.io.Serializable;
+import java.lang.Override;
 import java.util.Locale;
 
 /**
@@ -105,6 +106,9 @@ public class VFSMountPointFactoryHandler extends AbstractMountPointFactoryHandle
     private static final String BUNDLE = "resources.external-provider-vfs";
 
     private VFSMountPointFactory vfsMountPointFactory;
+
+    private String stateCode;
+    private String messageKey;
 
 
     public void init(RequestContext requestContext) {
@@ -142,7 +146,8 @@ public class VFSMountPointFactoryHandler extends AbstractMountPointFactoryHandle
      * @param messageContext Spring message context to hold error or warning messages
      * @return true if the save was done successfully ,false otherwise
      */
-    public Boolean save(MessageContext messageContext) {
+    public Boolean save(MessageContext messageContext, RequestContext requestContext) {
+        stateCode = "SUCCESS";
         Locale locale = LocaleContextHolder.getLocale();
         boolean validVFSPoint = validateVFS(vfsMountPointFactory);
         if(!validVFSPoint)
@@ -150,16 +155,22 @@ public class VFSMountPointFactoryHandler extends AbstractMountPointFactoryHandle
             logger.error("Error saving mount point : " + vfsMountPointFactory.getName() + "with the root : " + vfsMountPointFactory.getRoot());
             MessageBuilder messageBuilder = new MessageBuilder().error().defaultText(Messages.get(BUNDLE, "serverSettings.vfsMountPointFactory.save.error", locale));
             messageContext.addMessage(messageBuilder.build());
+            requestContext.getConversationScope().put("adminURL", getAdminURL(requestContext));
             return false;
         }
         try {
             boolean available = super.save(vfsMountPointFactory);
             if (available) {
+                stateCode = "SUCCESS";
+                messageKey = "serverSettings.vfsMountPointFactory.save.success";
+                requestContext.getConversationScope().put("adminURL", getAdminURL(requestContext));
                 return true;
             } else {
                 logger.warn("Mount point availability problem : " + vfsMountPointFactory.getName() + "with the root : " + vfsMountPointFactory.getRoot() + "the mount point is created but unmounted");
-                MessageBuilder messageBuilder = new MessageBuilder().warning().defaultText(Messages.get(BUNDLE, "serverSettings.vfsMountPointFactory.save.unavailable", locale));
-                messageContext.addMessage(messageBuilder.build());
+                stateCode = "WARNING";
+                messageKey = "serverSettings.vfsMountPointFactory.save.unavailable";
+                requestContext.getConversationScope().put("adminURL", getAdminURL(requestContext));
+                return true;
             }
         } catch (RepositoryException e) {
             logger.error("Error saving mount point : " + vfsMountPointFactory.getName(), e);
@@ -182,5 +193,15 @@ public class VFSMountPointFactoryHandler extends AbstractMountPointFactoryHandle
             return false;
         }
         return true;
+    }
+
+    @Override
+    public String getAdminURL(RequestContext requestContext) {
+        StringBuilder builder = new StringBuilder(super.getAdminURL(requestContext));
+        if(stateCode != null && messageKey != null)
+        {
+            builder.append("?stateCode=").append(stateCode).append("&messageKey=").append(messageKey);
+        }
+        return builder.toString();
     }
 }

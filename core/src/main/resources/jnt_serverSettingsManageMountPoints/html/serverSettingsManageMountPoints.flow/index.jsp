@@ -88,6 +88,12 @@
                 ${message.text}
         </div>
     </c:if>
+    <c:if test="${message.severity eq 'WARNING'}">
+        <div class="alert alert-warning">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+                ${message.text}
+        </div>
+    </c:if>
     <c:if test="${message.severity eq 'ERROR'}">
         <div class="alert alert-error">
             <button type="button" class="close" data-dismiss="alert">&times;</button>

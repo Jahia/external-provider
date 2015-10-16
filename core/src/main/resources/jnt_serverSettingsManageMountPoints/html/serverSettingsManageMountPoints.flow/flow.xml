@@ -6,6 +6,11 @@
 
     <var name="flowHandler" class="org.jahia.modules.external.admin.mount.MountPointsManagementFlowHandler"/>
 
+    <on-start>
+        <evaluate expression="flowHandler.init(flowRequestContext,messageContext)" />
+    </on-start>
+
+
     <view-state id="index">
         <on-entry>
             <evaluate expression="flowHandler.mountPointManagerModel" result="flowScope.mountPointManager"/>
