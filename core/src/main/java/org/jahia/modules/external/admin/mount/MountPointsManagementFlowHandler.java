@@ -116,12 +116,13 @@ public class MountPointsManagementFlowHandler implements Serializable {
 
         String stateCode = requestContext.getRequestParameters().get("stateCode");
         String messageKey = requestContext.getRequestParameters().get("messageKey");
-        if(stateCode != null && messageKey != null)
+        String bundleSource = requestContext.getRequestParameters().get("bundleSource");
+        if(stateCode != null && messageKey != null && bundleSource!=null)
         {
             Locale locale = LocaleContextHolder.getLocale();
 
             MessageBuilder messageBuilder = null;
-            String message = Messages.get(BUNDLE, messageKey, locale);
+            String message = Messages.get(bundleSource, messageKey, locale);
             if("ERROR".equals(stateCode) &&  message != null)
             {
                 messageBuilder = new MessageBuilder().error().defaultText(message);

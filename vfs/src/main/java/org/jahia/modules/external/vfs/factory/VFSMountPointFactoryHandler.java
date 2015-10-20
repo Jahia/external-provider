@@ -200,7 +200,7 @@ public class VFSMountPointFactoryHandler extends AbstractMountPointFactoryHandle
         StringBuilder builder = new StringBuilder(super.getAdminURL(requestContext));
         if(stateCode != null && messageKey != null)
         {
-            builder.append("?stateCode=").append(stateCode).append("&messageKey=").append(messageKey);
+            builder.append("?stateCode=").append(stateCode).append("&messageKey=").append(messageKey).append("&bundleSource=").append(BUNDLE);
         }
         return builder.toString();
     }
