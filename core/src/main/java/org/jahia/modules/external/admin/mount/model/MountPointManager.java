@@ -80,7 +80,7 @@ import java.lang.String;import java.util.Collections;import java.util.HashMap;im
 public class MountPointManager implements Serializable{
     private static final long serialVersionUID = 7055743449410009286L;
 
-    Map<String, MountPointFactory> mountPointFactories = new HashMap<String, MountPointFactory>();
+    transient Map<String, MountPointFactory> mountPointFactories = new HashMap<String, MountPointFactory>();
     List<MountPoint> mountPoints = Collections.emptyList();
 
     public MountPointManager(Map<String, MountPointFactory> mountPointFactories, List<MountPoint> mountPoints) {

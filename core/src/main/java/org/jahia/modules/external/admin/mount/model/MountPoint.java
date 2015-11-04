@@ -105,7 +105,7 @@ public class MountPoint implements Serializable{
     JCRMountPointNode.MountStatus status;
     String identifier;
     String nodetype;
-    Map<String,String> mountPointProperties;
+    transient Map<String,String> mountPointProperties;
     boolean showMountAction = false;
     boolean showUnmountAction = false;
 
