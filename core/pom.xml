@@ -96,6 +96,7 @@
         <jahia-static-resources>/css,/javascript</jahia-static-resources>
         <export-package>org.jahia.modules.external,
             org.jahia.modules.external.query,
+            org.jahia.modules.external.acl,
             org.jahia.modules.external.admin.mount,
             org.jahia.modules.external.admin.mount.validator
         </export-package>

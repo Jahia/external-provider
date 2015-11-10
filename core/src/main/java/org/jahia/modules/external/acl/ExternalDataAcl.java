@@ -71,20 +71,20 @@
  */
 package org.jahia.modules.external.acl;
 
-import java.util.List;
+import java.util.Set;
 
 /**
  * External acl
  */
 public class ExternalDataAcl {
     private boolean inherit;
-    private List<ExternalDataAce> acl;
+    private Set<ExternalDataAce> acl;
 
-    public ExternalDataAcl(List<ExternalDataAce> acl) {
+    public ExternalDataAcl(Set<ExternalDataAce> acl) {
         this(acl, true);
     }
 
-    public ExternalDataAcl(List<ExternalDataAce> acl, boolean inherit) {
+    public ExternalDataAcl(Set<ExternalDataAce> acl, boolean inherit) {
         this.acl = acl;
         this.inherit = inherit;
     }
@@ -97,11 +97,11 @@ public class ExternalDataAcl {
         this.inherit = inherit;
     }
 
-    public List<ExternalDataAce> getAcl() {
+    public Set<ExternalDataAce> getAcl() {
         return acl;
     }
 
-    public void setAcl(List<ExternalDataAce> acl) {
+    public void setAcl(Set<ExternalDataAce> acl) {
         this.acl = acl;
     }
 }

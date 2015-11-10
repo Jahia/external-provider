@@ -71,7 +71,9 @@
  */
 package org.jahia.modules.external.acl;
 
-import java.util.List;
+import com.google.common.base.Objects;
+
+import java.util.Set;
 
 /**
  * External ace
@@ -85,20 +87,20 @@ public class ExternalDataAce {
         DENY
     }
 
-    public ExternalDataAce(Type aceType, String principal, List<String> roles, boolean aceProtected) {
+    public ExternalDataAce(Type aceType, String principal, Set<String> roles, boolean aceProtected) {
         this.aceType = aceType;
         this.principal = principal;
         this.roles = roles;
         this.aceProtected = aceProtected;
     }
 
-    public ExternalDataAce(Type aceType, String principal, List<String> roles) {
+    public ExternalDataAce(Type aceType, String principal, Set<String> roles) {
         this(aceType, principal, roles, false);
     }
 
     private Type aceType;
     private String principal;
-    private List<String> roles;
+    private Set<String> roles;
     private boolean aceProtected;
 
     public Type getAceType() {
@@ -117,11 +119,11 @@ public class ExternalDataAce {
         this.principal = principal;
     }
 
-    public List<String> getRoles() {
+    public Set<String> getRoles() {
         return roles;
     }
 
-    public void setRoles(List<String> roles) {
+    public void setRoles(Set<String> roles) {
         this.roles = roles;
     }
 
@@ -131,5 +133,20 @@ public class ExternalDataAce {
 
     public void setAceProtected(boolean aceProtected) {
         this.aceProtected = aceProtected;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ExternalDataAce that = (ExternalDataAce) o;
+        return Objects.equal(aceType, that.aceType) &&
+                Objects.equal(principal, that.principal) &&
+                Objects.equal(roles, that.roles);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(aceType, principal, roles);
     }
 }
