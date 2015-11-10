@@ -106,6 +106,8 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
     private List<String> overridableItemsForLocks;
 
+    private List<String> overridableItemsForACLs;
+
     private JCRStoreProvider extensionProvider;
 
 
@@ -404,12 +406,20 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         this.overridableItemsForLocks = overridableItemsForLocks;
     }
 
+    public void setOverridableItemsForACLs(List<String> overridableItemsForACLs) {
+        this.overridableItemsForACLs = overridableItemsForACLs;
+    }
+
     public void setExtensionProvider(JCRStoreProvider extensionProvider) {
         this.extensionProvider = extensionProvider;
     }
 
     public List<String> getOverridableItemsForLocks() {
         return overridableItemsForLocks;
+    }
+
+    public List<String> getOverridableItemsForACLs() {
+        return overridableItemsForACLs;
     }
 
     public JCRStoreProvider getExtensionProvider() {

@@ -18,6 +18,16 @@
                 <value>mix:lockable.jcr:lockOwner</value>
             </list>
         </property>
+        <property name="overridableItemsForACLs">
+            <list>
+                <value>jmix:accessControlled.j:acl</value>
+                <value>jnt:acl.*</value>
+                <value>jnt:ace.j:aceType</value>
+                <value>jnt:ace.j:principal</value>
+                <value>jnt:ace.j:roles</value>
+                <value>jnt:ace.j:protected</value>
+            </list>
+        </property>
     </bean>
 
     <osgi:service id="ExternalProviderInitializerService" ref="ProviderInitializerService" interface="org.jahia.modules.external.ExternalProviderInitializerService"/>

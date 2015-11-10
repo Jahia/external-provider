@@ -184,6 +184,13 @@ public interface ExternalProviderInitializerService {
      */
     List<String> getOverridableItemsForLocks();
 
+
+    /**
+     * @return the needed types to be override for ACLs.
+     */
+    List<String> getOverridableItemsForACLs();
+
+
     /**
      * @return the extension provider.
      */

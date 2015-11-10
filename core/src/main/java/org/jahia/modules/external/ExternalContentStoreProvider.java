@@ -119,6 +119,8 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     private boolean slowConnection = true;
     private boolean lockSupport = false;
 
+    private boolean aclSupport = false;
+
     public static ExternalSessionImpl getCurrentSession() {
         return currentSession.get();
     }
@@ -163,6 +165,14 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
             }
         }
 
+        // Enable ACLs
+        if (aclSupport) {
+            if (overridableItems != null) {
+                overridableItems.addAll(externalProviderInitializerService.getOverridableItemsForACLs());
+            } else {
+                overridableItems = externalProviderInitializerService.getOverridableItemsForACLs();
+            }
+        }
         getId(); // initialize ID
         if (dataSource instanceof ExternalDataSource.Initializable) {
             ((ExternalDataSource.Initializable) dataSource).start();
@@ -279,6 +289,10 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     public void setLockSupport(boolean lockSupport) {
         this.lockSupport = lockSupport;
+    }
+
+    public void setAclSupport(boolean aclSupport) {
+        this.aclSupport = aclSupport;
     }
 
     public boolean isSlowConnection() {
