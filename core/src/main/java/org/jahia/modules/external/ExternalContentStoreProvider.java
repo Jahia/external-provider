@@ -112,7 +112,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     private List<String> nonExtendableMixins;
     private List<String> overridableItems;
     private List<String> nonOverridableItems;
-    private List<String> reservedNodes = Arrays.asList("j:acl", "j:workflowRules", "j:conditionalVisibility", "thumbnail");
+    private List<String> reservedNodes = Arrays.asList("j:acl", "j:workflowRules", "thumbnail");
 
     private List<String> ignorePropertiesForExport = Arrays.asList("j:extendedType","j:isExternalProviderRoot","j:externalNodeIdentifier");
 

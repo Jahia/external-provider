@@ -87,7 +87,7 @@ public class DataSourceInfo implements Serializable {
     private boolean isSupportsUuid;
     private String rootNodeType;
     private Set<String> supportedTypes;
-    private transient Map<String, Boolean> supportedQueries;
+    private Map<String, Boolean> supportedQueries;
     private List<String> overridableItems;
     private List<String> nonOverridableItems;
     private List<String> extendableTypes;
