@@ -69,148 +69,56 @@
  *
  *     For more information, please visit http://www.jahia.com
  */
-package org.jahia.modules.external;
-
-import org.apache.commons.lang.StringUtils;
-import org.jahia.modules.external.acl.ExternalDataAcl;
+package org.jahia.modules.external.acl;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.jcr.Binary;
-import javax.jcr.RepositoryException;
-import javax.jcr.UnsupportedRepositoryOperationException;
 
 /**
- * External Data. Encapsulation of data for external provider
+ * External ace
  */
-
-public class ExternalData {
-    private String id;
-    private String tmpId;
-    private final String path;
-    private final String name;
-    private final String type;
-    private boolean isNew = false;
-    private List<String> mixin;
-    private final Map<String,String[]> properties;
-    private Map<String,Map<String,String[]>> i18nProperties;
-    private Map<String,Binary[]> binaryProperties;
-    private Set<String> lazyProperties;
-    private Set<String> lazyBinaryProperties;
-    private Map<String, Set<String>> lazyI18nProperties;
-    private ExternalDataAcl acl;
-
-    public ExternalData(String id, String path, String type, Map<String, String[]> properties) {
-        this(id, path, type, properties, false);
+public class ExternalDataAce {
+    /**
+     * Ace types
+     */
+    public enum ExternalDataAceType {
+        GRANT,
+        DENY
     }
 
-    public ExternalData(String id, String path, String type, Map<String, String[]> properties, boolean isNew) {
-        this.id = id;
-        this.path = path;
-        this.name = StringUtils.substringAfterLast(path, "/");
-        this.type = type;
-        this.properties = properties;
-        this.isNew = isNew;
-        if (isNew) {
-            this.tmpId = id;
-        }
+    private ExternalDataAceType aceType;
+    private String principal;
+    private List<String> roles;
+    private boolean aceProtected;
+
+    public ExternalDataAceType getAceType() {
+        return aceType;
     }
 
-    public String getId() {
-        return id;
+    public void setAceType(ExternalDataAceType aceType) {
+        this.aceType = aceType;
     }
 
-    protected String getTmpId() {
-        return tmpId;
+    public String getPrincipal() {
+        return principal;
     }
 
-    public void setId(String id) throws RepositoryException {
-        if (isNew) {
-            this.id = id;
-        } else {
-            throw new UnsupportedRepositoryOperationException();
-        }
+    public void setPrincipal(String principal) {
+        this.principal = principal;
     }
 
-    public String getPath() {
-        return path;
+    public List<String> getRoles() {
+        return roles;
     }
 
-    public String getName() {
-        return name;
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
     }
 
-    public String getType() {
-        return type;
+    public boolean isAceProtected() {
+        return aceProtected;
     }
 
-    public boolean isNew() {
-        return isNew;
-    }
-
-    protected void markSaved() {
-        this.isNew = false;
-        this.tmpId = null;
-    }
-
-    public Map<String,String[]> getProperties() {
-        return properties;
-    }
-
-    public Map<String,Map<String,String[]>> getI18nProperties() {
-        return i18nProperties;
-    }
-
-    public void setI18nProperties(Map<String, Map<String, String[]>> i18nProperties) {
-        this.i18nProperties = i18nProperties;
-    }
-
-    public Map<String, Binary[]> getBinaryProperties() {
-        return binaryProperties;
-    }
-
-    public void setBinaryProperties(Map<String, Binary[]> binaryProperties) {
-        this.binaryProperties = binaryProperties;
-    }
-
-    public List<String> getMixin() {
-        return mixin;
-    }
-
-    public void setMixin(List<String> mixin) {
-        this.mixin = mixin;
-    }
-
-    public Set<String> getLazyProperties() {
-        return lazyProperties;
-    }
-
-    public void setLazyProperties(Set<String> lazyProperties) {
-        this.lazyProperties = lazyProperties;
-    }
-
-    public Set<String> getLazyBinaryProperties() {
-        return lazyBinaryProperties;
-    }
-
-    public void setLazyBinaryProperties(Set<String> lazyBinaryProperties) {
-        this.lazyBinaryProperties = lazyBinaryProperties;
-    }
-
-    public Map<String, Set<String>> getLazyI18nProperties() {
-        return lazyI18nProperties;
-    }
-
-    public void setLazyI18nProperties(Map<String, Set<String>> lazyI18nProperties) {
-        this.lazyI18nProperties = lazyI18nProperties;
-    }
-
-    public ExternalDataAcl getAcl() {
-        return acl;
-    }
-
-    public void setAcl(ExternalDataAcl acl) {
-        this.acl = acl;
+    public void setAceProtected(boolean aceProtected) {
+        this.aceProtected = aceProtected;
     }
 }
