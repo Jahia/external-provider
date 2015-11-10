@@ -80,21 +80,32 @@ public class ExternalDataAce {
     /**
      * Ace types
      */
-    public enum ExternalDataAceType {
+    public enum Type {
         GRANT,
         DENY
     }
 
-    private ExternalDataAceType aceType;
+    public ExternalDataAce(Type aceType, String principal, List<String> roles, boolean aceProtected) {
+        this.aceType = aceType;
+        this.principal = principal;
+        this.roles = roles;
+        this.aceProtected = aceProtected;
+    }
+
+    public ExternalDataAce(Type aceType, String principal, List<String> roles) {
+        this(aceType, principal, roles, false);
+    }
+
+    private Type aceType;
     private String principal;
     private List<String> roles;
     private boolean aceProtected;
 
-    public ExternalDataAceType getAceType() {
+    public Type getAceType() {
         return aceType;
     }
 
-    public void setAceType(ExternalDataAceType aceType) {
+    public void setAceType(Type aceType) {
         this.aceType = aceType;
     }
 

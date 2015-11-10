@@ -80,6 +80,15 @@ public class ExternalDataAcl {
     private boolean inherit;
     private List<ExternalDataAce> acl;
 
+    public ExternalDataAcl(List<ExternalDataAce> acl) {
+        this(acl, true);
+    }
+
+    public ExternalDataAcl(List<ExternalDataAce> acl, boolean inherit) {
+        this.acl = acl;
+        this.inherit = inherit;
+    }
+
     public boolean isInherit() {
         return inherit;
     }
