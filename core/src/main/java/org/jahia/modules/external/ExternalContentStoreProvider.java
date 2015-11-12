@@ -119,8 +119,6 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     private boolean slowConnection = true;
     private boolean lockSupport = false;
 
-    private boolean aclSupport = false;
-
     public static ExternalSessionImpl getCurrentSession() {
         return currentSession.get();
     }
@@ -156,6 +154,18 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     @Override
     public void start() throws JahiaInitializationException {
+
+
+        // Enable ACLs only if there are overridable items
+        // or if the datasource is not access controllable
+        if (overridableItems != null) {
+            overridableItems.addAll(externalProviderInitializerService.getOverridableItemsForACLs());
+        } else {
+            if (!(dataSource instanceof ExternalDataSource.AccessControllable)) {
+                overridableItems = externalProviderInitializerService.getOverridableItemsForACLs();
+            }
+        }
+
         // Enable lock
         if (lockSupport) {
             if (overridableItems != null) {
@@ -165,14 +175,6 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
             }
         }
 
-        // Enable ACLs
-        if (aclSupport) {
-            if (overridableItems != null) {
-                overridableItems.addAll(externalProviderInitializerService.getOverridableItemsForACLs());
-            } else {
-                overridableItems = externalProviderInitializerService.getOverridableItemsForACLs();
-            }
-        }
         getId(); // initialize ID
         if (dataSource instanceof ExternalDataSource.Initializable) {
             ((ExternalDataSource.Initializable) dataSource).start();
@@ -291,9 +293,6 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         this.lockSupport = lockSupport;
     }
 
-    public void setAclSupport(boolean aclSupport) {
-        this.aclSupport = aclSupport;
-    }
 
     public boolean isSlowConnection() {
         return slowConnection;

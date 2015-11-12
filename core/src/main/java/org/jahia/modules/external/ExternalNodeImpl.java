@@ -384,7 +384,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      */
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
         if (canItemBeExtended(relPath, primaryNodeTypeName)) {
+            if (StringUtils.equals(primaryNodeTypeName, "jnt:acl") && session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable) {
+                throw new UnsupportedRepositoryOperationException("Acl are handled by the datasource");
+            }
+
             Node extendedNode = getExtensionNode(true);
+
             if (extendedNode != null) {
                 Node n = extendedNode.addNode(relPath, primaryNodeTypeName);
                 n.addMixin("jmix:externalProviderExtension");
