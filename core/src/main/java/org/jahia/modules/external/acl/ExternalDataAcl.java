@@ -77,6 +77,10 @@ import java.util.Set;
  * External acl
  */
 public class ExternalDataAcl {
+    public static final String ACL_NODE_NAME = "j:acl";
+    public static final String ACL_INHERIT_PROP_NAME = "j:inherit";
+    public static final String ACL_NODE_TYPE = "jnt:acl";
+
     private boolean inherit;
     private Set<ExternalDataAce> acl;
 

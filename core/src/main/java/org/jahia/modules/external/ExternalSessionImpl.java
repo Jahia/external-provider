@@ -73,6 +73,7 @@ package org.jahia.modules.external;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.security.JahiaLoginModule;
+import org.jahia.modules.external.acl.ExternalDataAcl;
 import org.jahia.services.content.JCRStoreProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,7 +104,6 @@ public class ExternalSessionImpl implements Session {
 
     static final String TRANSLATION_PREFIX = "translation:";
     static final String TRANSLATION_NODE_NAME_BASE = "j:translation_";
-    static final String ACL_NODE_NAME= "j:acl";
 
     private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
 
@@ -261,10 +261,10 @@ public class ExternalSessionImpl implements Session {
             return getNodeByLocalIdentifier(u).getNode(TRANSLATION_NODE_NAME_BASE + lang);
         }
 
-        if (uuid.startsWith(ACL_NODE_NAME)) {
-            String u = StringUtils.substringAfter(uuid, ACL_NODE_NAME);
+        if (uuid.startsWith(ExternalDataAcl.ACL_NODE_NAME)) {
+            String u = StringUtils.substringAfter(uuid, ExternalDataAcl.ACL_NODE_NAME);
             u = StringUtils.substringAfter(u, ":");
-            return getNodeByLocalIdentifier(u).getNode(ACL_NODE_NAME);
+            return getNodeByLocalIdentifier(u).getNode(ExternalDataAcl.ACL_NODE_NAME);
         }
 
         try {
@@ -310,10 +310,10 @@ public class ExternalSessionImpl implements Session {
             } else if (StringUtils.substringAfterLast(path, "/").startsWith(TRANSLATION_NODE_NAME_BASE)) {
                 // Getting translation node
                 return handleI18nNode(parentPath, path);
-            } else if (StringUtils.substringAfterLast(parentPath, "/").equals(ACL_NODE_NAME)) {
+            } else if (StringUtils.substringAfterLast(parentPath, "/").equals(ExternalDataAcl.ACL_NODE_NAME)) {
                 // Getting ace node or acl property
                 return handleAclPropertyOrAceNode(parentPath, path);
-            } else if(StringUtils.substringAfterLast(path, "/").equals(ACL_NODE_NAME)) {
+            } else if(StringUtils.substringAfterLast(path, "/").equals(ExternalDataAcl.ACL_NODE_NAME)) {
                 // Getting acl node
                 return handleAclNode(parentPath, path);
              }  else {
@@ -371,9 +371,9 @@ public class ExternalSessionImpl implements Session {
         }
 
         Map<String, String[]> aclProperties = new HashMap<>();
-        aclProperties.put("j:inherit", new String[]{String.valueOf(parentObject.getAcl().isInherit())});
-        ExternalData acl = new ExternalData(ACL_NODE_NAME + ":" + parentObject.getId(), path,
-                "jnt:acl", aclProperties);
+        aclProperties.put(ExternalDataAcl.ACL_INHERIT_PROP_NAME, new String[]{String.valueOf(parentObject.getAcl().isInherit())});
+        ExternalData acl = new ExternalData(ExternalDataAcl.ACL_NODE_NAME + ":" + parentObject.getId(), path,
+                ExternalDataAcl.ACL_NODE_TYPE, aclProperties);
 
         final ExternalNodeImpl node = new ExternalNodeImpl(acl, this);
         registerNode(node);

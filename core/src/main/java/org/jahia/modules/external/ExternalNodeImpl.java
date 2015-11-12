@@ -92,6 +92,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ChildrenCollectorFilter;
 import org.apache.jackrabbit.value.BinaryImpl;
+import org.jahia.modules.external.acl.ExternalDataAcl;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -733,6 +734,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             }
         }
 
+        // handle acl
+        if(session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable && data.getAcl() != null
+                && (matchAll || ChildrenCollectorFilter.matches("j:acl", namePattern))) {
+            filteredList.add("j:acl");
+        }
+
         Node n = getExtensionNode(false);
         if (n != null) {
             return new ExternalNodeIterator(filteredList, matchAll ? n.getNodes() : n.getNodes(namePattern));
@@ -761,6 +768,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             if (ChildrenCollectorFilter.matches(J_TRANSLATION + lang, nameGlobs)) {
                 filteredList.add(J_TRANSLATION + lang);
             }
+        }
+
+        // handle acl
+        if(session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable && data.getAcl() != null
+                && ChildrenCollectorFilter.matches(ExternalDataAcl.ACL_NODE_NAME, nameGlobs)) {
+            filteredList.add(ExternalDataAcl.ACL_NODE_NAME);
         }
 
         Node n = getExtensionNode(false);
