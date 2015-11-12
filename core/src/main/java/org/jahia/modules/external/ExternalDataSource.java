@@ -202,7 +202,9 @@ public interface ExternalDataSource {
          * @param username the user name
          * @param path     the node path
          * @return an array of privilege names
+         * @deprecated now use ExternalDataAcl directly on ExternalData item to define acl
          */
+        @Deprecated
         String[] getPrivilegesNames(String username, String path);
     }
 

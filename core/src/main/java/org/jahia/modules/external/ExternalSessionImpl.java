@@ -103,6 +103,7 @@ public class ExternalSessionImpl implements Session {
 
     static final String TRANSLATION_PREFIX = "translation:";
     static final String TRANSLATION_NODE_NAME_BASE = "j:translation_";
+    static final String ACL_NODE_NAME= "j:acl";
 
     private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
 
@@ -260,6 +261,12 @@ public class ExternalSessionImpl implements Session {
             return getNodeByLocalIdentifier(u).getNode(TRANSLATION_NODE_NAME_BASE + lang);
         }
 
+        if (uuid.startsWith(ACL_NODE_NAME)) {
+            String u = StringUtils.substringAfter(uuid, ACL_NODE_NAME);
+            u = StringUtils.substringAfter(u, ":");
+            return getNodeByLocalIdentifier(u).getNode(ACL_NODE_NAME);
+        }
+
         try {
             if (getExtensionSession() != null) {
                 Node n = getExtensionSession().getNodeByIdentifier(uuid);
@@ -302,41 +309,14 @@ public class ExternalSessionImpl implements Session {
                 return getNode(parentPath).getProperty(StringUtils.substringAfterLast(path, "/"));
             } else if (StringUtils.substringAfterLast(path, "/").startsWith(TRANSLATION_NODE_NAME_BASE)) {
                 // Getting translation node
-                String lang = StringUtils.substringAfterLast(path, TRANSLATION_NODE_NAME_BASE);
-
-                ExternalData parentObject;
-                final ExternalNodeImpl parentFromCache = getFromCacheByPath(parentPath);
-                if (parentFromCache != null) {
-                    parentObject = parentFromCache.getData();
-                } else {
-                    ExternalContentStoreProvider.setCurrentSession(this);
-                    try {
-                        parentObject = repository.getDataSource().getItemByPath(parentPath);
-                        final ExternalNodeImpl node = new ExternalNodeImpl(parentObject, this);
-                        registerNode(node);
-                    } finally {
-                        ExternalContentStoreProvider.removeCurrentSession();
-                    }
-                }
-                if ((parentObject.getI18nProperties() == null || !parentObject.getI18nProperties().containsKey(lang)) &&
-                        (parentObject.getLazyI18nProperties() == null || !parentObject.getLazyI18nProperties().containsKey(lang))) {
-                    throw new PathNotFoundException(path);
-                }
-                Map<String, String[]> i18nProps = new HashMap<String, String[]>();
-                if (parentObject.getI18nProperties() != null && parentObject.getI18nProperties().containsKey(lang)) {
-                    i18nProps.putAll(parentObject.getI18nProperties().get(lang));
-                }
-                i18nProps.put("jcr:language", new String[]{lang});
-                ExternalData i18n = new ExternalData(TRANSLATION_PREFIX + lang + ":" + parentObject.getId(), path,
-                        "jnt:translation", i18nProps);
-                if (parentObject.getLazyI18nProperties() != null && parentObject.getLazyI18nProperties().containsKey(lang)) {
-                    i18n.setLazyProperties(parentObject.getLazyI18nProperties().get(lang));
-                }
-
-                final ExternalNodeImpl node = new ExternalNodeImpl(i18n, this);
-                registerNode(node);
-                return node;
-            } else {
+                return handleI18nNode(parentPath, path);
+            } else if (StringUtils.substringAfterLast(parentPath, "/").equals(ACL_NODE_NAME)) {
+                // Getting ace node or acl property
+                return handleAclPropertyOrAceNode(parentPath, path);
+            } else if(StringUtils.substringAfterLast(path, "/").equals(ACL_NODE_NAME)) {
+                // Getting acl node
+                return handleAclNode(parentPath, path);
+             }  else {
                 String itemName = StringUtils.substringAfterLast(path, "/");
                 if (getRepository().getStoreProvider().getReservedNodes().contains(itemName)) {
                     throw new PathNotFoundException(path);
@@ -376,7 +356,70 @@ public class ExternalSessionImpl implements Session {
                 throw e;
             }
         }
+    }
 
+    private Item handleAclPropertyOrAceNode(String parentPath, String path) throws RepositoryException {
+        // TODO should retrieve ACE node if the path correspond to an existing ace path
+        return getNode(parentPath).getProperty(StringUtils.substringAfterLast(path, "/"));
+    }
+
+    private Item handleAclNode(String parentPath, String path) throws RepositoryException {
+        // Getting acl node
+        ExternalData parentObject = getParent(parentPath);
+        if(parentObject.getAcl() == null) {
+            throw new PathNotFoundException(path);
+        }
+
+        Map<String, String[]> aclProperties = new HashMap<>();
+        aclProperties.put("j:inherit", new String[]{String.valueOf(parentObject.getAcl().isInherit())});
+        ExternalData acl = new ExternalData(ACL_NODE_NAME + ":" + parentObject.getId(), path,
+                "jnt:acl", aclProperties);
+
+        final ExternalNodeImpl node = new ExternalNodeImpl(acl, this);
+        registerNode(node);
+        return node;
+    }
+
+    private Item handleI18nNode(String parentPath, String path) throws RepositoryException {
+        ExternalData parentObject = getParent(parentPath);
+        String lang = StringUtils.substringAfterLast(path, TRANSLATION_NODE_NAME_BASE);
+
+        if ((parentObject.getI18nProperties() == null || !parentObject.getI18nProperties().containsKey(lang)) &&
+                (parentObject.getLazyI18nProperties() == null || !parentObject.getLazyI18nProperties().containsKey(lang))) {
+            throw new PathNotFoundException(path);
+        }
+        Map<String, String[]> i18nProps = new HashMap<String, String[]>();
+        if (parentObject.getI18nProperties() != null && parentObject.getI18nProperties().containsKey(lang)) {
+            i18nProps.putAll(parentObject.getI18nProperties().get(lang));
+        }
+        i18nProps.put("jcr:language", new String[]{lang});
+        ExternalData i18n = new ExternalData(TRANSLATION_PREFIX + lang + ":" + parentObject.getId(), path,
+                "jnt:translation", i18nProps);
+        if (parentObject.getLazyI18nProperties() != null && parentObject.getLazyI18nProperties().containsKey(lang)) {
+            i18n.setLazyProperties(parentObject.getLazyI18nProperties().get(lang));
+        }
+
+        final ExternalNodeImpl node = new ExternalNodeImpl(i18n, this);
+        registerNode(node);
+        return node;
+    }
+
+    private ExternalData getParent(String parentPath) throws RepositoryException {
+        ExternalData parentObject;
+        final ExternalNodeImpl parentFromCache = getFromCacheByPath(parentPath);
+        if (parentFromCache != null) {
+            parentObject = parentFromCache.getData();
+        } else {
+            ExternalContentStoreProvider.setCurrentSession(this);
+            try {
+                parentObject = repository.getDataSource().getItemByPath(parentPath);
+                final ExternalNodeImpl node = new ExternalNodeImpl(parentObject, this);
+                registerNode(node);
+            } finally {
+                ExternalContentStoreProvider.removeCurrentSession();
+            }
+        }
+        return parentObject;
     }
 
     protected String[] getPropertyValues(ExternalData data, String propertyName) throws PathNotFoundException {
