@@ -73,6 +73,7 @@ package org.jahia.modules.external;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.security.JahiaLoginModule;
+import org.jahia.modules.external.acl.ExternalDataAce;
 import org.jahia.modules.external.acl.ExternalDataAcl;
 import org.jahia.services.content.JCRStoreProvider;
 import org.slf4j.Logger;
@@ -104,6 +105,7 @@ public class ExternalSessionImpl implements Session {
 
     static final String TRANSLATION_PREFIX = "translation:";
     static final String TRANSLATION_NODE_NAME_BASE = "j:translation_";
+    static final String ACE_PREFIX = "j:ace:";
 
     private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
 
@@ -262,9 +264,15 @@ public class ExternalSessionImpl implements Session {
         }
 
         if (uuid.startsWith(ExternalDataAcl.ACL_NODE_NAME)) {
-            String u = StringUtils.substringAfter(uuid, ExternalDataAcl.ACL_NODE_NAME);
-            u = StringUtils.substringAfter(u, ":");
+            String u = StringUtils.substringAfter(uuid, ExternalDataAcl.ACL_NODE_NAME + ":");
             return getNodeByLocalIdentifier(u).getNode(ExternalDataAcl.ACL_NODE_NAME);
+        }
+
+        if (uuid.startsWith(ACE_PREFIX)) {
+            String u = StringUtils.substringAfter(uuid, ACE_PREFIX);
+            String ace = StringUtils.substringBefore(u, ":");
+            u = StringUtils.substringAfter(u, ":");
+            return getNodeByLocalIdentifier(u).getNode(ExternalDataAcl.ACL_NODE_NAME + "/" + ace);
         }
 
         try {
@@ -310,10 +318,10 @@ public class ExternalSessionImpl implements Session {
             } else if (StringUtils.substringAfterLast(path, "/").startsWith(TRANSLATION_NODE_NAME_BASE)) {
                 // Getting translation node
                 return handleI18nNode(parentPath, path);
-            } else if (StringUtils.substringAfterLast(parentPath, "/").equals(ExternalDataAcl.ACL_NODE_NAME)) {
+            } else if (StringUtils.substringAfterLast(parentPath, "/").equals(ExternalDataAcl.ACL_NODE_NAME) && repository.getDataSource() instanceof ExternalDataSource.AccessControllable) {
                 // Getting ace node or acl property
                 return handleAclPropertyOrAceNode(parentPath, path);
-            } else if(StringUtils.substringAfterLast(path, "/").equals(ExternalDataAcl.ACL_NODE_NAME)) {
+            } else if(StringUtils.substringAfterLast(path, "/").equals(ExternalDataAcl.ACL_NODE_NAME) && repository.getDataSource() instanceof ExternalDataSource.AccessControllable) {
                 // Getting acl node
                 return handleAclNode(parentPath, path);
              }  else {
@@ -359,21 +367,36 @@ public class ExternalSessionImpl implements Session {
     }
 
     private Item handleAclPropertyOrAceNode(String parentPath, String path) throws RepositoryException {
-        // TODO should retrieve ACE node if the path correspond to an existing ace path
-        return getNode(parentPath).getProperty(StringUtils.substringAfterLast(path, "/"));
+        String last = StringUtils.substringAfterLast(path, "/");
+        if(last.startsWith(ExternalDataAce.Type.DENY.toString()) || last.startsWith(ExternalDataAce.Type.GRANT.toString())) {
+            // get the ace
+            ExternalData parentObject = getParent(StringUtils.substringBeforeLast(parentPath, "/"));
+            if(parentObject.getExternalDataAcl() == null || parentObject.getExternalDataAcl().getAce(last) == null) {
+                throw new PathNotFoundException(path);
+            }
+
+            ExternalDataAce externalDataAce = parentObject.getExternalDataAcl().getAce(last);
+            ExternalData ace = new ExternalData(ACE_PREFIX + last +  ":" + parentObject.getId(), path,
+                    ExternalDataAce.ACE_NODE_TYPE, externalDataAce.getProperties());
+
+            final ExternalNodeImpl node = new ExternalNodeImpl(ace, this);
+            registerNode(node);
+            return node;
+        } else {
+            // get the property
+            return getNode(parentPath).getProperty(last);
+        }
     }
 
     private Item handleAclNode(String parentPath, String path) throws RepositoryException {
         // Getting acl node
         ExternalData parentObject = getParent(parentPath);
-        if(parentObject.getAcl() == null) {
+        if(parentObject.getExternalDataAcl() == null) {
             throw new PathNotFoundException(path);
         }
 
-        Map<String, String[]> aclProperties = new HashMap<>();
-        aclProperties.put(ExternalDataAcl.ACL_INHERIT_PROP_NAME, new String[]{String.valueOf(parentObject.getAcl().isInherit())});
         ExternalData acl = new ExternalData(ExternalDataAcl.ACL_NODE_NAME + ":" + parentObject.getId(), path,
-                ExternalDataAcl.ACL_NODE_TYPE, aclProperties);
+                ExternalDataAcl.ACL_NODE_TYPE, parentObject.getExternalDataAcl().getProperties());
 
         final ExternalNodeImpl node = new ExternalNodeImpl(acl, this);
         registerNode(node);

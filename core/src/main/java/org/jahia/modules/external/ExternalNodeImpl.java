@@ -92,6 +92,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ChildrenCollectorFilter;
 import org.apache.jackrabbit.value.BinaryImpl;
+import org.jahia.modules.external.acl.ExternalDataAce;
 import org.jahia.modules.external.acl.ExternalDataAcl;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
@@ -702,10 +703,27 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public NodeIterator getNodes(String namePattern) throws RepositoryException {
-        final List<String> externalChildren = getExternalChildren();
-        final boolean matchAll = MATCH_ALL_PATTERN.equals(namePattern);
-
         List<String> filteredList = new ArrayList<>();
+        final boolean matchAll = MATCH_ALL_PATTERN.equals(namePattern);
+        final ExternalDataSource dataSource = session.getRepository().getDataSource();
+
+        if(ExternalDataAcl.ACL_NODE_NAME.equals(data.getName()) &&
+                ExternalDataAcl.ACL_NODE_TYPE.equals(data.getType()) && data.getId().startsWith(ExternalDataAcl.ACL_NODE_NAME) &&
+                dataSource instanceof ExternalDataSource.AccessControllable){
+            // get list of ace
+            ExternalNodeImpl parent = (ExternalNodeImpl) getParent();
+            if(parent.data.getExternalDataAcl() != null && parent.data.getExternalDataAcl().getAcl() != null && parent.data.getExternalDataAcl().getAcl().size() > 0) {
+                for (ExternalDataAce ace : parent.data.getExternalDataAcl().getAcl()) {
+                    String aceNodeName = ace.toString();
+                    if(matchAll || ChildrenCollectorFilter.matches(aceNodeName, namePattern)) {
+                        filteredList.add(aceNodeName);
+                    }
+                }
+            }
+            return new ExternalNodeIterator(filteredList);
+        }
+
+        final List<String> externalChildren = getExternalChildren();
         if (!externalChildren.isEmpty()) {
             if (!namePattern.equals("j:translation*") && !data.isNew()) {
                 if (!matchAll) {
@@ -735,9 +753,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
 
         // handle acl
-        if(session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable && data.getAcl() != null
+        if(session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable && data.getExternalDataAcl() != null
                 && (matchAll || ChildrenCollectorFilter.matches("j:acl", namePattern))) {
-            filteredList.add("j:acl");
+            filteredList.add(ExternalDataAcl.ACL_NODE_NAME);
         }
 
         Node n = getExtensionNode(false);
@@ -752,6 +770,22 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      */
     public NodeIterator getNodes(String[] nameGlobs) throws RepositoryException {
         final List<String> filteredList = new ArrayList<String>();
+
+        if(ExternalDataAcl.ACL_NODE_NAME.equals(data.getName()) &&
+                ExternalDataAcl.ACL_NODE_TYPE.equals(data.getType()) && data.getId().startsWith(ExternalDataAcl.ACL_NODE_NAME)){
+            // get list of ace
+            ExternalNodeImpl parent = (ExternalNodeImpl) getParent();
+            if(parent.data.getExternalDataAcl() != null && parent.data.getExternalDataAcl().getAcl() != null && parent.data.getExternalDataAcl().getAcl().size() > 0) {
+                for (ExternalDataAce ace : parent.data.getExternalDataAcl().getAcl()) {
+                    String aceNodeName = ace.toString();
+                    if(ChildrenCollectorFilter.matches(aceNodeName, nameGlobs)) {
+                        filteredList.add(aceNodeName);
+                    }
+                }
+            }
+            return new ExternalNodeIterator(filteredList);
+        }
+
         for (String path : getExternalChildren()) {
             if (ChildrenCollectorFilter.matches(path,nameGlobs)) {
                 filteredList.add(path);
@@ -771,7 +805,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
 
         // handle acl
-        if(session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable && data.getAcl() != null
+        if(session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable && data.getExternalDataAcl() != null
                 && ChildrenCollectorFilter.matches(ExternalDataAcl.ACL_NODE_NAME, nameGlobs)) {
             filteredList.add(ExternalDataAcl.ACL_NODE_NAME);
         }

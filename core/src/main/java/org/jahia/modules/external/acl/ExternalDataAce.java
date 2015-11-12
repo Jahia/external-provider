@@ -72,30 +72,45 @@
 package org.jahia.modules.external.acl;
 
 import com.google.common.base.Objects;
+import org.jahia.services.content.JCRContentUtils;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * External ace
  */
 public class ExternalDataAce {
+    public static final String ACE_TYPE_PROP = "j:aceType";
+    public static final String ACE_PRINCIPAL_PROP = "j:principal";
+    public static final String ACE_PRIVILEGES_PROP = "j:privileges";
+    public static final String ACE_PROTECTED_PROP = "j:protected";
+    public static final String ACE_NODE_TYPE = "jnt:ace";
+
     /**
      * Ace types
      */
     public enum Type {
-        GRANT,
-        DENY
+        GRANT ("GRANT"),
+        DENY ("DENY");
+
+        private final String name;
+
+        Type(String s) {
+            name = s;
+        }
+
+        public String toString() {
+            return this.name;
+        }
     }
 
-    public ExternalDataAce(Type aceType, String principal, Set<String> roles, boolean aceProtected) {
+    protected ExternalDataAce(Type aceType, String principal, Set<String> roles, boolean aceProtected) {
         this.aceType = aceType;
         this.principal = principal;
         this.roles = roles;
         this.aceProtected = aceProtected;
-    }
-
-    public ExternalDataAce(Type aceType, String principal, Set<String> roles) {
-        this(aceType, principal, roles, false);
     }
 
     private Type aceType;
@@ -148,5 +163,19 @@ public class ExternalDataAce {
     @Override
     public int hashCode() {
         return Objects.hashCode(aceType, principal, roles);
+    }
+
+    @Override
+    public String toString() {
+        return aceType.toString() + "_" + JCRContentUtils.replaceColon(principal).replaceAll("/", "_");
+    }
+
+    public Map<String, String[]> getProperties() {
+        Map<String, String[]> properties = new HashMap<>();
+        properties.put(ACE_TYPE_PROP, new String[]{aceType.toString()});
+        properties.put(ACE_PRINCIPAL_PROP, new String[]{principal});
+        properties.put(ACE_PRIVILEGES_PROP, roles.toArray(new String[roles.size()]));
+        properties.put(ACE_PROTECTED_PROP, new String[]{String.valueOf(aceProtected)});
+        return properties;
     }
 }

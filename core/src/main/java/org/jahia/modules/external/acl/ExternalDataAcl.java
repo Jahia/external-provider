@@ -71,6 +71,9 @@
  */
 package org.jahia.modules.external.acl;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -82,15 +85,15 @@ public class ExternalDataAcl {
     public static final String ACL_NODE_TYPE = "jnt:acl";
 
     private boolean inherit;
-    private Set<ExternalDataAce> acl;
+    private HashMap<String, ExternalDataAce> acl;
 
-    public ExternalDataAcl(Set<ExternalDataAce> acl) {
-        this(acl, true);
+    public ExternalDataAcl() {
+        this(true);
     }
 
-    public ExternalDataAcl(Set<ExternalDataAce> acl, boolean inherit) {
-        this.acl = acl;
+    public ExternalDataAcl(boolean inherit) {
         this.inherit = inherit;
+        acl = new HashMap<>();
     }
 
     public boolean isInherit() {
@@ -101,11 +104,26 @@ public class ExternalDataAcl {
         this.inherit = inherit;
     }
 
-    public Set<ExternalDataAce> getAcl() {
-        return acl;
+    public ExternalDataAce getAce(String aceName) {
+        return acl.get(aceName);
     }
 
-    public void setAcl(Set<ExternalDataAce> acl) {
-        this.acl = acl;
+    public void addAce(ExternalDataAce.Type aceType, String principal, Set<String> roles) {
+        addAce(aceType, principal, roles, false);
+    }
+
+    public void addAce(ExternalDataAce.Type aceType, String principal, Set<String> roles, boolean aceProtected) {
+        ExternalDataAce ace = new ExternalDataAce(aceType, principal, roles, aceProtected);
+        acl.put(ace.toString(), ace);
+    }
+
+    public Map<String, String[]> getProperties() {
+        Map<String, String[]> aclProperties = new HashMap<>();
+        aclProperties.put(ExternalDataAcl.ACL_INHERIT_PROP_NAME, new String[]{String.valueOf(inherit)});
+        return aclProperties;
+    }
+
+    public Collection<ExternalDataAce> getAcl() {
+        return acl.values();
     }
 }

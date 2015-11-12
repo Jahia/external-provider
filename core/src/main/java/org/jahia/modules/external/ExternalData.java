@@ -99,7 +99,7 @@ public class ExternalData {
     private Set<String> lazyProperties;
     private Set<String> lazyBinaryProperties;
     private Map<String, Set<String>> lazyI18nProperties;
-    private ExternalDataAcl acl;
+    private ExternalDataAcl externalDataAcl;
 
     public ExternalData(String id, String path, String type, Map<String, String[]> properties) {
         this(id, path, type, properties, false);
@@ -206,11 +206,11 @@ public class ExternalData {
         this.lazyI18nProperties = lazyI18nProperties;
     }
 
-    public ExternalDataAcl getAcl() {
-        return acl;
+    public ExternalDataAcl getExternalDataAcl() {
+        return externalDataAcl;
     }
 
-    public void setAcl(ExternalDataAcl acl) {
-        this.acl = acl;
+    public void setExternalDataAcl(ExternalDataAcl externalDataAcl) {
+        this.externalDataAcl = externalDataAcl;
     }
 }
