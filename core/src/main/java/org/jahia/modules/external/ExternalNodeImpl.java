@@ -753,8 +753,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
 
         // handle acl
-        if(session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable && data.getExternalDataAcl() != null
-                && (matchAll || ChildrenCollectorFilter.matches("j:acl", namePattern))) {
+        if(data.getExternalDataAcl() != null &&
+                dataSource instanceof ExternalDataSource.AccessControllable &&
+                (matchAll || ChildrenCollectorFilter.matches(ExternalDataAcl.ACL_NODE_NAME, namePattern))) {
             filteredList.add(ExternalDataAcl.ACL_NODE_NAME);
         }
 
@@ -770,9 +771,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      */
     public NodeIterator getNodes(String[] nameGlobs) throws RepositoryException {
         final List<String> filteredList = new ArrayList<String>();
+        final ExternalDataSource dataSource = session.getRepository().getDataSource();
 
         if(ExternalDataAcl.ACL_NODE_NAME.equals(data.getName()) &&
-                ExternalDataAcl.ACL_NODE_TYPE.equals(data.getType()) && data.getId().startsWith(ExternalDataAcl.ACL_NODE_NAME)){
+                ExternalDataAcl.ACL_NODE_TYPE.equals(data.getType()) && data.getId().startsWith(ExternalDataAcl.ACL_NODE_NAME) &&
+                dataSource instanceof ExternalDataSource.AccessControllable){
             // get list of ace
             ExternalNodeImpl parent = (ExternalNodeImpl) getParent();
             if(parent.data.getExternalDataAcl() != null && parent.data.getExternalDataAcl().getAcl() != null && parent.data.getExternalDataAcl().getAcl().size() > 0) {
@@ -805,8 +808,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
 
         // handle acl
-        if(session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable && data.getExternalDataAcl() != null
-                && ChildrenCollectorFilter.matches(ExternalDataAcl.ACL_NODE_NAME, nameGlobs)) {
+        if(data.getExternalDataAcl() != null &&
+                dataSource instanceof ExternalDataSource.AccessControllable &&
+                ChildrenCollectorFilter.matches(ExternalDataAcl.ACL_NODE_NAME, nameGlobs)) {
             filteredList.add(ExternalDataAcl.ACL_NODE_NAME);
         }
 
