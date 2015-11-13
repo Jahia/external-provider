@@ -84,7 +84,7 @@ import java.util.Set;
 public class ExternalDataAce {
     public static final String ACE_TYPE_PROP = "j:aceType";
     public static final String ACE_PRINCIPAL_PROP = "j:principal";
-    public static final String ACE_PRIVILEGES_PROP = "j:privileges";
+    public static final String ACE_ROLES_PROP = "j:roles";
     public static final String ACE_PROTECTED_PROP = "j:protected";
     public static final String ACE_NODE_TYPE = "jnt:ace";
 
@@ -174,7 +174,7 @@ public class ExternalDataAce {
         Map<String, String[]> properties = new HashMap<>();
         properties.put(ACE_TYPE_PROP, new String[]{aceType.toString()});
         properties.put(ACE_PRINCIPAL_PROP, new String[]{principal});
-        properties.put(ACE_PRIVILEGES_PROP, roles.toArray(new String[roles.size()]));
+        properties.put(ACE_ROLES_PROP, roles.toArray(new String[roles.size()]));
         properties.put(ACE_PROTECTED_PROP, new String[]{String.valueOf(aceProtected)});
         return properties;
     }
