@@ -118,6 +118,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     private boolean slowConnection = true;
     private boolean lockSupport = false;
+    private boolean aclSupport = true;
 
     public static ExternalSessionImpl getCurrentSession() {
         return currentSession.get();
@@ -155,14 +156,12 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     @Override
     public void start() throws JahiaInitializationException {
 
-
-        // Enable ACLs only if there are overridable items
-        // or if the datasource is not access controllable
-        if (overridableItems != null) {
-            overridableItems.addAll(externalProviderInitializerService.getOverridableItemsForACLs());
-        } else {
-            if (!(dataSource instanceof ExternalDataSource.AccessControllable)) {
-                overridableItems = externalProviderInitializerService.getOverridableItemsForACLs();
+        // Enable acl
+        if(aclSupport) {
+            if (overridableItems != null) {
+                overridableItems.addAll(externalProviderInitializerService.getOverridableItemsForACLs());
+            } else {
+                overridableItems = new ArrayList<>(externalProviderInitializerService.getOverridableItemsForACLs());
             }
         }
 
@@ -171,7 +170,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
             if (overridableItems != null) {
                 overridableItems.addAll(externalProviderInitializerService.getOverridableItemsForLocks());
             } else {
-                overridableItems = externalProviderInitializerService.getOverridableItemsForLocks();
+                overridableItems = new ArrayList<>(externalProviderInitializerService.getOverridableItemsForLocks());
             }
         }
 
@@ -293,6 +292,9 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         this.lockSupport = lockSupport;
     }
 
+    public void setAclSupport(boolean aclSupport) {
+        this.aclSupport = aclSupport;
+    }
 
     public boolean isSlowConnection() {
         return slowConnection;

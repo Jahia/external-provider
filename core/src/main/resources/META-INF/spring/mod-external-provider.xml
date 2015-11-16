@@ -22,10 +22,7 @@
             <list>
                 <value>jmix:accessControlled.j:acl</value>
                 <value>jnt:acl.*</value>
-                <value>jnt:ace.j:aceType</value>
-                <value>jnt:ace.j:principal</value>
-                <value>jnt:ace.j:roles</value>
-                <value>jnt:ace.j:protected</value>
+                <value>jnt:ace.*</value>
             </list>
         </property>
     </bean>

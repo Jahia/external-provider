@@ -386,8 +386,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      */
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
         if (canItemBeExtended(relPath, primaryNodeTypeName)) {
-            if (StringUtils.equals(primaryNodeTypeName, "jnt:acl") && session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable) {
-                throw new UnsupportedRepositoryOperationException("Acl are handled by the datasource");
+            if ((StringUtils.equals(primaryNodeTypeName, ExternalDataAcl.ACL_NODE_TYPE) || StringUtils.equals(primaryNodeTypeName, ExternalDataAce.ACE_NODE_TYPE))
+                    && session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable) {
+                throw new UnsupportedRepositoryOperationException("Acl and Ace are handle by DataSource");
             }
 
             Node extendedNode = getExtensionNode(true);
@@ -1006,6 +1007,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 nt.add(NodeTypeRegistry.getInstance().getNodeType(s));
             }
         }
+
+        if(data.getExternalDataAcl() != null && data.getExternalDataAcl().getAcl().size() > 0 &&
+                session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable) {
+            nt.add(NodeTypeRegistry.getInstance().getNodeType("jmix:accessControlled"));
+        }
+
         if (withExtension) {
             Node extensionNode = getExtensionNode(false);
             if (extensionNode != null) {
