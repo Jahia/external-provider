@@ -82,14 +82,8 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
 import javax.jcr.*;
-import javax.jcr.lock.LockException;
 import javax.jcr.lock.LockManager;
-import javax.jcr.nodetype.ConstraintViolationException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.retention.RetentionManager;
-import javax.jcr.security.AccessControlManager;
-import javax.jcr.version.VersionException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -162,7 +156,7 @@ public class ExternalSessionImpl implements Session {
         return workspace;
     }
 
-    public Session impersonate(Credentials credentials) throws LoginException, RepositoryException {
+    public Session impersonate(Credentials credentials) throws RepositoryException {
         return this;
     }
 
@@ -220,9 +214,9 @@ public class ExternalSessionImpl implements Session {
         }
     }
 
-    public Node getNodeByUUID(String uuid) throws ItemNotFoundException, RepositoryException {
+    public Node getNodeByUUID(String uuid) throws RepositoryException {
         final ExternalNodeImpl fromCacheById = getFromCacheById(uuid);
-        if(fromCacheById != null) {
+        if(fromCacheById != null && getAccessControlManager().canRead(fromCacheById.getPath())) {
             return fromCacheById;
         }
 
@@ -237,7 +231,12 @@ public class ExternalSessionImpl implements Session {
             }
             uuid = externalId;
         }
-        return getNodeByLocalIdentifier(uuid);
+        Node n = getNodeByLocalIdentifier(uuid);
+        if (getAccessControlManager().canRead(n.getPath())) {
+            return n;
+        } else {
+            throw new AccessDeniedException("cannot access node " + n.getPath() + " with user " + getUserID());
+        }
     }
 
     private Node getNodeByLocalIdentifier(String uuid) throws RepositoryException {
@@ -296,7 +295,9 @@ public class ExternalSessionImpl implements Session {
     }
 
     public Item getItem(String path) throws RepositoryException {
-
+        if (!getAccessControlManager().canRead(path)) {
+            return null;
+        }
         path = path.length() > 1 && path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
         if (deletedData.containsKey(path)) {
             throw new PathNotFoundException("This node has been deleted");
@@ -503,7 +504,7 @@ public class ExternalSessionImpl implements Session {
     }
 
     public void move(String source, String dest)
-            throws ItemExistsException, PathNotFoundException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+            throws RepositoryException {
         Item sourceNode = getItem(source);
         if (!sourceNode.isNode()) {
             throw new PathNotFoundException(source);
@@ -582,7 +583,7 @@ public class ExternalSessionImpl implements Session {
      }
 
     public void save()
-            throws AccessDeniedException, ItemExistsException, ConstraintViolationException, InvalidItemStateException, VersionException, LockException, NoSuchNodeTypeException, RepositoryException {
+            throws RepositoryException {
         if (extensionSession != null && extensionSession.hasPendingChanges()) {
             extensionSession.save();
         }
@@ -691,7 +692,7 @@ public class ExternalSessionImpl implements Session {
     }
 
     public ExternalValueFactoryImpl getValueFactory()
-            throws UnsupportedRepositoryOperationException, RepositoryException {
+            throws RepositoryException {
         return new ExternalValueFactoryImpl(this);
     }
 
@@ -700,36 +701,36 @@ public class ExternalSessionImpl implements Session {
     }
 
     public ContentHandler getImportContentHandler(String s, int i)
-            throws PathNotFoundException, ConstraintViolationException, VersionException, LockException, RepositoryException {
+            throws RepositoryException {
         return null;
     }
 
     public void importXML(String s, InputStream inputStream, int i)
-            throws IOException, PathNotFoundException, ItemExistsException, ConstraintViolationException, VersionException, InvalidSerializedDataException, LockException, RepositoryException {
+            throws IOException, RepositoryException {
 
     }
 
     public void exportSystemView(String s, ContentHandler contentHandler, boolean b, boolean b1)
-            throws PathNotFoundException, SAXException, RepositoryException {
+            throws SAXException, RepositoryException {
 
     }
 
     public void exportSystemView(String s, OutputStream outputStream, boolean b, boolean b1)
-            throws IOException, PathNotFoundException, RepositoryException {
+            throws IOException, RepositoryException {
 
     }
 
     public void exportDocumentView(String s, ContentHandler contentHandler, boolean b, boolean b1)
-            throws PathNotFoundException, SAXException, RepositoryException {
+            throws SAXException, RepositoryException {
 
     }
 
     public void exportDocumentView(String s, OutputStream outputStream, boolean b, boolean b1)
-            throws IOException, PathNotFoundException, RepositoryException {
+            throws IOException, RepositoryException {
 
     }
 
-    public void setNamespacePrefix(String s, String s1) throws NamespaceException, RepositoryException {
+    public void setNamespacePrefix(String s, String s1) throws RepositoryException {
 
     }
 
@@ -737,11 +738,11 @@ public class ExternalSessionImpl implements Session {
         return workspace.getNamespaceRegistry().getPrefixes();
     }
 
-    public String getNamespaceURI(String s) throws NamespaceException, RepositoryException {
+    public String getNamespaceURI(String s) throws RepositoryException {
         return workspace.getNamespaceRegistry().getURI(s);
     }
 
-    public String getNamespacePrefix(String s) throws NamespaceException, RepositoryException {
+    public String getNamespacePrefix(String s) throws RepositoryException {
         return workspace.getNamespaceRegistry().getPrefix(s);
     }
 
@@ -833,15 +834,15 @@ public class ExternalSessionImpl implements Session {
         newItems.add(newItem);
     }
 
-    public Node getNodeByIdentifier(String id) throws ItemNotFoundException, RepositoryException {
+    public Node getNodeByIdentifier(String id) throws RepositoryException {
         return getNodeByUUID(id);
     }
 
-    public Node getNode(String absPath) throws PathNotFoundException, RepositoryException {
+    public Node getNode(String absPath) throws RepositoryException {
         return (Node) getItem(absPath);
     }
 
-    public Property getProperty(String absPath) throws PathNotFoundException, RepositoryException {
+    public Property getProperty(String absPath) throws RepositoryException {
         return (Property) getItem(absPath);
     }
 
@@ -854,7 +855,7 @@ public class ExternalSessionImpl implements Session {
     }
 
     public void removeItem(String absPath)
-            throws VersionException, LockException, ConstraintViolationException, AccessDeniedException, RepositoryException {
+            throws RepositoryException {
         getItem(absPath).remove();
     }
 
@@ -868,15 +869,15 @@ public class ExternalSessionImpl implements Session {
         return false;
     }
 
-    public AccessControlManager getAccessControlManager()
-            throws UnsupportedRepositoryOperationException, RepositoryException {
+    public ExternalAccessControlManager getAccessControlManager()
+            throws RepositoryException {
         if (accessControlManager == null) {
             accessControlManager = new ExternalAccessControlManager(repository.getNamespaceRegistry(), getRepository().getStoreProvider().isReadOnly(), repository.getDataSource(), this);
         }
         return accessControlManager;
     }
 
-    public RetentionManager getRetentionManager() throws UnsupportedRepositoryOperationException, RepositoryException {
+    public RetentionManager getRetentionManager() throws RepositoryException {
         return null;
     }
 
@@ -884,7 +885,7 @@ public class ExternalSessionImpl implements Session {
         if (extensionSession == null) {
             JCRStoreProvider extensionProvider = getRepository().getStoreProvider().getExtensionProvider();
             if (extensionProvider != null) {
-                extensionSession = extensionProvider.getSession(JahiaLoginModule.getSystemCredentials(StringUtils.removeStart(getUserID(), JahiaLoginModule.SYSTEM), getRealm()), "default");
+                extensionSession = extensionProvider.getSession(JahiaLoginModule.getCredentials(getUserID(), getRealm()), "default");
             }
         }
         return extensionSession;

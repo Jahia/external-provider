@@ -71,36 +71,27 @@
  */
 package org.jahia.modules.external;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.util.*;
-import javax.jcr.*;
-import javax.jcr.lock.Lock;
-import javax.jcr.lock.LockException;
-import javax.jcr.nodetype.ConstraintViolationException;
-import javax.jcr.nodetype.ItemDefinition;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.nodetype.NodeDefinition;
-import javax.jcr.nodetype.NodeType;
-import javax.jcr.nodetype.PropertyDefinition;
-import javax.jcr.version.Version;
-import javax.jcr.version.VersionException;
-import javax.jcr.version.VersionHistory;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ChildrenCollectorFilter;
 import org.apache.jackrabbit.value.BinaryImpl;
 import org.jahia.modules.external.acl.ExternalDataAce;
 import org.jahia.modules.external.acl.ExternalDataAcl;
-import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
-import org.jahia.services.content.nodetypes.ExtendedNodeType;
-import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
-import org.jahia.services.content.nodetypes.Name;
-import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.jahia.services.content.nodetypes.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.jcr.*;
+import javax.jcr.lock.Lock;
+import javax.jcr.lock.LockException;
+import javax.jcr.nodetype.*;
+import javax.jcr.version.Version;
+import javax.jcr.version.VersionException;
+import javax.jcr.version.VersionHistory;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.util.*;
 
 /**
  * Implementation of the {@link javax.jcr.Node} for the {@link org.jahia.modules.external.ExternalData}.
@@ -1701,7 +1692,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         private Node nextNode;
 
         public ExternalNodeIterator(List<String> list) {
-            this(list,null);
+            this(list, null);
         }
 
         public ExternalNodeIterator(List<String> list, NodeIterator extensionNodeIterator) {
@@ -1715,11 +1706,14 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             nextNode = null;
             if (it.hasNext()) {
                 Node next = null;
-                try {
-                    next = getNode(it.next());
-                } catch (RepositoryException e) {
-                    logger.error(e.getMessage(),e);
-                }
+                do {
+                    try {
+                        next = getNode(it.next());
+                    } catch (RepositoryException e) {
+                        next = null;
+                        logger.debug(e.getMessage(), e);
+                    }
+                } while (next == null || hasNext());
                 nextNode = next;
                 return nextNode;
             }

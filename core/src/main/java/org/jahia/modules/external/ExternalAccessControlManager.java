@@ -71,15 +71,15 @@
  */
 package org.jahia.modules.external;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.commons.iterator.AccessControlPolicyIteratorAdapter;
-import org.apache.jackrabbit.core.security.JahiaLoginModule;
+import org.apache.jackrabbit.core.security.JahiaAccessManager;
 import org.apache.jackrabbit.core.security.JahiaPrivilegeRegistry;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.usermanager.JahiaUser;
-import org.jahia.services.usermanager.JahiaUserManagerService;
+import org.jahia.services.content.JCRCallback;
+import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.JCRTemplate;
 
 import javax.jcr.AccessDeniedException;
 import javax.jcr.NamespaceRegistry;
@@ -88,12 +88,11 @@ import javax.jcr.RepositoryException;
 import javax.jcr.lock.LockException;
 import javax.jcr.security.*;
 import javax.jcr.version.VersionException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
-import static javax.jcr.security.Privilege.*;
+import static javax.jcr.security.Privilege.JCR_READ;
 import static org.jahia.api.Constants.EDIT_WORKSPACE;
-import static org.jahia.api.Constants.LIVE_WORKSPACE;
 
 /**
  * Implementation of the {@link javax.jcr.security.AccessControlManager} for the {@link org.jahia.modules.external.ExternalData}.
@@ -104,8 +103,6 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
     private static final AccessControlPolicy[] POLICIES = new AccessControlPolicy[0];
 
-    private String[] rootNodePrivileges;
-
     private String[] privileges;
 
     private boolean readOnly;
@@ -115,8 +112,6 @@ public class ExternalAccessControlManager implements AccessControlManager {
     private JahiaPrivilegeRegistry registry;
 
     private final ExternalSessionImpl session;
-
-    private String rootUserName;
 
     public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, boolean readOnly, ExternalDataSource dataSource, ExternalSessionImpl session) {
         super();
@@ -132,27 +127,6 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
     private void init(NamespaceRegistry namespaceRegistry) throws RepositoryException {
         registry = new JahiaPrivilegeRegistry(namespaceRegistry);
-        rootUserName = JahiaUserManagerService.getInstance().getRootUserName();
-        if (readOnly) {
-            rootNodePrivileges = new String[] {
-                    JCR_READ + "_" + EDIT_WORKSPACE, JCR_READ + "_" + LIVE_WORKSPACE
-                    };
-            privileges = rootNodePrivileges;
-        } else {
-            rootNodePrivileges = new String[] {
-                    JCR_READ + "_" + EDIT_WORKSPACE, JCR_READ + "_" + LIVE_WORKSPACE,
-                    JCR_WRITE + "_" + EDIT_WORKSPACE, JCR_WRITE + "_" + LIVE_WORKSPACE,
-                    JCR_ADD_CHILD_NODES + "_" + EDIT_WORKSPACE, JCR_ADD_CHILD_NODES + "_" + LIVE_WORKSPACE,
-                    JCR_REMOVE_CHILD_NODES + "_" + EDIT_WORKSPACE, JCR_REMOVE_CHILD_NODES + "_" + LIVE_WORKSPACE
-                    };
-            privileges = new String[] {
-                    JCR_READ + "_" + EDIT_WORKSPACE, JCR_READ + "_" + LIVE_WORKSPACE,
-                    JCR_WRITE + "_" + EDIT_WORKSPACE, JCR_WRITE + "_" + LIVE_WORKSPACE,
-                    JCR_REMOVE_NODE + "_" + EDIT_WORKSPACE, JCR_REMOVE_NODE + "_" + LIVE_WORKSPACE,
-                    JCR_ADD_CHILD_NODES + "_" + EDIT_WORKSPACE, JCR_ADD_CHILD_NODES + "_" + LIVE_WORKSPACE,
-                    JCR_REMOVE_CHILD_NODES + "_" + EDIT_WORKSPACE, JCR_REMOVE_CHILD_NODES + "_" + LIVE_WORKSPACE
-                    };
-        }
     }
 
     public AccessControlPolicyIterator getApplicablePolicies(String absPath)
@@ -170,55 +144,40 @@ public class ExternalAccessControlManager implements AccessControlManager {
         return POLICIES;
     }
 
-    public Privilege[] getPrivileges(String absPath) throws PathNotFoundException,
-            RepositoryException {
-        List<Privilege> l = new ArrayList<Privilege>();
-        for (String s : getPrivilegesNames(absPath)) {
-            Privilege privilege = registry.getPrivilege(s, null);
-            if (privilege != null) {
-                l.add(privilege);
-            }
-        }
-
-        return l.toArray(new Privilege[l.size()]);
-    }
-
-    private String[] getPrivilegesNames(String absPath) {
-        if (dataSource instanceof ExternalDataSource.AccessControllable) {
-            ExternalContentStoreProvider.setCurrentSession(session);
-            try {
-                return ((ExternalDataSource.AccessControllable) dataSource).getPrivilegesNames(session.getUserID(), absPath);
-            } finally {
-                ExternalContentStoreProvider.removeCurrentSession();
-            }
-        }
-        return absPath.length() == 1 && "/".equals(absPath) ? rootNodePrivileges : privileges;
-    }
-
     public Privilege[] getSupportedPrivileges(String absPath) throws PathNotFoundException,
             RepositoryException {
         return JahiaPrivilegeRegistry.getRegisteredPrivileges();
     }
 
-    public boolean hasPrivileges(String absPath, Privilege[] privileges)
+    public Privilege[] getPrivileges(final String absPath) throws PathNotFoundException,
+            RepositoryException {
+        return JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Privilege[]>() {
+            @Override
+            public Privilege[] doInJCR(JCRSessionWrapper systemSession) throws RepositoryException {
+                return ((JahiaAccessManager) session.getExtensionSession().getAccessControlManager()).getPrivilegesWithSession(session.getRepository().getStoreProvider().getMountPoint() + absPath, systemSession);
+            }
+        });
+    }
+
+    public boolean hasPrivileges(final String absPath,final Privilege[] privileges)
             throws PathNotFoundException, RepositoryException {
         if (privileges == null || privileges.length == 0) {
+            // null or empty privilege array -> return true
             return true;
-        }
-        String userID = session.getUserID();
-        if (userID.startsWith(JahiaLoginModule.SYSTEM) || rootUserName.equals(userID)) {
-            return true;
-        }
-        boolean allowed = true;
-        Privilege[] granted = getPrivileges(absPath);
-        for (Privilege toCheck : privileges) {
-            if (toCheck != null && !ArrayUtils.contains(granted, toCheck)) {
-                allowed = false;
-                break;
-            }
-        }
+        } else {
+            return JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Boolean>() {
+                @Override
+                public Boolean doInJCR(JCRSessionWrapper systemSession) throws RepositoryException {
+                    Set<String> privs = new HashSet<String>();
+                    String jcrPath = session.getRepository().getStoreProvider().getMountPoint() + absPath;
+                    for (Privilege privilege : privileges) {
+                        privs.add(privilege.getName());
+                    }
+                    return ((JahiaAccessManager) session.getExtensionSession().getAccessControlManager()).isGranted(jcrPath, privs, systemSession, StringUtils.substringAfterLast("/", jcrPath));
+                }
+            });
 
-        return allowed;
+        }
     }
 
     public Privilege privilegeFromName(String privilegeName) throws AccessControlException, RepositoryException {
@@ -244,6 +203,10 @@ public class ExternalAccessControlManager implements AccessControlManager {
             AccessControlException, AccessDeniedException, LockException, VersionException,
             RepositoryException {
         // not supported
+    }
+
+    public boolean canRead(String path) throws RepositoryException {
+        return hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_READ + "_" + EDIT_WORKSPACE,null)});
     }
 
 }

@@ -159,7 +159,10 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         // Enable acl
         if(aclSupport) {
             if (overridableItems != null) {
-                overridableItems.addAll(externalProviderInitializerService.getOverridableItemsForACLs());
+                List<String> l = new ArrayList<>();
+                l.addAll(overridableItems);
+                l.addAll(externalProviderInitializerService.getOverridableItemsForACLs());
+                overridableItems = l;
             } else {
                 overridableItems = new ArrayList<>(externalProviderInitializerService.getOverridableItemsForACLs());
             }
@@ -168,7 +171,10 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         // Enable lock
         if (lockSupport) {
             if (overridableItems != null) {
-                overridableItems.addAll(externalProviderInitializerService.getOverridableItemsForLocks());
+                List<String> l = new ArrayList<>();
+                l.addAll(overridableItems);
+                l.addAll(externalProviderInitializerService.getOverridableItemsForLocks());
+                overridableItems = l;
             } else {
                 overridableItems = new ArrayList<>(externalProviderInitializerService.getOverridableItemsForLocks());
             }
