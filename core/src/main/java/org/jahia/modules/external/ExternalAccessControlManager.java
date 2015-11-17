@@ -154,7 +154,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
         return JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Privilege[]>() {
             @Override
             public Privilege[] doInJCR(JCRSessionWrapper systemSession) throws RepositoryException {
-                return ((JahiaAccessManager) session.getExtensionUserSession().getAccessControlManager()).getPrivilegesWithSession(session.getRepository().getStoreProvider().getMountPoint() + absPath, systemSession);
+                return ((JahiaAccessManager) session.getExtensionSession().getAccessControlManager()).getPrivilegesWithSession(session.getRepository().getStoreProvider().getMountPoint() + absPath, systemSession);
             }
         });
     }
@@ -173,7 +173,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
                     for (Privilege privilege : privileges) {
                         privs.add(privilege.getName());
                     }
-                    return ((JahiaAccessManager) session.getExtensionUserSession().getAccessControlManager()).isGranted(jcrPath, privs, systemSession, StringUtils.substringAfterLast("/", jcrPath));
+                    return ((JahiaAccessManager) session.getExtensionSession().getAccessControlManager()).isGranted(jcrPath, privs, systemSession, StringUtils.substringAfterLast("/", jcrPath));
                 }
             });
 
