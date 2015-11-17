@@ -752,6 +752,12 @@ public class ExternalSessionImpl implements Session {
             extensionSession.logout();
             extensionSession = null;
         }
+
+        if (extensionUserSession != null && extensionUserSession.isLive()) {
+            extensionUserSession.logout();
+            extensionUserSession = null;
+        }
+
         for (Binary binary : tempBinaries) {
             binary.dispose();
         }
