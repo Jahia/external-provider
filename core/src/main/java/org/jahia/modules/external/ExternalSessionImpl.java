@@ -114,6 +114,7 @@ public class ExternalSessionImpl implements Session {
     private Map<String, List<String>> orderedData = new LinkedHashMap<String, List<String>>();
     private Set<Binary> tempBinaries = new HashSet<Binary>();
     private Session extensionSession;
+    private Session extensionUserSession;
     private List<String> extensionAllowedTypes;
     private List<String> extensionForbiddenMixins;
     private Map<String,List<String>> overridableProperties;
@@ -885,10 +886,20 @@ public class ExternalSessionImpl implements Session {
         if (extensionSession == null) {
             JCRStoreProvider extensionProvider = getRepository().getStoreProvider().getExtensionProvider();
             if (extensionProvider != null) {
-                extensionSession = extensionProvider.getSession(JahiaLoginModule.getCredentials(getUserID(), getRealm()), "default");
+                extensionSession = extensionProvider.getSession(JahiaLoginModule.getSystemCredentials(StringUtils.removeStart(getUserID(), JahiaLoginModule.SYSTEM), getRealm()), "default");
             }
         }
         return extensionSession;
+    }
+
+    public Session getExtensionUserSession() throws RepositoryException {
+        if (extensionUserSession == null) {
+            JCRStoreProvider extensionProvider = getRepository().getStoreProvider().getExtensionProvider();
+            if (extensionProvider != null) {
+                extensionUserSession = extensionProvider.getSession(JahiaLoginModule.getCredentials(getUserID(), getRealm()), "default");
+            }
+        }
+        return extensionUserSession;
     }
 
     public List<String> getExtensionAllowedTypes() throws RepositoryException {
