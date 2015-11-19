@@ -71,15 +71,17 @@
  */
 package org.jahia.modules.external;
 
+import org.apache.commons.collections.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.commons.iterator.AccessControlPolicyIteratorAdapter;
-import org.apache.jackrabbit.core.security.JahiaAccessManager;
+import org.apache.jackrabbit.core.security.AccessManagerUtils;
+import org.apache.jackrabbit.core.security.JahiaLoginModule;
 import org.apache.jackrabbit.core.security.JahiaPrivilegeRegistry;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
-import org.jahia.services.content.JCRCallback;
-import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.JCRTemplate;
+import org.jahia.jaas.JahiaPrincipal;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.settings.SettingsBean;
 
 import javax.jcr.AccessDeniedException;
 import javax.jcr.NamespaceRegistry;
@@ -88,8 +90,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.lock.LockException;
 import javax.jcr.security.*;
 import javax.jcr.version.VersionException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static javax.jcr.security.Privilege.JCR_READ;
 import static org.jahia.api.Constants.EDIT_WORKSPACE;
@@ -103,21 +104,26 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
     private static final AccessControlPolicy[] POLICIES = new AccessControlPolicy[0];
 
-    private String[] privileges;
-
     private boolean readOnly;
 
     private ExternalDataSource dataSource;
+    private Map<String, Boolean> pathPermissionCache = null;
+    private Map<String, AccessManagerUtils.CompiledAcl> compiledAcls = new HashMap<String, AccessManagerUtils.CompiledAcl>();
 
     private JahiaPrivilegeRegistry registry;
 
     private final ExternalSessionImpl session;
+    private final String workspaceName;
+    private final JahiaPrincipal jahiaPrincipal;
 
     public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, boolean readOnly, ExternalDataSource dataSource, ExternalSessionImpl session) {
         super();
         this.readOnly = readOnly;
         this.dataSource = dataSource;
         this.session = session;
+        this.workspaceName = session.getWorkspace().getName();
+
+        jahiaPrincipal = new JahiaPrincipal(session.getUserID(), session.getRealm(), session.getUserID().startsWith(JahiaLoginModule.SYSTEM), JahiaLoginModule.GUEST.equals(session.getUserID()));
         try {
             init(namespaceRegistry);
         } catch (RepositoryException e) {
@@ -126,6 +132,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
     }
 
     private void init(NamespaceRegistry namespaceRegistry) throws RepositoryException {
+        pathPermissionCache = Collections.synchronizedMap(new LRUMap(SettingsBean.getInstance().getAccessManagerPathPermissionCacheMaxSize()));
         registry = new JahiaPrivilegeRegistry(namespaceRegistry);
     }
 
@@ -151,32 +158,23 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
     public Privilege[] getPrivileges(final String absPath) throws PathNotFoundException,
             RepositoryException {
-        return JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Privilege[]>() {
-            @Override
-            public Privilege[] doInJCR(JCRSessionWrapper systemSession) throws RepositoryException {
-                return ((JahiaAccessManager) session.getExtensionSession().getAccessControlManager()).getPrivilegesWithSession(session.getRepository().getStoreProvider().getMountPoint() + absPath, systemSession);
-            }
-        });
+        return AccessManagerUtils.getPrivileges(session.getRepository().getStoreProvider().getMountPoint() + absPath, workspaceName, jahiaPrincipal, registry);
     }
 
-    public boolean hasPrivileges(final String absPath,final Privilege[] privileges)
+    public boolean hasPrivileges(final String absPath, final Privilege[] privileges)
             throws PathNotFoundException, RepositoryException {
+
         if (privileges == null || privileges.length == 0) {
             // null or empty privilege array -> return true
             return true;
         } else {
-            return JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Boolean>() {
-                @Override
-                public Boolean doInJCR(JCRSessionWrapper systemSession) throws RepositoryException {
-                    Set<String> privs = new HashSet<String>();
-                    String jcrPath = session.getRepository().getStoreProvider().getMountPoint() + absPath;
-                    for (Privilege privilege : privileges) {
-                        privs.add(privilege.getName());
-                    }
-                    return ((JahiaAccessManager) session.getExtensionSession().getAccessControlManager()).isGranted(jcrPath, privs, systemSession, StringUtils.substringAfterLast("/", jcrPath));
-                }
-            });
-
+            Set<String> privs = new HashSet<String>();
+            for (Privilege privilege : privileges) {
+                privs.add(privilege.getName());
+            }
+            String jcrPath = session.getRepository().getStoreProvider().getMountPoint() + absPath;
+            return AccessManagerUtils.isGranted(jcrPath, privs, JCRSessionFactory.getInstance().getCurrentSystemSession(session.getWorkspace().getName(), null, null),
+                    StringUtils.substringAfterLast("/", jcrPath), jahiaPrincipal, workspaceName, false, pathPermissionCache, compiledAcls, registry);
         }
     }
 
