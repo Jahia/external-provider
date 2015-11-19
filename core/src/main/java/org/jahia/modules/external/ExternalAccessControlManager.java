@@ -74,7 +74,7 @@ package org.jahia.modules.external;
 import org.apache.commons.collections.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.commons.iterator.AccessControlPolicyIteratorAdapter;
-import org.apache.jackrabbit.core.security.AccessManagerUtils;
+import org.jahia.utils.security.AccessManagerUtils;
 import org.apache.jackrabbit.core.security.JahiaLoginModule;
 import org.apache.jackrabbit.core.security.JahiaPrivilegeRegistry;
 import org.jahia.api.Constants;
