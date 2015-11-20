@@ -74,7 +74,6 @@ package org.jahia.modules.external;
 import org.apache.commons.collections.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.commons.iterator.AccessControlPolicyIteratorAdapter;
-import org.jahia.utils.security.AccessManagerUtils;
 import org.apache.jackrabbit.core.security.JahiaLoginModule;
 import org.apache.jackrabbit.core.security.JahiaPrivilegeRegistry;
 import org.jahia.api.Constants;
@@ -82,6 +81,7 @@ import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.jaas.JahiaPrincipal;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.settings.SettingsBean;
+import org.jahia.utils.security.AccessManagerUtils;
 
 import javax.jcr.AccessDeniedException;
 import javax.jcr.NamespaceRegistry;
@@ -92,8 +92,7 @@ import javax.jcr.security.*;
 import javax.jcr.version.VersionException;
 import java.util.*;
 
-import static javax.jcr.security.Privilege.JCR_READ;
-import static org.jahia.api.Constants.EDIT_WORKSPACE;
+import static javax.jcr.security.Privilege.*;
 
 /**
  * Implementation of the {@link javax.jcr.security.AccessControlManager} for the {@link org.jahia.modules.external.ExternalData}.
@@ -104,9 +103,6 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
     private static final AccessControlPolicy[] POLICIES = new AccessControlPolicy[0];
 
-    private boolean readOnly;
-
-    private ExternalDataSource dataSource;
     private Map<String, Boolean> pathPermissionCache = null;
     private Map<String, AccessManagerUtils.CompiledAcl> compiledAcls = new HashMap<String, AccessManagerUtils.CompiledAcl>();
 
@@ -116,10 +112,8 @@ public class ExternalAccessControlManager implements AccessControlManager {
     private final String workspaceName;
     private final JahiaPrincipal jahiaPrincipal;
 
-    public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, boolean readOnly, ExternalDataSource dataSource, ExternalSessionImpl session) {
+    public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, ExternalSessionImpl session) {
         super();
-        this.readOnly = readOnly;
-        this.dataSource = dataSource;
         this.session = session;
         this.workspaceName = session.getWorkspace().getName();
 
@@ -204,7 +198,37 @@ public class ExternalAccessControlManager implements AccessControlManager {
     }
 
     public boolean canRead(String path) throws RepositoryException {
-        return hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_READ + "_" + EDIT_WORKSPACE,null)});
+        if (hasPrivileges(path, new Privilege[]{registry.getPrivilege(JCR_READ + "_" + session.getWorkspace().getName(), null)})) {
+            return true;
+        }
+        throw new PathNotFoundException(path);
+    }
+
+    // JCR_MODIFY_PROPERTIES
+    public boolean canModifyProperties(String path) throws RepositoryException {
+        if (hasPrivileges(path, new Privilege[]{registry.getPrivilege(JCR_MODIFY_PROPERTIES + "_" + session.getWorkspace().getName(), null)})) {
+            return true;
+        }
+        throw new AccessDeniedException(path);
+    }
+
+    //JCR_ADD_CHILD_NODES
+    public boolean canAddChildNodes(String path) throws RepositoryException {
+        if (hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_ADD_CHILD_NODES + "_" + session.getWorkspace().getName(), null)})) {
+            return true;
+        }
+        throw new AccessDeniedException(path);
+    }
+    //JCR_REMOVE_NODE
+    public boolean canRemoveNode(String path) throws RepositoryException {
+        if (hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_REMOVE_NODE + "_" + session.getWorkspace().getName(), null)})) {
+            return true;
+        }
+        throw new AccessDeniedException(path);
+    }
+
+    public boolean canManageNodeTypes(String path) throws RepositoryException {
+        return hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_NODE_TYPE_MANAGEMENT + "_" + session.getWorkspace().getName(), null)});
     }
 
 }

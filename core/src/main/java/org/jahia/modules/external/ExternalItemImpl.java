@@ -87,11 +87,13 @@ import java.util.regex.Pattern;
 public abstract class ExternalItemImpl implements Item {
 
     protected ExternalSessionImpl session;
+    protected ExternalAccessControlManager controlManager;
 
     protected boolean isNew = false;
 
-    public ExternalItemImpl(ExternalSessionImpl session) {
+    public ExternalItemImpl(ExternalSessionImpl session) throws RepositoryException {
         this.session = session;
+        this.controlManager = session.getAccessControlManager();
     }
 
     public ExternalSessionImpl getSession() {
@@ -170,5 +172,25 @@ public abstract class ExternalItemImpl implements Item {
      */
     public void remove() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
 
+    }
+
+    protected void canModifyProperities() throws RepositoryException {
+        controlManager.canModifyProperties(isNode()?getPath():getParent().getPath());
+    }
+
+    protected void canRead() throws RepositoryException {
+        controlManager.canRead(isNode()?getPath():getParent().getPath());
+    }
+
+    protected void canAddChildNodes() throws RepositoryException {
+        controlManager.canAddChildNodes(isNode()?getPath():getParent().getPath());
+    }
+
+    protected boolean canManageNodeTypes() throws RepositoryException {
+        return controlManager.canManageNodeTypes(isNode()?getPath():getParent().getPath());
+    }
+
+    protected boolean canRemoveNode() throws RepositoryException {
+        return controlManager.canRemoveNode(isNode()?getPath():getParent().getPath());
     }
 }

@@ -73,8 +73,6 @@ package org.jahia.modules.external;
 
 import org.apache.commons.io.input.AutoCloseInputStream;
 import org.apache.jackrabbit.value.BinaryImpl;
-import org.jahia.services.content.nodetypes.ExtendedNodeType;
-import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.Name;
 
 import javax.jcr.*;
@@ -85,7 +83,7 @@ import javax.jcr.version.VersionException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Calendar;
 
 /**
  * Implementation of the {@link javax.jcr.Property} for the {@link org.jahia.modules.external.ExternalData}.
@@ -100,31 +98,33 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     private Value[] values;
     private Value value;
 
-    public ExternalPropertyImpl(Name name, ExternalNodeImpl node, ExternalSessionImpl session, Value value) {
+    public ExternalPropertyImpl(Name name, ExternalNodeImpl node, ExternalSessionImpl session, Value value) throws RepositoryException {
         super(session);
         this.name = name;
         this.node = node;
         this.value = value;
     }
 
-    public ExternalPropertyImpl(Name name, ExternalNodeImpl node, ExternalSessionImpl session, Value[] values) {
+    public ExternalPropertyImpl(Name name, ExternalNodeImpl node, ExternalSessionImpl session, Value[] values) throws RepositoryException {
         super(session);
         this.name = name;
         this.node = node;
         this.values = values;
     }
 
-    public ExternalPropertyImpl(Name name, ExternalNodeImpl node, ExternalSessionImpl session) {
+    public ExternalPropertyImpl(Name name, ExternalNodeImpl node, ExternalSessionImpl session) throws RepositoryException {
         super(session);
         this.name = name;
         this.node = node;
     }
 
     public void setValue(Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         this.value = value;
     }
 
     public void setValue(Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         this.values = values;
     }
 
@@ -211,6 +211,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public Value getValue() throws ValueFormatException, RepositoryException {
+        canRead();
         if (isMultiple()) {
             throw new ValueFormatException(getName() + " is a multi-valued property,"
                     + " so it's values can only be retrieved as an array");
@@ -227,6 +228,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public Value[] getValues() throws ValueFormatException, RepositoryException {
+        canRead();
         if (!isMultiple()) {
             throw new ValueFormatException(getName() + " is a single-valued property,"
                     + " so it's value can not be retrieved as an array");
@@ -235,6 +237,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public String getString() throws ValueFormatException, RepositoryException {
+        canRead();
         if (value != null) {
             return value.getString();
         }
@@ -242,6 +245,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public InputStream getStream() throws ValueFormatException, RepositoryException {
+        canRead();
         if (value != null) {
             final Binary binary = value.getBinary();
             return new AutoCloseInputStream(binary.getStream()) {
@@ -256,6 +260,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public long getLong() throws ValueFormatException, RepositoryException {
+        canRead();
         if (value != null) {
             return value.getLong();
         }
@@ -263,6 +268,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public double getDouble() throws ValueFormatException, RepositoryException {
+        canRead();
         if (value != null) {
             return value.getDouble();
         }
@@ -270,6 +276,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public Calendar getDate() throws ValueFormatException, RepositoryException {
+        canRead();
         if (value != null) {
             return value.getDate();
         }
@@ -277,10 +284,8 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public boolean getBoolean() throws ValueFormatException, RepositoryException {
-        if (value != null) {
-            return value.getBoolean();
-        }
-        return false;
+        canRead();
+        return value != null && value.getBoolean();
     }
 
     public Node getNode() throws ValueFormatException, RepositoryException {

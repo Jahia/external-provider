@@ -72,7 +72,6 @@
 package org.jahia.modules.external;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.jackrabbit.core.security.JahiaLoginModule;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
@@ -91,7 +90,10 @@ import javax.jcr.version.VersionException;
 import javax.jcr.version.VersionHistory;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Wrapper for extension Node
@@ -106,8 +108,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
     private ExternalSessionImpl session;
 
 
-
-    public ExtensionNode(Node node,String path, ExternalSessionImpl session) {
+    public ExtensionNode(Node node,String path, ExternalSessionImpl session) throws RepositoryException {
         super(node,path,session);
         this.node = node;
         this.path = path;
@@ -125,6 +126,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
+        canAddChildNodes();
         Node subNode = node.addNode(relPath, primaryNodeTypeName);
         subNode.addMixin("jmix:externalProviderExtension");
         subNode.setProperty("j:isExternalProviderRoot", false);
@@ -155,81 +157,97 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Value value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, value, type), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, values), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Value[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, values, type), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, String[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name,values), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, String[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, values, type), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, String value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, String value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, value, type), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, boolean value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, double value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, BigDecimal value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, long value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Calendar value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Node value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
@@ -240,36 +258,43 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public NodeIterator getNodes() throws RepositoryException {
+        canRead();
         return new ExtensionNodeIterator(node.getNodes());
     }
 
     @Override
     public NodeIterator getNodes(String namePattern) throws RepositoryException {
+        canRead();
         return new ExtensionNodeIterator(node.getNodes(namePattern));
     }
 
     @Override
     public NodeIterator getNodes(String[] nameGlobs) throws RepositoryException {
+        canRead();
         return new ExtensionNodeIterator(node.getNodes(nameGlobs));
     }
 
     @Override
     public Property getProperty(String relPath) throws PathNotFoundException, RepositoryException {
+        canRead();
         return new ExtensionProperty(node.getProperty(relPath),path + "/" + relPath,session, this);
     }
 
     @Override
     public PropertyIterator getProperties() throws RepositoryException {
+        canRead();
         return new ExtensionPropertyIterator(node.getProperties());
     }
 
     @Override
     public PropertyIterator getProperties(String namePattern) throws RepositoryException {
+        canRead();
         return new ExtensionPropertyIterator(node.getProperties(namePattern));
     }
 
     @Override
     public PropertyIterator getProperties(String[] nameGlobs) throws RepositoryException {
+        canRead();
         return new ExtensionPropertyIterator(node.getProperties(nameGlobs));
     }
 
@@ -320,21 +345,25 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public boolean hasNode(String relPath) throws RepositoryException {
+        canRead();
         return node.hasNode(relPath);
     }
 
     @Override
     public boolean hasProperty(String relPath) throws RepositoryException {
+        canRead();
         return node.hasProperty(relPath);
     }
 
     @Override
     public boolean hasNodes() throws RepositoryException {
+        canRead();
         return node.hasNodes();
     }
 
     @Override
     public boolean hasProperties() throws RepositoryException {
+        canRead();
         return node.hasProperties();
     }
 
@@ -366,17 +395,23 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public void addMixin(String mixinName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+        if (!canManageNodeTypes()) {
+            return;
+        }
         node.addMixin(mixinName);
     }
 
     @Override
     public void removeMixin(String mixinName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+        if (!canManageNodeTypes()) {
+            return;
+        }
         node.removeMixin(mixinName);
     }
 
     @Override
     public boolean canAddMixin(String mixinName) throws NoSuchNodeTypeException, RepositoryException {
-        return node.canAddMixin(mixinName);
+        return canManageNodeTypes() && node.canAddMixin(mixinName);
     }
 
     @Override
@@ -405,17 +440,17 @@ public class ExtensionNode extends ExtensionItem implements Node {
     }
 
     @Override
-    public void update(String srcWorkspace) throws NoSuchWorkspaceException, AccessDeniedException, LockException, InvalidItemStateException, RepositoryException {
+    public void update(String srcWorkspace) throws NoSuchWorkspaceException, PathNotFoundException, LockException, InvalidItemStateException, RepositoryException {
         node.update(srcWorkspace);
     }
 
     @Override
-    public NodeIterator merge(String srcWorkspace, boolean bestEffort) throws NoSuchWorkspaceException, AccessDeniedException, MergeException, LockException, InvalidItemStateException, RepositoryException {
+    public NodeIterator merge(String srcWorkspace, boolean bestEffort) throws NoSuchWorkspaceException, PathNotFoundException, MergeException, LockException, InvalidItemStateException, RepositoryException {
         return new ExtensionNodeIterator(node.merge(srcWorkspace, bestEffort));
     }
 
     @Override
-    public String getCorrespondingNodePath(String workspaceName) throws ItemNotFoundException, NoSuchWorkspaceException, AccessDeniedException, RepositoryException {
+    public String getCorrespondingNodePath(String workspaceName) throws ItemNotFoundException, NoSuchWorkspaceException, PathNotFoundException, RepositoryException {
         return node.getCorrespondingNodePath(workspaceName);
     }
 
@@ -470,17 +505,17 @@ public class ExtensionNode extends ExtensionItem implements Node {
     }
 
     @Override
-    public Lock lock(boolean isDeep, boolean isSessionScoped) throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
+    public Lock lock(boolean isDeep, boolean isSessionScoped) throws UnsupportedRepositoryOperationException, LockException, PathNotFoundException, InvalidItemStateException, RepositoryException {
         return node.lock(isDeep, isSessionScoped);
     }
 
     @Override
-    public Lock getLock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, RepositoryException {
+    public Lock getLock() throws UnsupportedRepositoryOperationException, LockException, PathNotFoundException, RepositoryException {
         return node.getLock();
     }
 
     @Override
-    public void unlock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
+    public void unlock() throws UnsupportedRepositoryOperationException, LockException, PathNotFoundException, InvalidItemStateException, RepositoryException {
         node.unlock();
     }
 
@@ -591,16 +626,18 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
         private Node fetchNext() {
             nextNode = null;
-            if (extensionNodeIterator != null) {
-                while (extensionNodeIterator.hasNext()) {
+            if (extensionNodeIterator != null && extensionNodeIterator.hasNext()) {
+                do {
                     try {
                         Node n = extensionNodeIterator.nextNode();
-                        nextNode = new ExtensionNode(n,getPath() + "/" + n.getName(),getSession());
-                        return  nextNode;
+                        if (session.getAccessControlManager().canRead(StringUtils.substringAfter(n.getPath(),session.getRepository().getStoreProvider().getMountPoint()))) {
+                            nextNode = new ExtensionNode(n,getPath() + "/" + n.getName(),getSession());
+                            return  nextNode;
+                        }
                     } catch (RepositoryException e) {
-                        logger.error("Cannot get node",e);
+                        logger.debug("Cannot get node", e);
                     }
-                }
+                } while (nextNode == null || extensionNodeIterator.hasNext());
             }
             return null;
         }
@@ -622,7 +659,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
         }
 
         public long getSize() {
-            return extensionNodeIterator.getSize();
+            return -1;
         }
 
         public long getPosition() {

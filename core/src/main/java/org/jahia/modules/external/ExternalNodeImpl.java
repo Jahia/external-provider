@@ -3,71 +3,71 @@
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
  *
- *     Copyright (C) 2002-2015 Jahia Solutions Group SA. All rights reserved.
+ * Copyright (C) 2002-2015 Jahia Solutions Group SA. All rights reserved.
  *
- *     THIS FILE IS AVAILABLE UNDER TWO DIFFERENT LICENSES:
- *     1/GPL OR 2/JSEL
+ * THIS FILE IS AVAILABLE UNDER TWO DIFFERENT LICENSES:
+ * 1/GPL OR 2/JSEL
  *
- *     1/ GPL
- *     ======================================================================================
+ * 1/ GPL
+ * ======================================================================================
  *
- *     IF YOU DECIDE TO CHOSE THE GPL LICENSE, YOU MUST COMPLY WITH THE FOLLOWING TERMS:
+ * IF YOU DECIDE TO CHOSE THE GPL LICENSE, YOU MUST COMPLY WITH THE FOLLOWING TERMS:
  *
- *     "This program is free software; you can redistribute it and/or
- *     modify it under the terms of the GNU General Public License
- *     as published by the Free Software Foundation; either version 2
- *     of the License, or (at your option) any later version.
+ * "This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program; if not, write to the Free Software
- *     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- *     As a special exception to the terms and conditions of version 2.0 of
- *     the GPL (or any later version), you may redistribute this Program in connection
- *     with Free/Libre and Open Source Software ("FLOSS") applications as described
- *     in Jahia's FLOSS exception. You should have received a copy of the text
- *     describing the FLOSS exception, also available here:
- *     http://www.jahia.com/license"
+ * As a special exception to the terms and conditions of version 2.0 of
+ * the GPL (or any later version), you may redistribute this Program in connection
+ * with Free/Libre and Open Source Software ("FLOSS") applications as described
+ * in Jahia's FLOSS exception. You should have received a copy of the text
+ * describing the FLOSS exception, also available here:
+ * http://www.jahia.com/license"
  *
- *     2/ JSEL - Commercial and Supported Versions of the program
- *     ======================================================================================
+ * 2/ JSEL - Commercial and Supported Versions of the program
+ * ======================================================================================
  *
- *     IF YOU DECIDE TO CHOOSE THE JSEL LICENSE, YOU MUST COMPLY WITH THE FOLLOWING TERMS:
+ * IF YOU DECIDE TO CHOOSE THE JSEL LICENSE, YOU MUST COMPLY WITH THE FOLLOWING TERMS:
  *
- *     Alternatively, commercial and supported versions of the program - also known as
- *     Enterprise Distributions - must be used in accordance with the terms and conditions
- *     contained in a separate written agreement between you and Jahia Solutions Group SA.
+ * Alternatively, commercial and supported versions of the program - also known as
+ * Enterprise Distributions - must be used in accordance with the terms and conditions
+ * contained in a separate written agreement between you and Jahia Solutions Group SA.
  *
- *     If you are unsure which license is appropriate for your use,
- *     please contact the sales department at sales@jahia.com.
+ * If you are unsure which license is appropriate for your use,
+ * please contact the sales department at sales@jahia.com.
  *
  *
  * ==========================================================================================
  * =                                   ABOUT JAHIA                                          =
  * ==========================================================================================
  *
- *     Rooted in Open Source CMS, Jahia’s Digital Industrialization paradigm is about
- *     streamlining Enterprise digital projects across channels to truly control
- *     time-to-market and TCO, project after project.
- *     Putting an end to “the Tunnel effect”, the Jahia Studio enables IT and
- *     marketing teams to collaboratively and iteratively build cutting-edge
- *     online business solutions.
- *     These, in turn, are securely and easily deployed as modules and apps,
- *     reusable across any digital projects, thanks to the Jahia Private App Store Software.
- *     Each solution provided by Jahia stems from this overarching vision:
- *     Digital Factory, Workspace Factory, Portal Factory and eCommerce Factory.
- *     Founded in 2002 and headquartered in Geneva, Switzerland,
- *     Jahia Solutions Group has its North American headquarters in Washington DC,
- *     with offices in Chicago, Toronto and throughout Europe.
- *     Jahia counts hundreds of global brands and governmental organizations
- *     among its loyal customers, in more than 20 countries across the globe.
+ * Rooted in Open Source CMS, Jahia’s Digital Industrialization paradigm is about
+ * streamlining Enterprise digital projects across channels to truly control
+ * time-to-market and TCO, project after project.
+ * Putting an end to “the Tunnel effect”, the Jahia Studio enables IT and
+ * marketing teams to collaboratively and iteratively build cutting-edge
+ * online business solutions.
+ * These, in turn, are securely and easily deployed as modules and apps,
+ * reusable across any digital projects, thanks to the Jahia Private App Store Software.
+ * Each solution provided by Jahia stems from this overarching vision:
+ * Digital Factory, Workspace Factory, Portal Factory and eCommerce Factory.
+ * Founded in 2002 and headquartered in Geneva, Switzerland,
+ * Jahia Solutions Group has its North American headquarters in Washington DC,
+ * with offices in Chicago, Toronto and throughout Europe.
+ * Jahia counts hundreds of global brands and governmental organizations
+ * among its loyal customers, in more than 20 countries across the globe.
  *
- *     For more information, please visit http://www.jahia.com
+ * For more information, please visit http://www.jahia.com
  */
 package org.jahia.modules.external;
 
@@ -128,7 +128,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                     for (int i = 0; i < entry.getValue().length; i++) {
                         values[i] = session.getValueFactory().createValue(entry.getValue()[i], requiredType);
                     }
-                    properties.put(entry.getKey(),new ExternalPropertyImpl(new Name(entry.getKey(), NodeTypeRegistry.getInstance().getNamespaces()), this, session, values));
+                    properties.put(entry.getKey(), new ExternalPropertyImpl(new Name(entry.getKey(), NodeTypeRegistry.getInstance().getNamespaces()), this, session, values));
                 } else {
                     properties.put(entry.getKey(),
                             new ExternalPropertyImpl(new Name(entry.getKey(), NodeTypeRegistry.getInstance().getNamespaces()), this, session,
@@ -138,14 +138,14 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
         if (data.getBinaryProperties() != null) {
             for (Map.Entry<String, Binary[]> entry : data.getBinaryProperties().entrySet()) {
-                ExtendedPropertyDefinition definition =  getPropertyDefinition(entry.getKey());
+                ExtendedPropertyDefinition definition = getPropertyDefinition(entry.getKey());
                 if (definition != null && definition.getRequiredType() == PropertyType.BINARY) {
                     if (definition.isMultiple()) {
                         Value[] values = new Value[entry.getValue().length];
                         for (int i = 0; i < entry.getValue().length; i++) {
                             values[i] = session.getValueFactory().createValue(entry.getValue()[i]);
                         }
-                        properties.put(entry.getKey(),new ExternalPropertyImpl(new Name(entry.getKey(), NodeTypeRegistry.getInstance().getNamespaces()), this, session, values));
+                        properties.put(entry.getKey(), new ExternalPropertyImpl(new Name(entry.getKey(), NodeTypeRegistry.getInstance().getNamespaces()), this, session, values));
                     } else {
                         properties.put(entry.getKey(),
                                 new ExternalPropertyImpl(new Name(entry.getKey(), NodeTypeRegistry.getInstance().getNamespaces()), this, session,
@@ -180,11 +180,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
         ExtendedNodeType childTypeNT = NodeTypeRegistry.getInstance().getNodeType(childType);
         for (NodeType nodeType : getMixinNodeTypes()) {
-            nodeDefinitionsAsMap = ((ExtendedNodeType)nodeType).getChildNodeDefinitionsAsMap();
+            nodeDefinitionsAsMap = ((ExtendedNodeType) nodeType).getChildNodeDefinitionsAsMap();
             if (nodeDefinitionsAsMap.containsKey(name)) {
                 return nodeDefinitionsAsMap.get(name);
             }
-            for (Map.Entry<String, ExtendedNodeDefinition> entry : ((ExtendedNodeType)nodeType).getUnstructuredChildNodeDefinitions().entrySet()) {
+            for (Map.Entry<String, ExtendedNodeDefinition> entry : ((ExtendedNodeType) nodeType).getUnstructuredChildNodeDefinitions().entrySet()) {
                 if (childTypeNT.isNodeType(entry.getKey())) {
                     return entry.getValue();
                 }
@@ -210,7 +210,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             return propertyDefinitionsAsMap.get(name);
         }
         for (NodeType nodeType : getMixinNodeTypes(false)) {
-            propertyDefinitionsAsMap = ((ExtendedNodeType)nodeType).getPropertyDefinitionsAsMap();
+            propertyDefinitionsAsMap = ((ExtendedNodeType) nodeType).getPropertyDefinitionsAsMap();
             if (propertyDefinitionsAsMap.containsKey(name)) {
                 return propertyDefinitionsAsMap.get(name);
             }
@@ -218,7 +218,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (getExtensionNode(false) != null) {
             for (NodeType nodeType : getExtensionNode(false).getMixinNodeTypes()) {
                 nodeType = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
-                propertyDefinitionsAsMap = ((ExtendedNodeType)nodeType).getPropertyDefinitionsAsMap();
+                propertyDefinitionsAsMap = ((ExtendedNodeType) nodeType).getPropertyDefinitionsAsMap();
                 if (propertyDefinitionsAsMap.containsKey(name)) {
                     return propertyDefinitionsAsMap.get(name);
                 }
@@ -257,6 +257,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             throw new ItemNotFoundException();
         }
         String path = StringUtils.substringBeforeLast(data.getPath(), "/");
+        controlManager.canRead(path);
         return session.getNode(path.isEmpty() ? "/" : path);
     }
 
@@ -272,7 +273,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                         ExternalDataSource.CanLoadChildrenInBatch childrenLoader = (ExternalDataSource.CanLoadChildrenInBatch) dataSource;
                         final List<ExternalData> childrenNodes = childrenLoader.getChildrenNodes(getPath());
 
-                        if(externalChildren == null) {
+                        if (externalChildren == null) {
                             externalChildren = new ArrayList<String>(childrenNodes.size());
                         }
 
@@ -314,7 +315,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             }
             data.markSaved();
         }
-     }
+    }
 
     /**
      * {@inheritDoc}
@@ -324,11 +325,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             throw new UnsupportedRepositoryOperationException();
         }
 
+        canRemoveNode();
+
         if (!data.getPath().equals("/")) {
-            ((ExternalNodeImpl)getParent()).getExternalChildren().remove(getName());
+            ((ExternalNodeImpl) getParent()).getExternalChildren().remove(getName());
         }
 
-        session.getDeletedData().put(getPath(),data);
+        session.getDeletedData().put(getPath(), data);
         session.unregisterNode(this);
 
         Node extensionNode = getExtensionNode(false);
@@ -341,6 +344,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }
+        canModifyProperities();
+
         boolean hasProperty = false;
         if (data.getBinaryProperties() != null && data.getBinaryProperties().containsKey(name)) {
             hasProperty = true;
@@ -369,13 +374,14 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Node addNode(String relPath) throws ItemExistsException, PathNotFoundException, VersionException, ConstraintViolationException, LockException, RepositoryException {
-        return addNode(relPath,null);
+        return addNode(relPath, null);
     }
 
     /**
      * {@inheritDoc}
      */
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
+        canAddChildNodes();
         if (canItemBeExtended(relPath, primaryNodeTypeName)) {
             if ((StringUtils.equals(primaryNodeTypeName, ExternalDataAcl.ACL_NODE_TYPE) || StringUtils.equals(primaryNodeTypeName, ExternalDataAce.ACE_NODE_TYPE))
                     && session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable) {
@@ -397,8 +403,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }
-        String separator = StringUtils.equals(this.data.getId(),"/")?"":"/";
-        ExternalData subNodeData = new ExternalData(this.data.getId() + separator + relPath ,getPath() + ( getPath().equals("/")? "" : "/" ) + relPath,primaryNodeTypeName,new HashMap<String, String[]>(), true);
+        String separator = StringUtils.equals(this.data.getId(), "/") ? "" : "/";
+        ExternalData subNodeData = new ExternalData(this.data.getId() + separator + relPath, getPath() + (getPath().equals("/") ? "" : "/") + relPath, primaryNodeTypeName, new HashMap<String, String[]>(), true);
         final ExternalNodeImpl newNode = new ExternalNodeImpl(subNodeData, session);
         session.registerNode(newNode);
         session.getChangedData().put(subNodeData.getPath(), subNodeData);
@@ -430,10 +436,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
+
         if (canItemBeExtended(getPropertyDefinition(name))) {
             final Node extensionNode = getExtensionNode(true);
             if (extensionNode != null) {
-                return new ExtensionProperty(extensionNode.setProperty(name, value), getPath()+"/"+name, session, this);
+                return new ExtensionProperty(extensionNode.setProperty(name, value), getPath() + "/" + name, session, this);
             }
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
@@ -454,11 +462,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 }
                 data.getBinaryProperties().put(name, new Binary[]{value.getBinary()});
             } else if (epd.isInternationalized()) {
-                Map<String,String[]> valMap = new HashMap<String, String[]>();
+                Map<String, String[]> valMap = new HashMap<String, String[]>();
                 if (getName().startsWith(J_TRANSLATION)) {
                     String lang = StringUtils.substringAfter(getName(), "_");
-                    valMap.put(lang,new String[]{value.getString()});
-                    data.getI18nProperties().put(name,valMap);
+                    valMap.put(lang, new String[]{value.getString()});
+                    data.getI18nProperties().put(name, valMap);
                 } else {
                     throw new ConstraintViolationException("Property " + name + " is internationalized");
                 }
@@ -484,10 +492,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
+
         if (canItemBeExtended(getPropertyDefinition(name))) {
             final Node extensionNode = getExtensionNode(true);
             if (extensionNode != null) {
-                return new ExtensionProperty(extensionNode.setProperty(name, values), getPath()+ "/" + name, session, this);
+                return new ExtensionProperty(extensionNode.setProperty(name, values), getPath() + "/" + name, session, this);
             }
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
@@ -502,39 +512,39 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
         ExtendedPropertyDefinition epd = getPropertyDefinition(name);
 
-        if (!hasProperty(name) || (hasProperty(name) && !Arrays.equals(getProperty(name).getValues(),values))) {
+        if (!hasProperty(name) || (hasProperty(name) && !Arrays.equals(getProperty(name).getValues(), values))) {
             if (epd.getRequiredType() == PropertyType.BINARY) {
                 if (data.getBinaryProperties() == null) {
                     data.setBinaryProperties(new HashMap<String, Binary[]>());
                 }
 
                 Binary[] b = new Binary[values.length];
-                for (int i = 0; i < values.length; i ++) {
+                for (int i = 0; i < values.length; i++) {
                     b[i] = values[i] != null ? values[i].getBinary() : null;
                 }
                 data.getBinaryProperties().put(name, b);
             } else {
                 String[] s = new String[values.length];
-                for (int i = 0; i < values.length; i ++) {
+                for (int i = 0; i < values.length; i++) {
                     s[i] = values[i] != null ? values[i].getString() : null;
                 }
                 if (epd.isInternationalized()) {
-                    Map<String,String[]> valMap = new HashMap<String, String[]>();
+                    Map<String, String[]> valMap = new HashMap<String, String[]>();
                     if (getName().startsWith(J_TRANSLATION)) {
                         String lang = StringUtils.substringAfter(getName(), "_");
-                        valMap.put(lang,s);
-                        data.getI18nProperties().put(name,valMap);
+                        valMap.put(lang, s);
+                        data.getI18nProperties().put(name, valMap);
                     } else {
                         throw new ConstraintViolationException("Property " + name + " is internationalized");
                     }
                 } else {
-                    data.getProperties().put(name,s);
+                    data.getProperties().put(name, s);
                 }
             }
             final ExternalPropertyImpl newProperty = new ExternalPropertyImpl(new Name(name, NodeTypeRegistry.getInstance().getNamespaces()), this, session, values);
             properties.put(name, newProperty);
             session.setNewItem(newProperty);
-            session.getChangedData().put(getPath(),data);
+            session.getChangedData().put(getPath(), data);
         }
         return getProperty(name);
     }
@@ -543,7 +553,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Property setProperty(String name, Value[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name,values);
+        return setProperty(name, values);
     }
 
     /**
@@ -553,7 +563,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         Value[] v = null;
         if (values != null) {
             v = new Value[values.length];
-            for (int i =0; i < values.length; i ++ ) {
+            for (int i = 0; i < values.length; i++) {
                 v[i] = values[i] != null ? getSession().getValueFactory().createValue(values[i]) : null;
             }
         }
@@ -582,7 +592,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Property setProperty(String name, String value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        return setProperty(name,value);
+        return setProperty(name, value);
     }
 
     /**
@@ -590,10 +600,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      */
     @SuppressWarnings("deprecation")
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+        canModifyProperities();
         if (canItemBeExtended(getPropertyDefinition(name))) {
             final Node extensionNode = getExtensionNode(true);
             if (extensionNode != null) {
-                return new ExtensionProperty(extensionNode.setProperty(name, value), getPath()+ "/" + name, session, this);
+                return new ExtensionProperty(extensionNode.setProperty(name, value), getPath() + "/" + name, session, this);
             }
         }
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
@@ -607,7 +618,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
         Value v = null;
         Binary binary = null;
-        try{
+        try {
             binary = new BinaryImpl(value);
             Binary[] b = {binary};
             if (data.getBinaryProperties() == null) {
@@ -673,13 +684,14 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Node getNode(String s) throws RepositoryException {
+        canRead();
         Node n = session.getNode(getPath().endsWith("/") ? getPath() + s : getPath() + "/" + s);
         if (n != null) {
-            return  n;
+            return n;
         }
         n = getExtensionNode(false);
         if (n != null) {
-            return new ExtensionNode(n.getNode(s),getPath() + "/" + s,getSession());
+            return new ExtensionNode(n.getNode(s), getPath() + "/" + s, getSession());
         }
         throw new PathNotFoundException();
     }
@@ -695,19 +707,20 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public NodeIterator getNodes(String namePattern) throws RepositoryException {
+        canRead();
         List<String> filteredList = new ArrayList<>();
         final boolean matchAll = MATCH_ALL_PATTERN.equals(namePattern);
         final ExternalDataSource dataSource = session.getRepository().getDataSource();
 
-        if(ExternalDataAcl.ACL_NODE_NAME.equals(data.getName()) &&
+        if (ExternalDataAcl.ACL_NODE_NAME.equals(data.getName()) &&
                 ExternalDataAcl.ACL_NODE_TYPE.equals(data.getType()) && data.getId().startsWith(ExternalDataAcl.ACL_NODE_NAME) &&
-                dataSource instanceof ExternalDataSource.AccessControllable){
+                dataSource instanceof ExternalDataSource.AccessControllable) {
             // get list of ace
             ExternalNodeImpl parent = (ExternalNodeImpl) getParent();
-            if(parent.data.getExternalDataAcl() != null && parent.data.getExternalDataAcl().getAcl() != null && parent.data.getExternalDataAcl().getAcl().size() > 0) {
+            if (parent.data.getExternalDataAcl() != null && parent.data.getExternalDataAcl().getAcl() != null && parent.data.getExternalDataAcl().getAcl().size() > 0) {
                 for (ExternalDataAce ace : parent.data.getExternalDataAcl().getAcl()) {
                     String aceNodeName = ace.toString();
-                    if(matchAll || ChildrenCollectorFilter.matches(aceNodeName, namePattern)) {
+                    if (matchAll || ChildrenCollectorFilter.matches(aceNodeName, namePattern)) {
                         filteredList.add(aceNodeName);
                     }
                 }
@@ -745,7 +758,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
 
         // handle acl
-        if(data.getExternalDataAcl() != null &&
+        if (data.getExternalDataAcl() != null &&
                 dataSource instanceof ExternalDataSource.AccessControllable &&
                 (matchAll || ChildrenCollectorFilter.matches(ExternalDataAcl.ACL_NODE_NAME, namePattern))) {
             filteredList.add(ExternalDataAcl.ACL_NODE_NAME);
@@ -762,18 +775,19 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public NodeIterator getNodes(String[] nameGlobs) throws RepositoryException {
+        canRead();
         final List<String> filteredList = new ArrayList<String>();
         final ExternalDataSource dataSource = session.getRepository().getDataSource();
 
-        if(ExternalDataAcl.ACL_NODE_NAME.equals(data.getName()) &&
+        if (ExternalDataAcl.ACL_NODE_NAME.equals(data.getName()) &&
                 ExternalDataAcl.ACL_NODE_TYPE.equals(data.getType()) && data.getId().startsWith(ExternalDataAcl.ACL_NODE_NAME) &&
-                dataSource instanceof ExternalDataSource.AccessControllable){
+                dataSource instanceof ExternalDataSource.AccessControllable) {
             // get list of ace
             ExternalNodeImpl parent = (ExternalNodeImpl) getParent();
-            if(parent.data.getExternalDataAcl() != null && parent.data.getExternalDataAcl().getAcl() != null && parent.data.getExternalDataAcl().getAcl().size() > 0) {
+            if (parent.data.getExternalDataAcl() != null && parent.data.getExternalDataAcl().getAcl() != null && parent.data.getExternalDataAcl().getAcl().size() > 0) {
                 for (ExternalDataAce ace : parent.data.getExternalDataAcl().getAcl()) {
                     String aceNodeName = ace.toString();
-                    if(ChildrenCollectorFilter.matches(aceNodeName, nameGlobs)) {
+                    if (ChildrenCollectorFilter.matches(aceNodeName, nameGlobs)) {
                         filteredList.add(aceNodeName);
                     }
                 }
@@ -782,7 +796,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
 
         for (String path : getExternalChildren()) {
-            if (ChildrenCollectorFilter.matches(path,nameGlobs)) {
+            if (ChildrenCollectorFilter.matches(path, nameGlobs)) {
                 filteredList.add(path);
             }
         }
@@ -800,7 +814,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
 
         // handle acl
-        if(data.getExternalDataAcl() != null &&
+        if (data.getExternalDataAcl() != null &&
                 dataSource instanceof ExternalDataSource.AccessControllable &&
                 ChildrenCollectorFilter.matches(ExternalDataAcl.ACL_NODE_NAME, nameGlobs)) {
             filteredList.add(ExternalDataAcl.ACL_NODE_NAME);
@@ -808,17 +822,17 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
         Node n = getExtensionNode(false);
         if (n != null) {
-            return new ExternalNodeIterator(filteredList,n.getNodes(nameGlobs));
+            return new ExternalNodeIterator(filteredList, n.getNodes(nameGlobs));
         }
         return new ExternalNodeIterator(filteredList);
     }
-
 
 
     /**
      * {@inheritDoc}
      */
     public Property getProperty(String s) throws PathNotFoundException, RepositoryException {
+        canRead();
         Node n = getExtensionNode(false);
         if (n != null && n.hasProperty(s) && getPropertyDefinition(s) != null && canItemBeExtended(getPropertyDefinition(s))) {
             return new ExtensionProperty(n.getProperty(s), getPath() + "/" + s, session, this);
@@ -869,6 +883,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public PropertyIterator getProperties() throws RepositoryException {
+       canRead();
         Node n = getExtensionNode(false);
         if (n != null) {
             return new ExternalPropertyIterator(properties, n.getProperties(), data.getLazyProperties(), data.getLazyBinaryProperties(), this);
@@ -880,9 +895,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public PropertyIterator getProperties(String namePattern) throws RepositoryException {
+       canRead();
         final Map<String, ExternalPropertyImpl> filteredList = new HashMap<String, ExternalPropertyImpl>();
         for (Map.Entry<String, ExternalPropertyImpl> entry : properties.entrySet()) {
-            if (ChildrenCollectorFilter.matches(entry.getKey(),namePattern)) {
+            if (ChildrenCollectorFilter.matches(entry.getKey(), namePattern)) {
                 filteredList.put(entry.getKey(), entry.getValue());
             }
         }
@@ -967,10 +983,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public boolean hasProperties() throws RepositoryException {
-        return !properties.isEmpty() ||
+        return (!properties.isEmpty() ||
                 (data.getLazyProperties() != null && !data.getLazyProperties().isEmpty()) ||
                 (data.getLazyBinaryProperties() != null && !data.getLazyBinaryProperties().isEmpty()) ||
-                getProperties().hasNext();
+                getProperties().hasNext());
     }
 
     /**
@@ -1040,11 +1056,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public void addMixin(String mixinName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
-        if (isNodeType(mixinName)) {
+        if (isNodeType(mixinName) || !canManageNodeTypes()) {
             return;
         }
 
-        if(getSession().getExtensionForbiddenMixins().contains(mixinName) && !(data.getMixin() != null && data.getMixin().contains(mixinName))) {
+        if (getSession().getExtensionForbiddenMixins().contains(mixinName) && !(data.getMixin() != null && data.getMixin().contains(mixinName))) {
             List<String> mixins = data.getMixin() == null ? new ArrayList<String>() : new ArrayList<>(data.getMixin());
             mixins.add(mixinName);
             data.setMixin(mixins);
@@ -1064,7 +1080,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public void removeMixin(String mixinName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
-        if(getSession().getExtensionForbiddenMixins().contains(mixinName) && data.getMixin() != null && data.getMixin().contains(mixinName)) {
+       if (!canManageNodeTypes()) {
+           return;
+       }
+
+        if (getSession().getExtensionForbiddenMixins().contains(mixinName) && data.getMixin() != null && data.getMixin().contains(mixinName)) {
             List<String> mixins = new ArrayList<>(data.getMixin());
             mixins.remove(mixinName);
             data.setMixin(mixins);
@@ -1083,7 +1103,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 List<NodeType> nodeTypes = new ArrayList<NodeType>();
                 nodeTypes.addAll(Arrays.asList(getMixinNodeTypes(true)));
                 nodeTypes.add(NodeTypeRegistry.getInstance().getNodeType("jmix:externalProviderExtension"));
-                boolean canSetProperty = extensionProperty.isMultiple()?getPrimaryNodeType().canSetProperty(extensionProperty.getName(), extensionProperty.getValues()):getPrimaryNodeType().canSetProperty(extensionProperty.getName(), extensionProperty.getValue());
+                boolean canSetProperty = extensionProperty.isMultiple() ? getPrimaryNodeType().canSetProperty(extensionProperty.getName(), extensionProperty.getValues()) : getPrimaryNodeType().canSetProperty(extensionProperty.getName(), extensionProperty.getValue());
                 for (PropertyDefinition propertyDefinition : getPrimaryNodeType().getPropertyDefinitions()) {
                     if (propertyDefinition.getName().equals(extensionProperty.getName()) && propertyDefinition.getRequiredType() == extensionProperty.getType()) {
                         canSetProperty = true;
@@ -1092,14 +1112,14 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 }
                 if (!canSetProperty) {
                     for (NodeType mixinType : nodeTypes) {
-                        if (!StringUtils.equals(mixinType.getName(),mixinName)) {
+                        if (!StringUtils.equals(mixinType.getName(), mixinName)) {
                             if (extensionProperty.isMultiple()) {
-                                if (mixinType.canSetProperty(extensionProperty.getName(),extensionProperty.getValues())) {
+                                if (mixinType.canSetProperty(extensionProperty.getName(), extensionProperty.getValues())) {
                                     canSetProperty = true;
                                     break;
                                 }
                             } else {
-                                if (mixinType.canSetProperty(extensionProperty.getName(),extensionProperty.getValue())) {
+                                if (mixinType.canSetProperty(extensionProperty.getName(), extensionProperty.getValue())) {
                                     canSetProperty = true;
                                     break;
                                 }
@@ -1117,7 +1137,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 boolean canAddChildNode = getPrimaryNodeType().canAddChildNode(extensionChildNode.getName(), getPrimaryNodeType().getName());
                 if (!canAddChildNode) {
                     for (NodeType mixinType : getMixinNodeTypes(true)) {
-                        if (!StringUtils.equals(mixinType.getName(),mixinName)) {
+                        if (!StringUtils.equals(mixinType.getName(), mixinName)) {
                             if (mixinType.canAddChildNode(extensionChildNode.getName(), getPrimaryNodeType().getName())) {
                                 canAddChildNode = true;
                                 break;
@@ -1132,7 +1152,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             return;
         }
         if (!isNodeType(mixinName)) {
-            throw new NoSuchNodeTypeException("Mixin "+mixinName + " not included in node "+getPath());
+            throw new NoSuchNodeTypeException("Mixin " + mixinName + " not included in node " + getPath());
         }
 
         throw new UnsupportedRepositoryOperationException();
@@ -1142,7 +1162,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public boolean canAddMixin(String mixinName) throws NoSuchNodeTypeException, RepositoryException {
-        if(getSession().getExtensionForbiddenMixins().contains(mixinName)) {
+        if (getSession().getExtensionForbiddenMixins().contains(mixinName) && canManageNodeTypes()) {
             return true;
         }
 
@@ -1277,21 +1297,21 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Lock lock(boolean b, boolean b1) throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
-        return session.getWorkspace().getLockManager().lock(getPath(),b,b1, Long.MAX_VALUE, null);
+        return session.getWorkspace().getLockManager().lock(getPath(), b, b1, Long.MAX_VALUE, null);
     }
 
     /**
      * {@inheritDoc}
      */
     public Lock getLock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, RepositoryException {
-        return session.getWorkspace().getLockManager()!= null ?session.getWorkspace().getLockManager().getLock(getPath()):null;
+        return session.getWorkspace().getLockManager() != null ? session.getWorkspace().getLockManager().getLock(getPath()) : null;
     }
 
     /**
      * {@inheritDoc}
      */
     public void unlock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
-        if (session.getWorkspace().getLockManager()!=null) {
+        if (session.getWorkspace().getLockManager() != null) {
             session.getWorkspace().getLockManager().unlock(getPath());
         }
     }
@@ -1300,14 +1320,14 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public boolean holdsLock() throws RepositoryException {
-        return session.getWorkspace().getLockManager()!=null && session.getWorkspace().getLockManager().getLock(getPath()) != null;
+        return session.getWorkspace().getLockManager() != null && session.getWorkspace().getLockManager().getLock(getPath()) != null;
     }
 
     /**
      * {@inheritDoc}
      */
     public boolean isLocked() throws RepositoryException {
-        return  session.getWorkspace().getLockManager()!=null && session.getWorkspace().getLockManager().isLocked(getPath());
+        return session.getWorkspace().getLockManager() != null && session.getWorkspace().getLockManager().isLocked(getPath());
     }
 
     /**
@@ -1341,9 +1361,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public PropertyIterator getProperties(String[] nameGlobs) throws RepositoryException {
+        canRead();
         final Map<String, ExternalPropertyImpl> filteredList = new HashMap<String, ExternalPropertyImpl>();
         for (Map.Entry<String, ExternalPropertyImpl> entry : properties.entrySet()) {
-            if (ChildrenCollectorFilter.matches(entry.getKey(),nameGlobs)) {
+            if (ChildrenCollectorFilter.matches(entry.getKey(), nameGlobs)) {
                 filteredList.put(entry.getKey(), entry.getValue());
             }
         }
@@ -1530,8 +1551,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
         NodeType type = definition.getDeclaringNodeType();
 
-        Map<String,List<String>> overridableProperties = getSession().getOverridableProperties();
-        Map<String,List<String>> nonOverridableProperties = getSession().getNonOverridableProperties();
+        Map<String, List<String>> overridableProperties = getSession().getOverridableProperties();
+        Map<String, List<String>> nonOverridableProperties = getSession().getNonOverridableProperties();
         for (Map.Entry<String, List<String>> entry : overridableProperties.entrySet()) {
             if ((entry.getKey().equals(MATCH_ALL_PATTERN) || type.getName().equals(entry.getKey())) &&
                     (entry.getValue().contains(MATCH_ALL_PATTERN) || entry.getValue().contains(definition.getName())) &&
@@ -1631,10 +1652,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 try {
                     nextProperty = getProperty(propertyName);
                 } catch (RepositoryException e) {
-                    logger.error(e.getMessage(),e);
-                    logger.error(e.getMessage(),e);
+                    logger.error(e.getMessage(), e);
+                    logger.error(e.getMessage(), e);
                 }
-                return;
             }
         }
 
@@ -1645,12 +1665,12 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             }
             Property next = nextProperty;
             fetchNext();
-            pos ++;
+            pos++;
             return next;
         }
 
         public void skip(long skipNum) {
-            for (int i=0; i<skipNum; i++) {
+            for (int i = 0; i < skipNum; i++) {
                 nextProperty();
             }
         }
@@ -1732,10 +1752,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                             } catch (PathNotFoundException e) {
                                 logger.debug("Cannot find node " + path, e);
                             }
-                            return  nextNode;
+                            return nextNode;
                         }
                     } catch (RepositoryException e) {
-                        logger.error(e.getMessage(),e);
+                        logger.error(e.getMessage(), e);
                     }
                 }
             }
@@ -1753,13 +1773,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
 
         public void skip(long skipNum) {
-            for (int i = 0; i<skipNum ; i++) {
+            for (int i = 0; i < skipNum; i++) {
                 nextNode();
             }
         }
 
         public long getSize() {
-            return list.size() + (extensionNodeIterator!= null ? extensionNodeIterator.getSize():0);
+            return list.size() + (extensionNodeIterator != null ? extensionNodeIterator.getSize() : 0);
         }
 
         public long getPosition() {

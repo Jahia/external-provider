@@ -85,7 +85,7 @@ public class ExtensionItem extends ExternalItemImpl implements Item {
     private Item item;
     private String path;
 
-    public ExtensionItem(Item item, String path, ExternalSessionImpl session) {
+    public ExtensionItem(Item item, String path, ExternalSessionImpl session) throws RepositoryException {
         super(session);
         this.item = item;
         this.path = path;
@@ -139,6 +139,11 @@ public class ExtensionItem extends ExternalItemImpl implements Item {
 
     @Override
     public void remove() throws VersionException, LockException, ConstraintViolationException, AccessDeniedException, RepositoryException {
+        if (isNode()) {
+            canRemoveNode();
+        } else {
+            canModifyProperities();
+        }
         item.remove();
     }
 }
