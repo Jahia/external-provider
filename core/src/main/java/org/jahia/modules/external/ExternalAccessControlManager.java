@@ -159,8 +159,23 @@ public class ExternalAccessControlManager implements AccessControlManager {
                 .getNode(session.getRepository().getStoreProvider().getMountPoint() + absPath);
         Privilege[] privileges = AccessManagerUtils.getPrivileges(node, jahiaPrincipal, registry);
 
-        if (aclReadOnly && node.getRealNode() instanceof ExternalNodeImpl) {
-            return filterPrivileges(privileges, registry.getPrivilege("jcr:modifyAccessControl", workspaceName));
+        // remove jcr:modifyAccessControl permission when data source is AccessControllable, only on ExternalNodeImpl
+        // ExtensionNodeImpl acls can be modify
+        boolean removeModifyAccessControl = aclReadOnly && node.getRealNode() instanceof ExternalNodeImpl;
+        // remove all write permissions in case of the data source not writable and not extendable
+        boolean removeAllWrite = !writable && node.getRealNode() instanceof ExternalNodeImpl &&
+                (session.getOverridableProperties() == null || session.getOverridableProperties().size() == 0);
+        if (removeModifyAccessControl || removeAllWrite) {
+            List<Privilege> privilegeToFilterOut = new ArrayList<>();
+            if(removeModifyAccessControl) {
+                privilegeToFilterOut.add(registry.getPrivilege("jcr:modifyAccessControl", workspaceName));
+            }
+            if(removeAllWrite) {
+                Privilege writePrivilege = registry.getPrivilege("jcr:write", workspaceName);
+                privilegeToFilterOut.add(writePrivilege);
+                privilegeToFilterOut.addAll(Lists.newArrayList(writePrivilege.getAggregatePrivileges()));
+            }
+            return filterPrivileges(privileges, privilegeToFilterOut);
         } else {
             return privileges;
         }
@@ -239,30 +254,26 @@ public class ExternalAccessControlManager implements AccessControlManager {
         return hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_NODE_TYPE_MANAGEMENT + "_" + session.getWorkspace().getName(), null)});
     }
 
-    private Privilege[] filterPrivileges (Privilege[] privileges, Privilege privilegeToRemove) throws RepositoryException {
+    private Privilege[] filterPrivileges (Privilege[] privileges, List<Privilege> privilegesTofilter) throws RepositoryException {
         List<Privilege> privilegesList = Lists.newArrayList(privileges);
         Set<Privilege> filteredResult = new HashSet<>();
 
-        int index = privilegesList.indexOf(privilegeToRemove);
-        if(index != -1){
-            privilegesList.remove(index);
-            filteredResult.addAll(privilegesList);
-        } else {
-            for (Privilege privilege : privilegesList) {
+        for (Privilege privilege : privilegesList) {
+            if(!privilegesTofilter.contains(privilege)) {
                 if(privilege.isAggregate()) {
-                    List<Privilege> subPrivilegesList = Lists.newArrayList(privilege.getAggregatePrivileges());
-                    index = subPrivilegesList.indexOf(privilegeToRemove);
-                    if(index != -1) {
-                        subPrivilegesList.remove(index);
-                        filteredResult.addAll(subPrivilegesList);
-                    } else {
+                    List<Privilege> aggregatedPrivileges = Lists.newArrayList(privilege.getAggregatePrivileges());
+                    aggregatedPrivileges.removeAll(privilegesTofilter);
+                    if(aggregatedPrivileges.size() == privilege.getAggregatePrivileges().length) {
                         filteredResult.add(privilege);
+                    } else {
+                        filteredResult.addAll(aggregatedPrivileges);
                     }
                 } else {
                     filteredResult.add(privilege);
                 }
             }
         }
+
         return filteredResult.toArray(new Privilege[filteredResult.size()]);
     }
 }
