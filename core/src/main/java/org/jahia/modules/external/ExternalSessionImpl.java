@@ -878,7 +878,7 @@ public class ExternalSessionImpl implements Session {
     public ExternalAccessControlManager getAccessControlManager()
             throws RepositoryException {
         if (accessControlManager == null) {
-            accessControlManager = new ExternalAccessControlManager(repository.getNamespaceRegistry(), this);
+            accessControlManager = new ExternalAccessControlManager(repository.getNamespaceRegistry(), this, repository.getDataSource());
         }
         return accessControlManager;
     }

@@ -71,6 +71,7 @@
  */
 package org.jahia.modules.external;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.collections.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.commons.iterator.AccessControlPolicyIteratorAdapter;
@@ -79,14 +80,12 @@ import org.apache.jackrabbit.core.security.JahiaPrivilegeRegistry;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.jaas.JahiaPrincipal;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.settings.SettingsBean;
 import org.jahia.utils.security.AccessManagerUtils;
 
-import javax.jcr.AccessDeniedException;
-import javax.jcr.NamespaceRegistry;
-import javax.jcr.PathNotFoundException;
-import javax.jcr.RepositoryException;
+import javax.jcr.*;
 import javax.jcr.lock.LockException;
 import javax.jcr.security.*;
 import javax.jcr.version.VersionException;
@@ -111,11 +110,15 @@ public class ExternalAccessControlManager implements AccessControlManager {
     private final ExternalSessionImpl session;
     private final String workspaceName;
     private final JahiaPrincipal jahiaPrincipal;
+    private final boolean aclReadOnly;
+    private final boolean writable;
 
-    public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, ExternalSessionImpl session) {
+    public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, ExternalSessionImpl session, ExternalDataSource dataSource) {
         super();
         this.session = session;
         this.workspaceName = session.getWorkspace().getName();
+        this.aclReadOnly = dataSource instanceof ExternalDataSource.AccessControllable;
+        this.writable = dataSource instanceof ExternalDataSource.Writable;
 
         jahiaPrincipal = new JahiaPrincipal(session.getUserID(), session.getRealm(), session.getUserID().startsWith(JahiaLoginModule.SYSTEM), JahiaLoginModule.GUEST.equals(session.getUserID()));
         try {
@@ -152,7 +155,15 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
     public Privilege[] getPrivileges(final String absPath) throws PathNotFoundException,
             RepositoryException {
-        return AccessManagerUtils.getPrivileges(session.getRepository().getStoreProvider().getMountPoint() + absPath, workspaceName, jahiaPrincipal, registry);
+        JCRNodeWrapper node = JCRSessionFactory.getInstance().getCurrentSystemSession(workspaceName, null, null)
+                .getNode(session.getRepository().getStoreProvider().getMountPoint() + absPath);
+        Privilege[] privileges = AccessManagerUtils.getPrivileges(node, jahiaPrincipal, registry);
+
+        if (aclReadOnly && node.getRealNode() instanceof ExternalNodeImpl) {
+            return filterPrivileges(privileges, registry.getPrivilege("jcr:modifyAccessControl", workspaceName));
+        } else {
+            return privileges;
+        }
     }
 
     public boolean hasPrivileges(final String absPath, final Privilege[] privileges)
@@ -228,4 +239,30 @@ public class ExternalAccessControlManager implements AccessControlManager {
         return hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_NODE_TYPE_MANAGEMENT + "_" + session.getWorkspace().getName(), null)});
     }
 
+    private Privilege[] filterPrivileges (Privilege[] privileges, Privilege privilegeToRemove) throws RepositoryException {
+        List<Privilege> privilegesList = Lists.newArrayList(privileges);
+        Set<Privilege> filteredResult = new HashSet<>();
+
+        int index = privilegesList.indexOf(privilegeToRemove);
+        if(index != -1){
+            privilegesList.remove(index);
+            filteredResult.addAll(privilegesList);
+        } else {
+            for (Privilege privilege : privilegesList) {
+                if(privilege.isAggregate()) {
+                    List<Privilege> subPrivilegesList = Lists.newArrayList(privilege.getAggregatePrivileges());
+                    index = subPrivilegesList.indexOf(privilegeToRemove);
+                    if(index != -1) {
+                        subPrivilegesList.remove(index);
+                        filteredResult.addAll(subPrivilegesList);
+                    } else {
+                        filteredResult.add(privilege);
+                    }
+                } else {
+                    filteredResult.add(privilege);
+                }
+            }
+        }
+        return filteredResult.toArray(new Privilege[filteredResult.size()]);
+    }
 }
