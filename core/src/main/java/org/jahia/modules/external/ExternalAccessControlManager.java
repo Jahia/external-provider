@@ -166,7 +166,8 @@ public class ExternalAccessControlManager implements AccessControlManager {
             for (Privilege privilege : privileges) {
                 privs.add(privilege.getName());
             }
-            String jcrPath = session.getRepository().getStoreProvider().getMountPoint() + absPath;
+            String mountPoint = session.getRepository().getStoreProvider().getMountPoint();
+            String jcrPath = StringUtils.equals(absPath,"/")? mountPoint : mountPoint + absPath;
             return AccessManagerUtils.isGranted(jcrPath, privs, JCRSessionFactory.getInstance().getCurrentSystemSession(session.getWorkspace().getName(), null, null),
                     StringUtils.substringAfterLast("/", jcrPath), jahiaPrincipal, workspaceName, false, pathPermissionCache, compiledAcls, registry);
         }
@@ -197,34 +198,30 @@ public class ExternalAccessControlManager implements AccessControlManager {
         // not supported
     }
 
-    public boolean canRead(String path) throws RepositoryException {
-        if (hasPrivileges(path, new Privilege[]{registry.getPrivilege(JCR_READ + "_" + session.getWorkspace().getName(), null)})) {
-            return true;
+    public void checkRead(String path) throws RepositoryException {
+        if (!hasPrivileges(path, new Privilege[]{registry.getPrivilege(JCR_READ + "_" + session.getWorkspace().getName(), null)})) {
+            throw new PathNotFoundException(path);
         }
-        throw new PathNotFoundException(path);
     }
 
     // JCR_MODIFY_PROPERTIES
-    public boolean canModifyProperties(String path) throws RepositoryException {
-        if (hasPrivileges(path, new Privilege[]{registry.getPrivilege(JCR_MODIFY_PROPERTIES + "_" + session.getWorkspace().getName(), null)})) {
-            return true;
+    public void checkModify(String path) throws RepositoryException {
+        if (!hasPrivileges(path, new Privilege[]{registry.getPrivilege(JCR_MODIFY_PROPERTIES + "_" + session.getWorkspace().getName(), null)})) {
+            throw new AccessDeniedException(path);
         }
-        throw new AccessDeniedException(path);
     }
 
     //JCR_ADD_CHILD_NODES
-    public boolean canAddChildNodes(String path) throws RepositoryException {
-        if (hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_ADD_CHILD_NODES + "_" + session.getWorkspace().getName(), null)})) {
-            return true;
+    public void checkAddChildNodes(String path) throws RepositoryException {
+        if (!hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_ADD_CHILD_NODES + "_" + session.getWorkspace().getName(), null)})) {
+            throw new AccessDeniedException(path);
         }
-        throw new AccessDeniedException(path);
     }
     //JCR_REMOVE_NODE
-    public boolean canRemoveNode(String path) throws RepositoryException {
+    public void checkRemoveNode(String path) throws RepositoryException {
         if (hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_REMOVE_NODE + "_" + session.getWorkspace().getName(), null)})) {
-            return true;
+            throw new AccessDeniedException(path);
         }
-        throw new AccessDeniedException(path);
     }
 
     public boolean canManageNodeTypes(String path) throws RepositoryException {

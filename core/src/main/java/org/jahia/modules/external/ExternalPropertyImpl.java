@@ -119,12 +119,12 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public void setValue(Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         this.value = value;
     }
 
     public void setValue(Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         this.values = values;
     }
 
@@ -211,7 +211,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public Value getValue() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         if (isMultiple()) {
             throw new ValueFormatException(getName() + " is a multi-valued property,"
                     + " so it's values can only be retrieved as an array");
@@ -228,7 +228,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public Value[] getValues() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         if (!isMultiple()) {
             throw new ValueFormatException(getName() + " is a single-valued property,"
                     + " so it's value can not be retrieved as an array");
@@ -237,7 +237,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public String getString() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         if (value != null) {
             return value.getString();
         }
@@ -245,7 +245,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public InputStream getStream() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         if (value != null) {
             final Binary binary = value.getBinary();
             return new AutoCloseInputStream(binary.getStream()) {
@@ -260,7 +260,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public long getLong() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         if (value != null) {
             return value.getLong();
         }
@@ -268,7 +268,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public double getDouble() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         if (value != null) {
             return value.getDouble();
         }
@@ -276,7 +276,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public Calendar getDate() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         if (value != null) {
             return value.getDate();
         }
@@ -284,7 +284,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public boolean getBoolean() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         return value != null && value.getBoolean();
     }
 

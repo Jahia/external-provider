@@ -104,80 +104,80 @@ public class ExtensionProperty extends ExtensionItem implements Property {
 
     @Override
     public void setValue(Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         property.setValue(value);
     }
 
     @Override
     public void setValue(Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         property.setValue(values);
     }
 
     @Override
     public void setValue(String value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         property.setValue(value);
     }
 
     @Override
     public void setValue(String[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         property.setValue(values);
     }
 
     @SuppressWarnings("deprecation")
     @Override
     public void setValue(InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         property.setValue(value);
     }
 
     @Override
     public void setValue(Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         property.setValue(value);
     }
 
     @Override
     public void setValue(long value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         property.setValue(value);
     }
 
     @Override
     public void setValue(double value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         property.setValue(value);
     }
 
     @Override
     public void setValue(BigDecimal value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         property.setValue(value);
     }
 
     @Override
     public void setValue(Calendar value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         property.setValue(value);
     }
 
     @Override
     public void setValue(boolean value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         property.setValue(value);
     }
 
     @Override
     public void setValue(Node value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         property.setValue(value);
     }
 
     @Override
     public Value getValue() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         if (StringUtils.equals(getName(), "jcr:uuid")) {
             return getSession().getValueFactory().createValue(parentNode.getIdentifier());
         }  else {
@@ -187,19 +187,19 @@ public class ExtensionProperty extends ExtensionItem implements Property {
 
     @Override
     public Value[] getValues() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         return property.getValues();
     }
 
     @Override
     public String getString() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         return property.getValue().getString();
     }
 
     @Override
     public InputStream getStream() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         final Binary binary = property.getValue().getBinary();
         return new AutoCloseInputStream(binary.getStream()) {
             @Override
@@ -212,61 +212,61 @@ public class ExtensionProperty extends ExtensionItem implements Property {
 
     @Override
     public Binary getBinary() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         return property.getValue().getBinary();
     }
 
     @Override
     public long getLong() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         return property.getValue().getLong();
     }
 
     @Override
     public double getDouble() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         return property.getValue().getDouble();
     }
 
     @Override
     public BigDecimal getDecimal() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         return property.getValue().getDecimal();
     }
 
     @Override
     public Calendar getDate() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         return property.getValue().getDate();
     }
 
     @Override
     public boolean getBoolean() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         return property.getValue().getBoolean();
     }
 
     @Override
     public Node getNode() throws ItemNotFoundException, ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         return property.getNode();
     }
 
     @Override
     public Property getProperty() throws ItemNotFoundException, ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         return property.getProperty();
     }
 
     @Override
     public long getLength() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         return property.getLength();
     }
 
     @Override
     public long[] getLengths() throws ValueFormatException, RepositoryException {
-        canRead();
+        checkRead();
         return property.getLengths();
     }
 

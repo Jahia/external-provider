@@ -114,7 +114,6 @@ public class ExternalSessionImpl implements Session {
     private Map<String, List<String>> orderedData = new LinkedHashMap<String, List<String>>();
     private Set<Binary> tempBinaries = new HashSet<Binary>();
     private Session extensionSession;
-    private Session extensionSystemSession;
     private List<String> extensionAllowedTypes;
     private List<String> extensionForbiddenMixins;
     private Map<String,List<String>> overridableProperties;
@@ -192,6 +191,7 @@ public class ExternalSessionImpl implements Session {
     }
 
     public Node getRootNode() throws RepositoryException {
+        getAccessControlManager().checkRead("/");
         final Node fromCache = getFromCacheByPath("/");
         if(fromCache != null) {
             return fromCache;
@@ -217,7 +217,12 @@ public class ExternalSessionImpl implements Session {
 
     public Node getNodeByUUID(String uuid) throws RepositoryException {
         final ExternalNodeImpl fromCacheById = getFromCacheById(uuid);
-        if(fromCacheById != null && getAccessControlManager().canRead(fromCacheById.getPath())) {
+        if(fromCacheById != null) {
+            try {
+                getAccessControlManager().checkRead(fromCacheById.getPath());
+            } catch (PathNotFoundException e) {
+                throw new ItemNotFoundException(fromCacheById.getPath());
+            }
             return fromCacheById;
         }
 
@@ -233,11 +238,12 @@ public class ExternalSessionImpl implements Session {
             uuid = externalId;
         }
         Node n = getNodeByLocalIdentifier(uuid);
-        if (getAccessControlManager().canRead(n.getPath())) {
-            return n;
-        } else {
-            throw new AccessDeniedException("cannot access node " + n.getPath() + " with user " + getUserID());
+        try {
+            getAccessControlManager().checkRead(n.getPath());
+        } catch (PathNotFoundException e) {
+            throw new AccessDeniedException(n.getPath());
         }
+        return n;
     }
 
     private Node getNodeByLocalIdentifier(String uuid) throws RepositoryException {
@@ -296,7 +302,7 @@ public class ExternalSessionImpl implements Session {
     }
 
     public Item getItem(String path) throws RepositoryException {
-        getAccessControlManager().canRead(path);
+        getAccessControlManager().checkRead(path);
         path = path.length() > 1 && path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
         if (deletedData.containsKey(path)) {
             throw new PathNotFoundException("This node has been deleted");

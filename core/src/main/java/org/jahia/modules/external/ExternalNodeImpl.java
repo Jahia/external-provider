@@ -257,7 +257,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             throw new ItemNotFoundException();
         }
         String path = StringUtils.substringBeforeLast(data.getPath(), "/");
-        controlManager.canRead(path);
+        controlManager.checkRead(path);
         return session.getNode(path.isEmpty() ? "/" : path);
     }
 
@@ -344,7 +344,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }
-        canModifyProperities();
+        checkModify();
 
         boolean hasProperty = false;
         if (data.getBinaryProperties() != null && data.getBinaryProperties().containsKey(name)) {
@@ -381,7 +381,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
-        canAddChildNodes();
+        checkAddChildNodes();
         if (canItemBeExtended(relPath, primaryNodeTypeName)) {
             if ((StringUtils.equals(primaryNodeTypeName, ExternalDataAcl.ACL_NODE_TYPE) || StringUtils.equals(primaryNodeTypeName, ExternalDataAce.ACE_NODE_TYPE))
                     && session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable) {
@@ -436,7 +436,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
 
         if (canItemBeExtended(getPropertyDefinition(name))) {
             final Node extensionNode = getExtensionNode(true);
@@ -492,7 +492,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
 
         if (canItemBeExtended(getPropertyDefinition(name))) {
             final Node extensionNode = getExtensionNode(true);
@@ -600,7 +600,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      */
     @SuppressWarnings("deprecation")
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         if (canItemBeExtended(getPropertyDefinition(name))) {
             final Node extensionNode = getExtensionNode(true);
             if (extensionNode != null) {
@@ -684,7 +684,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Node getNode(String s) throws RepositoryException {
-        canRead();
+        checkRead();
         Node n = session.getNode(getPath().endsWith("/") ? getPath() + s : getPath() + "/" + s);
         if (n != null) {
             return n;
@@ -707,7 +707,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public NodeIterator getNodes(String namePattern) throws RepositoryException {
-        canRead();
+        checkRead();
         List<String> filteredList = new ArrayList<>();
         final boolean matchAll = MATCH_ALL_PATTERN.equals(namePattern);
         final ExternalDataSource dataSource = session.getRepository().getDataSource();
@@ -775,7 +775,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public NodeIterator getNodes(String[] nameGlobs) throws RepositoryException {
-        canRead();
+        checkRead();
         final List<String> filteredList = new ArrayList<String>();
         final ExternalDataSource dataSource = session.getRepository().getDataSource();
 
@@ -832,7 +832,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Property getProperty(String s) throws PathNotFoundException, RepositoryException {
-        canRead();
+        checkRead();
         Node n = getExtensionNode(false);
         if (n != null && n.hasProperty(s) && getPropertyDefinition(s) != null && canItemBeExtended(getPropertyDefinition(s))) {
             return new ExtensionProperty(n.getProperty(s), getPath() + "/" + s, session, this);
@@ -883,7 +883,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public PropertyIterator getProperties() throws RepositoryException {
-       canRead();
+       checkRead();
         Node n = getExtensionNode(false);
         if (n != null) {
             return new ExternalPropertyIterator(properties, n.getProperties(), data.getLazyProperties(), data.getLazyBinaryProperties(), this);
@@ -895,7 +895,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public PropertyIterator getProperties(String namePattern) throws RepositoryException {
-       canRead();
+       checkRead();
         final Map<String, ExternalPropertyImpl> filteredList = new HashMap<String, ExternalPropertyImpl>();
         for (Map.Entry<String, ExternalPropertyImpl> entry : properties.entrySet()) {
             if (ChildrenCollectorFilter.matches(entry.getKey(), namePattern)) {
@@ -1167,10 +1167,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         }
 
         Node extensionNode = getExtensionNode(true);
-        if (extensionNode != null) {
-            return extensionNode.canAddMixin(mixinName);
-        }
-        return false;
+        return extensionNode != null && extensionNode.canAddMixin(mixinName);
     }
 
     /**
@@ -1361,7 +1358,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public PropertyIterator getProperties(String[] nameGlobs) throws RepositoryException {
-        canRead();
+        checkRead();
         final Map<String, ExternalPropertyImpl> filteredList = new HashMap<String, ExternalPropertyImpl>();
         for (Map.Entry<String, ExternalPropertyImpl> entry : properties.entrySet()) {
             if (ChildrenCollectorFilter.matches(entry.getKey(), nameGlobs)) {

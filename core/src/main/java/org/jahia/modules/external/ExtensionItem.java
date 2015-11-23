@@ -142,7 +142,7 @@ public class ExtensionItem extends ExternalItemImpl implements Item {
         if (isNode()) {
             canRemoveNode();
         } else {
-            canModifyProperities();
+            checkModify();
         }
         item.remove();
     }

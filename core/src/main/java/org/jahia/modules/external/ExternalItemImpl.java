@@ -167,23 +167,16 @@ public abstract class ExternalItemImpl implements Item {
         session.refresh(b);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public void remove() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
-
+    protected void checkModify() throws RepositoryException {
+        controlManager.checkModify(isNode() ? getPath() : getParent().getPath());
     }
 
-    protected void canModifyProperities() throws RepositoryException {
-        controlManager.canModifyProperties(isNode()?getPath():getParent().getPath());
+    protected void checkRead() throws RepositoryException {
+        controlManager.checkRead(isNode() ? getPath() : getParent().getPath());
     }
 
-    protected void canRead() throws RepositoryException {
-        controlManager.canRead(isNode()?getPath():getParent().getPath());
-    }
-
-    protected void canAddChildNodes() throws RepositoryException {
-        controlManager.canAddChildNodes(isNode()?getPath():getParent().getPath());
+    protected void checkAddChildNodes() throws RepositoryException {
+        controlManager.checkAddChildNodes(isNode() ? getPath() : getParent().getPath());
     }
 
     protected boolean canManageNodeTypes() throws RepositoryException {
@@ -191,6 +184,11 @@ public abstract class ExternalItemImpl implements Item {
     }
 
     protected boolean canRemoveNode() throws RepositoryException {
-        return controlManager.canRemoveNode(isNode()?getPath():getParent().getPath());
+        try {
+            controlManager.checkRemoveNode(isNode() ? getPath() : getParent().getPath());
+        } catch (AccessDeniedException e) {
+            return false;
+        }
+        return true;
     }
 }

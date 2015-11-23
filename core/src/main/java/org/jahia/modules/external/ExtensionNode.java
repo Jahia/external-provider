@@ -126,7 +126,7 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
-        canAddChildNodes();
+        checkAddChildNodes();
         Node subNode = node.addNode(relPath, primaryNodeTypeName);
         subNode.addMixin("jmix:externalProviderExtension");
         subNode.setProperty("j:isExternalProviderRoot", false);
@@ -157,97 +157,97 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Value value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, value, type), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, values), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Value[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, values, type), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, String[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name,values), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, String[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, values, type), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, String value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, String value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, value, type), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, boolean value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, double value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, BigDecimal value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, long value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Calendar value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
     @Override
     public Property setProperty(String name, Node value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-        canModifyProperities();
+        checkModify();
         return new ExtensionProperty(node.setProperty(name, value), path + "/" + name, session, this);
     }
 
@@ -258,43 +258,43 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public NodeIterator getNodes() throws RepositoryException {
-        canRead();
+        checkRead();
         return new ExtensionNodeIterator(node.getNodes());
     }
 
     @Override
     public NodeIterator getNodes(String namePattern) throws RepositoryException {
-        canRead();
+        checkRead();
         return new ExtensionNodeIterator(node.getNodes(namePattern));
     }
 
     @Override
     public NodeIterator getNodes(String[] nameGlobs) throws RepositoryException {
-        canRead();
+        checkRead();
         return new ExtensionNodeIterator(node.getNodes(nameGlobs));
     }
 
     @Override
     public Property getProperty(String relPath) throws PathNotFoundException, RepositoryException {
-        canRead();
+        checkRead();
         return new ExtensionProperty(node.getProperty(relPath),path + "/" + relPath,session, this);
     }
 
     @Override
     public PropertyIterator getProperties() throws RepositoryException {
-        canRead();
+        checkRead();
         return new ExtensionPropertyIterator(node.getProperties());
     }
 
     @Override
     public PropertyIterator getProperties(String namePattern) throws RepositoryException {
-        canRead();
+        checkRead();
         return new ExtensionPropertyIterator(node.getProperties(namePattern));
     }
 
     @Override
     public PropertyIterator getProperties(String[] nameGlobs) throws RepositoryException {
-        canRead();
+        checkRead();
         return new ExtensionPropertyIterator(node.getProperties(nameGlobs));
     }
 
@@ -345,25 +345,25 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public boolean hasNode(String relPath) throws RepositoryException {
-        canRead();
+        checkRead();
         return node.hasNode(relPath);
     }
 
     @Override
     public boolean hasProperty(String relPath) throws RepositoryException {
-        canRead();
+        checkRead();
         return node.hasProperty(relPath);
     }
 
     @Override
     public boolean hasNodes() throws RepositoryException {
-        canRead();
+        checkRead();
         return node.hasNodes();
     }
 
     @Override
     public boolean hasProperties() throws RepositoryException {
-        canRead();
+        checkRead();
         return node.hasProperties();
     }
 
@@ -630,10 +630,9 @@ public class ExtensionNode extends ExtensionItem implements Node {
                 do {
                     try {
                         Node n = extensionNodeIterator.nextNode();
-                        if (session.getAccessControlManager().canRead(StringUtils.substringAfter(n.getPath(),session.getRepository().getStoreProvider().getMountPoint()))) {
-                            nextNode = new ExtensionNode(n,getPath() + "/" + n.getName(),getSession());
-                            return  nextNode;
-                        }
+                        session.getAccessControlManager().checkRead(StringUtils.substringAfter(n.getPath(), session.getRepository().getStoreProvider().getMountPoint()));
+                        nextNode = new ExtensionNode(n,getPath() + "/" + n.getName(),getSession());
+                        return  nextNode;
                     } catch (RepositoryException e) {
                         logger.debug("Cannot get node", e);
                     }
