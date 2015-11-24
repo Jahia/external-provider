@@ -112,6 +112,8 @@ public class ExternalAccessControlManager implements AccessControlManager {
     private final JahiaPrincipal jahiaPrincipal;
     private final boolean aclReadOnly;
     private final boolean writable;
+    private final Privilege modifyAccessControlPrivilege;
+    private final Privilege writePrivilege;
 
     public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, ExternalSessionImpl session, ExternalDataSource dataSource) {
         super();
@@ -120,16 +122,18 @@ public class ExternalAccessControlManager implements AccessControlManager {
         this.aclReadOnly = dataSource instanceof ExternalDataSource.AccessControllable;
         this.writable = dataSource instanceof ExternalDataSource.Writable;
 
-        jahiaPrincipal = new JahiaPrincipal(session.getUserID(), session.getRealm(), session.getUserID().startsWith(JahiaLoginModule.SYSTEM), JahiaLoginModule.GUEST.equals(session.getUserID()));
+        this.pathPermissionCache = Collections.synchronizedMap(new LRUMap(SettingsBean.getInstance().getAccessManagerPathPermissionCacheMaxSize()));
+        this.jahiaPrincipal = new JahiaPrincipal(session.getUserID(), session.getRealm(), session.getUserID().startsWith(JahiaLoginModule.SYSTEM), JahiaLoginModule.GUEST.equals(session.getUserID()));
         try {
             init(namespaceRegistry);
+            this.modifyAccessControlPrivilege = registry.getPrivilege("jcr:modifyAccessControl", workspaceName);
+            this.writePrivilege = registry.getPrivilege("jcr:write", workspaceName);
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }
     }
 
     private void init(NamespaceRegistry namespaceRegistry) throws RepositoryException {
-        pathPermissionCache = Collections.synchronizedMap(new LRUMap(SettingsBean.getInstance().getAccessManagerPathPermissionCacheMaxSize()));
         registry = new JahiaPrivilegeRegistry(namespaceRegistry);
     }
 
@@ -159,23 +163,10 @@ public class ExternalAccessControlManager implements AccessControlManager {
                 .getNode(session.getRepository().getStoreProvider().getMountPoint() + absPath);
         Privilege[] privileges = AccessManagerUtils.getPrivileges(node, jahiaPrincipal, registry);
 
-        // remove jcr:modifyAccessControl permission when data source is AccessControllable, only on ExternalNodeImpl
-        // ExtensionNodeImpl acls can be modify
-        boolean removeModifyAccessControl = aclReadOnly && node.getRealNode() instanceof ExternalNodeImpl;
-        // remove all write permissions in case of the data source not writable and not extendable
-        boolean removeAllWrite = !writable && node.getRealNode() instanceof ExternalNodeImpl &&
-                (session.getOverridableProperties() == null || session.getOverridableProperties().size() == 0);
-        if (removeModifyAccessControl || removeAllWrite) {
-            List<Privilege> privilegeToFilterOut = new ArrayList<>();
-            if(removeModifyAccessControl) {
-                privilegeToFilterOut.add(registry.getPrivilege("jcr:modifyAccessControl", workspaceName));
-            }
-            if(removeAllWrite) {
-                Privilege writePrivilege = registry.getPrivilege("jcr:write", workspaceName);
-                privilegeToFilterOut.add(writePrivilege);
-                privilegeToFilterOut.addAll(Lists.newArrayList(writePrivilege.getAggregatePrivileges()));
-            }
-            return filterPrivileges(privileges, privilegeToFilterOut);
+        // filter some privileges in some specific cases, for avoid some operation from edit engines
+        List<Privilege> privilegeToFilter = getPrivilegesToFilter(node.getRealNode());
+        if (privilegeToFilter.size() > 0) {
+            return filterPrivileges(privileges, privilegeToFilter);
         } else {
             return privileges;
         }
@@ -254,16 +245,34 @@ public class ExternalAccessControlManager implements AccessControlManager {
         return hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_NODE_TYPE_MANAGEMENT + "_" + session.getWorkspace().getName(), null)});
     }
 
-    private Privilege[] filterPrivileges (Privilege[] privileges, List<Privilege> privilegesTofilter) throws RepositoryException {
+    private List<Privilege> getPrivilegesToFilter(Node node) throws RepositoryException {
+        List<Privilege> privilegeToFilterOut = new ArrayList<>();
+
+        // jcr:modifyAccessControl permission when data source is AccessControllable, only on ExternalNodeImpl
+        // ExtensionNodeImpl acls can be modify
+        if (aclReadOnly && node instanceof ExternalNodeImpl) {
+            privilegeToFilterOut.add(modifyAccessControlPrivilege);
+        }
+
+        // all write permissions in case of the data source not writable and not extendable
+        if (!writable && node instanceof ExternalNodeImpl && (session.getOverridableProperties() == null || session.getOverridableProperties().size() == 0)) {
+            privilegeToFilterOut.add(writePrivilege);
+            privilegeToFilterOut.addAll(Lists.newArrayList(writePrivilege.getAggregatePrivileges()));
+        }
+
+        return privilegeToFilterOut;
+    }
+
+    private Privilege[] filterPrivileges(Privilege[] privileges, List<Privilege> privilegesTofilter) throws RepositoryException {
         List<Privilege> privilegesList = Lists.newArrayList(privileges);
         Set<Privilege> filteredResult = new HashSet<>();
 
         for (Privilege privilege : privilegesList) {
-            if(!privilegesTofilter.contains(privilege)) {
-                if(privilege.isAggregate()) {
+            if (!privilegesTofilter.contains(privilege)) {
+                if (privilege.isAggregate()) {
                     List<Privilege> aggregatedPrivileges = Lists.newArrayList(privilege.getAggregatePrivileges());
                     aggregatedPrivileges.removeAll(privilegesTofilter);
-                    if(aggregatedPrivileges.size() == privilege.getAggregatePrivileges().length) {
+                    if (aggregatedPrivileges.size() == privilege.getAggregatePrivileges().length) {
                         filteredResult.add(privilege);
                     } else {
                         filteredResult.addAll(aggregatedPrivileges);
