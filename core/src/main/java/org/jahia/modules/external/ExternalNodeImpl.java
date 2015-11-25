@@ -257,7 +257,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             throw new ItemNotFoundException();
         }
         String path = StringUtils.substringBeforeLast(data.getPath(), "/");
-        controlManager.checkRead(path);
+        try {
+            controlManager.checkRead(path.isEmpty() ? "/" : path);
+        } catch (PathNotFoundException e) {
+            throw new AccessDeniedException(path);
+        }
         return session.getNode(path.isEmpty() ? "/" : path);
     }
 
@@ -325,7 +329,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             throw new UnsupportedRepositoryOperationException();
         }
 
-        canRemoveNode();
+        if (!canRemoveNode()) {
+            throw new AccessDeniedException(getPath());
+        }
 
         if (!data.getPath().equals("/")) {
             ((ExternalNodeImpl) getParent()).getExternalChildren().remove(getName());
@@ -684,7 +690,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Node getNode(String s) throws RepositoryException {
-        checkRead();
         Node n = session.getNode(getPath().endsWith("/") ? getPath() + s : getPath() + "/" + s);
         if (n != null) {
             return n;
@@ -707,7 +712,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public NodeIterator getNodes(String namePattern) throws RepositoryException {
-        checkRead();
         List<String> filteredList = new ArrayList<>();
         final boolean matchAll = MATCH_ALL_PATTERN.equals(namePattern);
         final ExternalDataSource dataSource = session.getRepository().getDataSource();
@@ -775,7 +779,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public NodeIterator getNodes(String[] nameGlobs) throws RepositoryException {
-        checkRead();
         final List<String> filteredList = new ArrayList<String>();
         final ExternalDataSource dataSource = session.getRepository().getDataSource();
 
@@ -832,7 +835,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public Property getProperty(String s) throws PathNotFoundException, RepositoryException {
-        checkRead();
         Node n = getExtensionNode(false);
         if (n != null && n.hasProperty(s) && getPropertyDefinition(s) != null && canItemBeExtended(getPropertyDefinition(s))) {
             return new ExtensionProperty(n.getProperty(s), getPath() + "/" + s, session, this);
@@ -883,7 +885,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public PropertyIterator getProperties() throws RepositoryException {
-       checkRead();
         Node n = getExtensionNode(false);
         if (n != null) {
             return new ExternalPropertyIterator(properties, n.getProperties(), data.getLazyProperties(), data.getLazyBinaryProperties(), this);
@@ -895,7 +896,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public PropertyIterator getProperties(String namePattern) throws RepositoryException {
-       checkRead();
         final Map<String, ExternalPropertyImpl> filteredList = new HashMap<String, ExternalPropertyImpl>();
         for (Map.Entry<String, ExternalPropertyImpl> entry : properties.entrySet()) {
             if (ChildrenCollectorFilter.matches(entry.getKey(), namePattern)) {
@@ -1358,7 +1358,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * {@inheritDoc}
      */
     public PropertyIterator getProperties(String[] nameGlobs) throws RepositoryException {
-        checkRead();
         final Map<String, ExternalPropertyImpl> filteredList = new HashMap<String, ExternalPropertyImpl>();
         for (Map.Entry<String, ExternalPropertyImpl> entry : properties.entrySet()) {
             if (ChildrenCollectorFilter.matches(entry.getKey(), nameGlobs)) {

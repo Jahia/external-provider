@@ -104,7 +104,20 @@ public class ExtensionItem extends ExternalItemImpl implements Item {
 
     @Override
     public Node getParent() throws ItemNotFoundException, AccessDeniedException, RepositoryException {
-        return session.getNode(StringUtils.substringBeforeLast(path, "/"));
+        if (path.equals("/")) {
+            throw new ItemNotFoundException();
+        }
+        String parentPath = StringUtils.substringBeforeLast(path, "/");
+        try {
+            controlManager.checkRead(parentPath);
+        } catch (PathNotFoundException e) {
+            throw new AccessDeniedException(parentPath);
+        }
+        try {
+            return session.getNode(parentPath);
+        } catch (PathNotFoundException e) {
+            throw new ItemNotFoundException(parentPath);
+        }
     }
 
     @Override
@@ -140,7 +153,9 @@ public class ExtensionItem extends ExternalItemImpl implements Item {
     @Override
     public void remove() throws VersionException, LockException, ConstraintViolationException, AccessDeniedException, RepositoryException {
         if (isNode()) {
-            canRemoveNode();
+            if (!canRemoveNode()) {
+                throw new AccessDeniedException(getPath());
+            }
         } else {
             checkModify();
         }

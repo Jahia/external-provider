@@ -258,43 +258,36 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public NodeIterator getNodes() throws RepositoryException {
-        checkRead();
         return new ExtensionNodeIterator(node.getNodes());
     }
 
     @Override
     public NodeIterator getNodes(String namePattern) throws RepositoryException {
-        checkRead();
         return new ExtensionNodeIterator(node.getNodes(namePattern));
     }
 
     @Override
     public NodeIterator getNodes(String[] nameGlobs) throws RepositoryException {
-        checkRead();
         return new ExtensionNodeIterator(node.getNodes(nameGlobs));
     }
 
     @Override
     public Property getProperty(String relPath) throws PathNotFoundException, RepositoryException {
-        checkRead();
         return new ExtensionProperty(node.getProperty(relPath),path + "/" + relPath,session, this);
     }
 
     @Override
     public PropertyIterator getProperties() throws RepositoryException {
-        checkRead();
         return new ExtensionPropertyIterator(node.getProperties());
     }
 
     @Override
     public PropertyIterator getProperties(String namePattern) throws RepositoryException {
-        checkRead();
         return new ExtensionPropertyIterator(node.getProperties(namePattern));
     }
 
     @Override
     public PropertyIterator getProperties(String[] nameGlobs) throws RepositoryException {
-        checkRead();
         return new ExtensionPropertyIterator(node.getProperties(nameGlobs));
     }
 
@@ -345,25 +338,27 @@ public class ExtensionNode extends ExtensionItem implements Node {
 
     @Override
     public boolean hasNode(String relPath) throws RepositoryException {
-        checkRead();
+        try {
+            String p = StringUtils.equals(relPath,"/") ? "" : relPath;
+            controlManager.checkRead(getPath() + p);
+        } catch (PathNotFoundException e) {
+            return false;
+        }
         return node.hasNode(relPath);
     }
 
     @Override
     public boolean hasProperty(String relPath) throws RepositoryException {
-        checkRead();
         return node.hasProperty(relPath);
     }
 
     @Override
     public boolean hasNodes() throws RepositoryException {
-        checkRead();
-        return node.hasNodes();
+        return node.getNodes().hasNext();
     }
 
     @Override
     public boolean hasProperties() throws RepositoryException {
-        checkRead();
         return node.hasProperties();
     }
 

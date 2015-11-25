@@ -236,7 +236,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
     }
     //JCR_REMOVE_NODE
     public void checkRemoveNode(String path) throws RepositoryException {
-        if (hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_REMOVE_NODE + "_" + session.getWorkspace().getName(), null)})) {
+        if (!hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_REMOVE_NODE + "_" + session.getWorkspace().getName(), null)})) {
             throw new AccessDeniedException(path);
         }
     }

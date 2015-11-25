@@ -82,8 +82,12 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
 import javax.jcr.*;
+import javax.jcr.lock.LockException;
 import javax.jcr.lock.LockManager;
+import javax.jcr.nodetype.ConstraintViolationException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.retention.RetentionManager;
+import javax.jcr.version.VersionException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -156,7 +160,7 @@ public class ExternalSessionImpl implements Session {
         return workspace;
     }
 
-    public Session impersonate(Credentials credentials) throws RepositoryException {
+    public Session impersonate(Credentials credentials) throws LoginException, RepositoryException {
         return this;
     }
 
@@ -215,7 +219,7 @@ public class ExternalSessionImpl implements Session {
         }
     }
 
-    public Node getNodeByUUID(String uuid) throws RepositoryException {
+    public Node getNodeByUUID(String uuid) throws ItemNotFoundException, RepositoryException {
         final ExternalNodeImpl fromCacheById = getFromCacheById(uuid);
         if(fromCacheById != null) {
             try {
@@ -241,7 +245,7 @@ public class ExternalSessionImpl implements Session {
         try {
             getAccessControlManager().checkRead(n.getPath());
         } catch (PathNotFoundException e) {
-            throw new AccessDeniedException(n.getPath());
+            throw new ItemNotFoundException(n.getPath());
         }
         return n;
     }
@@ -301,7 +305,7 @@ public class ExternalSessionImpl implements Session {
         }
     }
 
-    public Item getItem(String path) throws RepositoryException {
+    public Item getItem(String path) throws PathNotFoundException, RepositoryException {
         getAccessControlManager().checkRead(path);
         path = path.length() > 1 && path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
         if (deletedData.containsKey(path)) {
@@ -509,7 +513,9 @@ public class ExternalSessionImpl implements Session {
     }
 
     public void move(String source, String dest)
-            throws RepositoryException {
+            throws ItemExistsException, PathNotFoundException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+        getAccessControlManager().checkRemoveNode(source);
+        getAccessControlManager().checkAddChildNodes(StringUtils.substringBeforeLast(dest,"/"));
         Item sourceNode = getItem(source);
         if (!sourceNode.isNode()) {
             throw new PathNotFoundException(source);
@@ -588,7 +594,7 @@ public class ExternalSessionImpl implements Session {
      }
 
     public void save()
-            throws RepositoryException {
+            throws AccessDeniedException, ItemExistsException, ConstraintViolationException, InvalidItemStateException, VersionException, LockException, NoSuchNodeTypeException, RepositoryException {
         if (extensionSession != null && extensionSession.hasPendingChanges()) {
             extensionSession.save();
         }
@@ -697,7 +703,7 @@ public class ExternalSessionImpl implements Session {
     }
 
     public ExternalValueFactoryImpl getValueFactory()
-            throws RepositoryException {
+            throws UnsupportedRepositoryOperationException, RepositoryException {
         return new ExternalValueFactoryImpl(this);
     }
 
@@ -706,36 +712,36 @@ public class ExternalSessionImpl implements Session {
     }
 
     public ContentHandler getImportContentHandler(String s, int i)
-            throws RepositoryException {
+            throws PathNotFoundException, ConstraintViolationException, VersionException, LockException, RepositoryException {
         return null;
     }
 
     public void importXML(String s, InputStream inputStream, int i)
-            throws IOException, RepositoryException {
+            throws IOException, PathNotFoundException, ItemExistsException, ConstraintViolationException, VersionException, InvalidSerializedDataException, LockException, RepositoryException {
 
     }
 
     public void exportSystemView(String s, ContentHandler contentHandler, boolean b, boolean b1)
-            throws SAXException, RepositoryException {
+            throws PathNotFoundException, SAXException, RepositoryException {
 
     }
 
     public void exportSystemView(String s, OutputStream outputStream, boolean b, boolean b1)
-            throws IOException, RepositoryException {
+            throws IOException, PathNotFoundException, RepositoryException {
 
     }
 
     public void exportDocumentView(String s, ContentHandler contentHandler, boolean b, boolean b1)
-            throws SAXException, RepositoryException {
+            throws PathNotFoundException, SAXException, RepositoryException {
 
     }
 
     public void exportDocumentView(String s, OutputStream outputStream, boolean b, boolean b1)
-            throws IOException, RepositoryException {
+            throws IOException, PathNotFoundException, RepositoryException {
 
     }
 
-    public void setNamespacePrefix(String s, String s1) throws RepositoryException {
+    public void setNamespacePrefix(String s, String s1) throws NamespaceException, RepositoryException {
 
     }
 
@@ -743,11 +749,11 @@ public class ExternalSessionImpl implements Session {
         return workspace.getNamespaceRegistry().getPrefixes();
     }
 
-    public String getNamespaceURI(String s) throws RepositoryException {
+    public String getNamespaceURI(String s) throws NamespaceException, RepositoryException {
         return workspace.getNamespaceRegistry().getURI(s);
     }
 
-    public String getNamespacePrefix(String s) throws RepositoryException {
+    public String getNamespacePrefix(String s) throws NamespaceException, RepositoryException {
         return workspace.getNamespaceRegistry().getPrefix(s);
     }
 
@@ -840,15 +846,15 @@ public class ExternalSessionImpl implements Session {
         newItems.add(newItem);
     }
 
-    public Node getNodeByIdentifier(String id) throws RepositoryException {
+    public Node getNodeByIdentifier(String id) throws ItemNotFoundException, RepositoryException {
         return getNodeByUUID(id);
     }
 
-    public Node getNode(String absPath) throws RepositoryException {
+    public Node getNode(String absPath) throws PathNotFoundException, RepositoryException {
         return (Node) getItem(absPath);
     }
 
-    public Property getProperty(String absPath) throws RepositoryException {
+    public Property getProperty(String absPath) throws PathNotFoundException, RepositoryException {
         return (Property) getItem(absPath);
     }
 
@@ -861,7 +867,7 @@ public class ExternalSessionImpl implements Session {
     }
 
     public void removeItem(String absPath)
-            throws RepositoryException {
+            throws VersionException, LockException, ConstraintViolationException, AccessDeniedException, RepositoryException {
         getItem(absPath).remove();
     }
 
@@ -876,14 +882,14 @@ public class ExternalSessionImpl implements Session {
     }
 
     public ExternalAccessControlManager getAccessControlManager()
-            throws RepositoryException {
+            throws UnsupportedRepositoryOperationException, RepositoryException {
         if (accessControlManager == null) {
             accessControlManager = new ExternalAccessControlManager(repository.getNamespaceRegistry(), this, repository.getDataSource());
         }
         return accessControlManager;
     }
 
-    public RetentionManager getRetentionManager() throws RepositoryException {
+    public RetentionManager getRetentionManager() throws UnsupportedRepositoryOperationException, RepositoryException {
         return null;
     }
 
