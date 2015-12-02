@@ -116,7 +116,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
     private final Privilege writePrivilege;
 
     public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, ExternalSessionImpl session, ExternalDataSource dataSource) {
-        super();
+
         this.session = session;
         this.workspaceName = session.getWorkspace().getName();
         this.aclReadOnly = dataSource instanceof ExternalDataSource.AccessControllable;
@@ -125,7 +125,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
         this.pathPermissionCache = Collections.synchronizedMap(new LRUMap(SettingsBean.getInstance().getAccessManagerPathPermissionCacheMaxSize()));
         this.jahiaPrincipal = new JahiaPrincipal(session.getUserID(), session.getRealm(), session.getUserID().startsWith(JahiaLoginModule.SYSTEM), JahiaLoginModule.GUEST.equals(session.getUserID()));
         try {
-            init(namespaceRegistry);
+            registry = new JahiaPrivilegeRegistry(namespaceRegistry);
             this.modifyAccessControlPrivilege = registry.getPrivilege("jcr:modifyAccessControl", workspaceName);
             this.writePrivilege = registry.getPrivilege("jcr:write", workspaceName);
         } catch (RepositoryException e) {
@@ -133,30 +133,31 @@ public class ExternalAccessControlManager implements AccessControlManager {
         }
     }
 
-    private void init(NamespaceRegistry namespaceRegistry) throws RepositoryException {
-        registry = new JahiaPrivilegeRegistry(namespaceRegistry);
-    }
-
+    @Override
     public AccessControlPolicyIterator getApplicablePolicies(String absPath)
             throws PathNotFoundException, AccessDeniedException, RepositoryException {
         return AccessControlPolicyIteratorAdapter.EMPTY;
     }
 
+    @Override
     public AccessControlPolicy[] getEffectivePolicies(String absPath) throws PathNotFoundException,
             AccessDeniedException, RepositoryException {
         return POLICIES;
     }
 
+    @Override
     public AccessControlPolicy[] getPolicies(String absPath) throws PathNotFoundException,
             AccessDeniedException, RepositoryException {
         return POLICIES;
     }
 
+    @Override
     public Privilege[] getSupportedPrivileges(String absPath) throws PathNotFoundException,
             RepositoryException {
         return JahiaPrivilegeRegistry.getRegisteredPrivileges();
     }
 
+    @Override
     public Privilege[] getPrivileges(final String absPath) throws PathNotFoundException,
             RepositoryException {
         JCRNodeWrapper node = JCRSessionFactory.getInstance().getCurrentSystemSession(workspaceName, null, null)
@@ -172,6 +173,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
         }
     }
 
+    @Override
     public boolean hasPrivileges(final String absPath, final Privilege[] privileges)
             throws PathNotFoundException, RepositoryException {
 
@@ -190,6 +192,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
         }
     }
 
+    @Override
     public Privilege privilegeFromName(String privilegeName) throws AccessControlException, RepositoryException {
         try {
             return registry.getPrivilege(privilegeName, null);
@@ -203,12 +206,14 @@ public class ExternalAccessControlManager implements AccessControlManager {
         }
     }
 
+    @Override
     public void removePolicy(String absPath, AccessControlPolicy policy)
             throws PathNotFoundException, AccessControlException, AccessDeniedException,
             LockException, VersionException, RepositoryException {
         // not supported
     }
 
+    @Override
     public void setPolicy(String absPath, AccessControlPolicy policy) throws PathNotFoundException,
             AccessControlException, AccessDeniedException, LockException, VersionException,
             RepositoryException {
@@ -263,15 +268,16 @@ public class ExternalAccessControlManager implements AccessControlManager {
         return privilegeToFilterOut;
     }
 
-    private Privilege[] filterPrivileges(Privilege[] privileges, List<Privilege> privilegesTofilter) throws RepositoryException {
+    private static Privilege[] filterPrivileges(Privilege[] privileges, List<Privilege> privilegesToFilterOut) throws RepositoryException {
+
         List<Privilege> privilegesList = Lists.newArrayList(privileges);
-        Set<Privilege> filteredResult = new HashSet<>();
+        Set<Privilege> filteredResult = new HashSet<Privilege>();
 
         for (Privilege privilege : privilegesList) {
-            if (!privilegesTofilter.contains(privilege)) {
+            if (!privilegesToFilterOut.contains(privilege)) {
                 if (privilege.isAggregate()) {
                     List<Privilege> aggregatedPrivileges = Lists.newArrayList(privilege.getAggregatePrivileges());
-                    aggregatedPrivileges.removeAll(privilegesTofilter);
+                    aggregatedPrivileges.removeAll(privilegesToFilterOut);
                     if (aggregatedPrivileges.size() == privilege.getAggregatePrivileges().length) {
                         filteredResult.add(privilege);
                     } else {
