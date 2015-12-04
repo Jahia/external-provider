@@ -277,8 +277,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
             if (!privilegesToFilterOut.contains(privilege)) {
                 if (privilege.isAggregate()) {
                     List<Privilege> aggregatedPrivileges = Lists.newArrayList(privilege.getAggregatePrivileges());
-                    aggregatedPrivileges.removeAll(privilegesToFilterOut);
-                    if (aggregatedPrivileges.size() == privilege.getAggregatePrivileges().length) {
+                    if (!aggregatedPrivileges.removeAll(privilegesToFilterOut)) {
                         filteredResult.add(privilege);
                     } else {
                         filteredResult.addAll(aggregatedPrivileges);
