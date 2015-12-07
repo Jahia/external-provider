@@ -3,10 +3,12 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:mvc="http://www.springframework.org/schema/mvc"
+	   xmlns:osgi="http://www.eclipse.org/gemini/blueprint/schema/blueprint"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
        http://www.springframework.org/schema/mvc
-       http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd">
+       http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+	   http://www.eclipse.org/gemini/blueprint/schema/blueprint http://www.eclipse.org/gemini/blueprint/schema/blueprint/gemini-blueprint.xsd">
 
     <mvc:annotation-driven conversion-service="springTypeConversionService"/>
 
@@ -23,4 +25,18 @@
             </map>
         </property>
     </bean>
+	
+	<osgi:reference id="ExternalProviderInitializerService" interface="org.jahia.modules.external.ExternalProviderInitializerService"/>
+	
+	<bean id="CTPProvider" class="org.jahia.modules.external.ExternalContentStoreProvider" parent="AbstractJCRStoreProvider">
+        <property name="key" value="ctp"/>
+        <property name="mountPoint" value="/mounts/CTP"/>
+        <property name="externalProviderInitializerService" ref="ExternalProviderInitializerService"/>
+        <property name="dataSource">
+            <bean class="org.jahia.modules.external.vfs.VFSDataSource">
+				<property name="root" value="c:/dev/temp"/>
+			</bean>
+        </property>
+    </bean>
+
 </beans>
