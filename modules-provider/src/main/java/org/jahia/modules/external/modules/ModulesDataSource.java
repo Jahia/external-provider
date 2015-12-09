@@ -113,6 +113,7 @@ import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.i18n.Messages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 
@@ -367,16 +368,31 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         } else if (!file.exists() && definitionsFiles.contains(cndPath)) {
             definitionsFiles.remove(cndPath);
         }
+
         String systemId = module.getId();
         NodeTypeRegistry nodeTypeRegistry = NodeTypeRegistry.getInstance();
-        nodeTypeRegistry.unregisterNodeTypes(systemId);
-        Properties deploymentProperties = nodeTypeRegistry.getDeploymentProperties();
+
+        // Gather all definitions files
+        List<Resource> resourceList = new ArrayList<>();
+        long lastModified = 0;
         for (String path : definitionsFiles) {
-            nodeTypeRegistry.addDefinitionsFile(getRealFile(SRC_MAIN_RESOURCES + path), systemId, module.getVersion());
-            deploymentProperties.put(module.getResource(path).getURI().toString() + ".lastRegistered.default", "0");
+            File realFile = getRealFile(SRC_MAIN_RESOURCES + path);
+            resourceList.add(new FileSystemResource(realFile));
+            if (realFile.lastModified() > lastModified) {
+                lastModified = realFile.lastModified();
+            }
         }
-        if (SettingsBean.getInstance().isProcessingServer()) {
-            jcrStoreService.deployDefinitions(systemId);
+        logger.info("Registering CND from source file " + file);
+        boolean latestDefinitions = JCRStoreService.getInstance().isLatestDefinitions(systemId, module.getVersion(), lastModified);
+        if (latestDefinitions) {
+            try {
+                // Register in local NodeTypeRegistry
+                nodeTypeRegistry.addDefinitionsFile(resourceList, systemId);
+                // Register into jackrabbit
+                jcrStoreService.deployDefinitions(systemId, module.getVersion().toString(), lastModified);
+            } catch (IOException | ParseException e) {
+                throw new RepositoryException(e.getMessage(), e);
+            }
         }
     }
 
@@ -1220,11 +1236,18 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         if (data.getProperties().get(SOURCE_CODE) != null) {
             byte[] sourceCode = data.getProperties().get(SOURCE_CODE)[0].getBytes();
             try {
-                createRegistry().validateDefinitionsFile(new ByteArrayInputStream(sourceCode), data.getPath(), module.getId());
-            } catch (ParseException e) {
-                logger.error("Error while parsing definitions file", e);
-            } catch (IOException e) {
-                logger.error("Error while parsing definitions file", e);
+                Reader resourceReader = null;
+                try {
+                    NodeTypeRegistry ntr = createBaseRegistry();
+                    resourceReader = new InputStreamReader(new ByteArrayInputStream(sourceCode), Charsets.UTF_8);
+                    JahiaCndReader r = new JahiaCndReader(resourceReader, data.getName(), module.getId(), ntr);
+                    r.parse();
+                } finally {
+                    IOUtils.closeQuietly(resourceReader);
+                }
+
+            } catch (ParseException | IOException e) {
+                throw new RepositoryException(e.getMessage());
             }
         }
     }
@@ -2019,35 +2042,54 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
 
-    private NodeTypeRegistry createRegistry() throws IOException, ParseException {
+    /**
+     * Create new NodeTypeRegistry containing all system definitions and dependencies
+     *
+     * @return
+     * @throws IOException
+     * @throws ParseException
+     * @throws RepositoryException
+     */
+    private NodeTypeRegistry createBaseRegistry() throws IOException, ParseException, RepositoryException {
         NodeTypeRegistry ntr = new NodeTypeRegistry();
-        ntr.initSystemDefinitions();
+
+        for (Map.Entry<String, File> entry : NodeTypeRegistry.getSystemDefinitionsFiles().entrySet()) {
+            ntr.addDefinitionsFile(entry.getValue(), entry.getKey());
+        }
 
         List<JahiaTemplatesPackage> dependencies = module.getDependencies();
         for (JahiaTemplatesPackage depend : dependencies) {
+            List<Resource> dependencyResource = new ArrayList<>();
             for (String s : depend.getDefinitionsFiles()) {
-                ntr.addDefinitionsFile(depend.getResource(s), depend.getId(), null);
+                dependencyResource.add(depend.getResource(s));
             }
+            ntr.addDefinitionsFile(dependencyResource, depend.getId());
         }
 
         return ntr;
     }
 
+    /**
+     * Get the local NodeTypeRegistry for one specific file. Contains system definitions, dependencies and
+     * definitions from the current file.
+     *
+     * @param path
+     * @return
+     * @throws RepositoryException
+     */
     private synchronized NodeTypeRegistry loadRegistry(String path) throws RepositoryException {
         NodeTypeRegistry ntr = nodeTypeRegistryMap.get(path);
         if (ntr != null) {
             return ntr;
         } else {
             try {
-                ntr = createRegistry();
+                ntr = createBaseRegistry();
                 FileObject file = getFile(path);
                 if (file.exists()) {
-                    ntr.addDefinitionsFile(new UrlResource(file.getURL()), module.getId(), null);
                     nodeTypeRegistryMap.put(path, ntr);
+                    ntr.addDefinitionsFile(new UrlResource(file.getURL()), module.getId());
                 }
-            } catch (IOException e) {
-                throw new RepositoryException("Failed to load node type registry", e);
-            } catch (ParseException e) {
+            } catch (ParseException | IOException e) {
                 throw new RepositoryException("Failed to load node type registry", e);
             }
             return ntr;
