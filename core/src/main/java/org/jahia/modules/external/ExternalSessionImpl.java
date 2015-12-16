@@ -285,9 +285,14 @@ public class ExternalSessionImpl implements Session {
         }
     }
 
-    public Item getItem(String path) throws PathNotFoundException, RepositoryException {
+    public Item getItem(String path)  throws PathNotFoundException, RepositoryException  {
         getAccessControlManager().checkRead(path);
-        path = path.length() > 1 && path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+        return getItemWithNoCheck(path);
+
+    }
+
+    public Item getItemWithNoCheck(String path) throws PathNotFoundException, RepositoryException {
+       path = path.length() > 1 && path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
         if (deletedData.containsKey(path)) {
             throw new PathNotFoundException("This node has been deleted");
         }

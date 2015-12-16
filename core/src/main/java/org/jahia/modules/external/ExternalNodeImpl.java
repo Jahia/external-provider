@@ -1474,29 +1474,43 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (!extensionSession.itemExists(globalPath)) {
             if (!create) {
                 return null;
-            } else if (isRoot) {
-                String parent = StringUtils.substringBeforeLast(mountPoint, "/");
-                if (parent.equals("")) {
-                    parent = "/";
-                }
-                final Node extParent = extensionSession.getNode(parent);
-                takeLockToken(extParent);
-                extParent.addMixin("jmix:hasExternalProviderExtension");
-                Node n = extParent.addNode(StringUtils.substringAfterLast(mountPoint, "/"), "jnt:externalProviderExtension");
-                n.addMixin("jmix:externalProviderExtension");
-                n.setProperty("j:isExternalProviderRoot", true);
-                n.setProperty("j:externalNodeIdentifier", getIdentifier());
-                List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), getPrimaryNodeType().getName());
-                n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
             } else {
-                final Node extParent = ((ExternalNodeImpl) getParent()).getExtensionNode(true);
-                takeLockToken(extParent);
-                Node n = extParent.addNode(getName(), "jnt:externalProviderExtension");
-                List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), getPrimaryNodeType().getName());
-                n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
-                n.addMixin("jmix:externalProviderExtension");
-                n.setProperty("j:isExternalProviderRoot", false);
-                n.setProperty("j:externalNodeIdentifier", getIdentifier());
+                // create extension nodes if needed
+                String[] splittedPath = StringUtils.split(path,"/");
+                StringBuilder currentExtensionPath = new StringBuilder(mountPoint);
+                StringBuilder currentExternalPath = new StringBuilder();
+                // create extension node on the mountpoint if needed
+                if (!extensionSession.nodeExists(mountPoint)) {
+                    String parent = StringUtils.substringBeforeLast(mountPoint, "/");
+                    if (parent.equals("")) {
+                        parent = "/";
+                    }
+                    final Node extParent = extensionSession.getNode(parent);
+                    takeLockToken(extParent);
+                    extParent.addMixin("jmix:hasExternalProviderExtension");
+                    Node n = extParent.addNode(StringUtils.substringAfterLast(mountPoint, "/"), "jnt:externalProviderExtension");
+                    n.addMixin("jmix:externalProviderExtension");
+                    n.setProperty("j:isExternalProviderRoot", true);
+                    Node externalNode = (Node) session.getItemWithNoCheck("/");
+                    n.setProperty("j:externalNodeIdentifier", externalNode.getIdentifier());
+                    List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), externalNode.getPrimaryNodeType().getName());
+                    n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
+                }
+                for (String p : splittedPath) {
+                    currentExtensionPath.append("/").append(p);
+                    currentExternalPath.append("/").append(p);
+                    if (!extensionSession.nodeExists(currentExtensionPath.toString())) {
+                        final Node extParent = extensionSession.getNode(StringUtils.substringBeforeLast(currentExtensionPath.toString(), "/"));
+                        takeLockToken(extParent);
+                        Node n = extParent.addNode(p, "jnt:externalProviderExtension");
+                        Node externalNode = (Node) session.getItemWithNoCheck(currentExternalPath.toString());
+                        List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), externalNode.getPrimaryNodeType().getName());
+                        n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
+                        n.addMixin("jmix:externalProviderExtension");
+                        n.setProperty("j:isExternalProviderRoot", false);
+                        n.setProperty("j:externalNodeIdentifier", externalNode.getIdentifier());
+                    }
+                }
             }
         }
 
