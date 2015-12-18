@@ -241,19 +241,12 @@ public class ExternalAccessControlManager implements AccessControlManager {
     }
 
     private static Privilege[] filterPrivileges(Privilege[] privileges, List<Privilege> privilegesToFilterOut) throws RepositoryException {
-
-        List<Privilege> privilegesList = Lists.newArrayList(privileges);
         Set<Privilege> filteredResult = new HashSet<Privilege>();
 
-        for (Privilege privilege : privilegesList) {
+        for (Privilege privilege : privileges) {
             if (!privilegesToFilterOut.contains(privilege)) {
-                if (privilege.isAggregate()) {
-                    List<Privilege> aggregatedPrivileges = Lists.newArrayList(privilege.getAggregatePrivileges());
-                    if (!aggregatedPrivileges.removeAll(privilegesToFilterOut)) {
-                        filteredResult.add(privilege);
-                    } else {
-                        filteredResult.addAll(aggregatedPrivileges);
-                    }
+                if (privilege.isAggregate() && intersectionBetweenAggregatedAndList(privilege, privilegesToFilterOut)) {
+                    filteredResult.addAll(Arrays.asList(filterPrivileges(privilege.getDeclaredAggregatePrivileges(), privilegesToFilterOut)));
                 } else {
                     filteredResult.add(privilege);
                 }
@@ -261,5 +254,22 @@ public class ExternalAccessControlManager implements AccessControlManager {
         }
 
         return filteredResult.toArray(new Privilege[filteredResult.size()]);
+    }
+
+    /**
+     * test if there is an intersection between the privilege aggregates and the other list
+     * @param privilege the privilege that aggregate other privileges
+     * @param privileges the list of privileges
+     * @return true if the given privilege contains in it's aggregates at least one privilege from the list
+     */
+    private static boolean intersectionBetweenAggregatedAndList(Privilege privilege, List<Privilege> privileges) {
+        if(privilege.isAggregate() && privilege.getAggregatePrivileges().length > 0) {
+            for (Privilege subPrivilege : privilege.getAggregatePrivileges()) {
+                if (privileges.contains(subPrivilege)){
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
