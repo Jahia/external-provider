@@ -278,8 +278,9 @@ public class ExternalSessionImpl implements Session {
     }
 
     public Item getItem(String path)  throws PathNotFoundException, RepositoryException  {
+        Item itemWithNoCheck = getItemWithNoCheck(path);
         getAccessControlManager().checkRead(path);
-        return getItemWithNoCheck(path);
+        return itemWithNoCheck;
 
     }
 
@@ -481,6 +482,7 @@ public class ExternalSessionImpl implements Session {
 
     @Override
     public boolean itemExists(String path) throws RepositoryException {
+        // todo : use repository.getDataSource().itemExists(path)
         try {
             getItem(path);
         } catch (PathNotFoundException e) {

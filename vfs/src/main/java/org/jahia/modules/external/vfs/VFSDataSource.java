@@ -43,33 +43,9 @@
  */
 package org.jahia.modules.external.vfs;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.jcr.Binary;
-import javax.jcr.ItemNotFoundException;
-import javax.jcr.PathNotFoundException;
-import javax.jcr.RepositoryException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.vfs2.FileContent;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemManager;
-import org.apache.commons.vfs2.FileType;
-import org.apache.commons.vfs2.Selectors;
-import org.apache.commons.vfs2.VFS;
+import org.apache.commons.vfs2.*;
 import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
 import org.jahia.modules.external.ExternalData;
@@ -79,6 +55,16 @@ import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.jcr.Binary;
+import javax.jcr.ItemNotFoundException;
+import javax.jcr.PathNotFoundException;
+import javax.jcr.RepositoryException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.*;
 
 /**
  * VFS Implementation of ExternalDataSource
@@ -163,7 +149,11 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     public ExternalData getItemByPath(String path) throws PathNotFoundException {
         try {
             if (path.endsWith(JCR_CONTENT_SUFFIX)) {
-                FileContent content = getFile(StringUtils.substringBeforeLast(path, JCR_CONTENT_SUFFIX)).getContent();
+                FileObject fileObject = getFile(StringUtils.substringBeforeLast(path, JCR_CONTENT_SUFFIX));
+                FileContent content = fileObject.getContent();
+                if (!fileObject.exists()) {
+                    throw new PathNotFoundException(path);
+                }
                 return getFileContent(content);
             } else {
                 FileObject fileObject = getFile(path);
