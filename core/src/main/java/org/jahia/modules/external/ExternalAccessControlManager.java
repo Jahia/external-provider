@@ -223,6 +223,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
     }
 
     private List<Privilege> getPrivilegesToFilter(Node node) throws RepositoryException {
+
         List<Privilege> privilegeToFilterOut = new ArrayList<>();
 
         // jcr:modifyAccessControl permission when data source is AccessControllable, only on ExternalNodeImpl
@@ -241,6 +242,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
     }
 
     private static Privilege[] filterPrivileges(Privilege[] privileges, List<Privilege> privilegesToFilterOut) throws RepositoryException {
+
         Set<Privilege> filteredResult = new HashSet<Privilege>();
 
         for (Privilege privilege : privileges) {
@@ -263,9 +265,9 @@ public class ExternalAccessControlManager implements AccessControlManager {
      * @return true if the given privilege contains in it's aggregates at least one privilege from the list
      */
     private static boolean intersectionBetweenAggregatedAndList(Privilege privilege, List<Privilege> privileges) {
-        if(privilege.isAggregate() && privilege.getAggregatePrivileges().length > 0) {
+        if (privilege.isAggregate() && privilege.getAggregatePrivileges().length > 0) {
             for (Privilege subPrivilege : privilege.getAggregatePrivileges()) {
-                if (privileges.contains(subPrivilege)){
+                if (privileges.contains(subPrivilege)) {
                     return true;
                 }
             }
