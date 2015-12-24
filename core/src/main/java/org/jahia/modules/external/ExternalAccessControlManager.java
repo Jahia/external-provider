@@ -222,7 +222,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
         return hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_NODE_TYPE_MANAGEMENT + "_" + session.getWorkspace().getName(), null)});
     }
 
-    private List<Privilege> getPrivilegesToFilter(Node node) throws RepositoryException {
+    private List<Privilege> getPrivilegesToFilter(Node node) {
 
         List<Privilege> privilegeToFilterOut = new ArrayList<>();
 
@@ -241,7 +241,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
         return privilegeToFilterOut;
     }
 
-    private static Privilege[] filterPrivileges(Privilege[] privileges, List<Privilege> privilegesToFilterOut) throws RepositoryException {
+    private static Privilege[] filterPrivileges(Privilege[] privileges, List<Privilege> privilegesToFilterOut) {
 
         Set<Privilege> filteredResult = new HashSet<Privilege>();
 
