@@ -374,7 +374,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), primaryNodeTypeName);
                 n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
                 n.setProperty("j:isExternalProviderRoot", false);
-                return new ExtensionNode(n, getPath() + "/" + relPath, getSession());
+                String localPath = (StringUtils.equals(getPath(), "/") ? getPath() : getPath() + "/") + relPath;
+                return new ExtensionNode(n, localPath, getSession());
             }
         }
 
