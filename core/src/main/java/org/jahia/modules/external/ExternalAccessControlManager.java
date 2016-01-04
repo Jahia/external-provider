@@ -245,10 +245,9 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
         Set<Privilege> filteredResult = new HashSet<Privilege>();
         for (Privilege privilege : privileges) {
-            // We remove a privilege if one of its children has to be removed as a privileged is valid only if all its
-            // child are valid. (We are doing the same in the privileges admin UI)
             if (!privilegesToFilterOut.contains(privilege)) {
-                if (privilege.isAggregate() && intersectionBetweenAggregatedPrivilegesAndList(privilege.getDeclaredAggregatePrivileges(), privilegesToFilterOut)) {
+                if (privilege.isAggregate() && areIntersecting(privilege.getDeclaredAggregatePrivileges(), privilegesToFilterOut)) {
+                    // We de-aggregate a privilege in case any of its children are to be filtered out, since a privilege is valid only if all its children are valid.
                     filteredResult.addAll(Arrays.asList(filterPrivileges(privilege.getDeclaredAggregatePrivileges(), privilegesToFilterOut)));
                 } else {
                     filteredResult.add(privilege);
@@ -260,17 +259,17 @@ public class ExternalAccessControlManager implements AccessControlManager {
     }
 
     /**
-     * test if there is an intersection between the aggregate privileges and the other list
-     * @param aggregatePrivileges the aggregate of privileges
-     * @param privileges the list of privileges
-     * @return true if the given privilege contains in it's aggregates at least one privilege from the list
+     * Test if there is an intersection between the two arrays of privileges
+     * @param privileges1
+     * @param privileges2
+     * @return whether the two arrays contain any common element
      */
-    private static boolean intersectionBetweenAggregatedPrivilegesAndList(Privilege[] aggregatePrivileges, List<Privilege> privileges) {
-            for (Privilege subPrivilege : aggregatePrivileges) {
-                if (privileges.contains(subPrivilege)) {
-                    return true;
-                }
+    private static boolean areIntersecting(Privilege[] privileges1, List<Privilege> privileges2) {
+        for (Privilege privilege1 : privileges1) {
+            if (privileges2.contains(privilege1)) {
+                return true;
             }
+        }
         return false;
     }
 }
