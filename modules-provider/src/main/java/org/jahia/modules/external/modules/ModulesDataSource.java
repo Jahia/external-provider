@@ -173,6 +173,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     public static final String JNT_PRIMARY_NODE_TYPE = "jnt:primaryNodeType";
     public static final String JNT_DEFINITION_FILE = "jnt:definitionFile";
     public static final HashSet<String> NODETYPES_TYPES = Sets.newHashSet(JNT_NODE_TYPE, JNT_MIXIN_NODE_TYPE, JNT_PRIMARY_NODE_TYPE);
+    public static final String LEGACY_DEFS_FILE_PREFIX = "legacy_";
+    public static final String LEGACY_DEFS_FOLDER_NAME = "legacyMappings";
 
     private static final int ROOT_DEPTH_TOKEN = 0;
     private static final int TARGET_DEPTH_TOKEN = 1;
@@ -333,6 +335,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         String cndPath = StringUtils.substringAfter(file.getPath(), File.separator + "src" + File.separator + "main" + File.separator + "resources" + File.separator);
         // transform \ to / for windows filesystem compatibility
         cndPath = StringUtils.replace(cndPath, File.separator, "/");
+        final File folder;
+        if (file.getName().toLowerCase().startsWith(LEGACY_DEFS_FILE_PREFIX) ||
+                ((folder = file.getParentFile()) != null && LEGACY_DEFS_FOLDER_NAME.equalsIgnoreCase(folder.getName()))) {
+            logger.debug("Skipping legacy definitions file: " + cndPath);
+            return;
+        }
 
         List<String> definitionsFiles = module.getDefinitionsFiles();
         if (file.exists() && !definitionsFiles.contains(cndPath)) {
@@ -914,7 +922,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             if (childDef == null) {
                 childDef = nodeType.getNodeDefinition(oldName);
             }
-            
+
             if (childDef != null) {
                 if (childDef instanceof ExtendedNodeDefinition) {
                     ((ExtendedNodeDefinition) childDef).remove();
@@ -997,7 +1005,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         child.setDefaultPrimaryType(newNodeTypeName);
                     }
                     child.setDeclaringNodeType(child.getDeclaringNodeType());
-                    
+
                 }
                 children.iterator().next().getDeclaringNodeType().validate();
             }
