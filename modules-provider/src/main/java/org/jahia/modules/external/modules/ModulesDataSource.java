@@ -1206,8 +1206,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private void checkCndFormat(ExternalData data) throws RepositoryException {
         if (data.getProperties().get(SOURCE_CODE) != null) {
-            byte[] sourceCode = data.getProperties().get(SOURCE_CODE)[0].getBytes();
             try {
+                byte[] sourceCode = data.getProperties().get(SOURCE_CODE)[0].getBytes("UTF-8");
                 Reader resourceReader = null;
                 try {
                     NodeTypeRegistry ntr = createBaseRegistry();
@@ -1219,7 +1219,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 }
 
             } catch (ParseException | IOException e) {
-                throw new RepositoryException(e.getMessage());
+                throw new RepositoryException(e.getMessage(),e);
             }
         }
     }
