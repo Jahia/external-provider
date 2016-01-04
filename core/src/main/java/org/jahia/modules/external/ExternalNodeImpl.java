@@ -71,10 +71,12 @@ import java.util.*;
  * @author Thomas Draier
  */
 public class ExternalNodeImpl extends ExternalItemImpl implements Node {
-    private static final Logger logger = LoggerFactory.getLogger(ExternalNodeImpl.class);
 
-    private static final String J_TRANSLATION = "j:translation_";
     public static final String MATCH_ALL_PATTERN = "*";
+
+    private static final Logger logger = LoggerFactory.getLogger(ExternalNodeImpl.class);
+    private static final String J_TRANSLATION = "j:translation_";
+
     private ExternalData data;
     private List<String> externalChildren;
     private Map<String, ExternalPropertyImpl> properties = null;
@@ -82,6 +84,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     private String uuid;
 
     public ExternalNodeImpl(ExternalData data, ExternalSessionImpl session) throws RepositoryException {
+
         super(session);
         this.data = data;
         this.properties = new HashMap<String, ExternalPropertyImpl>();
@@ -146,6 +149,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     private NodeDefinition getChildNodeDefinition(String name, String childType) throws RepositoryException {
+
         Map<String, ExtendedNodeDefinition> nodeDefinitionsAsMap = getExtendedPrimaryNodeType().getChildNodeDefinitionsAsMap();
         if (nodeDefinitionsAsMap.containsKey(name)) {
             return nodeDefinitionsAsMap.get(name);
@@ -177,6 +181,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public ExtendedPropertyDefinition getPropertyDefinition(String name) throws RepositoryException {
+
         Map<String, ExtendedPropertyDefinition> propertyDefinitionsAsMap = getExtendedPrimaryNodeType().getPropertyDefinitionsAsMap();
         if (propertyDefinitionsAsMap.containsKey(name)) {
             return propertyDefinitionsAsMap.get(name);
@@ -210,6 +215,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public String getPath() throws RepositoryException {
         return data.getPath();
     }
@@ -217,6 +223,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public String getName() throws RepositoryException {
         return data.getName();
     }
@@ -224,6 +231,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Node getParent() throws ItemNotFoundException, AccessDeniedException, RepositoryException {
         if (data.getPath().equals("/")) {
             throw new ItemNotFoundException();
@@ -278,6 +286,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean isNode() {
         return true;
     }
@@ -296,7 +305,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void remove() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
+
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }
@@ -351,6 +362,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Node addNode(String relPath) throws ItemExistsException, PathNotFoundException, VersionException, ConstraintViolationException, LockException, RepositoryException {
         return addNode(relPath, null);
     }
@@ -358,9 +370,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
+
         checkAddChildNodes();
+
         if (canItemBeExtended(relPath, primaryNodeTypeName)) {
+
             if ((StringUtils.equals(primaryNodeTypeName, ExternalDataAcl.ACL_NODE_TYPE) || StringUtils.equals(primaryNodeTypeName, ExternalDataAce.ACE_NODE_TYPE))
                     && session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable) {
                 throw new UnsupportedRepositoryOperationException("Acl and Ace are handle by DataSource");
@@ -374,7 +390,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), primaryNodeTypeName);
                 n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
                 n.setProperty("j:isExternalProviderRoot", false);
-                String localPath = (StringUtils.equals(getPath(), "/") ? getPath() : getPath() + "/") + relPath;
+                String localPath = (getPath().equals("/") ? "/" : getPath() + "/") + relPath;
                 return new ExtensionNode(n, localPath, getSession());
             }
         }
@@ -382,6 +398,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }
+
         String separator = StringUtils.equals(this.data.getId(), "/") ? "" : "/";
         ExternalData subNodeData = new ExternalData(this.data.getId() + separator + relPath, getPath() + (getPath().equals("/") ? "" : "/") + relPath, primaryNodeTypeName, new HashMap<String, String[]>(), true);
         final ExternalNodeImpl newNode = new ExternalNodeImpl(subNodeData, session);
@@ -395,6 +412,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void orderBefore(String srcChildRelPath, String destChildRelPath) throws UnsupportedRepositoryOperationException, VersionException, ConstraintViolationException, ItemNotFoundException, LockException, RepositoryException {
         if (srcChildRelPath.equals(destChildRelPath)) {
             return;
@@ -414,7 +432,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, Value value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+
         checkModify();
 
         if (canItemBeExtended(getPropertyDefinition(name))) {
@@ -463,6 +483,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, Value value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         return setProperty(name, value);
     }
@@ -470,7 +491,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+
         checkModify();
 
         if (canItemBeExtended(getPropertyDefinition(name))) {
@@ -531,6 +554,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, Value[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         return setProperty(name, values);
     }
@@ -538,6 +562,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, String[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value[] v = null;
         if (values != null) {
@@ -552,6 +577,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, String[] values, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         return setProperty(name, values);
     }
@@ -559,6 +585,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, String value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = null;
         if (value != null) {
@@ -570,6 +597,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, String value, int type) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         return setProperty(name, value);
     }
@@ -577,6 +605,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     @SuppressWarnings("deprecation")
     public Property setProperty(String name, InputStream value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         checkModify();
@@ -609,13 +638,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         } catch (IOException e) {
             throw new RepositoryException(e);
         }
-
         return setProperty(name, v);
     }
 
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, boolean value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = getSession().getValueFactory().createValue(value);
         return setProperty(name, v);
@@ -624,6 +653,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, double value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = getSession().getValueFactory().createValue(value);
         return setProperty(name, v);
@@ -632,6 +662,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, long value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = getSession().getValueFactory().createValue(value);
         return setProperty(name, v);
@@ -640,6 +671,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, Calendar value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = null;
         if (value != null) {
@@ -651,6 +683,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, Node value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = null;
         if (value != null) {
@@ -662,6 +695,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Node getNode(String s) throws RepositoryException {
         Node n = session.getNode(getPath().endsWith("/") ? getPath() + s : getPath() + "/" + s);
         if (n != null) {
@@ -677,6 +711,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public NodeIterator getNodes() throws RepositoryException {
         return getNodes(MATCH_ALL_PATTERN);
     }
@@ -684,7 +719,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public NodeIterator getNodes(String namePattern) throws RepositoryException {
+
         List<String> filteredList = new ArrayList<>();
         final boolean matchAll = MATCH_ALL_PATTERN.equals(namePattern);
         final ExternalDataSource dataSource = session.getRepository().getDataSource();
@@ -751,7 +788,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public NodeIterator getNodes(String[] nameGlobs) throws RepositoryException {
+
         final List<String> filteredList = new ArrayList<String>();
         final ExternalDataSource dataSource = session.getRepository().getDataSource();
 
@@ -807,6 +846,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property getProperty(String s) throws PathNotFoundException, RepositoryException {
         Node n = getExtensionNode(false);
         if (n != null && n.hasProperty(s) && getPropertyDefinition(s) != null && canItemBeExtended(getPropertyDefinition(s))) {
@@ -857,6 +897,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public PropertyIterator getProperties() throws RepositoryException {
         Node n = getExtensionNode(false);
         if (n != null) {
@@ -868,6 +909,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public PropertyIterator getProperties(String namePattern) throws RepositoryException {
         final Map<String, ExternalPropertyImpl> filteredList = new HashMap<String, ExternalPropertyImpl>();
         for (Map.Entry<String, ExternalPropertyImpl> entry : properties.entrySet()) {
@@ -903,6 +945,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Item getPrimaryItem() throws ItemNotFoundException, RepositoryException {
         throw new ItemNotFoundException("External node does not support getPrimaryItem");
     }
@@ -910,6 +953,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public String getUUID() throws UnsupportedRepositoryOperationException, RepositoryException {
         return getIdentifier();
     }
@@ -917,6 +961,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public int getIndex() throws RepositoryException {
         return 1;
     }
@@ -924,6 +969,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public PropertyIterator getReferences() throws RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -931,6 +977,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean hasNode(String s) throws RepositoryException {
         return session.itemExists(getPath().endsWith("/") ? getPath() + s : getPath() + "/" + s);
     }
@@ -938,6 +985,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean hasProperty(String relPath) throws RepositoryException {
         return properties.containsKey(relPath) ||
                 (data.getLazyProperties() != null && data.getLazyProperties().contains(relPath)) ||
@@ -948,6 +996,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean hasNodes() throws RepositoryException {
         return getNodes().hasNext();
     }
@@ -955,6 +1004,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean hasProperties() throws RepositoryException {
         return (!properties.isEmpty() ||
                 (data.getLazyProperties() != null && !data.getLazyProperties().isEmpty()) ||
@@ -965,6 +1015,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public ExtendedNodeType getPrimaryNodeType() throws RepositoryException {
         return getExtendedPrimaryNodeType();
     }
@@ -976,11 +1027,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public ExtendedNodeType[] getMixinNodeTypes() throws RepositoryException {
         return getMixinNodeTypes(true);
     }
 
     private ExtendedNodeType[] getMixinNodeTypes(boolean withExtension) throws RepositoryException {
+
         List<ExtendedNodeType> nt = new ArrayList<ExtendedNodeType>();
         if (data.getMixin() != null) {
             for (String s : data.getMixin()) {
@@ -1009,6 +1062,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean isNodeType(String nodeTypeName) throws RepositoryException {
         return isNodeType(nodeTypeName, true);
     }
@@ -1028,7 +1082,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void addMixin(String mixinName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+
         if (isNodeType(mixinName) || !canManageNodeTypes()) {
             return;
         }
@@ -1052,7 +1108,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void removeMixin(String mixinName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+
        if (!canManageNodeTypes()) {
            return;
        }
@@ -1067,7 +1125,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         Node extensionNode = getExtensionNode(false);
         if (extensionNode != null) {
             extensionNode.removeMixin(mixinName);
-
 
             // remove child node and properties brought by the mixin
             PropertyIterator pi = getProperties();
@@ -1134,6 +1191,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean canAddMixin(String mixinName) throws NoSuchNodeTypeException, RepositoryException {
         if (getSession().getExtensionForbiddenMixins().contains(mixinName) && canManageNodeTypes()) {
             return true;
@@ -1146,6 +1204,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public NodeDefinition getDefinition() throws RepositoryException {
         ExternalNodeImpl parentNode;
         try {
@@ -1169,6 +1228,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Version checkin() throws VersionException, UnsupportedRepositoryOperationException, InvalidItemStateException, LockException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1176,12 +1236,14 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void checkout() throws UnsupportedRepositoryOperationException, LockException, RepositoryException {
     }
 
     /**
      * {@inheritDoc}
      */
+    @Override
     public void doneMerge(Version version) throws VersionException, InvalidItemStateException, UnsupportedRepositoryOperationException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1189,6 +1251,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void cancelMerge(Version version) throws VersionException, InvalidItemStateException, UnsupportedRepositoryOperationException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1196,6 +1259,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void update(String s) throws NoSuchWorkspaceException, AccessDeniedException, LockException, InvalidItemStateException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1203,6 +1267,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public NodeIterator merge(String s, boolean b) throws NoSuchWorkspaceException, AccessDeniedException, MergeException, LockException, InvalidItemStateException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1210,6 +1275,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public String getCorrespondingNodePath(String workspaceName) throws ItemNotFoundException, NoSuchWorkspaceException, AccessDeniedException, RepositoryException {
         return getPath();
     }
@@ -1217,6 +1283,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean isCheckedOut() throws RepositoryException {
         return true;
     }
@@ -1224,6 +1291,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void restore(String s, boolean b) throws VersionException, ItemExistsException, UnsupportedRepositoryOperationException, LockException, InvalidItemStateException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1231,6 +1299,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void restore(Version version, boolean b) throws VersionException, ItemExistsException, UnsupportedRepositoryOperationException, LockException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1238,6 +1307,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void restore(Version version, String s, boolean b) throws PathNotFoundException, ItemExistsException, VersionException, ConstraintViolationException, UnsupportedRepositoryOperationException, LockException, InvalidItemStateException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1245,6 +1315,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void restoreByLabel(String s, boolean b) throws VersionException, ItemExistsException, UnsupportedRepositoryOperationException, LockException, InvalidItemStateException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1252,6 +1323,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public VersionHistory getVersionHistory() throws UnsupportedRepositoryOperationException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1259,6 +1331,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Version getBaseVersion() throws UnsupportedRepositoryOperationException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1266,6 +1339,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Lock lock(boolean b, boolean b1) throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
         return session.getWorkspace().getLockManager().lock(getPath(), b, b1, Long.MAX_VALUE, null);
     }
@@ -1273,6 +1347,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Lock getLock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, RepositoryException {
         return session.getWorkspace().getLockManager() != null ? session.getWorkspace().getLockManager().getLock(getPath()) : null;
     }
@@ -1280,6 +1355,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void unlock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
         if (session.getWorkspace().getLockManager() != null) {
             session.getWorkspace().getLockManager().unlock(getPath());
@@ -1289,6 +1365,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean holdsLock() throws RepositoryException {
         return session.getWorkspace().getLockManager() != null && session.getWorkspace().getLockManager().getLock(getPath()) != null;
     }
@@ -1296,6 +1373,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean isLocked() throws RepositoryException {
         return session.getWorkspace().getLockManager() != null && session.getWorkspace().getLockManager().isLocked(getPath());
     }
@@ -1303,6 +1381,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = null;
         if (value != null) {
@@ -1319,6 +1398,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Property setProperty(String name, BigDecimal value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
         Value v = null;
         if (value != null) {
@@ -1330,6 +1410,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public PropertyIterator getProperties(String[] nameGlobs) throws RepositoryException {
         final Map<String, ExternalPropertyImpl> filteredList = new HashMap<String, ExternalPropertyImpl>();
         for (Map.Entry<String, ExternalPropertyImpl> entry : properties.entrySet()) {
@@ -1365,6 +1446,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public final String getIdentifier() throws RepositoryException {
         if (uuid == null) {
             if (!session.getRepository().getDataSource().isSupportsUuid() || data.getId().startsWith(ExternalSessionImpl.TRANSLATION_PREFIX)) {
@@ -1373,13 +1455,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 uuid = data.getId();
             }
         }
-
         return uuid;
     }
 
     /**
      * {@inheritDoc}
      */
+    @Override
     public PropertyIterator getReferences(String name) throws RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1387,6 +1469,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public PropertyIterator getWeakReferences() throws RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1394,6 +1477,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public PropertyIterator getWeakReferences(String name) throws RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1401,6 +1485,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void setPrimaryType(String nodeTypeName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1408,6 +1493,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public NodeIterator getSharedSet() throws RepositoryException {
         return new ExternalNodeIterator(new ArrayList<String>());
     }
@@ -1415,6 +1501,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void removeSharedSet() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1422,6 +1509,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void removeShare() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1429,6 +1517,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void followLifecycleTransition(String transition) throws UnsupportedRepositoryOperationException, InvalidLifecycleTransitionException, RepositoryException {
         throw new UnsupportedRepositoryOperationException();
     }
@@ -1436,11 +1525,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     /**
      * {@inheritDoc}
      */
+    @Override
     public String[] getAllowedLifecycleTransistions() throws UnsupportedRepositoryOperationException, RepositoryException {
         return new String[0];
     }
 
     public Node getExtensionNode(boolean create) throws RepositoryException {
+
         Session extensionSession = getSession().getExtensionSession();
         if (extensionSession == null) {
             return null;
@@ -1528,6 +1619,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     public boolean canItemBeExtended(ItemDefinition definition) throws RepositoryException {
+
         if (definition == null) {
             throw new ConstraintViolationException();
         }
@@ -1568,6 +1660,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * Property iterator implementation
      */
     private class ExternalPropertyIterator implements PropertyIterator {
+
         private int pos = 0;
         private Iterator<ExternalPropertyImpl> it;
         private PropertyIterator extensionPropertiesIterator;
@@ -1580,10 +1673,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         ExternalPropertyIterator(Map<String, ExternalPropertyImpl> externalPropertyMap, Set<String> lazyProperties,
                                  Set<String> lazyBinaryProperties, ExternalNodeImpl node) {
             this(externalPropertyMap, null, lazyProperties, lazyBinaryProperties, node);
-        }
-
-        ExternalPropertyIterator(Map<String, ExternalPropertyImpl> externalPropertyMap, ExternalNodeImpl node) {
-            this(externalPropertyMap, null, null, null, node);
         }
 
         ExternalPropertyIterator(Map<String, ExternalPropertyImpl> externalPropertyMap,
@@ -1652,6 +1741,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             return next;
         }
 
+        @Override
         public void skip(long skipNum) {
             for (int i = 0; i < skipNum; i++) {
                 nextProperty();
@@ -1688,6 +1778,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      * Node iterator implementation
      */
     private class ExternalNodeIterator implements NodeIterator {
+
         private int pos = 0;
         private Iterator<String> it;
         private final List<String> list;
@@ -1745,6 +1836,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             return null;
         }
 
+        @Override
         public Node nextNode() {
             if (nextNode == null) {
                 throw new NoSuchElementException();
@@ -1755,28 +1847,34 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             return next;
         }
 
+        @Override
         public void skip(long skipNum) {
             for (int i = 0; i < skipNum; i++) {
                 nextNode();
             }
         }
 
+        @Override
         public long getSize() {
             return list.size() + (extensionNodeIterator != null ? extensionNodeIterator.getSize() : 0);
         }
 
+        @Override
         public long getPosition() {
             return pos;
         }
 
+        @Override
         public boolean hasNext() {
             return nextNode != null;
         }
 
+        @Override
         public Object next() {
             return nextNode();
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException();
         }
