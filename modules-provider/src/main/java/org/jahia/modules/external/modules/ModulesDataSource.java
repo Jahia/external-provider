@@ -498,14 +498,11 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
         String contentType = getContentType(fileObject.getContent());
         if (type == null && isFile) {
-            // Test if MimeType is of type "text", binary mimetypes shouldn't be editable.
-            String mimeType = JCRContentUtils.getMimeType(fileObject.getName().getBaseName());
-            boolean isTextMimeType = mimeType != null && mimeType.contains("text");
-            if (isTextMimeType) {
+            boolean isMedia = contentType != null && (contentType.contains("image") || contentType.contains("video") || contentType.contains("audio") || contentType.contains("flash"));
+            if (!isMedia) {
                 type = JNT_EDITABLE_FILE;
             }
         }
-
         return type != null ? type : super.getDataType(fileObject);
     }
 
