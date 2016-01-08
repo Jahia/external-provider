@@ -65,6 +65,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.AccessControlException;
 import java.util.*;
+import org.jahia.services.content.JCRContentUtils;
 
 /**
  * Implementation of the {@link javax.jcr.Session} for the {@link org.jahia.modules.external.ExternalData}.
@@ -446,7 +447,8 @@ public class ExternalSessionImpl implements Session {
             ExternalContentStoreProvider.setCurrentSession(this);
             try {
                 //todo : store move in session and move node in save
-                ((ExternalDataSource.Writable) repository.getDataSource()).move(source, dest);
+                final String newDest = JCRContentUtils.findAvailableNodeName(externalNode, dest);
+                ((ExternalDataSource.Writable) repository.getDataSource()).move(source, newDest);
 
                 int oldIndex = previousParentChildren.indexOf(externalNode.getName());
                 previousParentChildren.remove(externalNode.getName());
