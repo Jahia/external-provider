@@ -50,6 +50,10 @@ import java.util.Set;
 
 /**
  * External acl
+ * This is the representation of an ACL
+ * it contains
+ *  - a list of ExternalAce
+ *  - if it inherits the ace from its parent or not
  */
 public class ExternalDataAcl {
     public static final String ACL_NODE_NAME = "j:acl";
@@ -80,6 +84,12 @@ public class ExternalDataAcl {
         return acl.get(aceName);
     }
 
+    /**
+     * Add an entry (Ace) to the ACL
+     * @param aceType : type of entry, grant or deny
+     * @param principal : user or group, format u:userKey or g:groupKey
+     * @param roles : roles granted or denied
+     */
     public void addAce(ExternalDataAce.Type aceType, String principal, Set<String> roles) {
         addAce(aceType, principal, roles, false);
     }

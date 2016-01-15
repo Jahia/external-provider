@@ -52,6 +52,13 @@ import java.util.Set;
 
 /**
  * External ace
+ * This is the representation of an Access Control Entry
+ * The constructor is protected, only created by ExternalDataAcl
+ * it contains,
+ *  - the type : Type.Grant or Type.DENY
+ *  - principal : the user
+ *  - roles : a Set of String containing the roles names defined by the ACE
+ *  - ace protected : not used
  */
 public class ExternalDataAce {
     public static final String ACE_TYPE_PROP = "j:aceType";
