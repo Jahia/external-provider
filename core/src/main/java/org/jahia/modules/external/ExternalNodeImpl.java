@@ -1807,7 +1807,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                         next = null;
                         logger.debug(e.getMessage(), e);
                     }
-                } while (next == null || hasNext());
+                } while (next == null && hasNext());
                 nextNode = next;
                 return nextNode;
             }
