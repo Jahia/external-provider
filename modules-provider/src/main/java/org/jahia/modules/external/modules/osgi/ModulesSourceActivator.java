@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 public class ModulesSourceActivator implements BundleActivator {
     private static Logger logger = LoggerFactory.getLogger(ModulesSourceActivator.class);
     private BundleContext context;
+    private SynchronousBundleListener bundleListener;
 
 
     /**
@@ -74,7 +75,7 @@ public class ModulesSourceActivator implements BundleActivator {
             this.context = context;
         }
         logger.info("Starting external provider bundle.");
-        context.addBundleListener(new SynchronousBundleListener() {
+        bundleListener = new SynchronousBundleListener() {
             @Override
             public void bundleChanged(BundleEvent event) {
                 if (event.getType() == BundleEvent.STARTED) {
@@ -83,7 +84,8 @@ public class ModulesSourceActivator implements BundleActivator {
                     ModulesSourceSpringInitializer.getInstance().unmountBundle(event.getBundle());
                 }
             }
-        });
+        };
+        context.addBundleListener(bundleListener);
         Bundle[] bundles = context.getBundles();
         for (Bundle bundle : bundles) {
             if (bundle.getState() == Bundle.ACTIVE) {
@@ -110,6 +112,10 @@ public class ModulesSourceActivator implements BundleActivator {
         if (!JahiaContextLoaderListener.isRunning()) {
             return;
         }
+        if (bundleListener != null) {
+            context.removeBundleListener(bundleListener);
+        }
+        bundleListener = null;
         Bundle[] bundles = context.getBundles();
         for (Bundle bundle : bundles) {
             if (bundle.getState() == Bundle.ACTIVE || context.getBundle().getBundleId() == bundle.getBundleId()) {
