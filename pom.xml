@@ -52,7 +52,7 @@
         <version>7.1.1.0</version>
         <relativePath />
     </parent>
-    <version>3.0.2</version>
+    <version>3.0.3-SNAPSHOT</version>
     <artifactId>external-provider-parent</artifactId>
     <name>Jahia External Provider Parent</name>
     <packaging>pom</packaging>
@@ -61,7 +61,7 @@
         <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
         <url>scm:git:git@github.com:Jahia/external-provider.git</url>
         <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
-      <tag>3_0_2</tag>
+      <tag>3_x</tag>
   </scm>
     <repositories>
         <repository>
