@@ -2082,7 +2082,6 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             try {
                 writer = new OutputStreamWriter(new FileOutputStream(getRealFile(path)), "UTF-8");
                 Map<String, String> namespaces = NodeTypeRegistry.getInstance().getNamespaces();
-                namespaces.remove("rep");
                 if (nodeTypeRegistryMap.containsKey(path)) {
                     nodeTypeRegistryMap.get(path).flushLabels();
                 }
