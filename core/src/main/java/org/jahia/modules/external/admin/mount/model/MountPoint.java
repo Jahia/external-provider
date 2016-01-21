@@ -45,6 +45,7 @@ package org.jahia.modules.external.admin.mount.model;
 
 import org.apache.commons.lang.StringUtils;
 import org.jahia.services.content.JCRPropertyWrapper;
+import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.decorator.JCRMountPointNode;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
@@ -58,10 +59,7 @@ import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.nodetype.PropertyDefinition;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author kevan
@@ -108,22 +106,37 @@ public class MountPoint implements Serializable{
         try {
             Locale locale = LocaleContextHolder.getLocale();
             mountPointProperties = new LinkedHashMap<>();
+            JCRValueWrapper[] protectedProperties = node.hasProperty("protectedProperties") ? node.getProperty("protectedProperties").getValues() : null;
+            List<String> protectedPropertiesNames = null;
+            if(protectedProperties != null) {
+                protectedPropertiesNames = new ArrayList<>();
+                for (JCRValueWrapper jcrValueWrapper : protectedProperties) {
+                    protectedPropertiesNames.add(jcrValueWrapper.getString());
+                }
+            }
+
+
             for (PropertyDefinition def : NodeTypeRegistry.getInstance().getNodeType(nodetype).getDeclaredPropertyDefinitions()) {
-                JCRPropertyWrapper mountPointProperty = node.getProperty(def.getName());
-                ExtendedPropertyDefinition extPropDef = (ExtendedPropertyDefinition) mountPointProperty.getDefinition();
-                if (!extPropDef.isHidden()) {
-                    String key = extPropDef.getLabel(locale) + " (" + def.getName() + ")";
-                    if (mountPointProperty.isMultiple()) {
-                        StringBuilder sb = new StringBuilder();
-                        for (Value v : mountPointProperty.getValues()) {
-                            if (sb.length() > 0) {
-                                sb.append(" - ");
+                if (node.hasProperty(def.getName())) {
+                    if (protectedPropertiesNames != null && protectedPropertiesNames.contains(def.getName())) {
+                        continue;
+                    }
+                    JCRPropertyWrapper mountPointProperty = node.getProperty(def.getName());
+                    ExtendedPropertyDefinition extPropDef = (ExtendedPropertyDefinition) mountPointProperty.getDefinition();
+                    if (!extPropDef.isHidden()) {
+                        String key = extPropDef.getLabel(locale) + " (" + def.getName() + ")";
+                        if (mountPointProperty.isMultiple()) {
+                            StringBuilder sb = new StringBuilder();
+                            for (Value v : mountPointProperty.getValues()) {
+                                if (sb.length() > 0) {
+                                    sb.append(" - ");
+                                }
+                                sb.append(v.getString());
                             }
-                            sb.append(v.getString());
+                            mountPointProperties.put(key, sb.toString());
+                        } else {
+                            mountPointProperties.put(key, mountPointProperty.getValue().getString());
                         }
-                        mountPointProperties.put(key, sb.toString());
-                    } else {
-                        mountPointProperties.put(key, mountPointProperty.getValue().getString());
                     }
                 }
             }
