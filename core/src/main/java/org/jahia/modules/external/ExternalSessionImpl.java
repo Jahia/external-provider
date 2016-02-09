@@ -45,6 +45,7 @@ package org.jahia.modules.external;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.security.JahiaLoginModule;
+import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRStoreProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,13 +60,11 @@ import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.retention.RetentionManager;
 import javax.jcr.security.AccessControlManager;
 import javax.jcr.version.VersionException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.AccessControlException;
 import java.util.*;
-import org.jahia.services.content.JCRContentUtils;
 
 /**
  * Implementation of the {@link javax.jcr.Session} for the {@link org.jahia.modules.external.ExternalData}.
@@ -444,10 +443,10 @@ public class ExternalSessionImpl implements Session {
             final ExternalNodeImpl previousParent = (ExternalNodeImpl) externalNode.getParent();
             final List<String> previousParentChildren = previousParent.getExternalChildren();
 
-            ExternalContentStoreProvider.setCurrentSession(this);
             try {
                 //todo : store move in session and move node in save
                 final String newDest = JCRContentUtils.findAvailableNodeName(externalNode, dest);
+                ExternalContentStoreProvider.setCurrentSession(this);
                 ((ExternalDataSource.Writable) repository.getDataSource()).move(source, newDest);
 
                 int oldIndex = previousParentChildren.indexOf(externalNode.getName());
