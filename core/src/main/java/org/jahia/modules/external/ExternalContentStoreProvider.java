@@ -381,6 +381,12 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         return false;
     }
 
+    /**
+     * if true,if a content from the provider is referenced, it will be added to the cache key
+     * For example it is used in the Alfresco CMIS provider as a content may not be available for all users
+     * by default is false
+     * @return
+     */
     public boolean isCacheKeyOnReferenceSupport() {
         return cacheKeyOnReferenceSupport;
     }
