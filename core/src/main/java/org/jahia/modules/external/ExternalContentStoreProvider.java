@@ -90,6 +90,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     private boolean slowConnection = true;
     private boolean lockSupport = false;
+    private boolean cacheKeyOnReferenceSupport = false;
 
     public static ExternalSessionImpl getCurrentSession() {
         return currentSession.get();
@@ -378,5 +379,13 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
             logger.error("Error while checking property name", e);
         }
         return false;
+    }
+
+    public boolean isCacheKeyOnReferenceSupport() {
+        return cacheKeyOnReferenceSupport;
+    }
+
+    public void setCacheKeyOnReferenceSupport(boolean cacheKeyOnReferenceSupport) {
+        this.cacheKeyOnReferenceSupport = cacheKeyOnReferenceSupport;
     }
 }

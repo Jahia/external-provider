@@ -26,4 +26,7 @@
           parent="AbstractJCRStoreProviderPrototype" scope="prototype">
         <property name="externalProviderInitializerService" ref="ProviderInitializerService"/>
     </bean>
+
+    <bean class="org.jahia.modules.external.cache.ExternalReferenceCacheKeyPartGenerator"/>
+
 </beans>
