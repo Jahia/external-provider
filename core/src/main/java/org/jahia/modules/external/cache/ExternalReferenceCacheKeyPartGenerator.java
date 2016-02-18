@@ -30,7 +30,7 @@ public class ExternalReferenceCacheKeyPartGenerator implements CacheKeyPartGener
                 String uuid = resourceNode.getProperty("j:node").getString();
                 for (JCRStoreProvider p : JCRStoreService.getInstance().getSessionFactory().getProviderList()) {
                     if (p instanceof ExternalContentStoreProvider && ((ExternalContentStoreProvider) p).isCacheKeyOnReferenceSupport() && uuid.startsWith(((ExternalContentStoreProvider) p).getId())) {
-                        return resourceNode.getProperty("j:node").getString();
+                        return uuid;
                     }
                 }
             }
