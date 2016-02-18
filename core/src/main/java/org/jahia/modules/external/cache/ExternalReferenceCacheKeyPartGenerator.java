@@ -1,6 +1,7 @@
 package org.jahia.modules.external.cache;
 
 import org.jahia.modules.external.ExternalContentStoreProvider;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.content.JCRStoreService;
 import org.jahia.services.render.RenderContext;
@@ -24,11 +25,12 @@ public class ExternalReferenceCacheKeyPartGenerator implements CacheKeyPartGener
     @Override
     public String getValue(Resource resource, RenderContext renderContext, Properties properties) {
         try {
-            if (resource.getNode().isNodeType("jmix:nodeReference")) {
-                String uuid = resource.getNode().getProperty("j:node").getString();
+            JCRNodeWrapper resourceNode = resource.getNode();
+            if (resourceNode.isNodeType("jmix:nodeReference") && resourceNode.hasNode("j:node")) {
+                String uuid = resourceNode.getProperty("j:node").getString();
                 for (JCRStoreProvider p : JCRStoreService.getInstance().getSessionFactory().getProviderList()) {
                     if (p instanceof ExternalContentStoreProvider && ((ExternalContentStoreProvider) p).isCacheKeyOnReferenceSupport() && uuid.startsWith(((ExternalContentStoreProvider) p).getId())) {
-                        return resource.getNode().getProperty("j:node").getString();
+                        return resourceNode.getProperty("j:node").getString();
                     }
                 }
             }
