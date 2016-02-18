@@ -18,7 +18,7 @@ public class ExternalReferenceCacheKeyPartGenerator implements CacheKeyPartGener
 
     @Override
     public String getKey() {
-        return "CMISObject";
+        return "refToExternalContent";
     }
 
     @Override
