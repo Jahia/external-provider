@@ -318,7 +318,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             }
         });
         monitor.setRecursive(true);
-        monitor.setFilesToIgnore(".svn", ".git", "target", ".idea", ".settings", ".project", ".classpath");
+        monitor.setFilesToIgnore(".svn", ".git", "target", ".idea", ".settings", ".project", ".classpath", "repository.xml.orig");
         monitor.addFile(module.getSourcesFolder());
         fileMonitorJobName = "ModuleSourcesJob-" + module.getId();
         FileMonitorJob.schedule(fileMonitorJobName, 5000, monitor);
