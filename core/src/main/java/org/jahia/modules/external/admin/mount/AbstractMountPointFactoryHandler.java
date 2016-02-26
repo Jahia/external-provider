@@ -44,7 +44,8 @@
 package org.jahia.modules.external.admin.mount;
 
 import org.apache.commons.lang.StringUtils;
-import org.jahia.services.content.JCRCallback;import org.jahia.services.content.JCRContentUtils;import org.jahia.services.content.JCRNodeWrapper;import org.jahia.services.content.JCRSessionWrapper;import org.jahia.services.content.JCRStoreProvider;import org.jahia.services.content.JCRStoreService;import org.jahia.services.content.JCRTemplate;import org.jahia.services.content.ProviderFactory;import org.jahia.services.content.decorator.JCRMountPointNode;
+import org.jahia.services.content.*;
+import org.jahia.services.content.decorator.JCRMountPointNode;
 import org.jahia.services.render.RenderContext;
 import org.jahia.settings.SettingsBean;
 import org.jahia.utils.Patterns;
@@ -59,7 +60,6 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Workspace;
 import javax.jcr.query.Query;
 import java.io.Serializable;
-import java.lang.Boolean;import java.lang.Override;import java.lang.String;
 import java.util.Locale;
 
 /**
@@ -157,16 +157,21 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
                 // no files under the site
                 continue;
             }
-            Query siteFoldersQuery = workspace.getQueryManager().createQuery("select * from [jnt:folder] as f where " +
-                    "isdescendantnode(f,['" + siteFiles.getPath() + "'])", Query.JCR_SQL2);
+            StringBuilder filter = new StringBuilder("isdescendantnode(f,['").append(siteFiles.getPath()).append("'])");
+            for (JCRStoreProvider provider : JCRStoreService.getInstance().getSessionFactory().getProviderList()) {
+                if (!provider.isDefault() && StringUtils.startsWith(provider.getMountPoint(), siteFiles.getPath())) {
+                    filter.append(" and (not isdescendantnode(f,['").append(provider.getMountPoint()).append("']))");
+                }
+            }
+
+
+            Query siteFoldersQuery = workspace.getQueryManager().createQuery("select * from [jnt:folder] as f where " + filter
+                    , Query.JCR_SQL2);
 
             NodeIterator siteFolders = siteFoldersQuery.execute().getNodes();
             while (siteFolders.hasNext()) {
                 Node siteFolder = siteFolders.nextNode();
-                // only show the nodes from the default provider to avoid mounting into already mounted nodes in case of local
-                if ((local && ((JCRNodeWrapper) siteFolder).getProvider().isDefault()) || !local){
-                    folders.put(siteFolder.getPath());
-                }
+                folders.put(siteFolder.getPath());
             }
         }
 
