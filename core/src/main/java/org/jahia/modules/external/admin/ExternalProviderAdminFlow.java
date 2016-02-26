@@ -43,18 +43,7 @@
  */
 package org.jahia.modules.external.admin;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import javax.jcr.RepositoryException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.query.Query;
-
 import org.jahia.modules.external.ExternalContentStoreProvider;
-import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.ExternalDataSource;
 import org.jahia.modules.external.ExternalProviderInitializerService;
 import org.jahia.modules.external.ExternalQuery;
@@ -68,6 +57,12 @@ import org.jahia.services.query.QueryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.jcr.RepositoryException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
+import javax.jcr.query.Query;
+import java.io.Serializable;
+import java.util.*;
 
 public class ExternalProviderAdminFlow implements Serializable {
     private static final Logger logger = LoggerFactory.getLogger(ExternalProviderAdminFlow.class);
@@ -143,9 +138,7 @@ public class ExternalProviderAdminFlow implements Serializable {
 
         ExternalDataSource dataSource = provider.getDataSource();
         DataSourceInfo dataSourceInfo = getBaseDataSourceInfo(dataSource);
-
-        ExternalData data = dataSource.getItemByPath("/");
-        dataSourceInfo.setRootNodeType(data.getType());
+        dataSourceInfo.setRootNodeType(jcrStoreService.getSessionFactory().getCurrentUserSession().getNode(provider.getMountPoint()).getPrimaryNodeType().getName());
 
         dataSourceInfo.setExtendable(provider.getExtensionProvider() != null);
         dataSourceInfo.setOverridableItems(provider.getOverridableItems());
