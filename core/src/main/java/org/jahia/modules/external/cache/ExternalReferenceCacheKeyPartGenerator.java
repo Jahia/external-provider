@@ -26,7 +26,7 @@ public class ExternalReferenceCacheKeyPartGenerator implements CacheKeyPartGener
     public String getValue(Resource resource, RenderContext renderContext, Properties properties) {
         try {
             JCRNodeWrapper resourceNode = resource.getNode();
-            if (resourceNode.isNodeType("jmix:nodeReference") && resourceNode.hasNode("j:node")) {
+            if (resourceNode.isNodeType("jmix:nodeReference") && resourceNode.hasProperty("j:node")) {
                 String uuid = resourceNode.getProperty("j:node").getString();
                 for (JCRStoreProvider p : JCRStoreService.getInstance().getSessionFactory().getProviderList()) {
                     if (p instanceof ExternalContentStoreProvider && ((ExternalContentStoreProvider) p).isCacheKeyOnReferenceSupport() && uuid.startsWith(((ExternalContentStoreProvider) p).getId())) {
