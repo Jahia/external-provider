@@ -100,8 +100,7 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         String jspPath = getJspPath(jsp);
         String jspServletAlias = "/" + bundle.getSymbolicName() + jspPath;
         httpService.unregister(jspServletAlias);
-        HttpContext httpContext = new FileHttpContext(FileHttpContext.getSourceURLs(bundle),
-                httpService.createDefaultHttpContext());
+        HttpContext httpContext = new FileHttpContext(bundle, httpService.createDefaultHttpContext());
         BundleHttpResourcesTracker.registerJspServlet(httpService, httpContext, bundle, bundleName, jspServletAlias, jspPath, null);
         bundleScriptResolver.addBundleScript(bundle, jspPath);
         templatePackageRegistry.addModuleWithViewsForComponent(StringUtils.substringBetween(jspPath, "/", "/"), module);
