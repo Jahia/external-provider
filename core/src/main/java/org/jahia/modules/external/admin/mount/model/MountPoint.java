@@ -57,7 +57,6 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Value;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.nodetype.PropertyDefinition;
-
 import java.io.Serializable;
 import java.util.*;
 
@@ -83,9 +82,17 @@ public class MountPoint implements Serializable{
         this.realName = node.getName();
         this.name = StringUtils.removeEnd(node.getName(), JCRMountPointNode.MOUNT_SUFFIX);
         this.path = node.getTargetMountPointPath();
+
+        // check the root node update mount point status
+        try {
+            node.getSession().getNode(path);
+        } catch (Exception e) {
+            // Do nothing
+        }
         this.status = node.getMountStatus();
         this.identifier = node.getIdentifier();
         this.nodetype = node.getPrimaryNodeType().getName();
+        // update mount point status
 
         switch (node.getMountStatus()){
             case unmounted:
