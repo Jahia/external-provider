@@ -192,7 +192,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private Set<String> supportedNodeTypes;
 
-    private Map<String, NodeTypeRegistry> nodeTypeRegistryMap = new HashMap<String, NodeTypeRegistry>();
+    private Map<String, NodeTypeRegistry> nodeTypeRegistryMap = new HashMap<>();
+    private Map<NodeTypeRegistry, Map<String,String>> namespaceDefinitions = new HashMap<>();
 
     private String fileMonitorJobName;
 
@@ -714,7 +715,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             }
         } else {
             if (pathLowerCase.endsWith(CND)) {
-                nodeTypeRegistryMap.remove(path);
+                removeNodeTypeRegistry(path);
             }
             if (sourceControl != null) {
                 try {
@@ -807,7 +808,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             }
         } else {
             if (lowerCaseOldPath.endsWith(CND)) {
-                nodeTypeRegistryMap.remove(oldPath);
+                removeNodeTypeRegistry(oldPath);
             }
             if (sourceControl != null) {
                 try {
@@ -935,7 +936,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 writeDefinitionFile(ntRegistry, cndPath);
             }
         } catch (RepositoryException e) {
-            nodeTypeRegistryMap.remove(cndPath);
+            removeNodeTypeRegistry(cndPath);
             throw e;
         }
     }
@@ -1015,8 +1016,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 writeDefinitionFile(newNodeTypeRegistry, oldCndPath);
             }
         } catch (RepositoryException e) {
-            nodeTypeRegistryMap.remove(newCndPath);
-            nodeTypeRegistryMap.remove(oldCndPath);
+            removeNodeTypeRegistry(newCndPath);
+            removeNodeTypeRegistry(oldCndPath);
             throw e;
         }
     }
@@ -1257,7 +1258,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
 
         if (type.isNodeType(JNT_DEFINITION_FILE)) {
-            nodeTypeRegistryMap.remove(data.getPath());
+            removeNodeTypeRegistry(data.getPath());
         }
         return hasProperties;
     }
@@ -1386,7 +1387,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             nodeType.validate();
         } catch (NoSuchNodeTypeException e) {
             logger.error("Failed to save child node definition", e);
-            nodeTypeRegistryMap.remove(cndPath);
+            removeNodeTypeRegistry(cndPath);
             throw e;
         }
         writeDefinitionFile(nodeTypeRegistry, cndPath);
@@ -1674,7 +1675,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
             saveCndResourceBundle(data, JCRContentUtils.replaceColon(nodeTypeName) + "." + JCRContentUtils.replaceColon(lastPathSegment));
         } catch (NoSuchNodeTypeException e) {
-            nodeTypeRegistryMap.remove(cndPath);
+            removeNodeTypeRegistry(cndPath);
             throw e;
         } catch (Exception e) {
             throw new RepositoryException(e);
@@ -1755,7 +1756,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
             saveCndResourceBundle(data, JCRContentUtils.replaceColon(nodeTypeName) + "." + JCRContentUtils.replaceColon(lastPathSegment));
         } catch (NoSuchNodeTypeException e) {
-            nodeTypeRegistryMap.remove(cndPath);
+            removeNodeTypeRegistry(cndPath);
             throw e;
         }
     }
@@ -2049,6 +2050,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         return ntr;
     }
 
+
+    private void removeNodeTypeRegistry(String newCndPath) {
+        NodeTypeRegistry nodeTypeRegistry = nodeTypeRegistryMap.remove(newCndPath);
+        namespaceDefinitions.remove(nodeTypeRegistry);
+    }
+
     /**
      * Get the local NodeTypeRegistry for one specific file. Contains system definitions, dependencies and
      * definitions from the current file.
@@ -2067,6 +2074,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 FileObject file = getFile(path);
                 if (file.exists()) {
                     nodeTypeRegistryMap.put(path, ntr);
+                    namespaceDefinitions.put(ntr, new HashMap<String, String>());
                     ntr.addDefinitionsFile(new UrlResource(file.getURL()), module.getId());
                 }
             } catch (ParseException | IOException e) {
@@ -2099,6 +2107,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         addMissingNamespace(namespaces, realUsedNamespaces, childNodeDefinition.getDefaultPrimaryType());
                     }
                 }
+
+                realUsedNamespaces.putAll(namespaceDefinitions.get(nodeTypeRegistry));
 
                 new JahiaCndWriter(nodeTypeRegistry.getNodeTypes(module.getId()), realUsedNamespaces, writer);
             } finally {
@@ -2135,8 +2145,11 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private synchronized void registerNamespace(ExternalData data) throws RepositoryException {
         String prefix = data.getProperties().get("j:prefix")[0];
         String uri = data.getProperties().get("j:uri")[0];
+
+        String cndPath = getCndPath(data.getPath(), data.getPath().toLowerCase());
+        NodeTypeRegistry ntRegistry = loadRegistry(cndPath);
+
         NamespaceRegistry nsRegistry = JCRSessionFactory.getInstance().getNamespaceRegistry();
-        NodeTypeRegistry ntRegistry = NodeTypeRegistry.getInstance();
         boolean exists = false;
         try {
             nsRegistry.getURI(prefix);
@@ -2153,9 +2166,12 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         if (exists || ntRegistry.getNamespaces().containsKey(prefix) || ntRegistry.getNamespaces().containsValue(uri)) {
             throw new NamespaceException();
         }
-        nsRegistry.registerNamespace(prefix, uri);
+
         ntRegistry.getNamespaces().put(prefix, uri);
+        namespaceDefinitions.get(ntRegistry).put(prefix, uri);
+
         nodeTypeRegistryMap.get(StringUtils.substringBeforeLast(data.getPath(), "/")).getNamespaces().put(prefix, uri);
+        writeDefinitionFile(ntRegistry, cndPath);
     }
 
     /**
