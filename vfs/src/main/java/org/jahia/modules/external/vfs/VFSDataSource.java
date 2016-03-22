@@ -325,7 +325,9 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         String type = getDataType(fileObject);
 
         Map<String, String[]> properties = new HashMap<String, String[]>();
-        if (fileObject.getContent() != null) {
+        List<String> addedMixins = new ArrayList<>();
+        final FileContent content = fileObject.getContent();
+        if (content != null) {
             long lastModifiedTime = fileObject.getContent().getLastModifiedTime();
             if (lastModifiedTime > 0) {
                 Calendar calendar = Calendar.getInstance();
@@ -334,6 +336,13 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 properties.put(Constants.JCR_CREATED, timestamp);
                 properties.put(Constants.JCR_LASTMODIFIED, timestamp);
             }
+            // Add jmix:image mixin in case of the file is a picture.
+            if(content.getContentInfo()!=null && content.getContentInfo().getContentType() != null
+                    && fileObject.getContent().getContentInfo().getContentType().matches("image/(.*)"))
+            {
+                addedMixins.add(Constants.JAHIAMIX_IMAGE);
+            }
+
         }
 
         String path = fileObject.getName().getPath().substring(rootPath.length());
@@ -341,7 +350,9 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             path = "/" + path;
         }
 
-        return new ExternalData(path, path, type, properties);
+        ExternalData result = new ExternalData(path, path, type, properties);
+        result.setMixin(addedMixins);
+        return result;
     }
 
     public String getDataType(FileObject fileObject) throws FileSystemException {
