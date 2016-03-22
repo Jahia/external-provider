@@ -76,6 +76,7 @@ import org.jahia.services.deamons.filewatcher.FileMonitorJob;
 import org.jahia.services.deamons.filewatcher.FileMonitorResult;
 import org.jahia.services.preferences.user.UserPreferencesHelper;
 import org.jahia.services.query.QueryWrapper;
+import org.jahia.services.templates.SourceControlFactory;
 import org.jahia.services.templates.SourceControlManagement;
 import org.jahia.services.templates.SourceControlManagement.Status;
 import org.jahia.services.usermanager.JahiaUser;
@@ -205,6 +206,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private ModulesImportExportHelper modulesImportExportHelper;
 
+    private SourceControlFactory sourceControlFactory;
+
     public void start() {
         final String fullFolderPath = module.getSourcesFolder().getPath() + File.separator;
         final String importFilesRootFolder = fullFolderPath + "src" + File.separator + "main" + File.separator + "import" +
@@ -319,7 +322,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             }
         });
         monitor.setRecursive(true);
-        monitor.setFilesToIgnore(".svn", ".git", "target", ".idea", ".settings", ".project", ".classpath", "repository.xml.generated");
+        Set<String> ignored = new HashSet<>(sourceControlFactory.getIgnoredFiles());
+        ignored.add(".svn");
+        ignored.add(".git");
+        monitor.setFilesToIgnore(ignored);
         monitor.addFile(module.getSourcesFolder());
         fileMonitorJobName = "ModuleSourcesJob-" + module.getId();
         FileMonitorJob.schedule(fileMonitorJobName, 5000, monitor);
@@ -2290,6 +2296,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     public void setModulesImportExportHelper(ModulesImportExportHelper modulesImportExportHelper) {
         this.modulesImportExportHelper = modulesImportExportHelper;
+    }
+
+    public void setSourceControlFactory(SourceControlFactory sourceControlFactory) {
+        this.sourceControlFactory = sourceControlFactory;
     }
 
     static class SortedProperties extends Properties {

@@ -16,6 +16,7 @@
 
     <bean id="ModulesDataSourcePrototype" class="org.jahia.modules.external.modules.ModulesDataSource"
           scope="prototype">
+        <property name="sourceControlFactory" ref="SourceControlFactory"/>
         <property name="supportedNodeTypes">
             <set>
                 <value>jnt:file</value>
