@@ -46,15 +46,7 @@ package org.jahia.modules.external.vfs;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import javax.jcr.Binary;
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
@@ -334,8 +326,11 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     private ExternalData getFile(FileObject fileObject) throws FileSystemException {
         String type = getDataType(fileObject);
 
+
         Map<String, String[]> properties = new HashMap<String, String[]>();
-        if (fileObject.getContent() != null) {
+        List<String> addedMixins = new ArrayList<>();
+        final FileContent content = fileObject.getContent();
+        if (content != null) {
             long lastModifiedTime = fileObject.getContent().getLastModifiedTime();
             if (lastModifiedTime > 0) {
                 Calendar calendar = Calendar.getInstance();
@@ -344,14 +339,22 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 properties.put(Constants.JCR_CREATED, timestamp);
                 properties.put(Constants.JCR_LASTMODIFIED, timestamp);
             }
+            // Add jmix:image mixin in case of the file is a picture.
+            if(content.getContentInfo()!=null && content.getContentInfo().getContentType() != null
+                    && fileObject.getContent().getContentInfo().getContentType().matches("image/(.*)"))
+            {
+                addedMixins.add(Constants.JAHIAMIX_IMAGE);
+            }
+
         }
 
         String path = fileObject.getName().getPath().substring(rootPath.length());
         if (!path.startsWith("/")) {
             path = "/" + path;
         }
-
-        return new ExternalData(path, path, type, properties);
+        ExternalData result = new ExternalData(path, path, type, properties);
+        result.setMixin(addedMixins);
+        return result;
     }
 
     public String getDataType(FileObject fileObject) throws FileSystemException {
