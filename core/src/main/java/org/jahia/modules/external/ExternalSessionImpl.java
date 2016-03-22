@@ -537,6 +537,15 @@ public class ExternalSessionImpl implements Session {
             orderedData.clear();
             for (ExternalData data : changedDataWithI18n.values()) {
                 writableDataSource.saveItem(data);
+                // when data contain binaries we flush the nodes so the binary will be load
+                // from the external data source after an upload, avoid to cache a tmp binary after upload for exemple
+                if(data.getBinaryProperties() != null && data.getBinaryProperties().size() > 0) {
+                    ExternalNodeImpl cachedNode = nodesByPath.get(data.getPath());
+                    if(cachedNode != null) {
+                        nodesByPath.remove(data.getPath());
+                        nodesByIdentifier.remove(cachedNode.getIdentifier());
+                    }
+                }
             }
 
             changedData.clear();
