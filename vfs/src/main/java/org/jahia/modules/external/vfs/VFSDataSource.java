@@ -47,10 +47,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
-import javax.jcr.Binary;
-import javax.jcr.ItemNotFoundException;
-import javax.jcr.PathNotFoundException;
-import javax.jcr.RepositoryException;
+import javax.jcr.*;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 
 import org.apache.commons.io.IOUtils;
@@ -261,7 +258,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 logger.warn("Failed to delete FileObject {}", getFile(path).toString());
             }
         } catch (FileSystemException e) {
-            throw new RepositoryException(e);
+            throw new AccessDeniedException(e);
         }
     }
 
