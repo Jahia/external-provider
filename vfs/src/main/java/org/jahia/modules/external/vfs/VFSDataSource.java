@@ -258,7 +258,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 logger.warn("Failed to delete FileObject {}", getFile(path).toString());
             }
         } catch (FileSystemException e) {
-            throw new AccessDeniedException(e);
+            throw new RepositoryException(e);
         }
     }
 
