@@ -127,7 +127,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     }
 
     @Override
-    public void start() throws JahiaInitializationException {
+    public boolean start(boolean checkAvailability) throws JahiaInitializationException {
 
         // Enable acl
         if(aclSupport) {
@@ -157,7 +157,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         if (dataSource instanceof ExternalDataSource.Initializable) {
             ((ExternalDataSource.Initializable) dataSource).start();
         }
-        super.start();
+        return super.start(checkAvailability);
     }
 
     @Override
