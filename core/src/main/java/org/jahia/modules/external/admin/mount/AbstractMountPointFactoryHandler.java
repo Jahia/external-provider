@@ -47,7 +47,6 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRMountPointNode;
 import org.jahia.services.render.RenderContext;
-import org.jahia.services.render.filter.cache.ModuleCacheProvider;
 import org.jahia.settings.SettingsBean;
 import org.jahia.utils.Patterns;
 import org.jahia.utils.Url;
@@ -109,19 +108,6 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
                 }
 
                 jcrMountPointNode.setMountStatus(JCRMountPointNode.MountStatus.mounted);
-
-                ModuleCacheProvider cacheProvider = ModuleCacheProvider.getInstance();
-
-                // Invalidate provider cache for the mount points path
-                if (StringUtils.isNotEmpty(mountPoint.getLocalPath()))
-                {
-                    cacheProvider.invalidate(mountPoint.getLocalPath(), true);
-                }
-                else
-                {
-                    cacheProvider.invalidate("/mounts/" + mountPoint.getName(), true);
-                }
-                cacheProvider.invalidate(jcrMountPointNode.getTargetMountPointPath(),true);
 
                 // local path
                 if(StringUtils.isNotEmpty(mountPoint.getLocalPath())){
