@@ -681,7 +681,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 logger.error("Failed to get SCM status", e);
             }
         }
-        if (data.getPath().equals("/src/main/import") || data.getPath().startsWith("/src/main/import/")) {
+        //Make only ".xml.generated" files not editable. import project and its other files still be editable.
+        if (data.getPath().startsWith("/src/main/import/") && data.getPath().endsWith("xml.generated")) {
             if (data.getMixin() == null) {
                 data.setMixin(Arrays.asList("jmix:moduleImportFile"));
             } else {
