@@ -510,6 +510,11 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 type = JNT_EDITABLE_FILE;
             }
         }
+
+        // in case of the file name ends with .xml.generated we should have no type.
+        if (StringUtils.endsWith(fileObject.getName().toString(), ".xml.generated")) {
+            type = null;
+        }
         return type != null ? type : super.getDataType(fileObject);
     }
 
@@ -679,16 +684,6 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 }
             } catch (IOException e) {
                 logger.error("Failed to get SCM status", e);
-            }
-        }
-        //Make only ".xml.generated" files not editable. import project and its other files still be editable.
-        if (data.getPath().startsWith("/src/main/import/") && data.getPath().endsWith("xml.generated")) {
-            if (data.getMixin() == null) {
-                data.setMixin(Arrays.asList("jmix:moduleImportFile"));
-            } else {
-                List<String> mixins = new ArrayList<String>(data.getMixin());
-                mixins.add("jmix:moduleImportFile");
-                data.setMixin(mixins);
             }
         }
         return data;
