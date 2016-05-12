@@ -99,6 +99,10 @@
           <artifactId>spring-core</artifactId>
           <groupId>org.springframework</groupId>
         </exclusion>
+        <exclusion>
+            <artifactId>org.osgi.core</artifactId>
+            <groupId>org.osgi</groupId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -112,6 +116,12 @@
       <artifactId>org.jahia.bundles.extender.jahiamodules</artifactId>
       <version>7.2.0.0-SNAPSHOT</version>
       <scope>provided</scope>
+      <exclusions>
+          <exclusion>
+              <artifactId>org.osgi.core</artifactId>
+              <groupId>org.osgi</groupId>
+          </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
   <repositories>
