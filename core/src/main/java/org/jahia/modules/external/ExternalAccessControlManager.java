@@ -56,6 +56,7 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.settings.SettingsBean;
 import org.jahia.utils.security.AccessManagerUtils;
+import org.jahia.utils.security.PathWrapper;
 
 import javax.jcr.*;
 import javax.jcr.lock.LockException;
@@ -75,7 +76,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
     private static final AccessControlPolicy[] POLICIES = new AccessControlPolicy[0];
 
     private Map<String, Boolean> pathPermissionCache = null;
-    private Map<String, AccessManagerUtils.CompiledAcl> compiledAcls = new HashMap<String, AccessManagerUtils.CompiledAcl>();
+    private Map<Object, AccessManagerUtils.CompiledAcl> compiledAcls = new HashMap<>();
 
     private JahiaPrivilegeRegistry registry;
 
@@ -158,9 +159,10 @@ public class ExternalAccessControlManager implements AccessControlManager {
                 privs.add(privilege.getName());
             }
             String mountPoint = session.getRepository().getStoreProvider().getMountPoint();
-            String jcrPath = StringUtils.equals(absPath,"/")? mountPoint : mountPoint + absPath;
-            return AccessManagerUtils.isGranted(jcrPath, privs, JCRSessionFactory.getInstance().getCurrentSystemSession(session.getWorkspace().getName(), null, null),
-                    StringUtils.substringAfterLast("/", jcrPath), jahiaPrincipal, workspaceName, false, pathPermissionCache, compiledAcls, registry);
+            Session securitySession = JCRSessionFactory.getInstance().getCurrentSystemSession(session.getWorkspace().getName(), null, null);
+            PathWrapper pathWrapper = new ExternalPathWrapperImpl(StringUtils.equals(absPath,"/")? mountPoint : mountPoint + absPath, securitySession);
+            return AccessManagerUtils.isGranted(pathWrapper, privs, securitySession,
+                    jahiaPrincipal, workspaceName, false, pathPermissionCache, compiledAcls, registry);
         }
     }
 
