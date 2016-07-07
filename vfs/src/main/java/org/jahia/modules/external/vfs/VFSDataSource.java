@@ -217,6 +217,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     final FileContent content = fileObject.getContent();
                     return Collections.singletonList(getFileContent(content));
                 } else if (fileObject.getType() == FileType.FOLDER) {
+					fileObject.refresh();  //in case of folder, refresh because it could be changed external
                     FileObject[] files = fileObject.getChildren();
                     if (files.length > 0) {
                         List<ExternalData> children = new LinkedList<ExternalData>();
