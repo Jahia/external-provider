@@ -43,6 +43,7 @@
  */
 package org.jahia.modules.external.admin.mount;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRMountPointNode;
@@ -152,7 +153,7 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
             Node siteFiles;
             try {
                 siteFiles = site.getNode("files");
-                folders.put(siteFiles.getPath());
+                folders.put(escape(siteFiles.getPath()));
             } catch (RepositoryException e) {
                 // no files under the site
                 continue;
@@ -171,11 +172,15 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
             NodeIterator siteFolders = siteFoldersQuery.execute().getNodes();
             while (siteFolders.hasNext()) {
                 Node siteFolder = siteFolders.nextNode();
-                folders.put(siteFolder.getPath());
+                folders.put(escape(siteFolder.getPath()));
             }
         }
 
         return folders;
+    }
+
+    protected String escape(String path) {
+        return StringUtils.isNotEmpty(path) ? StringEscapeUtils.escapeXml(path) : path;
     }
 
     private String findAvailableNodeName(Node dest, String name, String suffix) {
