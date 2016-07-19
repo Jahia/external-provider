@@ -158,10 +158,10 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
                 // no files under the site
                 continue;
             }
-            StringBuilder filter = new StringBuilder("isdescendantnode(f,['").append(siteFiles.getPath()).append("'])");
+            StringBuilder filter = new StringBuilder("isdescendantnode(f,['").append(JCRContentUtils.sqlEncode(siteFiles.getPath())).append("'])");
             for (JCRStoreProvider provider : JCRStoreService.getInstance().getSessionFactory().getProviderList()) {
                 if (!provider.isDefault() && StringUtils.startsWith(provider.getMountPoint(), siteFiles.getPath())) {
-                    filter.append(" and (not isdescendantnode(f,['").append(provider.getMountPoint()).append("']))");
+                    filter.append(" and (not isdescendantnode(f,['").append(JCRContentUtils.sqlEncode(provider.getMountPoint())).append("']))");
                 }
             }
 
