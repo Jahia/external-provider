@@ -27,7 +27,7 @@
 
     <fmt:message var="selectTarget" key="vfsFactory.selectTarget"/>
     <c:set var="i18NSelectTarget" value="${functions:escapeJavaScript(selectTarget)}"/>
-    <div class="box-1" ng-controller="folderPickerCtrl" ng-init='init(${localFolders}, "${vfsFactory.localPath}", "localPath", true, "${i18NSelectTarget}")'>
+    <div class="box-1" ng-controller="folderPickerCtrl" ng-init='init(${localFolders}, "${fn:escapeXml(vfsFactory.localPath)}", "localPath", true, "${i18NSelectTarget}")'>
         <form:form modelAttribute="vfsFactory" method="post">
             <fieldset title="local">
                 <div class="container-fluid">
