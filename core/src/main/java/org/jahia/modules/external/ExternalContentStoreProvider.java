@@ -57,9 +57,13 @@ import org.springframework.beans.factory.InitializingBean;
 
 import javax.jcr.*;
 import javax.jcr.query.QueryManager;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Implementation of the {@link org.jahia.services.content.JCRStoreProvider} for the {@link org.jahia.modules.external.ExternalData}.
@@ -69,15 +73,10 @@ import java.util.List;
 public class ExternalContentStoreProvider extends JCRStoreProvider implements InitializingBean {
 
     private static final Logger logger = LoggerFactory.getLogger(ExternalContentStoreProvider.class);
-
     private static final ThreadLocal<ExternalSessionImpl> currentSession = new ThreadLocal<ExternalSessionImpl>();
 
-    private boolean readOnly;
-
     private ExternalDataSource dataSource;
-
     private String id;
-
     private ExternalProviderInitializerService externalProviderInitializerService;
 
     private List<String> extendableTypes;
@@ -130,7 +129,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     public boolean start(boolean checkAvailability) throws JahiaInitializationException {
 
         // Enable acl
-        if(aclSupport) {
+        if (aclSupport) {
             if (overridableItems != null) {
                 List<String> l = new ArrayList<>();
                 l.addAll(overridableItems);
@@ -232,7 +231,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     }
 
     public JCRStoreProvider getExtensionProvider() {
-        return extendableTypes != null || overridableItems != null ? externalProviderInitializerService.getExtensionProvider():null;
+        return extendableTypes != null || overridableItems != null ? externalProviderInitializerService.getExtensionProvider() : null;
     }
 
     public List<String> getExtendableTypes() {
@@ -275,10 +274,12 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         this.aclSupport = aclSupport;
     }
 
+    @Override
     public boolean isSlowConnection() {
         return slowConnection;
     }
 
+    @Override
     public void setSlowConnection(boolean slowConnection) {
         this.slowConnection = slowConnection;
     }
@@ -335,6 +336,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         return internalId;
     }
 
+    @Override
     public PropertyIterator getWeakReferences(JCRNodeWrapper node, String propertyName, Session session) throws RepositoryException {
         if (dataSource instanceof ExternalDataSource.Referenceable && session instanceof ExternalSessionImpl) {
             String identifier = node.getIdentifier();
@@ -414,5 +416,18 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     public void setCacheKeyOnReferenceSupport(boolean cacheKeyOnReferenceSupport) {
         this.cacheKeyOnReferenceSupport = cacheKeyOnReferenceSupport;
+    }
+
+    @Override
+    public Collection<String> getRestrictions() {
+        Set<String> restrictions = new HashSet<String>();
+        if (isReadOnly() && (overridableItems == null || overridableItems.isEmpty())) {
+            restrictions.add(Constants.JCR_WRITE_RIGHTS);
+        }
+        if (isAccessControllable()) {
+            // Restrict DX's ACL extensions in case this provider has own ACL management mechanisms
+            restrictions.add(Constants.JCR_MODIFYACCESSCONTROL_RIGHTS);
+        }
+        return restrictions;
     }
 }
