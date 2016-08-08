@@ -421,7 +421,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
     @Override
     public Collection<String> getRestrictions() {
         Set<String> restrictions = new HashSet<String>();
-        if (isReadOnly() && (overridableItems == null || overridableItems.isEmpty())) {
+        if (isReadOnly()) {
             restrictions.add(Constants.JCR_WRITE_RIGHTS);
         }
         if (isAccessControllable()) {
