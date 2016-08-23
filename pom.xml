@@ -28,7 +28,7 @@
         GNU General Public License for more details.
 
         You should have received a copy of the GNU General Public License
-        along with this program. If not, see <http://www.gnu.org/licenses/>.
+        along with this program. If not, see <http://www.gnu.org/licenses />.
 
 
         2/ JSEL - Commercial and Supported Versions of the program
@@ -49,10 +49,10 @@
     <parent>
         <artifactId>jahia-modules</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>7.2.0.0-SNAPSHOT</version>
+        <version>7.2.0.0-backlog_6632-SNAPSHOT</version>
         <relativePath />
     </parent>
-    <version>3.1.0-SNAPSHOT</version>
+    <version>3.1.0-backlog_6632-SNAPSHOT</version>
     <artifactId>external-provider-parent</artifactId>
     <name>Jahia External Provider Parent</name>
     <packaging>pom</packaging>
