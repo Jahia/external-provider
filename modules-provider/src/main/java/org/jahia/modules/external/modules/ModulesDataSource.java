@@ -52,7 +52,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.io.Charsets;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -83,6 +82,7 @@ import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.jahia.settings.SettingsBean;
 import org.jahia.utils.LanguageCodeConverters;
+import org.jahia.utils.ScriptEngineUtils;
 import org.jahia.utils.i18n.Messages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,6 +101,8 @@ import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 import javax.jcr.query.qom.QueryObjectModelConstants;
 import javax.jcr.version.OnParentVersionAction;
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
@@ -230,8 +232,15 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         continue;
                     }
 
-                    String type = fileTypeMapping.get(FilenameUtils.getExtension(file.getName()));
-                    if (type == null) {
+
+                    String type;
+                    try {
+                        type = getDataType(getFile(file.getPath()));
+                    } catch (FileSystemException e) {
+                        if (logger.isDebugEnabled()) {
+                            logger.error(e.getMessage(), e);
+                        }
+                        // Unable to resolve file, continue
                         continue;
                     }
                     if (StringUtils.equals(type, "jnt:propertiesFile")) {
@@ -243,7 +252,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                                 folderTypeMapping.get(parent.getName())) ? Constants.JAHIANT_RESOURCEBUNDLE_FILE : type;
                     }
 
-                    if (type.equals("jnt:resourceBundleFile") && !nodeTypeLabelsFlushed) {
+                    if (StringUtils.equals(type, "jnt:resourceBundleFile") && !nodeTypeLabelsFlushed) {
                         NodeTypeRegistry.getInstance().flushLabels();
                         logger.debug("Flushing node type label caches");
                         for (NodeTypeRegistry registry : nodeTypeRegistryMap.values()) {
@@ -280,20 +289,23 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         } catch (RepositoryException e) {
                             logger.error(e.getMessage(), e);
                         }
-                    } else if (type.equals(JNT_DEFINITION_FILE)) {
+                    } else if (StringUtils.equals(type, JNT_DEFINITION_FILE)) {
                         try {
                             registerCndFiles(file);
                         } catch (IOException | ParseException | RepositoryException e) {
                             logger.error(e.getMessage(), e);
                         }
-                    } else if (type.equals("jnt:viewFile")) {
+                    } else if (StringUtils.equals(type,Constants.JAHIANT_VIEWFILE)) {
                         ModulesSourceHttpServiceTracker httpServiceTracker = modulesSourceSpringInitializer.getHttpServiceTracker(module.getId());
                         if (result.getCreated().contains(file)) {
-                            httpServiceTracker.registerJsp(file);
+                            httpServiceTracker.registerResource(file);
                         } else if (result.getDeleted().contains(file)) {
-                            httpServiceTracker.unregisterJsp(file);
+                            httpServiceTracker.unregisterResouce(file);
                         }
-                        httpServiceTracker.flushJspCache(file);
+                        // in case of jsp, flush the cache
+                        if (StringUtils.endsWith(file.getName(), ".jsp")) {
+                            httpServiceTracker.flushJspCache(file);
+                        }
                     }
                 }
                 if (!importFiles.isEmpty()) {
@@ -481,7 +493,29 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 type = folderTypeMapping.get(fileObject.getName().getBaseName());
             }
         } else {
-            type = fileTypeMapping.get(fileObject.getName().getExtension());
+            String extension = fileObject.getName().getExtension();
+            type = fileTypeMapping.get(extension);
+
+            if (type == null) {
+                try {
+                    ScriptEngine scriptEngine = ScriptEngineUtils.getInstance().scriptEngine(extension);
+                    final String commaSeparatedScriptNames = module.getBundle().getHeaders().get("Jahia-Module-Scripting-Views");
+                    final String[] split = StringUtils.split(commaSeparatedScriptNames, ',');
+                    if (split != null) {
+                        for (String name : split) {
+                            if (scriptEngine.getFactory().getNames().contains(name.trim().toLowerCase())) {
+                                type = Constants.JAHIANT_VIEWFILE;
+                                break;
+                            }
+                        }
+                    }
+                } catch (ScriptException e) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(e.getMessage(), e);
+                    }
+                }
+            }
+
         }
         if (type != null && StringUtils.equals(type, "jnt:propertiesFile")) {
             // we've detected a properties file, check if its parent is of type jnt:resourceBundleFolder
