@@ -150,6 +150,8 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         if (!resourcesRoot.exists()) {
             return;
         }
+        // todo: use value of Jahia-Module-Scripting-Views header for the filter if available to register resources?
+        // todo: avoid scanning if Jahia-Module-Has-Views header is set to no?
         for (File resource : FileUtils.listFiles(resourcesRoot, new WildcardFileFilter("*"), TrueFileFilter.INSTANCE)) {
             if (bundle.getResource(getResourcePath(resource)) == null) {
                 registerResource(resource);

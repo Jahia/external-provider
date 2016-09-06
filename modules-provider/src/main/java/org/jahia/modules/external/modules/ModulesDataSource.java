@@ -101,8 +101,6 @@ import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 import javax.jcr.query.qom.QueryObjectModelConstants;
 import javax.jcr.version.OnParentVersionAction;
-import javax.script.ScriptEngine;
-import javax.script.ScriptException;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
@@ -494,24 +492,15 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             }
         } else {
             String extension = fileObject.getName().getExtension();
-            type = fileTypeMapping.get(extension);
-
-            if (type == null) {
-                try {
-                    ScriptEngine scriptEngine = ScriptEngineUtils.getInstance().scriptEngine(extension);
-                    final String commaSeparatedScriptNames = module.getBundle().getHeaders().get("Jahia-Module-Scripting-Views");
-                    final String[] split = StringUtils.split(commaSeparatedScriptNames, ',');
-                    if (split != null) {
-                        for (String name : split) {
-                            if (scriptEngine.getFactory().getNames().contains(name.trim().toLowerCase())) {
-                                type = Constants.JAHIANT_VIEWFILE;
-                                break;
-                            }
+            if (StringUtils.isNotEmpty(extension)) {
+                type = fileTypeMapping.get(extension);
+                if (type == null) {
+                    try {
+                        if(ScriptEngineUtils.canFactoryForExtensionProcessViews(extension, module.getBundle().getHeaders())) {
+                            type = Constants.JAHIANT_VIEWFILE;
                         }
-                    }
-                } catch (ScriptException e) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(e.getMessage(), e);
+                    } catch (IllegalArgumentException e) {
+                        // ignore: no ScriptEngineFactory exists for the provided extension
                     }
                 }
             }
