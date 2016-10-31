@@ -43,9 +43,9 @@
  */
 package org.jahia.modules.external.modules.osgi;
 
-import com.phloc.commons.io.file.filter.FilenameFilterNotEquals;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang.StringUtils;
@@ -63,6 +63,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FilenameFilter;
 
 public class ModulesSourceHttpServiceTracker extends ServiceTracker {
     private static Logger logger = LoggerFactory.getLogger(ModulesSourceHttpServiceTracker.class);
@@ -129,7 +130,7 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         bundleScriptResolver.removeBundleScript(bundle, filePath);
         String propertiesFileName = FilenameUtils.removeExtension(file.getName()) + ".properties";
         File parentFile = file.getParentFile();
-        File[] matching = parentFile != null ? parentFile.listFiles(new FilenameFilterNotEquals(propertiesFileName)) : null;
+        File[] matching = parentFile != null ? parentFile.listFiles((FilenameFilter) FileFilterUtils.notFileFilter(FileFilterUtils.nameFileFilter(propertiesFileName))) : null;
         if (matching == null || matching.length == 0) {
             templatePackageRegistry.removeModuleWithViewsForComponent(StringUtils.substringBetween(filePath, "/", "/"), module);
         }
