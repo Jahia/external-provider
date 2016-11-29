@@ -80,7 +80,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     private ExternalData data;
     private List<String> externalChildren;
     private Map<String, ExternalPropertyImpl> properties = null;
-
     private String uuid;
 
     public ExternalNodeImpl(ExternalData data, ExternalSessionImpl session) throws RepositoryException {
@@ -91,11 +90,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
         for (Map.Entry<String, String[]> entry : data.getProperties().entrySet()) {
             ExtendedPropertyDefinition definition = getPropertyDefinition(entry.getKey());
-
             if (definition != null && definition.getName().equals(MATCH_ALL_PATTERN) && data.getType() != null && data.getType().equals("jnt:translation")) {
                 definition = ((ExternalNodeImpl) getParent()).getPropertyDefinition(entry.getKey());
             }
-
             if (definition != null) {
                 int requiredType = definition.getRequiredType();
                 if (definition.isMultiple()) {
@@ -111,6 +108,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 }
             }
         }
+
         if (data.getBinaryProperties() != null) {
             for (Map.Entry<String, Binary[]> entry : data.getBinaryProperties().entrySet()) {
                 ExtendedPropertyDefinition definition = getPropertyDefinition(entry.getKey());
@@ -129,13 +127,13 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 }
             }
         }
+
         properties.put("jcr:uuid",
                 new ExternalPropertyImpl(new Name("jcr:uuid", NodeTypeRegistry.getInstance().getNamespaces()), this, session,
                         session.getValueFactory().createValue(getIdentifier())));
         properties.put("jcr:primaryType",
                 new ExternalPropertyImpl(new Name("jcr:primaryType", NodeTypeRegistry.getInstance().getNamespaces()), this, session,
                         session.getValueFactory().createValue(data.getType(), PropertyType.NAME)));
-
         ExtendedNodeType[] values = getMixinNodeTypes();
         if (values.length > 0) {
             List<Value> mixins = new ArrayList<Value>();
@@ -149,7 +147,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     private NodeDefinition getChildNodeDefinition(String name, String childType) throws RepositoryException {
-
         Map<String, ExtendedNodeDefinition> nodeDefinitionsAsMap = getExtendedPrimaryNodeType().getChildNodeDefinitionsAsMap();
         if (nodeDefinitionsAsMap.containsKey(name)) {
             return nodeDefinitionsAsMap.get(name);
@@ -176,12 +173,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             return extensionNode.getDefinition();
 
         }
-
         return null;
     }
 
     public ExtendedPropertyDefinition getPropertyDefinition(String name) throws RepositoryException {
-
         Map<String, ExtendedPropertyDefinition> propertyDefinitionsAsMap = getExtendedPrimaryNodeType().getPropertyDefinitionsAsMap();
         if (propertyDefinitionsAsMap.containsKey(name)) {
             return propertyDefinitionsAsMap.get(name);
@@ -201,7 +196,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 }
             }
         }
-
         if (!getExtendedPrimaryNodeType().getUnstructuredPropertyDefinitions().isEmpty()) {
             return getExtendedPrimaryNodeType().getUnstructuredPropertyDefinitions().values().iterator().next();
         }
@@ -256,11 +250,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                     if (dataSource instanceof ExternalDataSource.CanLoadChildrenInBatch) {
                         ExternalDataSource.CanLoadChildrenInBatch childrenLoader = (ExternalDataSource.CanLoadChildrenInBatch) dataSource;
                         final List<ExternalData> childrenNodes = childrenLoader.getChildrenNodes(getPath());
-
                         if (externalChildren == null) {
                             externalChildren = new ArrayList<String>(childrenNodes.size());
                         }
-
                         for (ExternalData child : childrenNodes) {
                             String parentPath = StringUtils.substringBeforeLast(child.getPath(), "/");
                             if (parentPath.equals("")) {
@@ -330,6 +322,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     }
 
     protected void removeProperty(String name) throws RepositoryException {
+
         if (!(session.getRepository().getDataSource() instanceof ExternalDataSource.Writable)) {
             throw new UnsupportedRepositoryOperationException();
         }
@@ -477,6 +470,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             session.setNewItem(newProperty);
             session.getChangedData().put(getPath(), data);
         }
+
         return getProperty(name);
     }
 
@@ -548,6 +542,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             session.setNewItem(newProperty);
             session.getChangedData().put(getPath(), data);
         }
+
         return getProperty(name);
     }
 
@@ -842,7 +837,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         return new ExternalNodeIterator(filteredList);
     }
 
-
     /**
      * {@inheritDoc}
      */
@@ -1111,9 +1105,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
     @Override
     public void removeMixin(String mixinName) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
 
-       if (!canManageNodeTypes()) {
-           return;
-       }
+        if (!canManageNodeTypes()) {
+            return;
+        }
 
         if (getSession().getExtensionForbiddenMixins().contains(mixinName) && data.getMixin() != null && data.getMixin().contains(mixinName)) {
             List<String> mixins = new ArrayList<>(data.getMixin());
@@ -1196,7 +1190,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (getSession().getExtensionForbiddenMixins().contains(mixinName) && canManageNodeTypes()) {
             return true;
         }
-
         Node extensionNode = getExtensionNode(true);
         return extensionNode != null && extensionNode.canAddMixin(mixinName);
     }
@@ -1586,6 +1579,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                     if (!extensionSession.nodeExists(currentExtensionPath.toString())) {
                         final Node extParent = extensionSession.getNode(StringUtils.substringBeforeLast(currentExtensionPath.toString(), "/"));
                         takeLockToken(extParent);
+                        extParent.addMixin("jmix:hasExternalProviderExtension");
                         Node n = extParent.addNode(p, "jnt:externalProviderExtension");
                         Node externalNode = (Node) session.getItemWithNoCheck(currentExternalPath.toString());
                         List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), externalNode.getPrimaryNodeType().getName());
