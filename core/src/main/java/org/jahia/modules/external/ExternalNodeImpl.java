@@ -47,6 +47,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ChildrenCollectorFilter;
 import org.apache.jackrabbit.value.BinaryImpl;
+import org.jahia.api.Constants;
 import org.jahia.modules.external.acl.ExternalDataAce;
 import org.jahia.modules.external.acl.ExternalDataAcl;
 import org.jahia.services.content.nodetypes.*;
@@ -60,6 +61,7 @@ import javax.jcr.nodetype.*;
 import javax.jcr.version.Version;
 import javax.jcr.version.VersionException;
 import javax.jcr.version.VersionHistory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -90,7 +92,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
         for (Map.Entry<String, String[]> entry : data.getProperties().entrySet()) {
             ExtendedPropertyDefinition definition = getPropertyDefinition(entry.getKey());
-            if (definition != null && definition.getName().equals(MATCH_ALL_PATTERN) && data.getType() != null && data.getType().equals("jnt:translation")) {
+            if (definition != null && definition.getName().equals(MATCH_ALL_PATTERN) && data.getType() != null && data.getType().equals(Constants.JAHIANT_TRANSLATION)) {
                 definition = ((ExternalNodeImpl) getParent()).getPropertyDefinition(entry.getKey());
             }
             if (definition != null) {
@@ -128,11 +130,11 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             }
         }
 
-        properties.put("jcr:uuid",
-                new ExternalPropertyImpl(new Name("jcr:uuid", NodeTypeRegistry.getInstance().getNamespaces()), this, session,
+        properties.put(Constants.JCR_UUID,
+                new ExternalPropertyImpl(new Name(Constants.JCR_UUID, NodeTypeRegistry.getInstance().getNamespaces()), this, session,
                         session.getValueFactory().createValue(getIdentifier())));
-        properties.put("jcr:primaryType",
-                new ExternalPropertyImpl(new Name("jcr:primaryType", NodeTypeRegistry.getInstance().getNamespaces()), this, session,
+        properties.put(Constants.JCR_PRIMARYTYPE,
+                new ExternalPropertyImpl(new Name(Constants.JCR_PRIMARYTYPE, NodeTypeRegistry.getInstance().getNamespaces()), this, session,
                         session.getValueFactory().createValue(data.getType(), PropertyType.NAME)));
         ExtendedNodeType[] values = getMixinNodeTypes();
         if (values.length > 0) {
@@ -140,8 +142,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             for (ExtendedNodeType value : values) {
                 mixins.add(session.getValueFactory().createValue(value.getName(), PropertyType.NAME));
             }
-            properties.put("jcr:mixinTypes",
-                    new ExternalPropertyImpl(new Name("jcr:mixinTypes", NodeTypeRegistry.getInstance().getNamespaces()), this, session,
+            properties.put(Constants.JCR_MIXINTYPES,
+                    new ExternalPropertyImpl(new Name(Constants.JCR_MIXINTYPES, NodeTypeRegistry.getInstance().getNamespaces()), this, session,
                             mixins.toArray(new Value[mixins.size()])));
         }
     }
@@ -850,8 +852,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (property == null) {
             if (data.getLazyProperties() != null && data.getLazyProperties().contains(s)) {
                 String[] values;
-                if (properties.containsKey("jcr:language")) {
-                    values = session.getI18nPropertyValues(data, properties.get("jcr:language").getString(), s);
+                if (properties.containsKey(Constants.JCR_LANGUAGE)) {
+                    values = session.getI18nPropertyValues(data, properties.get(Constants.JCR_LANGUAGE).getString(), s);
                 } else {
                     values = session.getPropertyValues(data, s);
                 }
@@ -859,7 +861,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 data.getLazyProperties().remove(s);
                 ExternalPropertyImpl p = new ExternalPropertyImpl(new Name(s, NodeTypeRegistry.getInstance().getNamespaces()), this, session);
                 ExtendedPropertyDefinition definition = getPropertyDefinition(s);
-                if (definition != null && definition.getName().equals(MATCH_ALL_PATTERN) && data != null && data.getType() != null && data.getType().equals("jnt:translation")) {
+                if (definition != null && definition.getName().equals(MATCH_ALL_PATTERN) && data != null && data.getType() != null && data.getType().equals(Constants.JAHIANT_TRANSLATION)) {
                     definition = ((ExternalNodeImpl) getParent()).getPropertyDefinition(s);
                 }
                 if (definition != null && definition.isMultiple()) {
@@ -1545,61 +1547,61 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         String path = getPath();
         boolean isRoot = path.equals("/");
 
-        String mountPoint = getStoreProvider().getMountPoint();
-        String globalPath = mountPoint + (isRoot ? "" : path);
+        String mountPointPath = getStoreProvider().getMountPoint();
+        String globalPath = mountPointPath + (isRoot ? "" : path);
 
         if (!extensionSession.itemExists(globalPath)) {
             if (!create) {
                 return null;
             } else {
                 // create extension nodes if needed
-                String[] splittedPath = StringUtils.split(path,"/");
-                StringBuilder currentExtensionPath = new StringBuilder(mountPoint);
+                String[] pathElements = StringUtils.split(path,"/");
+                StringBuilder currentExtensionPath = new StringBuilder(mountPointPath);
                 StringBuilder currentExternalPath = new StringBuilder();
                 // create extension node on the mountpoint if needed
-                if (!extensionSession.nodeExists(mountPoint)) {
-                    String parent = StringUtils.substringBeforeLast(mountPoint, "/");
-                    if (parent.equals("")) {
-                        parent = "/";
+                if (!extensionSession.nodeExists(mountPointPath)) {
+                    String parentPath = StringUtils.substringBeforeLast(mountPointPath, "/");
+                    if (parentPath.equals("")) {
+                        parentPath = "/";
                     }
-                    final Node extParent = extensionSession.getNode(parent);
-                    takeLockToken(extParent);
-                    extParent.addMixin("jmix:hasExternalProviderExtension");
-                    Node n = extParent.addNode(StringUtils.substringAfterLast(mountPoint, "/"), "jnt:externalProviderExtension");
-                    n.addMixin("jmix:externalProviderExtension");
-                    n.setProperty("j:isExternalProviderRoot", true);
+                    final Node extensionParent = extensionSession.getNode(parentPath);
+                    takeLockToken(extensionParent);
+                    extensionParent.addMixin("jmix:hasExternalProviderExtension");
+                    Node extensionNode = extensionParent.addNode(StringUtils.substringAfterLast(mountPointPath, "/"), "jnt:externalProviderExtension");
+                    extensionNode.addMixin("jmix:externalProviderExtension");
+                    extensionNode.setProperty("j:isExternalProviderRoot", true);
                     Node externalNode = (Node) session.getItemWithNoCheck("/");
-                    n.setProperty("j:externalNodeIdentifier", externalNode.getIdentifier());
+                    extensionNode.setProperty("j:externalNodeIdentifier", externalNode.getIdentifier());
                     List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), externalNode.getPrimaryNodeType().getName());
-                    n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
+                    extensionNode.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
                 }
-                for (String p : splittedPath) {
-                    currentExtensionPath.append("/").append(p);
-                    currentExternalPath.append("/").append(p);
+                for (String pathElement : pathElements) {
+                    currentExtensionPath.append("/").append(pathElement);
+                    currentExternalPath.append("/").append(pathElement);
                     if (!extensionSession.nodeExists(currentExtensionPath.toString())) {
-                        final Node extParent = extensionSession.getNode(StringUtils.substringBeforeLast(currentExtensionPath.toString(), "/"));
-                        takeLockToken(extParent);
-                        extParent.addMixin("jmix:hasExternalProviderExtension");
-                        Node n = extParent.addNode(p, "jnt:externalProviderExtension");
+                        final Node extensionParent = extensionSession.getNode(StringUtils.substringBeforeLast(currentExtensionPath.toString(), "/"));
+                        takeLockToken(extensionParent);
+                        extensionParent.addMixin("jmix:hasExternalProviderExtension");
+                        Node extensionNode = extensionParent.addNode(pathElement, "jnt:externalProviderExtension");
                         Node externalNode = (Node) session.getItemWithNoCheck(currentExternalPath.toString());
                         List<Value> values = ExtensionNode.createNodeTypeValues(session.getValueFactory(), externalNode.getPrimaryNodeType().getName());
-                        n.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
-                        n.addMixin("jmix:externalProviderExtension");
-                        n.setProperty("j:isExternalProviderRoot", false);
-                        n.setProperty("j:externalNodeIdentifier", externalNode.getIdentifier());
+                        extensionNode.setProperty("j:extendedType", values.toArray(new Value[values.size()]));
+                        extensionNode.addMixin("jmix:externalProviderExtension");
+                        extensionNode.setProperty("j:isExternalProviderRoot", false);
+                        extensionNode.setProperty("j:externalNodeIdentifier", externalNode.getIdentifier());
                     }
                 }
             }
         }
 
-        Node node = extensionSession.getNode(globalPath);
-        if (create && isRoot && !node.isNodeType("jmix:hasExternalProviderExtension")) {
-            node.addMixin("jmix:hasExternalProviderExtension");
+        Node extensionNode = extensionSession.getNode(globalPath);
+        if (create && isRoot && !extensionNode.isNodeType("jmix:hasExternalProviderExtension")) {
+            extensionNode.addMixin("jmix:hasExternalProviderExtension");
         }
-        if (!node.isNodeType("jmix:externalProviderExtension")) {
-            node.addMixin("jmix:externalProviderExtension");
+        if (!extensionNode.isNodeType("jmix:externalProviderExtension")) {
+            extensionNode.addMixin("jmix:externalProviderExtension");
         }
-        return node;
+        return extensionNode;
     }
 
     public void takeLockToken(Node parentNode) throws RepositoryException {
