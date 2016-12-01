@@ -43,14 +43,12 @@
  */
 package org.jahia.modules.external;
 
-import com.google.common.collect.Lists;
 import org.apache.commons.collections.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.commons.iterator.AccessControlPolicyIteratorAdapter;
 import org.apache.jackrabbit.core.security.JahiaLoginModule;
 import org.apache.jackrabbit.core.security.JahiaPrivilegeRegistry;
 import org.jahia.api.Constants;
-import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.jaas.JahiaPrincipal;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -83,27 +81,15 @@ public class ExternalAccessControlManager implements AccessControlManager {
     private final ExternalSessionImpl session;
     private final String workspaceName;
     private final JahiaPrincipal jahiaPrincipal;
-    private final boolean aclReadOnly;
-    private final boolean writable;
-    private final Privilege modifyAccessControlPrivilege;
-    private final Privilege writePrivilege;
 
     public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, ExternalSessionImpl session, ExternalDataSource dataSource) {
 
         this.session = session;
         this.workspaceName = session.getWorkspace().getName();
-        this.aclReadOnly = dataSource instanceof ExternalDataSource.AccessControllable;
-        this.writable = dataSource instanceof ExternalDataSource.Writable;
 
         this.pathPermissionCache = Collections.synchronizedMap(new LRUMap(SettingsBean.getInstance().getAccessManagerPathPermissionCacheMaxSize()));
         this.jahiaPrincipal = new JahiaPrincipal(session.getUserID(), session.getRealm(), session.getUserID().startsWith(JahiaLoginModule.SYSTEM), JahiaLoginModule.GUEST.equals(session.getUserID()));
-        try {
-            registry = new JahiaPrivilegeRegistry(namespaceRegistry);
-            this.modifyAccessControlPrivilege = registry.getPrivilege("jcr:modifyAccessControl", workspaceName);
-            this.writePrivilege = registry.getPrivilege("jcr:write", workspaceName);
-        } catch (RepositoryException e) {
-            throw new JahiaRuntimeException(e);
-        }
+        registry = new JahiaPrivilegeRegistry(namespaceRegistry);
     }
 
     @Override
@@ -136,14 +122,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
         JCRNodeWrapper node = JCRSessionFactory.getInstance().getCurrentSystemSession(workspaceName, null, null)
                 .getNode(session.getRepository().getStoreProvider().getMountPoint() + absPath);
         Privilege[] privileges = AccessManagerUtils.getPrivileges(node, jahiaPrincipal, registry);
-
-        // filter some privileges in some specific cases, for avoid some operation from edit engines
-        List<Privilege> privilegeToFilter = getPrivilegesToFilter(node.getRealNode());
-        if (privilegeToFilter.size() > 0) {
-            return filterPrivileges(privileges, privilegeToFilter);
-        } else {
-            return privileges;
-        }
+        return privileges;
     }
 
     @Override
@@ -222,56 +201,5 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
     public boolean canManageNodeTypes(String path) throws RepositoryException {
         return hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_NODE_TYPE_MANAGEMENT + "_" + session.getWorkspace().getName(), null)});
-    }
-
-    private List<Privilege> getPrivilegesToFilter(Node node) {
-
-        List<Privilege> privilegeToFilterOut = new ArrayList<>();
-
-        // jcr:modifyAccessControl permission when data source is AccessControllable, only on ExternalNodeImpl
-        // ExtensionNodeImpl acls can be modify
-        if (aclReadOnly && node instanceof ExternalNodeImpl) {
-            privilegeToFilterOut.add(modifyAccessControlPrivilege);
-        }
-
-        // all write permissions in case of the data source not writable and not extendable
-        if (!writable && node instanceof ExternalNodeImpl && (session.getOverridableProperties() == null || session.getOverridableProperties().size() == 0)) {
-            privilegeToFilterOut.add(writePrivilege);
-            privilegeToFilterOut.addAll(Lists.newArrayList(writePrivilege.getAggregatePrivileges()));
-        }
-
-        return privilegeToFilterOut;
-    }
-
-   private static Privilege[] filterPrivileges(Privilege[] privileges, List<Privilege> privilegesToFilterOut) {
-
-        Set<Privilege> filteredResult = new HashSet<Privilege>();
-        for (Privilege privilege : privileges) {
-            if (!privilegesToFilterOut.contains(privilege)) {
-                if (privilege.isAggregate() && areIntersecting(privilege.getDeclaredAggregatePrivileges(), privilegesToFilterOut)) {
-                    // We de-aggregate a privilege in case any of its children are to be filtered out, since a privilege is valid only if all its children are valid.
-                    filteredResult.addAll(Arrays.asList(filterPrivileges(privilege.getDeclaredAggregatePrivileges(), privilegesToFilterOut)));
-                } else {
-                    filteredResult.add(privilege);
-                }
-            }
-        }
-
-        return filteredResult.toArray(new Privilege[filteredResult.size()]);
-    }
-
-    /**
-     * Test if there is an intersection between the two arrays of privileges
-     * @param privileges1
-     * @param privileges2
-     * @return whether the two arrays contain any common element
-     */
-    private static boolean areIntersecting(Privilege[] privileges1, List<Privilege> privileges2) {
-        for (Privilege privilege1 : privileges1) {
-            if (privileges2.contains(privilege1)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

@@ -59,68 +59,66 @@ public class ExternalRepositoryImpl implements Repository {
 
     @SuppressWarnings("deprecation")
     private static final Set<String> STANDARD_KEYS = new HashSet<String>() {
+
         private static final long serialVersionUID = -7206797627602056140L;
+
         {
-        add(Repository.QUERY_FULL_TEXT_SEARCH_SUPPORTED);
-        add(Repository.QUERY_JOINS);
-        add(Repository.QUERY_LANGUAGES);
-        add(Repository.QUERY_STORED_QUERIES_SUPPORTED);
-        add(Repository.QUERY_XPATH_DOC_ORDER);
-        add(Repository.QUERY_XPATH_POS_INDEX);
-        add(Repository.REP_NAME_DESC);
-        add(Repository.REP_VENDOR_DESC);
-        add(Repository.REP_VENDOR_URL_DESC);
-        add(Repository.SPEC_NAME_DESC);
-        add(Repository.SPEC_VERSION_DESC);
-        add(Repository.WRITE_SUPPORTED);
-        add(Repository.IDENTIFIER_STABILITY);
-        add(Repository.LEVEL_1_SUPPORTED);
-        add(Repository.LEVEL_2_SUPPORTED);
+            add(Repository.QUERY_FULL_TEXT_SEARCH_SUPPORTED);
+            add(Repository.QUERY_JOINS);
+            add(Repository.QUERY_LANGUAGES);
+            add(Repository.QUERY_STORED_QUERIES_SUPPORTED);
+            add(Repository.QUERY_XPATH_DOC_ORDER);
+            add(Repository.QUERY_XPATH_POS_INDEX);
+            add(Repository.REP_NAME_DESC);
+            add(Repository.REP_VENDOR_DESC);
+            add(Repository.REP_VENDOR_URL_DESC);
+            add(Repository.SPEC_NAME_DESC);
+            add(Repository.SPEC_VERSION_DESC);
+            add(Repository.WRITE_SUPPORTED);
+            add(Repository.IDENTIFIER_STABILITY);
+            add(Repository.LEVEL_1_SUPPORTED);
+            add(Repository.LEVEL_2_SUPPORTED);
 
-        add(Repository.OPTION_NODE_TYPE_MANAGEMENT_SUPPORTED);
-        add(Repository.NODE_TYPE_MANAGEMENT_AUTOCREATED_DEFINITIONS_SUPPORTED);
-        add(Repository.NODE_TYPE_MANAGEMENT_INHERITANCE);
-        add(Repository.NODE_TYPE_MANAGEMENT_MULTIPLE_BINARY_PROPERTIES_SUPPORTED);
-        add(Repository.NODE_TYPE_MANAGEMENT_MULTIVALUED_PROPERTIES_SUPPORTED);
-        add(Repository.NODE_TYPE_MANAGEMENT_ORDERABLE_CHILD_NODES_SUPPORTED);
-        add(Repository.NODE_TYPE_MANAGEMENT_OVERRIDES_SUPPORTED);
-        add(Repository.NODE_TYPE_MANAGEMENT_PRIMARY_ITEM_NAME_SUPPORTED);
-        add(Repository.NODE_TYPE_MANAGEMENT_PROPERTY_TYPES);
-        add(Repository.NODE_TYPE_MANAGEMENT_RESIDUAL_DEFINITIONS_SUPPORTED);
-        add(Repository.NODE_TYPE_MANAGEMENT_SAME_NAME_SIBLINGS_SUPPORTED);
-        add(Repository.NODE_TYPE_MANAGEMENT_VALUE_CONSTRAINTS_SUPPORTED);
-        add(Repository.NODE_TYPE_MANAGEMENT_UPDATE_IN_USE_SUPORTED);
-        add(Repository.OPTION_ACCESS_CONTROL_SUPPORTED);
-        add(Repository.OPTION_JOURNALED_OBSERVATION_SUPPORTED);
-        add(Repository.OPTION_LIFECYCLE_SUPPORTED);
-        add(Repository.OPTION_LOCKING_SUPPORTED);
-        add(Repository.OPTION_OBSERVATION_SUPPORTED);
-        add(Repository.OPTION_NODE_AND_PROPERTY_WITH_SAME_NAME_SUPPORTED);
-        add(Repository.OPTION_QUERY_SQL_SUPPORTED);
-        add(Repository.OPTION_RETENTION_SUPPORTED);
-        add(Repository.OPTION_SHAREABLE_NODES_SUPPORTED);
-        add(Repository.OPTION_SIMPLE_VERSIONING_SUPPORTED);
-        add(Repository.OPTION_TRANSACTIONS_SUPPORTED);
-        add(Repository.OPTION_UNFILED_CONTENT_SUPPORTED);
-        add(Repository.OPTION_UPDATE_MIXIN_NODE_TYPES_SUPPORTED);
-        add(Repository.OPTION_UPDATE_PRIMARY_NODE_TYPE_SUPPORTED);
-        add(Repository.OPTION_VERSIONING_SUPPORTED);
-        add(Repository.OPTION_WORKSPACE_MANAGEMENT_SUPPORTED);
-        add(Repository.OPTION_XML_EXPORT_SUPPORTED);
-        add(Repository.OPTION_XML_IMPORT_SUPPORTED);
-        add(Repository.OPTION_ACTIVITIES_SUPPORTED);
-        add(Repository.OPTION_BASELINES_SUPPORTED);
-
-    }};
+            add(Repository.OPTION_NODE_TYPE_MANAGEMENT_SUPPORTED);
+            add(Repository.NODE_TYPE_MANAGEMENT_AUTOCREATED_DEFINITIONS_SUPPORTED);
+            add(Repository.NODE_TYPE_MANAGEMENT_INHERITANCE);
+            add(Repository.NODE_TYPE_MANAGEMENT_MULTIPLE_BINARY_PROPERTIES_SUPPORTED);
+            add(Repository.NODE_TYPE_MANAGEMENT_MULTIVALUED_PROPERTIES_SUPPORTED);
+            add(Repository.NODE_TYPE_MANAGEMENT_ORDERABLE_CHILD_NODES_SUPPORTED);
+            add(Repository.NODE_TYPE_MANAGEMENT_OVERRIDES_SUPPORTED);
+            add(Repository.NODE_TYPE_MANAGEMENT_PRIMARY_ITEM_NAME_SUPPORTED);
+            add(Repository.NODE_TYPE_MANAGEMENT_PROPERTY_TYPES);
+            add(Repository.NODE_TYPE_MANAGEMENT_RESIDUAL_DEFINITIONS_SUPPORTED);
+            add(Repository.NODE_TYPE_MANAGEMENT_SAME_NAME_SIBLINGS_SUPPORTED);
+            add(Repository.NODE_TYPE_MANAGEMENT_VALUE_CONSTRAINTS_SUPPORTED);
+            add(Repository.NODE_TYPE_MANAGEMENT_UPDATE_IN_USE_SUPORTED);
+            add(Repository.OPTION_ACCESS_CONTROL_SUPPORTED);
+            add(Repository.OPTION_JOURNALED_OBSERVATION_SUPPORTED);
+            add(Repository.OPTION_LIFECYCLE_SUPPORTED);
+            add(Repository.OPTION_LOCKING_SUPPORTED);
+            add(Repository.OPTION_OBSERVATION_SUPPORTED);
+            add(Repository.OPTION_NODE_AND_PROPERTY_WITH_SAME_NAME_SUPPORTED);
+            add(Repository.OPTION_QUERY_SQL_SUPPORTED);
+            add(Repository.OPTION_RETENTION_SUPPORTED);
+            add(Repository.OPTION_SHAREABLE_NODES_SUPPORTED);
+            add(Repository.OPTION_SIMPLE_VERSIONING_SUPPORTED);
+            add(Repository.OPTION_TRANSACTIONS_SUPPORTED);
+            add(Repository.OPTION_UNFILED_CONTENT_SUPPORTED);
+            add(Repository.OPTION_UPDATE_MIXIN_NODE_TYPES_SUPPORTED);
+            add(Repository.OPTION_UPDATE_PRIMARY_NODE_TYPE_SUPPORTED);
+            add(Repository.OPTION_VERSIONING_SUPPORTED);
+            add(Repository.OPTION_WORKSPACE_MANAGEMENT_SUPPORTED);
+            add(Repository.OPTION_XML_EXPORT_SUPPORTED);
+            add(Repository.OPTION_XML_IMPORT_SUPPORTED);
+            add(Repository.OPTION_ACTIVITIES_SUPPORTED);
+            add(Repository.OPTION_BASELINES_SUPPORTED);
+        }
+    };
 
     private ExternalDataSource dataSource;
-
     private DefaultNamePathResolver namePathResolver;
-
     private NamespaceRegistry namespaceRegistry;
-
     private String providerKey;
-
     private Map<String, Object> repositoryDescriptors = new HashMap<String, Object>();
     private ExternalContentStoreProvider storeProvider;
 
@@ -136,6 +134,7 @@ public class ExternalRepositoryImpl implements Repository {
         return dataSource;
     }
 
+    @Override
     public String getDescriptor(String s) {
         Object descriptorObject = repositoryDescriptors.get(s);
         if (descriptorObject instanceof Value) {
@@ -145,10 +144,12 @@ public class ExternalRepositoryImpl implements Repository {
         }
     }
 
+    @Override
     public String[] getDescriptorKeys() {
         return repositoryDescriptors.keySet().toArray(new String[repositoryDescriptors.size()]);
     }
 
+    @Override
     public Value getDescriptorValue(String key) {
         final Object descriptorObject = repositoryDescriptors.get(key);
         if (descriptorObject instanceof Value) {
@@ -157,6 +158,7 @@ public class ExternalRepositoryImpl implements Repository {
         return null;
     }
 
+    @Override
     public Value[] getDescriptorValues(String key) {
         final Object descriptorObject = repositoryDescriptors.get(key);
         if (descriptorObject instanceof Value[]) {
@@ -221,7 +223,7 @@ public class ExternalRepositoryImpl implements Repository {
         repositoryDescriptors.put(Repository.QUERY_XPATH_POS_INDEX, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.QUERY_XPATH_DOC_ORDER, new ExternalValueImpl(false));
 
-        repositoryDescriptors.put(Repository.OPTION_ACCESS_CONTROL_SUPPORTED, new ExternalValueImpl(false));
+        repositoryDescriptors.put(Repository.OPTION_ACCESS_CONTROL_SUPPORTED, new ExternalValueImpl(dataSource instanceof ExternalDataSource.AccessControllable));
         repositoryDescriptors.put(Repository.OPTION_ACTIVITIES_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.OPTION_BASELINES_SUPPORTED, new ExternalValueImpl(false));
         repositoryDescriptors.put(Repository.OPTION_JOURNALED_OBSERVATION_SUPPORTED, new ExternalValueImpl(false));
@@ -247,26 +249,32 @@ public class ExternalRepositoryImpl implements Repository {
         }
     }
 
+    @Override
     public boolean isSingleValueDescriptor(String key) {
         return repositoryDescriptors.get(key) instanceof Value;
     }
 
+    @Override
     public boolean isStandardDescriptor(String key) {
         return STANDARD_KEYS.contains(key);
     }
 
+    @Override
     public Session login() throws LoginException, RepositoryException {
         return new ExternalSessionImpl(this, null, null);
     }
 
+    @Override
     public Session login(Credentials credentials) throws LoginException, RepositoryException {
         return new ExternalSessionImpl(this, credentials, null);
     }
 
+    @Override
     public Session login(Credentials credentials, String workspaceName) throws LoginException, NoSuchWorkspaceException, RepositoryException {
         return new ExternalSessionImpl(this, credentials, workspaceName);
     }
 
+    @Override
     public Session login(String workspaceName) throws LoginException, NoSuchWorkspaceException, RepositoryException {
         return new ExternalSessionImpl(this, null, workspaceName);
     }
@@ -274,5 +282,4 @@ public class ExternalRepositoryImpl implements Repository {
     public void setProviderKey(String providerKey) {
         this.providerKey = providerKey;
     }
-
 }
