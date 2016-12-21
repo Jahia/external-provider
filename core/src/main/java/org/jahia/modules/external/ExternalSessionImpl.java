@@ -382,7 +382,11 @@ public class ExternalSessionImpl implements Session {
     }
 
     private Item handleAceNode(String parentPath, String path, String last) throws RepositoryException{
-        ExternalData parentObject = getParent(StringUtils.substringBeforeLast(parentPath, "/"));
+        String parentParentPath = StringUtils.substringBeforeLast(parentPath, "/");
+        if (parentParentPath.equals("")) {
+            parentParentPath = "/";
+        }
+        ExternalData parentObject = getParent(parentParentPath);
         if(parentObject.getExternalDataAcl() == null || parentObject.getExternalDataAcl().getAce(last) == null) {
             throw new PathNotFoundException(path);
         }
