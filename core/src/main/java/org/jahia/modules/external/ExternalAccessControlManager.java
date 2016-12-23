@@ -45,6 +45,7 @@ package org.jahia.modules.external;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.map.LRUMap;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.commons.iterator.AccessControlPolicyIteratorAdapter;
 import org.apache.jackrabbit.core.security.JahiaLoginModule;
@@ -54,6 +55,7 @@ import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.jaas.JahiaPrincipal;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.jahia.settings.SettingsBean;
 import org.jahia.utils.security.AccessManagerUtils;
 import org.jahia.utils.security.PathWrapper;
@@ -88,12 +90,20 @@ public class ExternalAccessControlManager implements AccessControlManager {
     private final Privilege modifyAccessControlPrivilege;
     private final Privilege writePrivilege;
 
+    // reserved to privileges support
+    private final String rootUserName;
+    private final boolean supportPrivileges;
+    private final ExternalDataSource dataSource;
+
     public ExternalAccessControlManager(NamespaceRegistry namespaceRegistry, ExternalSessionImpl session, ExternalDataSource dataSource) {
 
         this.session = session;
         this.workspaceName = session.getWorkspace().getName();
         this.aclReadOnly = dataSource instanceof ExternalDataSource.AccessControllable;
         this.writable = dataSource instanceof ExternalDataSource.Writable;
+        this.supportPrivileges = dataSource instanceof ExternalDataSource.SupportPrivileges;
+        this.rootUserName = JahiaUserManagerService.getInstance().getRootUserName();
+        this.dataSource = dataSource;
 
         this.pathPermissionCache = Collections.synchronizedMap(new LRUMap(SettingsBean.getInstance().getAccessManagerPathPermissionCacheMaxSize()));
         this.jahiaPrincipal = new JahiaPrincipal(session.getUserID(), session.getRealm(), session.getUserID().startsWith(JahiaLoginModule.SYSTEM), JahiaLoginModule.GUEST.equals(session.getUserID()));
@@ -133,6 +143,11 @@ public class ExternalAccessControlManager implements AccessControlManager {
     @Override
     public Privilege[] getPrivileges(final String absPath) throws PathNotFoundException,
             RepositoryException {
+
+        if(supportPrivileges) {
+            return getPrivilegesLegacy(absPath);
+        }
+
         JCRNodeWrapper node = JCRSessionFactory.getInstance().getCurrentSystemSession(workspaceName, null, null)
                 .getNode(session.getRepository().getStoreProvider().getMountPoint() + absPath);
         Privilege[] privileges = AccessManagerUtils.getPrivileges(node, jahiaPrincipal, registry);
@@ -150,6 +165,10 @@ public class ExternalAccessControlManager implements AccessControlManager {
     public boolean hasPrivileges(final String absPath, final Privilege[] privileges)
             throws PathNotFoundException, RepositoryException {
 
+        if(supportPrivileges) {
+            return hasPrivilegesLegacy(absPath, privileges);
+        }
+
         if (privileges == null || privileges.length == 0) {
             // null or empty privilege array -> return true
             return true;
@@ -164,6 +183,49 @@ public class ExternalAccessControlManager implements AccessControlManager {
             return AccessManagerUtils.isGranted(pathWrapper, privs, securitySession,
                     jahiaPrincipal, workspaceName, false, pathPermissionCache, compiledAcls, registry);
         }
+    }
+
+    private Privilege[] getPrivilegesLegacy(String absPath) throws PathNotFoundException,
+            RepositoryException {
+        List<Privilege> l = new ArrayList<Privilege>();
+        for (String s : getPrivilegesNamesLegacy(absPath)) {
+            Privilege privilege = registry.getPrivilege(s, null);
+            if (privilege != null) {
+                l.add(privilege);
+            }
+        }
+
+        return l.toArray(new Privilege[l.size()]);
+    }
+
+    private String[] getPrivilegesNamesLegacy(String absPath) {
+        ExternalContentStoreProvider.setCurrentSession(session);
+        try {
+            return ((ExternalDataSource.SupportPrivileges) dataSource).getPrivilegesNames(session.getUserID(), absPath);
+        } finally {
+            ExternalContentStoreProvider.removeCurrentSession();
+        }
+    }
+
+    private boolean hasPrivilegesLegacy(String absPath, Privilege[] privileges)
+            throws PathNotFoundException, RepositoryException {
+        if (privileges == null || privileges.length == 0) {
+            return true;
+        }
+        String userID = session.getUserID();
+        if (userID.startsWith(JahiaLoginModule.SYSTEM) || rootUserName.equals(userID)) {
+            return true;
+        }
+        boolean allowed = true;
+        Privilege[] granted = getPrivileges(absPath);
+        for (Privilege toCheck : privileges) {
+            if (toCheck != null && !ArrayUtils.contains(granted, toCheck)) {
+                allowed = false;
+                break;
+            }
+        }
+
+        return allowed;
     }
 
     @Override

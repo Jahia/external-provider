@@ -164,9 +164,26 @@ public interface ExternalDataSource {
     }
 
     /**
-     * If implemented, allows for access control
+     * If implemented, allows for access control using ACL on ExternalData directly
+     *
+     * AccessControllable interface is not usable with SupportPrivileges
      */
     public interface AccessControllable {
+    }
+
+    /**
+     * If implemented, allows for access control using getPrivilegesNames()
+     * returning privilege names directly for a given path.
+     */
+    public interface SupportPrivileges {
+        /**
+         * Return the privileges a user has on a specified node
+         *
+         * @param username the user name
+         * @param path     the node path
+         * @return an array of privilege names
+         */
+        String[] getPrivilegesNames(String username, String path);
     }
 
     /**
