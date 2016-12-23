@@ -373,7 +373,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         if (canItemBeExtended(relPath, primaryNodeTypeName)) {
 
             if ((StringUtils.equals(primaryNodeTypeName, ExternalDataAcl.ACL_NODE_TYPE) || StringUtils.equals(primaryNodeTypeName, ExternalDataAce.ACE_NODE_TYPE))
-                    && session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable) {
+                    && (session.getRepository().getDataSource() instanceof ExternalDataSource.AccessControllable ||
+                        session.getRepository().getDataSource() instanceof ExternalDataSource.SupportPrivileges)) {
                 throw new UnsupportedRepositoryOperationException("Acl and Ace are handle by DataSource");
             }
 
