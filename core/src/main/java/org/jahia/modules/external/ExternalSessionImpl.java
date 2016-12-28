@@ -77,7 +77,12 @@ public class ExternalSessionImpl implements Session {
     static final String TRANSLATION_NODE_NAME_BASE = "j:translation_";
     static final String ACE_PREFIX = "j:ace:";
 
+    private static final boolean DEBUG = false;
     private static final Logger logger = LoggerFactory.getLogger(ExternalSessionImpl.class);
+
+    private static volatile int fromCacheCount = 0;
+    private static volatile int totalCacheChecks = 0;
+    private static volatile int totalSavedCalls = 0;
 
     private ExternalRepositoryImpl repository;
     private ExternalWorkspaceImpl workspace;
@@ -92,15 +97,10 @@ public class ExternalSessionImpl implements Session {
     private Session extensionSession;
     private List<String> extensionAllowedTypes;
     private List<String> extensionForbiddenMixins;
-    private Map<String,List<String>> overridableProperties;
-    private Map<String,List<String>> nonOverridableProperties;
+    private Map<String, List<String>> overridableProperties;
+    private Map<String, List<String>> nonOverridableProperties;
     private Map<String, Object> sessionVariables = new HashMap<String, Object>();
     private ExternalAccessControlManager accessControlManager;
-
-    private static volatile int fromCacheCount = 0;
-    private static volatile int totalCacheChecks = 0;
-    private static volatile int totalSavedCalls = 0;
-    private static final boolean DEBUG = false;
 
     public ExternalSessionImpl(ExternalRepositoryImpl repository, Credentials credentials, String workspaceName) {
         this.repository = repository;
@@ -108,10 +108,12 @@ public class ExternalSessionImpl implements Session {
         this.credentials = credentials;
     }
 
+    @Override
     public ExternalRepositoryImpl getRepository() {
         return repository;
     }
 
+    @Override
     public String getUserID() {
         return ((SimpleCredentials) credentials).getUserID();
     }
@@ -120,18 +122,22 @@ public class ExternalSessionImpl implements Session {
         return (String) ((SimpleCredentials) credentials).getAttribute(JahiaLoginModule.REALM_ATTRIBUTE);
     }
 
+    @Override
     public Object getAttribute(String s) {
         return null;
     }
 
+    @Override
     public String[] getAttributeNames() {
         return new String[0];
     }
 
+    @Override
     public Workspace getWorkspace() {
         return workspace;
     }
 
+    @Override
     public Session impersonate(Credentials credentials) throws LoginException, RepositoryException {
         return this;
     }
@@ -159,26 +165,28 @@ public class ExternalSessionImpl implements Session {
         }
 
         final ExternalNodeImpl node = cache.get(key);
-        if(node != null) {
+        if (node != null) {
             fromCacheCount++;
         }
 
         return node;
     }
 
+    @Override
     public Node getRootNode() throws RepositoryException {
+
         getAccessControlManager().checkRead("/");
         final Node fromCache = getFromCacheByPath("/");
-        if(fromCache != null) {
+        if (fromCache != null) {
             return fromCache;
         }
 
         ExternalContentStoreProvider.setCurrentSession(this);
         try {
             // check provider availability if possible
-            if(repository.getDataSource() instanceof ExternalDataSource.CanCheckAvailability){
+            if (repository.getDataSource() instanceof ExternalDataSource.CanCheckAvailability) {
                 boolean available = ((ExternalDataSource.CanCheckAvailability) repository.getDataSource()).isAvailable();
-                if(!available) {
+                if (!available) {
                     throw new RepositoryException("Provider '" + repository.getProviderKey() + "' is currently unavailable");
                 }
             }
@@ -191,9 +199,11 @@ public class ExternalSessionImpl implements Session {
         }
     }
 
+    @Override
     public Node getNodeByUUID(String uuid) throws ItemNotFoundException, RepositoryException {
+
         final ExternalNodeImpl fromCacheById = getFromCacheById(uuid);
-        if(fromCacheById != null) {
+        if (fromCacheById != null) {
             try {
                 getAccessControlManager().checkRead(fromCacheById.getPath());
             } catch (PathNotFoundException e) {
@@ -213,6 +223,7 @@ public class ExternalSessionImpl implements Session {
             }
             uuid = externalId;
         }
+
         Node n = getNodeByLocalIdentifier(uuid);
         try {
             getAccessControlManager().checkRead(n.getPath());
@@ -223,6 +234,7 @@ public class ExternalSessionImpl implements Session {
     }
 
     private Node getNodeByLocalIdentifier(String uuid) throws RepositoryException {
+
         for (ExternalItemImpl i : newItems) {
             if (i instanceof ExternalNodeImpl) {
                 ExternalNodeImpl n = (ExternalNodeImpl) i;
@@ -277,21 +289,22 @@ public class ExternalSessionImpl implements Session {
         }
     }
 
+    @Override
     public Item getItem(String path)  throws PathNotFoundException, RepositoryException  {
         Item itemWithNoCheck = getItemWithNoCheck(path);
         getAccessControlManager().checkRead(path);
         return itemWithNoCheck;
-
     }
 
     protected Item getItemWithNoCheck(String path) throws PathNotFoundException, RepositoryException {
-       path = path.length() > 1 && path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+
+        path = path.length() > 1 && path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
         if (deletedData.containsKey(path)) {
             throw new PathNotFoundException("This node has been deleted");
         }
 
         final Node fromCache = getFromCacheByPath(path);
-        if(fromCache != null) {
+        if (fromCache != null) {
             return fromCache;
         }
 
@@ -309,17 +322,17 @@ public class ExternalSessionImpl implements Session {
             } else if (StringUtils.substringAfterLast(parentPath, "/").equals(ExternalDataAcl.ACL_NODE_NAME) && repository.getDataSource() instanceof ExternalDataSource.AccessControllable) {
                 // Getting ace node or acl property
                 String last = StringUtils.substringAfterLast(path, "/");
-                if(last.startsWith(ExternalDataAce.Type.DENY.toString()) || last.startsWith(ExternalDataAce.Type.GRANT.toString())) {
+                if (last.startsWith(ExternalDataAce.Type.DENY.toString()) || last.startsWith(ExternalDataAce.Type.GRANT.toString())) {
                     // get the ace node
                     return handleAceNode(parentPath, path, last);
                 } else {
                     // get the property
                     return getNode(parentPath).getProperty(last);
                 }
-            } else if(StringUtils.substringAfterLast(path, "/").equals(ExternalDataAcl.ACL_NODE_NAME) && repository.getDataSource() instanceof ExternalDataSource.AccessControllable) {
+            } else if (StringUtils.substringAfterLast(path, "/").equals(ExternalDataAcl.ACL_NODE_NAME) && repository.getDataSource() instanceof ExternalDataSource.AccessControllable) {
                 // Getting acl node
                 return handleAclNode(parentPath, path);
-             } else if((StringUtils.substringAfterLast(parentPath, "/").startsWith(ExternalDataAce.Type.GRANT.toString()) || StringUtils.substringAfterLast(path, "/").startsWith(ExternalDataAce.Type.DENY.toString()))
+             } else if ((StringUtils.substringAfterLast(parentPath, "/").startsWith(ExternalDataAce.Type.GRANT.toString()) || StringUtils.substringAfterLast(path, "/").startsWith(ExternalDataAce.Type.DENY.toString()))
                     && StringUtils.substringBeforeLast(parentPath, "/").endsWith("/j:acl")
                     && repository.getDataSource() instanceof ExternalDataSource.AccessControllable) {
                 // Getting ace node property
@@ -367,9 +380,10 @@ public class ExternalSessionImpl implements Session {
     }
 
     private Item handleAclNode(String parentPath, String path) throws RepositoryException {
+
         // Getting acl node
         ExternalData parentObject = getParent(parentPath);
-        if(parentObject.getExternalDataAcl() == null) {
+        if (parentObject.getExternalDataAcl() == null) {
             throw new PathNotFoundException(path);
         }
 
@@ -381,18 +395,19 @@ public class ExternalSessionImpl implements Session {
         return node;
     }
 
-    private Item handleAceNode(String parentPath, String path, String last) throws RepositoryException{
+    private Item handleAceNode(String parentPath, String path, String name) throws RepositoryException{
+
         String parentParentPath = StringUtils.substringBeforeLast(parentPath, "/");
         if (parentParentPath.equals("")) {
             parentParentPath = "/";
         }
         ExternalData parentObject = getParent(parentParentPath);
-        if(parentObject.getExternalDataAcl() == null || parentObject.getExternalDataAcl().getAce(last) == null) {
+        if (parentObject.getExternalDataAcl() == null || parentObject.getExternalDataAcl().getAce(name) == null) {
             throw new PathNotFoundException(path);
         }
 
-        ExternalDataAce externalDataAce = parentObject.getExternalDataAcl().getAce(last);
-        ExternalData ace = new ExternalData(ACE_PREFIX + last +  ":" + parentObject.getId(), path,
+        ExternalDataAce externalDataAce = parentObject.getExternalDataAcl().getAce(name);
+        ExternalData ace = new ExternalData(ACE_PREFIX + name + ":" + parentObject.getId(), path,
                 ExternalDataAce.ACE_NODE_TYPE, externalDataAce.getProperties());
 
         final ExternalNodeImpl node = new ExternalNodeImpl(ace, this);
@@ -401,6 +416,7 @@ public class ExternalSessionImpl implements Session {
     }
 
     private Item handleI18nNode(String parentPath, String path) throws RepositoryException {
+
         ExternalData parentObject = getParent(parentPath);
         String lang = StringUtils.substringAfterLast(path, TRANSLATION_NODE_NAME_BASE);
 
@@ -495,17 +511,19 @@ public class ExternalSessionImpl implements Session {
         return true;
     }
 
+    @Override
     public void move(String source, String dest)
             throws ItemExistsException, PathNotFoundException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+
         getAccessControlManager().checkRemoveNode(source);
-        getAccessControlManager().checkAddChildNodes(StringUtils.substringBeforeLast(dest,"/"));
+        getAccessControlManager().checkAddChildNodes(StringUtils.substringBeforeLast(dest, "/"));
         Item sourceNode = getItem(source);
         if (!sourceNode.isNode()) {
             throw new PathNotFoundException(source);
         }
         if (sourceNode instanceof ExtensionNode) {
             String targetName = StringUtils.substringAfterLast(dest, "/");
-            String parentPath = StringUtils.substringBeforeLast(dest,"/");
+            String parentPath = StringUtils.substringBeforeLast(dest, "/");
             Node targetNode = (Node) getItem(parentPath);
             final String srcAbsPath = ((ExtensionNode) sourceNode).getJcrNode().getPath();
             Node jcrNode = null;
@@ -523,22 +541,23 @@ public class ExternalSessionImpl implements Session {
                 return;
             }
         } else if (sourceNode instanceof ExternalNodeImpl) {
+
             if (!(repository.getDataSource() instanceof ExternalDataSource.Writable)) {
                 throw new UnsupportedRepositoryOperationException();
             }
-
             if (source.equals(dest)) {
                 return;
             }
 
             final ExternalNodeImpl externalNode = (ExternalNodeImpl) sourceNode;
 
-
             final ExternalNodeImpl previousParent = (ExternalNodeImpl) externalNode.getParent();
             final List<String> previousParentChildren = previousParent.getExternalChildren();
 
             ExternalContentStoreProvider.setCurrentSession(this);
+
             try {
+
                 //todo : store move in session and move node in save
                 ((ExternalDataSource.Writable) repository.getDataSource()).move(source, dest);
 
@@ -576,8 +595,10 @@ public class ExternalSessionImpl implements Session {
         throw new UnsupportedRepositoryOperationException();
      }
 
+    @Override
     public void save()
             throws AccessDeniedException, ItemExistsException, ConstraintViolationException, InvalidItemStateException, VersionException, LockException, NoSuchNodeTypeException, RepositoryException {
+
         if (extensionSession != null && extensionSession.hasPendingChanges()) {
             extensionSession.save();
         }
@@ -632,9 +653,9 @@ public class ExternalSessionImpl implements Session {
                 writableDataSource.saveItem(data);
                 // when data contain binaries we flush the nodes so the binary will be load
                 // from the external data source after an upload, avoid to cache a tmp binary after upload for exemple
-                if(data.getBinaryProperties() != null && data.getBinaryProperties().size() > 0) {
+                if (data.getBinaryProperties() != null && data.getBinaryProperties().size() > 0) {
                     ExternalNodeImpl cachedNode = nodesByPath.get(data.getPath());
-                    if(cachedNode != null) {
+                    if (cachedNode != null) {
                         nodesByPath.remove(data.getPath());
                         nodesByIdentifier.remove(cachedNode.getIdentifier());
                     }
@@ -664,6 +685,7 @@ public class ExternalSessionImpl implements Session {
         }
     }
 
+    @Override
     public void refresh(boolean keepChanges) throws RepositoryException {
         if (!keepChanges) {
             deletedData.clear();
@@ -689,82 +711,90 @@ public class ExternalSessionImpl implements Session {
         }
     }
 
+    @Override
     public boolean hasPendingChanges() throws RepositoryException {
         return extensionSession != null && extensionSession.hasPendingChanges() ||
                 repository.getDataSource() instanceof ExternalDataSource.Writable && (!deletedData.isEmpty() || !changedData.isEmpty() || !orderedData.isEmpty());
     }
 
+    @Override
     public ExternalValueFactoryImpl getValueFactory()
             throws UnsupportedRepositoryOperationException, RepositoryException {
         return new ExternalValueFactoryImpl(this);
     }
 
+    @Override
     public void checkPermission(String s, String s1) throws AccessControlException, RepositoryException {
-
     }
 
+    @Override
     public ContentHandler getImportContentHandler(String s, int i)
             throws PathNotFoundException, ConstraintViolationException, VersionException, LockException, RepositoryException {
         return null;
     }
 
+    @Override
     public void importXML(String s, InputStream inputStream, int i)
             throws IOException, PathNotFoundException, ItemExistsException, ConstraintViolationException, VersionException, InvalidSerializedDataException, LockException, RepositoryException {
-
     }
 
+    @Override
     public void exportSystemView(String s, ContentHandler contentHandler, boolean b, boolean b1)
             throws PathNotFoundException, SAXException, RepositoryException {
-
     }
 
+    @Override
     public void exportSystemView(String s, OutputStream outputStream, boolean b, boolean b1)
             throws IOException, PathNotFoundException, RepositoryException {
-
     }
 
+    @Override
     public void exportDocumentView(String s, ContentHandler contentHandler, boolean b, boolean b1)
             throws PathNotFoundException, SAXException, RepositoryException {
-
     }
 
+    @Override
     public void exportDocumentView(String s, OutputStream outputStream, boolean b, boolean b1)
             throws IOException, PathNotFoundException, RepositoryException {
-
     }
 
+    @Override
     public void setNamespacePrefix(String s, String s1) throws NamespaceException, RepositoryException {
-
     }
 
+    @Override
     public String[] getNamespacePrefixes() throws RepositoryException {
         return workspace.getNamespaceRegistry().getPrefixes();
     }
 
+    @Override
     public String getNamespaceURI(String s) throws NamespaceException, RepositoryException {
         return workspace.getNamespaceRegistry().getURI(s);
     }
 
+    @Override
     public String getNamespacePrefix(String s) throws NamespaceException, RepositoryException {
         return workspace.getNamespaceRegistry().getPrefix(s);
     }
 
+    @Override
     public void logout() {
         if (extensionSession != null && extensionSession.isLive()) {
             extensionSession.logout();
             extensionSession = null;
         }
-
         for (Binary binary : tempBinaries) {
             binary.dispose();
         }
         accessControlManager = null;
     }
 
+    @Override
     public boolean isLive() {
         return true;
     }
 
+    @Override
     public void addLockToken(String s) {
         try {
             LockManager extensionLockManager = getExtensionSession().getWorkspace().getLockManager();
@@ -772,10 +802,11 @@ public class ExternalSessionImpl implements Session {
                 extensionLockManager.addLockToken(s);
             }
         } catch (RepositoryException e) {
-            logger.error("Unable to add lock token "+ s,e.getMessage());
+            logger.error("Unable to add lock token " + s, e.getMessage());
         }
     }
 
+    @Override
     public String[] getLockTokens() {
         try {
             if (getExtensionSession() == null) {
@@ -787,6 +818,7 @@ public class ExternalSessionImpl implements Session {
         }
     }
 
+    @Override
     public void removeLockToken(String s) {
         try {
             LockManager extensionLockManager = getExtensionSession().getWorkspace().getLockManager();
@@ -794,7 +826,7 @@ public class ExternalSessionImpl implements Session {
                 extensionLockManager.removeLockToken(s);
             }
         } catch (RepositoryException e) {
-            logger.error("Unable to remove lock token " + s,e.getMessage());
+            logger.error("Unable to remove lock token " + s, e.getMessage());
         }
 
     }
@@ -838,41 +870,50 @@ public class ExternalSessionImpl implements Session {
         newItems.add(newItem);
     }
 
+    @Override
     public Node getNodeByIdentifier(String id) throws ItemNotFoundException, RepositoryException {
         return getNodeByUUID(id);
     }
 
+    @Override
     public Node getNode(String absPath) throws PathNotFoundException, RepositoryException {
         return (Node) getItem(absPath);
     }
 
+    @Override
     public Property getProperty(String absPath) throws PathNotFoundException, RepositoryException {
         return (Property) getItem(absPath);
     }
 
+    @Override
     public boolean nodeExists(String absPath) throws RepositoryException {
         return itemExists(absPath);
     }
 
+    @Override
     public boolean propertyExists(String absPath) throws RepositoryException {
         return itemExists(absPath);
     }
 
+    @Override
     public void removeItem(String absPath)
             throws VersionException, LockException, ConstraintViolationException, AccessDeniedException, RepositoryException {
         getItem(absPath).remove();
     }
 
+    @Override
     public boolean hasPermission(String absPath, String actions) throws RepositoryException {
         // TODO implement me
         return false;
     }
 
+    @Override
     public boolean hasCapability(String s, Object o, Object[] objects) throws RepositoryException {
         // TODO implement me
         return false;
     }
 
+    @Override
     public ExternalAccessControlManager getAccessControlManager()
             throws UnsupportedRepositoryOperationException, RepositoryException {
         if (accessControlManager == null) {
@@ -881,6 +922,7 @@ public class ExternalSessionImpl implements Session {
         return accessControlManager;
     }
 
+    @Override
     public RetentionManager getRetentionManager() throws UnsupportedRepositoryOperationException, RepositoryException {
         return null;
     }
@@ -909,14 +951,14 @@ public class ExternalSessionImpl implements Session {
      * Return the properties that can be overridden for extendable nodetypes
      * @return a map of list of properties (value) by nodetype (key)
      */
-    public Map<String,List<String>> getOverridableProperties() {
+    public Map<String, List<String>> getOverridableProperties() {
         if (overridableProperties == null) {
-            overridableProperties = new HashMap<String,List<String>>();
+            overridableProperties = new HashMap<String, List<String>>();
             List<String> overridablePropertiesString = getRepository().getStoreProvider().getOverridableItems();
             if (overridablePropertiesString != null) {
                 for (String s : overridablePropertiesString) {
-                    String nodeType = StringUtils.substringBefore(s,".");
-                    String property = StringUtils.substringAfter(s,".");
+                    String nodeType = StringUtils.substringBefore(s, ".");
+                    String property = StringUtils.substringAfter(s, ".");
                     if (!overridableProperties.containsKey(nodeType)) {
                         overridableProperties.put(nodeType, new ArrayList<String>());
                     }
@@ -931,14 +973,14 @@ public class ExternalSessionImpl implements Session {
      * Return the properties that can NOT be overridden for extendable nodetypes
      * @return a map of list of properties (value) by nodetype (key)
      */
-    public Map<String,List<String>> getNonOverridableProperties() {
+    public Map<String, List<String>> getNonOverridableProperties() {
         if (nonOverridableProperties == null) {
-            nonOverridableProperties = new HashMap<String,List<String>>();
+            nonOverridableProperties = new HashMap<String, List<String>>();
             List<String> nonOverridablePropertiesString = getRepository().getStoreProvider().getNonOverridableItems();
             if (nonOverridablePropertiesString != null) {
                 for (String s : nonOverridablePropertiesString) {
-                    String nodeType = StringUtils.substringBefore(s,".");
-                    String property = StringUtils.substringAfter(s,".");
+                    String nodeType = StringUtils.substringBefore(s, ".");
+                    String property = StringUtils.substringAfter(s, ".");
                     if (!nonOverridableProperties.containsKey(nodeType)) {
                         nonOverridableProperties.put(nodeType, new ArrayList<String>());
                     }
@@ -962,5 +1004,4 @@ public class ExternalSessionImpl implements Session {
     public Map<String, Object> getSessionVariables() {
         return sessionVariables;
     }
-
 }
