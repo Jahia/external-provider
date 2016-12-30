@@ -3,43 +3,43 @@
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
  *
- *                                 http://www.jahia.com
+ * http://www.jahia.com
  *
- *     Copyright (C) 2002-2016 Jahia Solutions Group SA. All rights reserved.
+ * Copyright (C) 2002-2016 Jahia Solutions Group SA. All rights reserved.
  *
- *     THIS FILE IS AVAILABLE UNDER TWO DIFFERENT LICENSES:
- *     1/GPL OR 2/JSEL
+ * THIS FILE IS AVAILABLE UNDER TWO DIFFERENT LICENSES:
+ * 1/GPL OR 2/JSEL
  *
- *     1/ GPL
- *     ==================================================================================
+ * 1/ GPL
+ * ==================================================================================
  *
- *     IF YOU DECIDE TO CHOOSE THE GPL LICENSE, YOU MUST COMPLY WITH THE FOLLOWING TERMS:
+ * IF YOU DECIDE TO CHOOSE THE GPL LICENSE, YOU MUST COMPLY WITH THE FOLLOWING TERMS:
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- *     2/ JSEL - Commercial and Supported Versions of the program
- *     ===================================================================================
+ * 2/ JSEL - Commercial and Supported Versions of the program
+ * ===================================================================================
  *
- *     IF YOU DECIDE TO CHOOSE THE JSEL LICENSE, YOU MUST COMPLY WITH THE FOLLOWING TERMS:
+ * IF YOU DECIDE TO CHOOSE THE JSEL LICENSE, YOU MUST COMPLY WITH THE FOLLOWING TERMS:
  *
- *     Alternatively, commercial and supported versions of the program - also known as
- *     Enterprise Distributions - must be used in accordance with the terms and conditions
- *     contained in a separate written agreement between you and Jahia Solutions Group SA.
+ * Alternatively, commercial and supported versions of the program - also known as
+ * Enterprise Distributions - must be used in accordance with the terms and conditions
+ * contained in a separate written agreement between you and Jahia Solutions Group SA.
  *
- *     If you are unsure which license is appropriate for your use,
- *     please contact the sales department at sales@jahia.com.
+ * If you are unsure which license is appropriate for your use,
+ * please contact the sales department at sales@jahia.com.
  */
 package org.jahia.modules.external;
 
@@ -99,7 +99,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
         this.session = session;
         this.workspaceName = session.getWorkspace().getName();
-        this.aclReadOnly = dataSource instanceof ExternalDataSource.AccessControllable;
+        this.aclReadOnly = dataSource instanceof ExternalDataSource.AccessControllable || dataSource instanceof ExternalDataSource.SupportPrivileges;
         this.writable = dataSource instanceof ExternalDataSource.Writable;
         this.supportPrivileges = dataSource instanceof ExternalDataSource.SupportPrivileges;
         this.rootUserName = JahiaUserManagerService.getInstance().getRootUserName();
@@ -144,14 +144,14 @@ public class ExternalAccessControlManager implements AccessControlManager {
     public Privilege[] getPrivileges(final String absPath) throws PathNotFoundException,
             RepositoryException {
 
-        if(supportPrivileges) {
-            return getPrivilegesLegacy(absPath);
-        }
-
         JCRNodeWrapper node = JCRSessionFactory.getInstance().getCurrentSystemSession(workspaceName, null, null)
                 .getNode(session.getRepository().getStoreProvider().getMountPoint() + absPath);
-        Privilege[] privileges = AccessManagerUtils.getPrivileges(node, jahiaPrincipal, registry);
-
+        Privilege[] privileges;
+        if (supportPrivileges) {
+            privileges = getPrivilegesLegacy(absPath);
+        } else {
+            privileges = AccessManagerUtils.getPrivileges(node, jahiaPrincipal, registry);
+        }
         // filter some privileges in some specific cases, for avoid some operation from edit engines
         List<Privilege> privilegeToFilter = getPrivilegesToFilter(node.getRealNode());
         if (privilegeToFilter.size() > 0) {
@@ -165,7 +165,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
     public boolean hasPrivileges(final String absPath, final Privilege[] privileges)
             throws PathNotFoundException, RepositoryException {
 
-        if(supportPrivileges) {
+        if (supportPrivileges) {
             return hasPrivilegesLegacy(absPath, privileges);
         }
 
@@ -179,7 +179,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
             }
             String mountPoint = session.getRepository().getStoreProvider().getMountPoint();
             Session securitySession = JCRSessionFactory.getInstance().getCurrentSystemSession(session.getWorkspace().getName(), null, null);
-            PathWrapper pathWrapper = new ExternalPathWrapperImpl(StringUtils.equals(absPath,"/")? mountPoint : mountPoint + absPath, securitySession);
+            PathWrapper pathWrapper = new ExternalPathWrapperImpl(StringUtils.equals(absPath, "/") ? mountPoint : mountPoint + absPath, securitySession);
             return AccessManagerUtils.isGranted(pathWrapper, privs, securitySession,
                     jahiaPrincipal, workspaceName, false, pathPermissionCache, compiledAcls, registry);
         }
@@ -271,19 +271,20 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
     //JCR_ADD_CHILD_NODES
     public void checkAddChildNodes(String path) throws RepositoryException {
-        if (!hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_ADD_CHILD_NODES + "_" + session.getWorkspace().getName(), null)})) {
+        if (!hasPrivileges(path, new Privilege[]{registry.getPrivilege(JCR_ADD_CHILD_NODES + "_" + session.getWorkspace().getName(), null)})) {
             throw new AccessDeniedException(path);
         }
     }
+
     //JCR_REMOVE_NODE
     public void checkRemoveNode(String path) throws RepositoryException {
-        if (!hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_REMOVE_NODE + "_" + session.getWorkspace().getName(), null)})) {
+        if (!hasPrivileges(path, new Privilege[]{registry.getPrivilege(JCR_REMOVE_NODE + "_" + session.getWorkspace().getName(), null)})) {
             throw new AccessDeniedException(path);
         }
     }
 
     public boolean canManageNodeTypes(String path) throws RepositoryException {
-        return hasPrivileges(path, new Privilege[] {registry.getPrivilege(JCR_NODE_TYPE_MANAGEMENT + "_" + session.getWorkspace().getName(), null)});
+        return hasPrivileges(path, new Privilege[]{registry.getPrivilege(JCR_NODE_TYPE_MANAGEMENT + "_" + session.getWorkspace().getName(), null)});
     }
 
     private List<Privilege> getPrivilegesToFilter(Node node) {
@@ -305,7 +306,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
         return privilegeToFilterOut;
     }
 
-   private static Privilege[] filterPrivileges(Privilege[] privileges, List<Privilege> privilegesToFilterOut) {
+    private static Privilege[] filterPrivileges(Privilege[] privileges, List<Privilege> privilegesToFilterOut) {
 
         Set<Privilege> filteredResult = new HashSet<Privilege>();
         for (Privilege privilege : privileges) {
