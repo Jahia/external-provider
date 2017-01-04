@@ -164,7 +164,9 @@ public class ExternalAccessControlManager implements AccessControlManager {
     @Override
     public boolean hasPrivileges(final String absPath, final Privilege[] privileges)
             throws PathNotFoundException, RepositoryException {
-
+        if (session.getChangedData().containsKey(absPath)) {
+            return true;
+        }
         if (supportPrivileges) {
             return hasPrivilegesLegacy(absPath, privileges);
         }
