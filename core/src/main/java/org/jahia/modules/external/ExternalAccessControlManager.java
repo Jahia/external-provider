@@ -164,18 +164,31 @@ public class ExternalAccessControlManager implements AccessControlManager {
     @Override
     public boolean hasPrivileges(final String absPath, final Privilege[] privileges)
             throws PathNotFoundException, RepositoryException {
-        if (session.getChangedData().containsKey(absPath)) {
-            return true;
-        }
-        if (supportPrivileges) {
-            return hasPrivilegesLegacy(absPath, privileges);
+        // if the node is created in the same session, return true
+
+        for (Item item : session.getNewItems()) {
+            if (item.getPath().equals(absPath)) {
+                return true;
+            }
         }
 
+        // if no privilege set, return true
         if (privileges == null || privileges.length == 0) {
-            // null or empty privilege array -> return true
             return true;
+        }
+
+        // if root or system session return true
+        String userID = session.getUserID();
+        if (userID.startsWith(JahiaLoginModule.SYSTEM) || rootUserName.equals(userID)) {
+            return true;
+        }
+
+        if (supportPrivileges) {
+            // check privilege names
+            return hasPrivilegesLegacy(absPath, privileges);
         } else {
-            Set<String> privs = new HashSet<String>();
+            // check ACLs
+            Set<String> privs = new HashSet<>();
             for (Privilege privilege : privileges) {
                 privs.add(privilege.getName());
             }
@@ -211,13 +224,6 @@ public class ExternalAccessControlManager implements AccessControlManager {
 
     private boolean hasPrivilegesLegacy(String absPath, Privilege[] privileges)
             throws PathNotFoundException, RepositoryException {
-        if (privileges == null || privileges.length == 0) {
-            return true;
-        }
-        String userID = session.getUserID();
-        if (userID.startsWith(JahiaLoginModule.SYSTEM) || rootUserName.equals(userID)) {
-            return true;
-        }
         boolean allowed = true;
         Privilege[] granted = getPrivileges(absPath);
         for (Privilege toCheck : privileges) {
@@ -290,6 +296,10 @@ public class ExternalAccessControlManager implements AccessControlManager {
     }
 
     private List<Privilege> getPrivilegesToFilter(Node node) {
+
+        if (node instanceof JCRNodeWrapper) {
+            node = ((JCRNodeWrapper) node).getRealNode();
+        }
 
         List<Privilege> privilegeToFilterOut = new ArrayList<>();
 
