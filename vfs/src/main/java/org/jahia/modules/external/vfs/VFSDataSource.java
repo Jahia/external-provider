@@ -65,6 +65,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import org.apache.commons.vfs2.impl.StandardFileSystemManager;
 
 /**
  * VFS Implementation of ExternalDataSource
@@ -76,7 +77,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     private static final String JCR_CONTENT_SUFFIX = "/" + Constants.JCR_CONTENT;
     private FileObject root;
     private String rootPath;
-    private FileSystemManager manager;
+    private StandardFileSystemManager manager;
 
     /**
      * Defines the root point of the DataSource
@@ -85,7 +86,16 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
      */
     public void setRoot(String rootUri) {
         try {
-            manager = VFS.getManager();
+            manager = new StandardFileSystemManager() {
+                @Override
+                public FileName resolveName(final FileName base, final String name, final NameScope scope)
+                        throws FileSystemException {
+                    return super.resolveName(base, escape(name), scope);
+                }
+
+            };
+            manager.setConfiguration(VFSDataSource.class.getResource("/META-INF/providers.xml"));
+            manager.init();
             root = manager.resolveFile(rootUri);
             rootPath = root.getName().getPath();
         } catch (Exception e) {
@@ -170,8 +180,9 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
 
     public FileObject getFile(String path) throws FileSystemException {
-        return (path == null || path.length() == 0 || path.equals("/")) ? root : root
-                .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
+        final String unescapedPath = unescape(path);
+        return (unescapedPath == null || unescapedPath.length() == 0 || unescapedPath.equals("/")) ? root : root
+                .resolveFile(unescapedPath.charAt(0) == '/' ? unescapedPath.substring(1) : unescapedPath);
     }
 
     public List<String> getChildren(String path) throws RepositoryException {
@@ -350,8 +361,9 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         if (!path.startsWith("/")) {
             path = "/" + path;
         }
+        String escapedPath = escape(path);
 
-        ExternalData result = new ExternalData(path, path, type, properties);
+        ExternalData result = new ExternalData(path, escapedPath, type, properties);
         result.setMixin(addedMixins);
         return result;
     }
@@ -367,8 +379,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         properties.put(Constants.JCR_MIMETYPE, new String[]{getContentType(content)});
 
         String path = content.getFile().getName().getPath().substring(rootPath.length());
-        String jcrContentPath = path + "/" + Constants.JCR_CONTENT;
-        ExternalData externalData = new ExternalData(jcrContentPath, jcrContentPath, Constants.JAHIANT_RESOURCE, properties);
+        String escapedPath = escape(path);
+        ExternalData externalData = new ExternalData(path + "/" + Constants.JCR_CONTENT, escapedPath + "/" + Constants.JCR_CONTENT, Constants.JAHIANT_RESOURCE, properties);
 
         Map<String, Binary[]> binaryProperties = new HashMap<String, Binary[]>(1);
         binaryProperties.put(Constants.JCR_DATA, new Binary[]{new VFSBinaryImpl(content)});
@@ -387,4 +399,20 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         }
         return s1;
     }
+    
+    private static String escape(String path){
+        if(path==null){
+            return path;
+        }
+        final String escapedPath =  path.replaceAll(":", "%3A").replaceAll("\\[", "%5B").replaceAll("\\]", "%5D");
+        return escapedPath;
+    }
+    
+    private static String unescape(String path){
+        if(path==null){
+            return path;
+        }
+        final String escapedPath =  path.replaceAll("%3A", ":").replaceAll("%5B", "[").replaceAll("%5D", "]");
+        return escapedPath;        
+    }    
 }
