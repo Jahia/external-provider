@@ -30,6 +30,7 @@
                         <vfs-factory j:applyOn="jnt:vfsMountPointFactoryPage"
                                      j:defaultTemplate="true"
                                      j:hiddenTemplate="false"
+                                     j:requiredPermissionNames="adminMountPoints"
                                      jcr:primaryType="jnt:contentTemplate">
                             <j:translation_en jcr:language="en"
                                               jcr:primaryType="jnt:translation"
