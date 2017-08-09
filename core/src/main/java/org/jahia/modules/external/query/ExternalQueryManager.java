@@ -239,7 +239,13 @@ public class ExternalQueryManager implements QueryManager {
                         NodeIterator nodes = new QueryResultAdapter(result).getNodes();
                         while (nodes.hasNext()) {
                             Node node = (Node) nodes.next();
-                            allExtendedResults.add(node.getPath().substring(mountPoint.length()));
+                            if (node == null) {
+                                final String warnMsg = String.format("A null node is returned for the statement %s, the "
+                                        + "Lucene indexes might be corrupted", q.getStatement());
+                                logger.warn(warnMsg);
+                            } else {
+                                allExtendedResults.add(node.getPath().substring(mountPoint.length()));
+                            }
                         }
                         results = allExtendedResults;
                     } else {
@@ -253,12 +259,18 @@ public class ExternalQueryManager implements QueryManager {
                         NodeIterator nodes = new QueryResultAdapter(queryResult).getNodes();
                         while (nodes.hasNext()) {
                             Node node = (Node) nodes.next();
-                            String path = node.getPath().substring(mountPoint.length());
-                            // If no constraint was set, only take extended nodes, as the datasource will return them all anyway
-                            if (!node.isNodeType("jnt:externalProviderExtension") || (!noConstraints && session.itemExists(path))) {
-                                allExtendedResults.add(path);
-                                if (getLimit() > -1 && allExtendedResults.size() > getOffset() + getLimit()) {
-                                    break;
+                            if (node == null) {
+                                final String warnMsg = String.format("A null node is returned for the statement %s, the "
+                                        + "Lucene indexes might be corrupted", q.getStatement());
+                                logger.warn(warnMsg);
+                            } else {
+                                String path = node.getPath().substring(mountPoint.length());
+                                // If no constraint was set, only take extended nodes, as the datasource will return them all anyway
+                                if (!node.isNodeType("jnt:externalProviderExtension") || (!noConstraints && session.itemExists(path))) {
+                                    allExtendedResults.add(path);
+                                    if (getLimit() > -1 && allExtendedResults.size() > getOffset() + getLimit()) {
+                                        break;
+                                    }
                                 }
                             }
                         }
