@@ -397,14 +397,17 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         this.extensionProvider = extensionProvider;
     }
 
+    @Override
     public List<String> getOverridableItemsForLocks() {
         return overridableItemsForLocks;
     }
 
+    @Override
     public List<String> getOverridableItemsForACLs() {
         return overridableItemsForACLs;
     }
 
+    @Override
     public JCRStoreProvider getExtensionProvider() {
         return extensionProvider;
     }
