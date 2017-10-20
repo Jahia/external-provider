@@ -47,7 +47,6 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
 import org.apache.commons.lang.StringUtils;
 import org.hibernate.*;
-import org.hibernate.internal.util.*;
 import org.jahia.modules.external.ExternalProviderInitializerService;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
 import org.jahia.services.content.JCRStoreProvider;
@@ -71,8 +70,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
     private SessionFactory hibernateSessionFactory;
 
-    private EhCacheProvider cacheProvider;
-    // The ID mapping cache, where a key is a <providerKey>-<externalId-hashCode> and a value is
+    // The ID mapping cache, where a key is a <providerKey>-<externalId> and a value is
     // the corresponding internalId
     private Cache idCache;
 
@@ -89,18 +87,23 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         }
         StatelessSession session = null;
         try {
-            List<Integer> hashes = new LinkedList<Integer>();
-            for (String externalId : externalIds) {
-                int hash = externalId.hashCode();
-                hashes.add(hash);
-            }
             session = hibernateSessionFactory.openStatelessSession();
             session.beginTransaction();
 
             // delete all
-            session.createQuery(
-                    "delete from UuidMapping where providerKey=:providerKey and externalIdHash in (:externalIds)")
-                    .setString("providerKey", providerKey).setParameterList("externalIds", hashes).executeUpdate();
+            // First select mapping objects by external ID hashcodes, then only delete desired ones among them.
+            List<Integer> hashes = new LinkedList<Integer>();
+            for (String externalId : externalIds) {
+                hashes.add(externalId.hashCode());
+            }
+            List<?> results = session.createQuery("from UuidMapping where providerKey=:providerKey and externalIdHash in (:idHashes)")
+                    .setString("providerKey", providerKey).setParameterList("idHashes", hashes).setReadOnly(true).list();
+            for (Object result : results) {
+                UuidMapping uuidMapping = (UuidMapping) result;
+                if (externalIds.contains(uuidMapping.getExternalId())) {
+                    session.delete(uuidMapping);
+                }
+            }
 
             if (includeDescendants) {
                 // delete descendants
@@ -112,7 +115,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                     for (Object mapping : descendants) {
                         UuidMapping m = (UuidMapping) mapping;
                         session.delete(m);
-                        invalidateCache(m.getExternalIdHash(), providerKey);
+                        invalidateCache(m.getExternalId(), providerKey);
                     }
                 }
             }
@@ -120,8 +123,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
             session.getTransaction().commit();
 
             for (String externalId : externalIds) {
-                int hash = externalId.hashCode();
-                invalidateCache(hash, providerKey);
+                invalidateCache(externalId, providerKey);
             }
         } catch (Exception e) {
             if (session != null) {
@@ -135,8 +137,8 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         }
     }
 
-    protected String getCacheKey(int externalIdHash, String providerKey) {
-        return providerKey + "-" + externalIdHash;
+    private String getCacheKey(String externalId, String providerKey) {
+        return providerKey + "-" + externalId;
     }
 
     @Override
@@ -175,20 +177,30 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
     @Override
     public String getInternalIdentifier(String externalId, String providerKey) throws RepositoryException {
-        int hash = externalId.hashCode();
-        String cacheKey = getCacheKey(hash, providerKey);
-        String uuid = getIdentifierCache().get(cacheKey) != null ? (String)getIdentifierCache().get(cacheKey).getObjectValue() : null;
+
+        String cacheKey = getCacheKey(externalId, providerKey);
+        Cache idCache = getIdentifierCache();
+        Element cacheElement = idCache.get(cacheKey);
+        String uuid = cacheElement != null ? (String) cacheElement.getObjectValue() : null;
+
         if (uuid == null) {
             StatelessSession session = null;
             try {
+
                 session = getHibernateSessionFactory().openStatelessSession();
                 session.beginTransaction();
-                List<?> list = session.createQuery("from UuidMapping where providerKey=:providerKey and externalIdHash=:idHash")
-                        .setString("providerKey", providerKey).setLong("idHash", hash).setReadOnly(true).list();
-                if (list.size() > 0) {
-                    uuid = ((UuidMapping) list.get(0)).getInternalUuid();
-                    getIdentifierCache().put(new Element(cacheKey, uuid, true));
+
+                // First select potentially multiple mapping objects by external ID hashcode, then find the desired one among the results.
+                List<?> results = session.createQuery("from UuidMapping where providerKey=:providerKey and externalIdHash=:idHash")
+                        .setString("providerKey", providerKey).setLong("idHash", externalId.hashCode()).setReadOnly(true).list();
+                for (Object result : results) {
+                    UuidMapping uuidMapping = (UuidMapping) result;
+                    if (uuidMapping.getExternalId().equals(externalId)) {
+                        uuid = uuidMapping.getInternalUuid();
+                        idCache.put(new Element(cacheKey, uuid, true));
+                    }
                 }
+
                 session.getTransaction().commit();
             } catch (Exception e) {
                 if (session != null) {
@@ -241,12 +253,8 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         return providerId.getId();
     }
 
-    public void invalidateCache(int externalIdHash, String providerKey) {
-        getIdentifierCache().remove(getCacheKey(externalIdHash, providerKey));
-    }
-
-    public void invalidateCache(String externalId, String providerKey) {
-        invalidateCache(externalId.hashCode(), providerKey);
+    private void invalidateCache(String externalId, String providerKey) {
+        getIdentifierCache().remove(getCacheKey(externalId, providerKey));
     }
 
     @Override
@@ -267,7 +275,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
             session.getTransaction().commit();
 
             // cache it
-            getIdentifierCache().put(new Element(getCacheKey(externalId.hashCode(), providerKey), uuidMapping.getInternalUuid(), true));
+            getIdentifierCache().put(new Element(getCacheKey(externalId, providerKey), uuidMapping.getInternalUuid(), true));
         } catch (Exception e) {
             if (session != null) {
                 session.getTransaction().rollback();
@@ -322,7 +330,6 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
     }
 
     public void setCacheProvider(EhCacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
         idCache = cacheProvider.getCacheManager().getCache(ID_CACHE_NAME);
         if (idCache == null) {
             cacheProvider.getCacheManager().addCache(ID_CACHE_NAME);
@@ -338,14 +345,18 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
             List<String> invalidate = new ArrayList<String>();
             session = getHibernateSessionFactory().openSession();
             session.beginTransaction();
-            List<?> list = session.createQuery("from UuidMapping where providerKey=:providerKey and externalIdHash=:idHash")
+
+            // First select potentially multiple mapping objects by external ID hashcode, then update only the desired one within the results.
+            List<?> results = session.createQuery("from UuidMapping where providerKey=:providerKey and externalIdHash=:idHash")
                     .setString("providerKey", providerKey).setLong("idHash", oldExternalId.hashCode()).list();
-            if (list.size() > 0) {
-                for (Object mapping : list) {
-                    ((UuidMapping) mapping).setExternalId(newExternalId);
+            for (Object result : results) {
+                UuidMapping uuidMapping = (UuidMapping) result;
+                if (uuidMapping.getExternalId().equals(oldExternalId)) {
+                    uuidMapping.setExternalId(newExternalId);
                     invalidate.add(oldExternalId);
                 }
             }
+
             if (includeDescendants) {
                 // update descendants
                 List<?> descendants = session.createQuery("from UuidMapping where providerKey=:providerKey and externalId like :externalId")
