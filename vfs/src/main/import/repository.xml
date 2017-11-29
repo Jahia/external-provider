@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <content xmlns:j="http://www.jahia.org/jahia/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0">
     <modules jcr:primaryType="jnt:modules">
-        <external-provider-vfs j:dependencies="default external-provider"
+        <external-provider-vfs j:dependencies="default external-provider serverSettings"
                              j:modulePriority="0"
                              j:moduleType="system"
                              j:title="Jahia External Provider VFS"
@@ -11,39 +11,72 @@
                 <files jcr:primaryType="jnt:folder"/>
                 <contents jcr:primaryType="jnt:contentFolder">
                     <vfs-mount-point-factory j:mountPointType="jnt:vfsMountPoint"
-                                             j:templateName="vfs-factory"
-                                             jcr:primaryType="jnt:vfsMountPointFactoryPage">
+                                     j:templateName="vfs-factory"
+                                     jcr:primaryType="jnt:vfsMountPointFactoryPage">
                         <j:translation_en jcr:language="en"
-                                          jcr:primaryType="jnt:translation"
-                                          jcr:title="vfs mount point factory"/>
+                                 jcr:mixinTypes="mix:title"
+                                 jcr:primaryType="jnt:translation"
+                                 jcr:title="vfs mount point factory"/>
                     </vfs-mount-point-factory>
                 </contents>
                 <templates jcr:primaryType="jnt:templatesFolder">
                     <files jcr:primaryType="jnt:folder"/>
                     <contents jcr:primaryType="jnt:contentFolder"/>
                     <base j:hiddenTemplate="false"
-                          j:view="serverSettings"
-                          jcr:primaryType="jnt:template">
+                  j:view="serverSettings"
+                  jcr:primaryType="jnt:template">
                         <j:translation_en jcr:language="en"
-                                          jcr:primaryType="jnt:translation"
-                                          jcr:title="base"/>
+                                 jcr:mixinTypes="mix:title"
+                                 jcr:primaryType="jnt:translation"
+                                 jcr:title="base"/>
                         <vfs-factory j:applyOn="jnt:vfsMountPointFactoryPage"
-                                     j:defaultTemplate="true"
-                                     j:hiddenTemplate="false"
-                                     j:requiredPermissionNames="adminMountPoints"
-                                     jcr:primaryType="jnt:contentTemplate">
+                            j:defaultTemplate="true"
+                            j:hiddenTemplate="false"
+                            j:requiredPermissionNames="adminMountPoints"
+                            jcr:primaryType="jnt:contentTemplate">
                             <j:translation_en jcr:language="en"
-                                              jcr:primaryType="jnt:translation"
-                                              jcr:title="vfs-factory"/>
+                                    jcr:mixinTypes="mix:title"
+                                    jcr:primaryType="jnt:translation"
+                                    jcr:title="vfs-factory"/>
                             <pagecontent jcr:primaryType="jnt:contentList">
                                 <vfs-mount-point-factory-form jcr:primaryType="jnt:vfsPointFactoryForm">
                                     <j:translation_en jcr:language="en"
-                                                      jcr:primaryType="jnt:translation"
-                                                      jcr:title="vfs mount point factory form"/>
+                                          jcr:mixinTypes="mix:title"
+                                          jcr:primaryType="jnt:translation"
+                                          jcr:title="vfs mount point factory form"/>
                                 </vfs-mount-point-factory-form>
                             </pagecontent>
                         </vfs-factory>
                     </base>
+                    <base-jahia-anthracite j:hiddenTemplate="false"
+                                   j:view="settingsBootstrap3GoogleMaterialStyle"
+                                   jcr:primaryType="jnt:template">
+                        <j:translation_en jcr:language="en"
+                                 jcr:mixinTypes="mix:title"
+                                 jcr:primaryType="jnt:translation"
+                                 jcr:title="base-jahia-anthracite"/>
+                        <vfs-factory j:applyOn="jnt:vfsMountPointFactoryPage"
+                            j:defaultTemplate="true"
+                            j:hiddenTemplate="false"
+                            j:requiredPermissionNames="adminMountPoints"
+                            j:view="settingsBootstrap3GoogleMaterialStyle"
+                            jcr:primaryType="jnt:contentTemplate">
+                            <j:translation_en jcr:language="en"
+                                    jcr:mixinTypes="mix:title"
+                                    jcr:primaryType="jnt:translation"
+                                    jcr:title="vfs-factory"/>
+                            <pagecontent jcr:primaryType="jnt:contentList">
+                                <vfs-mount-point-factory-form j:view="settingsBootstrap3GoogleMaterialStyle"
+                                                   jcr:mixinTypes="jmix:renderable"
+                                                   jcr:primaryType="jnt:vfsPointFactoryForm">
+                                    <j:translation_en jcr:language="en"
+                                          jcr:mixinTypes="mix:title"
+                                          jcr:primaryType="jnt:translation"
+                                          jcr:title="vfs mount point factory form"/>
+                                </vfs-mount-point-factory-form>
+                            </pagecontent>
+                        </vfs-factory>
+                    </base-jahia-anthracite>
                 </templates>
                 
             </external-provider-vfs>
