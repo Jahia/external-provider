@@ -64,17 +64,21 @@
                     <server-settings-base-jahia-anthracite j:view="settingsBootstrap3GoogleMaterialStyle"
                                                    jcr:mixinTypes="jmix:useUILocale"
                                                    jcr:primaryType="jnt:template">
-                        <system-components jcr:primaryType="jnt:template">
+                        <system-components j:view="settingsBootstrap3GoogleMaterialStyle"
+                                  jcr:primaryType="jnt:template">
                             <external-provider j:applyOn="jnt:globalSettings"
                                      j:defaultTemplate="false"
                                      j:hiddenTemplate="false"
                                      j:icon="/modules/external-provider/templates/files/data_connection.png"
                                      j:requiredPermissionNames="adminRoles"
                                      j:titleKey="label.externalProviderAdmin"
+                                     j:view="settingsBootstrap3GoogleMaterialStyle"
                                      jcr:mixinTypes="jmix:rbTitle"
                                      jcr:primaryType="jnt:contentTemplate">
                                 <pagecontent jcr:primaryType="jnt:contentList">
-                                    <serversettingsexternalproviders jcr:primaryType="jnt:serverSettingsExternalProviders"/>
+                                    <serversettingsexternalproviders j:view="settingsBootstrap3GoogleMaterialStyle"
+                                                         jcr:mixinTypes="jmix:renderable"
+                                                         jcr:primaryType="jnt:serverSettingsExternalProviders"/>
                                 </pagecontent>
                             </external-provider>
                             <manageMountPoints j:applyOn="jnt:globalSettings"

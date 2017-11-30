@@ -10,7 +10,7 @@
         <evaluate expression="flowHandler.init(flowRequestContext)" />
     </on-start>
 
-    <view-state id="vfsPointFactoryForm.settingsBootstrap3GoogleMaterialStyle" model="vfsFactory">
+    <view-state id="index" model="vfsFactory">
         <on-entry>
             <evaluate expression="flowHandler.getFolderList()" result="flowScope.localFolders"/>
         </on-entry>
@@ -21,7 +21,7 @@
     <action-state id="save">
         <evaluate expression="flowHandler.save(messageContext,flowRequestContext)"/>
         <transition on="yes" to="redirectToAdmin"/>
-        <transition on="no" to="index.settingsBootstrap3GoogleMaterialStyle"/>
+        <transition on="no" to="index"/>
     </action-state>
 
     <action-state id="cancel">

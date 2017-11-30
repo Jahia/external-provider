@@ -11,7 +11,7 @@
     </on-start>
 
 
-    <view-state id="serverSettingsManageMountPoints.settingsBootstrap3GoogleMaterialStyle">
+    <view-state id="index">
         <on-entry>
             <evaluate expression="flowHandler.mountPointManagerModel" result="flowScope.mountPointManager"/>
         </on-entry>
@@ -20,6 +20,6 @@
 
     <action-state id="doAction">
         <evaluate expression="flowHandler.doAction(requestParameters.name, requestParameters.action, messageContext)"/>
-        <transition to="vfsPointFactoryForm.settingsBootstrap3GoogleMaterialStyle"/>
+        <transition to="index"/>
     </action-state>
 </flow>
