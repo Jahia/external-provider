@@ -64,9 +64,9 @@
                     <server-settings-base-jahia-anthracite j:view="settingsBootstrap3GoogleMaterialStyle"
                                                    jcr:mixinTypes="jmix:useUILocale"
                                                    jcr:primaryType="jnt:template">
-                        <system-components j:view="settingsBootstrap3GoogleMaterialStyle"
+                        <system-components-jahia-anthracite j:view="settingsBootstrap3GoogleMaterialStyle"
                                   jcr:primaryType="jnt:template">
-                            <external-provider j:applyOn="jnt:globalSettings"
+                            <external-provider-jahia-anthracite j:applyOn="jnt:globalSettings"
                                      j:defaultTemplate="false"
                                      j:hiddenTemplate="false"
                                      j:icon="/modules/external-provider/templates/files/data_connection.png"
@@ -80,8 +80,8 @@
                                                          jcr:mixinTypes="jmix:renderable"
                                                          jcr:primaryType="jnt:serverSettingsExternalProviders"/>
                                 </pagecontent>
-                            </external-provider>
-                            <manageMountPoints j:applyOn="jnt:globalSettings"
+                            </external-provider-jahia-anthracite>
+                            <manageMountPoints-jahia-anthracite j:applyOn="jnt:globalSettings"
                                      j:defaultTemplate="false"
                                      j:hiddenTemplate="false"
                                      j:icon="/modules/external-provider/templates/files/mountPoints.png"
@@ -95,8 +95,8 @@
                                                          jcr:mixinTypes="jmix:renderable"
                                                          jcr:primaryType="jnt:serverSettingsManageMountPoints"/>
                                 </pagecontent>
-                            </manageMountPoints>
-                        </system-components>
+                            </manageMountPoints-jahia-anthracite>
+                        </system-components-jahia-anthracite>
                     </server-settings-base-jahia-anthracite>
                 </templates>
                 

@@ -55,7 +55,7 @@
                                  jcr:mixinTypes="mix:title"
                                  jcr:primaryType="jnt:translation"
                                  jcr:title="base-jahia-anthracite"/>
-                        <vfs-factory j:applyOn="jnt:vfsMountPointFactoryPage"
+                        <vfs-factory-jahia-anthracite j:applyOn="jnt:vfsMountPointFactoryPage"
                             j:defaultTemplate="true"
                             j:hiddenTemplate="false"
                             j:requiredPermissionNames="adminMountPoints"
@@ -64,18 +64,18 @@
                             <j:translation_en jcr:language="en"
                                     jcr:mixinTypes="mix:title"
                                     jcr:primaryType="jnt:translation"
-                                    jcr:title="vfs-factory"/>
+                                    jcr:title="vfs-factory-jahia-anthracite"/>
                             <pagecontent jcr:primaryType="jnt:contentList">
-                                <vfs-mount-point-factory-form j:view="settingsBootstrap3GoogleMaterialStyle"
+                                <vfs-mount-point-factory-form-jahia-anthracite j:view="settingsBootstrap3GoogleMaterialStyle"
                                                    jcr:mixinTypes="jmix:renderable"
                                                    jcr:primaryType="jnt:vfsPointFactoryForm">
                                     <j:translation_en jcr:language="en"
                                           jcr:mixinTypes="mix:title"
                                           jcr:primaryType="jnt:translation"
                                           jcr:title="vfs mount point factory form"/>
-                                </vfs-mount-point-factory-form>
+                                </vfs-mount-point-factory-form-jahia-anthracite>
                             </pagecontent>
-                        </vfs-factory>
+                        </vfs-factory-jahia-anthracite>
                     </base-jahia-anthracite>
                 </templates>
                 
