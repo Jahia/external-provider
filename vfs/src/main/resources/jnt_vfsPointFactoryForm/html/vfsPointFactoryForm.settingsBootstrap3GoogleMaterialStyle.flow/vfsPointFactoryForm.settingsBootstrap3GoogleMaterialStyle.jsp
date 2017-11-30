@@ -34,19 +34,20 @@
             <c:set var="i18NSelectTarget" value="${functions:escapeJavaScript(selectTarget)}"/>
             <div class="box-1" ng-controller="folderPickerCtrl"
                  ng-init='init(${localFolders}, "${fn:escapeXml(vfsFactory.localPath)}", "localPath", true, "${i18NSelectTarget}")'>
-                <form:form modelAttribute="vfsFactory" method="post">
+                <form:form modelAttribute="vfsFactory" method="post" cssClass="form">
                     <fieldset title="local">
-                        <div class="col-md-12">
-                            <div class="row col-md-12">
-                                <form:label path="name" ><fmt:message key="label.name"/> <span style="color: red">*</span></form:label>
-                                <form:input path="name"/>
+                        <div>
+                            <div class="form-group is-empty">
+                                <form:label path="name" cssClass="control-label"><fmt:message key="label.name"/> <span style="color:
+                                red">*</span></form:label>
+                                <form:input path="name" cssClass="form-control"/>
                             </div>
-                            <div class="row col-md-12">
-                                <form:label path="root"><fmt:message key="vfsFactory.root"/> <span style="color: red">*</span></form:label>
-                                <form:input path="root"/>
+                            <div class="form-group is-empty">
+                                <form:label path="root" cssClass="control-label"><fmt:message key="vfsFactory.root"/> <span style="color: red">*</span></form:label>
+                                <form:input path="root" cssClass="form-control"/>
                             </div>
-                            <div class="row col-md-12">
-                                <jsp:include page="/modules/external-provider/angular/folderPicker.jsp"/>
+                            <div class="form-group is-empty">
+                                <jsp:include page="/modules/external-provider/angular/folderPicker.settingsBootstrap3GoogleMaterialStyle.jsp"/>
                             </div>
                         </div>
                     </fieldset>
