@@ -76,7 +76,7 @@
                             <input type="hidden" name="mountpoint" value="${mount.mountPoint}"/>
 
                             <button data-toggle="tooltip" class="btn btn-info" type="submit" name="_eventId_viewDataSource"
-                                    onclick="" title="<fmt:message key="label.info"/>">
+                                    onclick=""  data-placement="bottom" title="" data-original-title="<fmt:message key="label.info"/>">
                                 <i class="material-icons">info_outline</i>
                             </button>
                         </form>

@@ -149,15 +149,17 @@
                     </td>
                     <td>
                         <c:if test="${mountPoint.showMountAction}">
-                            <button class="btn btn-info" type="button" onclick="submitEvent('mount', '${mountPoint.realName}')">
-                                <i class="material-icons">file_download</i>&nbsp;<fmt:message
-                                    key="serverSettings.mountPointsManagement.action.mount"/>
+                            <fmt:message key="serverSettings.mountPointsManagement.action.mount" var="mountLabel"/>
+                            <button class="btn btn-info" type="button" onclick="submitEvent('mount', '${mountPoint.realName}')" data-toggle="tooltip"
+                                    data-placement="bottom" title="" data-original-title="${mountLabel}">
+                                <i class="material-icons">file_download</i>
                             </button>
                         </c:if>
                         <c:if test="${mountPoint.showUnmountAction}">
-                            <button class="btn btn-info" type="button" onclick="submitEvent('unmount', '${mountPoint.realName}')">
-                                <i class="material-icons">file_upload</i>&nbsp;<fmt:message
-                                    key="serverSettings.mountPointsManagement.action.unmount"/>
+                            <fmt:message key="serverSettings.mountPointsManagement.action.unmount" var="unmountLabel"/>
+                            <button class="btn btn-info" type="button" onclick="submitEvent('unmount', '${mountPoint.realName}')" data-toggle="tooltip"
+                                    data-placement="bottom" title="" data-original-title="${unmountLabel}">
+                                <i class="material-icons">file_upload</i>
                             </button>
                         </c:if>
                         <fmt:message var="confirmDelete" key="serverSettings.mountPointsManagement.action.confirmDelete">
@@ -165,13 +167,15 @@
                         </fmt:message>
                         <c:if test="${not empty mountPointManager.mountPointFactories[mountPoint.nodetype]}">
                             <c:url var="editURL" value="${url.base}${mountPointManager.mountPointFactories[mountPoint.nodetype].endOfURL}"/>
-                            <a class="btn btn-sm btn-primary" href="#"
-                               onclick="window.parent.goToUrl('${editURL}?edit=${mountPoint.identifier}')">
+                            <fmt:message key="label.edit" var="editLabel"/>
+                            <button data-toggle="tooltip" class="btn btn-sm btn-primary" type="button" data-placement="bottom" title=""
+                                    data-original-title="${editLabel}" onclick="window.parent.goToUrl('${editURL}?edit=${mountPoint.identifier}')">
                                 <i class="material-icons">edit</i>
-                            </a>
+                            </button>
                         </c:if>
-                        <button class="btn btn-sm btn-danger" type="button"
-                                onclick="submitEventWithConfirm('delete', '${mountPoint.realName}', '${functions:escapeJavaScript(confirmDelete)}')">
+                            <fmt:message key="label.delete" var="deleteLabel"/>
+                        <button data-toggle="tooltip" class="btn btn-sm btn-danger" type="button" data-placement="bottom"  title=""
+                                data-original-title="${deleteLabel}" onclick="submitEventWithConfirm('delete', '${mountPoint.realName}', '${functions:escapeJavaScript(confirmDelete)}')">
                             <i class="material-icons">delete</i>
                         </button>
                     </td>
