@@ -165,6 +165,17 @@ public class ExternalAccessControlManager implements AccessControlManager {
     public boolean hasPrivileges(final String absPath, final Privilege[] privileges)
             throws PathNotFoundException, RepositoryException {
 
+        // check ACLs
+        Set<String> privs = new HashSet<>();
+        for (Privilege privilege : privileges) {
+            privs.add(privilege.getName());
+        }
+        String mountPoint = session.getRepository().getStoreProvider().getMountPoint();
+        Session securitySession = JCRSessionFactory.getInstance().getCurrentSystemSession(session.getWorkspace().getName(), null, null);
+        PathWrapper pathWrapper = new ExternalPathWrapperImpl(StringUtils.equals(absPath, "/") ? mountPoint : mountPoint + absPath, securitySession);
+        boolean isGranted = AccessManagerUtils.isGranted(pathWrapper, privs, securitySession,
+                jahiaPrincipal, workspaceName, false, pathPermissionCache, compiledAcls, registry);
+
         if (supportPrivileges) {
             // if the node is created in the same session, return true
             for (Item item : session.getNewItems()) {
@@ -172,21 +183,11 @@ public class ExternalAccessControlManager implements AccessControlManager {
                     return true;
                 }
             }
-
             // check privilege names
-            return hasPrivilegesLegacy(absPath, privileges);
-        } else {
-            // check ACLs
-            Set<String> privs = new HashSet<>();
-            for (Privilege privilege : privileges) {
-                privs.add(privilege.getName());
-            }
-            String mountPoint = session.getRepository().getStoreProvider().getMountPoint();
-            Session securitySession = JCRSessionFactory.getInstance().getCurrentSystemSession(session.getWorkspace().getName(), null, null);
-            PathWrapper pathWrapper = new ExternalPathWrapperImpl(StringUtils.equals(absPath, "/") ? mountPoint : mountPoint + absPath, securitySession);
-            return AccessManagerUtils.isGranted(pathWrapper, privs, securitySession,
-                    jahiaPrincipal, workspaceName, false, pathPermissionCache, compiledAcls, registry);
+            isGranted = isGranted && hasPrivilegesLegacy(absPath, privileges);
         }
+
+        return isGranted;
     }
 
     private Privilege[] getPrivilegesLegacy(String absPath) throws PathNotFoundException,
