@@ -49,10 +49,13 @@ import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.api.Constants;
 import org.jahia.bundles.extender.jahiamodules.BundleHttpResourcesTracker;
 import org.jahia.data.templates.JahiaTemplatesPackage;
+import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.SpringContextSingleton;
+import org.jahia.services.content.JCRStoreService;
 import org.jahia.services.render.scripting.bundle.BundleScriptResolver;
 import org.jahia.services.templates.TemplatePackageRegistry;
 import org.osgi.framework.Bundle;
@@ -65,6 +68,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FilenameFilter;
 
+import javax.jcr.PathNotFoundException;
+
 public class ModulesSourceHttpServiceTracker extends ServiceTracker {
     private static Logger logger = LoggerFactory.getLogger(ModulesSourceHttpServiceTracker.class);
 
@@ -75,16 +80,28 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
     private final TemplatePackageRegistry templatePackageRegistry;
     private HttpService httpService;
 
+    private String providerKey;
+
     /**
-     * Tracker for resource modifications
-     * @param module
+     * Tracker for resource modifications.
+     * @param module the module package
      */
     public ModulesSourceHttpServiceTracker(JahiaTemplatesPackage module) {
+        this(module, null);
+    }
+
+    /**
+     * Tracker for resource modifications.
+     * @param module the module package
+     * @param providerKey the external content store provider key, which corresponds to this bundle
+     */
+    public ModulesSourceHttpServiceTracker(JahiaTemplatesPackage module, String providerKey) {
         super(module.getBundle().getBundleContext(), HttpService.class.getName(), null);
         this.bundle = module.getBundle();
         this.bundleName = BundleUtils.getDisplayName(bundle);
         this.module = module;
         this.bundleScriptResolver = (BundleScriptResolver) SpringContextSingleton.getBean("BundleScriptResolver");
+        this.providerKey = providerKey;
         this.templatePackageRegistry = (TemplatePackageRegistry) SpringContextSingleton.getBean("org.jahia.services.templates.TemplatePackageRegistry");
     }
 
@@ -151,13 +168,33 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         if (!resourcesRoot.exists()) {
             return;
         }
-        // todo: use value of Jahia-Module-Scripting-Views header for the filter if available to register resources?
-        // todo: avoid scanning if Jahia-Module-Has-Views header is set to no?
+
+        ExternalContentStoreProvider storeProvider = null;
+
         for (File resource : FileUtils.listFiles(resourcesRoot, new WildcardFileFilter("*"), TrueFileFilter.INSTANCE)) {
-            if (bundle.getResource(getResourcePath(resource)) == null) {
-                registerResource(resource);
+            String resourcePath = getResourcePath(resource);
+            if (bundle.getResource(resourcePath) == null) {
+                if (storeProvider == null && providerKey != null) {
+                    storeProvider = (ExternalContentStoreProvider) JCRStoreService.getInstance().getSessionFactory()
+                            .getProviders().get(providerKey);
+                }
+                if (isViewFile(resourcePath, storeProvider)) {
+                    registerResource(resource);
+                }
             }
         }
+    }
+
+    private boolean isViewFile(String resourcePath, ExternalContentStoreProvider storeProvider) {
+        if (storeProvider != null) {
+            try {
+                return StringUtils.equals(Constants.JAHIANT_VIEWFILE,
+                        storeProvider.getDataSource().getItemByPath("src/main/resources" + resourcePath).getType());
+            } catch (PathNotFoundException e) {
+                // no such item
+            }
+        }
+        return false;
     }
 
     /**

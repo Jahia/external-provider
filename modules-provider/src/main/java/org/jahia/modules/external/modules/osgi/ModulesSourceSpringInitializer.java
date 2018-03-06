@@ -103,10 +103,10 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
         this.context = bundleContext;
     }
 
-    public void mountSourcesProvider(JahiaTemplatesPackage templatePackage) {
+    public String mountSourcesProvider(JahiaTemplatesPackage templatePackage) {
+        String providerKey = "module-" + templatePackage.getId() + "-" + templatePackage.getVersion().toString();
         if (context != null) {
-            JCRStoreProvider provider = jcrStoreService.getSessionFactory().getProviders().get(
-                    "module-" + templatePackage.getId() + "-" + templatePackage.getVersion().toString());
+            JCRStoreProvider provider = jcrStoreService.getSessionFactory().getProviders().get(providerKey);
             if (provider == null) {
                 try {
                     Object dataSource = SpringContextSingleton.getBeanInModulesContext("ModulesDataSourcePrototype");
@@ -120,8 +120,7 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                     ExternalContentStoreProvider ex = (ExternalContentStoreProvider) SpringContextSingleton.getBeanInModulesContext(
                             "ExternalStoreProviderPrototype");
                     properties.clear();
-                    properties.put("key", "module-" + templatePackage.getId() + "-" +
-                                          templatePackage.getVersion().toString());
+                    properties.put("key", providerKey);
                     properties.put("mountPoint", "/modules/" + templatePackage.getIdWithVersion() + "/sources");
                     properties.put("dataSource", dataSource);
                     properties.put("lockSupport",true);
@@ -130,6 +129,8 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                     BeanUtils.populate(ex, properties);
 
                     ex.start();
+                    
+                    return providerKey;
                 } catch (IllegalAccessException e) {
                     logger.error(e.getMessage(), e);
                 } catch (InvocationTargetException e) {
@@ -141,8 +142,12 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }
+            } else {
+                return providerKey;
             }
         }
+        
+        return null;
     }
 
     public void unmountSourcesProvider(JahiaTemplatesPackage templatePackage) {
@@ -160,9 +165,9 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
         final JahiaTemplatesPackage pkg = BundleUtils.isJahiaModuleBundle(bundle) ? BundleUtils.getModule(
                 bundle) : null;
         if (null != pkg && pkg.getSourcesFolder() != null) {
-            mountSourcesProvider(pkg);
-            if (!httpServiceTrackers.containsKey(bundle.getSymbolicName())) {
-                ModulesSourceHttpServiceTracker modulesSourceHttpServiceTracker = new ModulesSourceHttpServiceTracker(pkg);
+            String providerKey = mountSourcesProvider(pkg);
+            if (providerKey != null && !httpServiceTrackers.containsKey(bundle.getSymbolicName())) {
+                ModulesSourceHttpServiceTracker modulesSourceHttpServiceTracker = new ModulesSourceHttpServiceTracker(pkg, providerKey);
                 modulesSourceHttpServiceTracker.open(true);
                 httpServiceTrackers.put(bundle.getSymbolicName(), modulesSourceHttpServiceTracker);
             }
