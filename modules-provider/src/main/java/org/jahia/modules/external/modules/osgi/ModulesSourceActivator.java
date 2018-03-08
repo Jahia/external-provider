@@ -63,8 +63,8 @@ public class ModulesSourceActivator implements BundleActivator {
      * bundle-specific activities necessary to start this bundle. This method
      * can be used to register services or to allocate any resources that this
      * bundle needs.
-     * <p/>
-     * <p/>
+     * <br>
+     * <br>
      * This method must complete and return to its caller in a timely manner.
      *
      * @param context The execution context of the bundle being started.
@@ -101,8 +101,8 @@ public class ModulesSourceActivator implements BundleActivator {
      * method started. There should be no active threads that were started by
      * this bundle when this bundle returns. A stopped bundle must not call any
      * Framework objects.
-     * <p/>
-     * <p/>
+     * <br>
+     * <br>
      * This method must complete and return to its caller in a timely manner.
      *
      * @param context The execution context of the bundle being stopped.
