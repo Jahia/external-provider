@@ -55,7 +55,6 @@ import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.content.JCRStoreService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -69,7 +68,7 @@ import java.util.Map;
  * Service to mount/unmount module sources
  */
 public class ModulesSourceSpringInitializer implements JahiaAfterInitializationService, BundleContextAware {
-    private static Logger logger = LoggerFactory.getLogger(ModulesSourceSpringInitializer.class);
+    private static final Logger logger = LoggerFactory.getLogger(ModulesSourceSpringInitializer.class);
     private BundleContext context;
     private static ModulesSourceSpringInitializer instance;
     private JCRStoreService jcrStoreService;
@@ -112,7 +111,7 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                     Object dataSource = SpringContextSingleton.getBeanInModulesContext("ModulesDataSourcePrototype");
                     logger.info("Mounting source for bundle {}", templatePackage.getName());
                     Map<String, Object> properties = new LinkedHashMap<String, Object>();
-                    properties.put("root",templatePackage.getSourcesFolder().toURI().toString());
+                    properties.put("root", templatePackage.getSourcesFolder().toURI().toString());
                     properties.put("module", templatePackage);
 
                     BeanUtils.populate(dataSource, properties);
@@ -123,13 +122,13 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                     properties.put("key", providerKey);
                     properties.put("mountPoint", "/modules/" + templatePackage.getIdWithVersion() + "/sources");
                     properties.put("dataSource", dataSource);
-                    properties.put("lockSupport",true);
-                    properties.put("slowConnection",false);
+                    properties.put("lockSupport", true);
+                    properties.put("slowConnection", false);
 
                     BeanUtils.populate(ex, properties);
 
                     ex.start();
-                    
+
                     return providerKey;
                 } catch (IllegalAccessException e) {
                     logger.error(e.getMessage(), e);
@@ -146,7 +145,7 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                 return providerKey;
             }
         }
-        
+
         return null;
     }
 
@@ -182,9 +181,9 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                 unmountSourcesProvider(pkg);
             }
         } catch (Exception e) {
-            logger.error("Cannot unmount sources provider for "+pkg.getId(),e);
+            logger.error("Cannot unmount sources provider for " + pkg.getId(), e);
         }
-        ServiceTracker t = httpServiceTrackers.remove(bundle.getSymbolicName());
+        ModulesSourceHttpServiceTracker t = httpServiceTrackers.remove(bundle.getSymbolicName());
         if (t != null) {
             t.close();
         }

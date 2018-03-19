@@ -70,8 +70,8 @@ import java.io.FilenameFilter;
 
 import javax.jcr.PathNotFoundException;
 
-public class ModulesSourceHttpServiceTracker extends ServiceTracker {
-    private static Logger logger = LoggerFactory.getLogger(ModulesSourceHttpServiceTracker.class);
+public class ModulesSourceHttpServiceTracker extends ServiceTracker<HttpService, HttpService> {
+    private static final Logger logger = LoggerFactory.getLogger(ModulesSourceHttpServiceTracker.class);
 
     private final Bundle bundle;
     private final String bundleName;
@@ -79,7 +79,6 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
     private final BundleScriptResolver bundleScriptResolver;
     private final TemplatePackageRegistry templatePackageRegistry;
     private HttpService httpService;
-
     private String providerKey;
 
     /**
@@ -106,8 +105,8 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
     }
 
     @Override
-    public Object addingService(ServiceReference reference) {
-        HttpService httpService = (HttpService) super.addingService(reference);
+    public HttpService addingService(ServiceReference<HttpService> reference) {
+        HttpService httpService = super.addingService(reference);
         this.httpService = httpService;
 
         registerMissingResources();
@@ -125,13 +124,11 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         httpService.unregister(fileServletAlias);
         bundleScriptResolver.addBundleScript(bundle, filePath);
         templatePackageRegistry.addModuleWithViewsForComponent(StringUtils.substringBetween(filePath, "/", "/"), module);
-        if (logger.isDebugEnabled()) {
-            logger.debug("Register file {} in bundle {}", filePath, bundleName);
-        }
+        logger.debug("Register file {} in bundle {}", filePath, bundleName);
    }
 
     /**
-     * Unregister the resource, remove it from the availables Views
+     * Unregister the resource, remove it from the available Views
      * @param file is the resource to unregister
      */
     public void unregisterResouce(File file) {
@@ -151,9 +148,7 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         if (matching == null || matching.length == 0) {
             templatePackageRegistry.removeModuleWithViewsForComponent(StringUtils.substringBetween(filePath, "/", "/"), module);
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug("Unregister file {} in bundle {}", filePath, bundleName);
-        }
+        logger.debug("Unregister file {} in bundle {}", filePath, bundleName);
     }
 
     /**
@@ -207,6 +202,6 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
     }
 
     protected String getResourcePath(File file) {
-        return StringUtils.substringAfterLast(FilenameUtils.separatorsToUnix(file.getPath()),"/src/main/resources");
+        return StringUtils.substringAfterLast(FilenameUtils.separatorsToUnix(file.getPath()), "/src/main/resources");
     }
 }
