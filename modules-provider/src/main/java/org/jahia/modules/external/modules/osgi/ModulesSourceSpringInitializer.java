@@ -55,6 +55,7 @@ import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.content.JCRStoreService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -68,7 +69,7 @@ import java.util.Map;
  * Service to mount/unmount module sources
  */
 public class ModulesSourceSpringInitializer implements JahiaAfterInitializationService, BundleContextAware {
-    private static final Logger logger = LoggerFactory.getLogger(ModulesSourceSpringInitializer.class);
+    private static Logger logger = LoggerFactory.getLogger(ModulesSourceSpringInitializer.class);
     private BundleContext context;
     private static ModulesSourceSpringInitializer instance;
     private JCRStoreService jcrStoreService;
@@ -102,16 +103,16 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
         this.context = bundleContext;
     }
 
-    public String mountSourcesProvider(JahiaTemplatesPackage templatePackage) {
-        String providerKey = "module-" + templatePackage.getId() + "-" + templatePackage.getVersion().toString();
+    public void mountSourcesProvider(JahiaTemplatesPackage templatePackage) {
         if (context != null) {
-            JCRStoreProvider provider = jcrStoreService.getSessionFactory().getProviders().get(providerKey);
+            JCRStoreProvider provider = jcrStoreService.getSessionFactory().getProviders().get(
+                    "module-" + templatePackage.getId() + "-" + templatePackage.getVersion().toString());
             if (provider == null) {
                 try {
                     Object dataSource = SpringContextSingleton.getBeanInModulesContext("ModulesDataSourcePrototype");
                     logger.info("Mounting source for bundle {}", templatePackage.getName());
                     Map<String, Object> properties = new LinkedHashMap<String, Object>();
-                    properties.put("root", templatePackage.getSourcesFolder().toURI().toString());
+                    properties.put("root",templatePackage.getSourcesFolder().toURI().toString());
                     properties.put("module", templatePackage);
 
                     BeanUtils.populate(dataSource, properties);
@@ -119,17 +120,16 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                     ExternalContentStoreProvider ex = (ExternalContentStoreProvider) SpringContextSingleton.getBeanInModulesContext(
                             "ExternalStoreProviderPrototype");
                     properties.clear();
-                    properties.put("key", providerKey);
+                    properties.put("key", "module-" + templatePackage.getId() + "-" +
+                                          templatePackage.getVersion().toString());
                     properties.put("mountPoint", "/modules/" + templatePackage.getIdWithVersion() + "/sources");
                     properties.put("dataSource", dataSource);
-                    properties.put("lockSupport", true);
-                    properties.put("slowConnection", false);
+                    properties.put("lockSupport",true);
+                    properties.put("slowConnection",false);
 
                     BeanUtils.populate(ex, properties);
 
                     ex.start();
-
-                    return providerKey;
                 } catch (IllegalAccessException e) {
                     logger.error(e.getMessage(), e);
                 } catch (InvocationTargetException e) {
@@ -141,12 +141,8 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }
-            } else {
-                return providerKey;
             }
         }
-
-        return null;
     }
 
     public void unmountSourcesProvider(JahiaTemplatesPackage templatePackage) {
@@ -164,9 +160,9 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
         final JahiaTemplatesPackage pkg = BundleUtils.isJahiaModuleBundle(bundle) ? BundleUtils.getModule(
                 bundle) : null;
         if (null != pkg && pkg.getSourcesFolder() != null) {
-            String providerKey = mountSourcesProvider(pkg);
-            if (providerKey != null && !httpServiceTrackers.containsKey(bundle.getSymbolicName())) {
-                ModulesSourceHttpServiceTracker modulesSourceHttpServiceTracker = new ModulesSourceHttpServiceTracker(pkg, providerKey);
+            mountSourcesProvider(pkg);
+            if (!httpServiceTrackers.containsKey(bundle.getSymbolicName())) {
+                ModulesSourceHttpServiceTracker modulesSourceHttpServiceTracker = new ModulesSourceHttpServiceTracker(pkg);
                 modulesSourceHttpServiceTracker.open(true);
                 httpServiceTrackers.put(bundle.getSymbolicName(), modulesSourceHttpServiceTracker);
             }
@@ -181,9 +177,9 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                 unmountSourcesProvider(pkg);
             }
         } catch (Exception e) {
-            logger.error("Cannot unmount sources provider for " + pkg.getId(), e);
+            logger.error("Cannot unmount sources provider for "+pkg.getId(),e);
         }
-        ModulesSourceHttpServiceTracker t = httpServiceTrackers.remove(bundle.getSymbolicName());
+        ServiceTracker t = httpServiceTrackers.remove(bundle.getSymbolicName());
         if (t != null) {
             t.close();
         }

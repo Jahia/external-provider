@@ -49,13 +49,10 @@ import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang.StringUtils;
-import org.jahia.api.Constants;
 import org.jahia.bundles.extender.jahiamodules.BundleHttpResourcesTracker;
 import org.jahia.data.templates.JahiaTemplatesPackage;
-import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.SpringContextSingleton;
-import org.jahia.services.content.JCRStoreService;
 import org.jahia.services.render.scripting.bundle.BundleScriptResolver;
 import org.jahia.services.templates.TemplatePackageRegistry;
 import org.osgi.framework.Bundle;
@@ -68,10 +65,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FilenameFilter;
 
-import javax.jcr.PathNotFoundException;
-
-public class ModulesSourceHttpServiceTracker extends ServiceTracker<HttpService, HttpService> {
-    private static final Logger logger = LoggerFactory.getLogger(ModulesSourceHttpServiceTracker.class);
+public class ModulesSourceHttpServiceTracker extends ServiceTracker {
+    private static Logger logger = LoggerFactory.getLogger(ModulesSourceHttpServiceTracker.class);
 
     private final Bundle bundle;
     private final String bundleName;
@@ -79,34 +74,23 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker<HttpService,
     private final BundleScriptResolver bundleScriptResolver;
     private final TemplatePackageRegistry templatePackageRegistry;
     private HttpService httpService;
-    private String providerKey;
 
     /**
-     * Tracker for resource modifications.
-     * @param module the module package
+     * Tracker for resource modifications
+     * @param module
      */
     public ModulesSourceHttpServiceTracker(JahiaTemplatesPackage module) {
-        this(module, null);
-    }
-
-    /**
-     * Tracker for resource modifications.
-     * @param module the module package
-     * @param providerKey the external content store provider key, which corresponds to this bundle
-     */
-    public ModulesSourceHttpServiceTracker(JahiaTemplatesPackage module, String providerKey) {
         super(module.getBundle().getBundleContext(), HttpService.class.getName(), null);
         this.bundle = module.getBundle();
         this.bundleName = BundleUtils.getDisplayName(bundle);
         this.module = module;
         this.bundleScriptResolver = (BundleScriptResolver) SpringContextSingleton.getBean("BundleScriptResolver");
-        this.providerKey = providerKey;
         this.templatePackageRegistry = (TemplatePackageRegistry) SpringContextSingleton.getBean("org.jahia.services.templates.TemplatePackageRegistry");
     }
 
     @Override
-    public HttpService addingService(ServiceReference<HttpService> reference) {
-        HttpService httpService = super.addingService(reference);
+    public Object addingService(ServiceReference reference) {
+        HttpService httpService = (HttpService) super.addingService(reference);
         this.httpService = httpService;
 
         registerMissingResources();
@@ -124,11 +108,13 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker<HttpService,
         httpService.unregister(fileServletAlias);
         bundleScriptResolver.addBundleScript(bundle, filePath);
         templatePackageRegistry.addModuleWithViewsForComponent(StringUtils.substringBetween(filePath, "/", "/"), module);
-        logger.debug("Register file {} in bundle {}", filePath, bundleName);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Register file {} in bundle {}", filePath, bundleName);
+        }
    }
 
     /**
-     * Unregister the resource, remove it from the available Views
+     * Unregister the resource, remove it from the availables Views
      * @param file is the resource to unregister
      */
     public void unregisterResouce(File file) {
@@ -148,7 +134,9 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker<HttpService,
         if (matching == null || matching.length == 0) {
             templatePackageRegistry.removeModuleWithViewsForComponent(StringUtils.substringBetween(filePath, "/", "/"), module);
         }
-        logger.debug("Unregister file {} in bundle {}", filePath, bundleName);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Unregister file {} in bundle {}", filePath, bundleName);
+        }
     }
 
     /**
@@ -163,33 +151,13 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker<HttpService,
         if (!resourcesRoot.exists()) {
             return;
         }
-
-        ExternalContentStoreProvider storeProvider = null;
-
+        // todo: use value of Jahia-Module-Scripting-Views header for the filter if available to register resources?
+        // todo: avoid scanning if Jahia-Module-Has-Views header is set to no?
         for (File resource : FileUtils.listFiles(resourcesRoot, new WildcardFileFilter("*"), TrueFileFilter.INSTANCE)) {
-            String resourcePath = getResourcePath(resource);
-            if (bundle.getResource(resourcePath) == null) {
-                if (storeProvider == null && providerKey != null) {
-                    storeProvider = (ExternalContentStoreProvider) JCRStoreService.getInstance().getSessionFactory()
-                            .getProviders().get(providerKey);
-                }
-                if (isViewFile(resourcePath, storeProvider)) {
-                    registerResource(resource);
-                }
+            if (bundle.getResource(getResourcePath(resource)) == null) {
+                registerResource(resource);
             }
         }
-    }
-
-    private boolean isViewFile(String resourcePath, ExternalContentStoreProvider storeProvider) {
-        if (storeProvider != null) {
-            try {
-                return StringUtils.equals(Constants.JAHIANT_VIEWFILE,
-                        storeProvider.getDataSource().getItemByPath("src/main/resources" + resourcePath).getType());
-            } catch (PathNotFoundException e) {
-                // no such item
-            }
-        }
-        return false;
     }
 
     /**
@@ -202,6 +170,6 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker<HttpService,
     }
 
     protected String getResourcePath(File file) {
-        return StringUtils.substringAfterLast(FilenameUtils.separatorsToUnix(file.getPath()), "/src/main/resources");
+        return StringUtils.substringAfterLast(FilenameUtils.separatorsToUnix(file.getPath()),"/src/main/resources");
     }
 }
