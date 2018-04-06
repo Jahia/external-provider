@@ -53,6 +53,7 @@ import org.jahia.api.Constants;
 import org.jahia.bundles.extender.jahiamodules.BundleHttpResourcesTracker;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.external.ExternalContentStoreProvider;
+import org.jahia.modules.external.modules.ModulesUtils;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRStoreService;
@@ -155,27 +156,25 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker<HttpService,
 
         ExternalContentStoreProvider storeProvider = (ExternalContentStoreProvider) JCRStoreService.getInstance()
                 .getSessionFactory().getProviders()
-                .get("module-" + module.getId() + "-" + module.getVersion().toString());
+                .get(ModulesUtils.getSourcesProviderKey(module));
+
+        if (storeProvider == null) {
+            // the sources are not mounted
+            return;
+        }
 
         for (File resource : FileUtils.listFiles(resourcesRoot, new WildcardFileFilter("*"), TrueFileFilter.INSTANCE)) {
             String resourcePath = getResourcePath(resource);
             if (bundle.getResource(resourcePath) == null) {
-                // resource is not present in the compiled module: check if the sources are mounted and it is a view file to be registered
-                if (storeProvider != null && isViewFile(resourcePath, storeProvider)) {
+                // resource is not present in the compiled module: check if it is a view file to be registered
+                if (isViewFile(resourcePath, storeProvider)) {
                     registerResource(resource);
                 }
             }
         }
     }
 
-    /**
-     * Checks that the specified resource is a view file.
-     * 
-     * @param resourcePath the path of the resource to be checked
-     * @param storeProvider the sources provider
-     * @return <code>true</code> if the specified resource is a view file; <code>false</code> otherwise
-     */
-    private boolean isViewFile(String resourcePath, ExternalContentStoreProvider storeProvider) {
+    private static boolean isViewFile(String resourcePath, ExternalContentStoreProvider storeProvider) {
         try {
             return StringUtils.equals(Constants.JAHIANT_VIEWFILE,
                     storeProvider.getDataSource().getItemByPath("src/main/resources" + resourcePath).getType());
@@ -195,6 +194,6 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker<HttpService,
     }
 
     protected String getResourcePath(File file) {
-        return StringUtils.substringAfterLast(FilenameUtils.separatorsToUnix(file.getPath()),"/src/main/resources");
+        return StringUtils.substringAfterLast(FilenameUtils.separatorsToUnix(file.getPath()), "/src/main/resources");
     }
 }
