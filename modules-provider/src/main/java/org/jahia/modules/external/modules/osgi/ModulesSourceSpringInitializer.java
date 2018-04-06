@@ -55,7 +55,6 @@ import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.content.JCRStoreService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -69,7 +68,7 @@ import java.util.Map;
  * Service to mount/unmount module sources
  */
 public class ModulesSourceSpringInitializer implements JahiaAfterInitializationService, BundleContextAware {
-    private static Logger logger = LoggerFactory.getLogger(ModulesSourceSpringInitializer.class);
+    private static final Logger logger = LoggerFactory.getLogger(ModulesSourceSpringInitializer.class);
     private BundleContext context;
     private static ModulesSourceSpringInitializer instance;
     private JCRStoreService jcrStoreService;
@@ -103,7 +102,13 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
         this.context = bundleContext;
     }
 
-    public void mountSourcesProvider(JahiaTemplatesPackage templatePackage) {
+    /**
+     * Mounts the sources provider for the specified module package.
+     * 
+     * @param templatePackage the module package to mount sources for
+     * @return <code>true</code> if the sources provider was successfully mounted or is already mounted
+     */
+    public boolean mountSourcesProvider(JahiaTemplatesPackage templatePackage) {
         if (context != null) {
             JCRStoreProvider provider = jcrStoreService.getSessionFactory().getProviders().get(
                     "module-" + templatePackage.getId() + "-" + templatePackage.getVersion().toString());
@@ -130,6 +135,8 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                     BeanUtils.populate(ex, properties);
 
                     ex.start();
+                    
+                    return true;
                 } catch (IllegalAccessException e) {
                     logger.error(e.getMessage(), e);
                 } catch (InvocationTargetException e) {
@@ -141,8 +148,12 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }
+            } else {
+                return true;
             }
         }
+        
+        return false;
     }
 
     public void unmountSourcesProvider(JahiaTemplatesPackage templatePackage) {
@@ -160,8 +171,7 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
         final JahiaTemplatesPackage pkg = BundleUtils.isJahiaModuleBundle(bundle) ? BundleUtils.getModule(
                 bundle) : null;
         if (null != pkg && pkg.getSourcesFolder() != null) {
-            mountSourcesProvider(pkg);
-            if (!httpServiceTrackers.containsKey(bundle.getSymbolicName())) {
+            if (mountSourcesProvider(pkg) && !httpServiceTrackers.containsKey(bundle.getSymbolicName())) {
                 ModulesSourceHttpServiceTracker modulesSourceHttpServiceTracker = new ModulesSourceHttpServiceTracker(pkg);
                 modulesSourceHttpServiceTracker.open(true);
                 httpServiceTrackers.put(bundle.getSymbolicName(), modulesSourceHttpServiceTracker);
@@ -179,7 +189,7 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
         } catch (Exception e) {
             logger.error("Cannot unmount sources provider for "+pkg.getId(),e);
         }
-        ServiceTracker t = httpServiceTrackers.remove(bundle.getSymbolicName());
+        ModulesSourceHttpServiceTracker t = httpServiceTrackers.remove(bundle.getSymbolicName());
         if (t != null) {
             t.close();
         }

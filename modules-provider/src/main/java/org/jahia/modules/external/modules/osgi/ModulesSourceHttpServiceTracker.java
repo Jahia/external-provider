@@ -49,10 +49,13 @@ import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.api.Constants;
 import org.jahia.bundles.extender.jahiamodules.BundleHttpResourcesTracker;
 import org.jahia.data.templates.JahiaTemplatesPackage;
+import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.SpringContextSingleton;
+import org.jahia.services.content.JCRStoreService;
 import org.jahia.services.render.scripting.bundle.BundleScriptResolver;
 import org.jahia.services.templates.TemplatePackageRegistry;
 import org.osgi.framework.Bundle;
@@ -65,8 +68,10 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FilenameFilter;
 
-public class ModulesSourceHttpServiceTracker extends ServiceTracker {
-    private static Logger logger = LoggerFactory.getLogger(ModulesSourceHttpServiceTracker.class);
+import javax.jcr.PathNotFoundException;
+
+public class ModulesSourceHttpServiceTracker extends ServiceTracker<HttpService, HttpService> {
+    private static final Logger logger = LoggerFactory.getLogger(ModulesSourceHttpServiceTracker.class);
 
     private final Bundle bundle;
     private final String bundleName;
@@ -77,7 +82,7 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
 
     /**
      * Tracker for resource modifications
-     * @param module
+     * @param module the module package
      */
     public ModulesSourceHttpServiceTracker(JahiaTemplatesPackage module) {
         super(module.getBundle().getBundleContext(), HttpService.class.getName(), null);
@@ -89,8 +94,8 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
     }
 
     @Override
-    public Object addingService(ServiceReference reference) {
-        HttpService httpService = (HttpService) super.addingService(reference);
+    public HttpService addingService(ServiceReference<HttpService> reference) {
+        HttpService httpService = super.addingService(reference);
         this.httpService = httpService;
 
         registerMissingResources();
@@ -108,13 +113,11 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         httpService.unregister(fileServletAlias);
         bundleScriptResolver.addBundleScript(bundle, filePath);
         templatePackageRegistry.addModuleWithViewsForComponent(StringUtils.substringBetween(filePath, "/", "/"), module);
-        if (logger.isDebugEnabled()) {
-            logger.debug("Register file {} in bundle {}", filePath, bundleName);
-        }
+        logger.debug("Register file {} in bundle {}", filePath, bundleName);
    }
 
     /**
-     * Unregister the resource, remove it from the availables Views
+     * Unregister the resource, remove it from the available Views
      * @param file is the resource to unregister
      */
     public void unregisterResouce(File file) {
@@ -134,9 +137,7 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         if (matching == null || matching.length == 0) {
             templatePackageRegistry.removeModuleWithViewsForComponent(StringUtils.substringBetween(filePath, "/", "/"), module);
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug("Unregister file {} in bundle {}", filePath, bundleName);
-        }
+        logger.debug("Unregister file {} in bundle {}", filePath, bundleName);
     }
 
     /**
@@ -151,13 +152,37 @@ public class ModulesSourceHttpServiceTracker extends ServiceTracker {
         if (!resourcesRoot.exists()) {
             return;
         }
-        // todo: use value of Jahia-Module-Scripting-Views header for the filter if available to register resources?
-        // todo: avoid scanning if Jahia-Module-Has-Views header is set to no?
+
+        ExternalContentStoreProvider storeProvider = (ExternalContentStoreProvider) JCRStoreService.getInstance()
+                .getSessionFactory().getProviders()
+                .get("module-" + module.getId() + "-" + module.getVersion().toString());
+
         for (File resource : FileUtils.listFiles(resourcesRoot, new WildcardFileFilter("*"), TrueFileFilter.INSTANCE)) {
-            if (bundle.getResource(getResourcePath(resource)) == null) {
-                registerResource(resource);
+            String resourcePath = getResourcePath(resource);
+            if (bundle.getResource(resourcePath) == null) {
+                // resource is not present in the compiled module: check if the sources are mounted and it is a view file to be registered
+                if (storeProvider != null && isViewFile(resourcePath, storeProvider)) {
+                    registerResource(resource);
+                }
             }
         }
+    }
+
+    /**
+     * Checks that the specified resource is a view file.
+     * 
+     * @param resourcePath the path of the resource to be checked
+     * @param storeProvider the sources provider
+     * @return <code>true</code> if the specified resource is a view file; <code>false</code> otherwise
+     */
+    private boolean isViewFile(String resourcePath, ExternalContentStoreProvider storeProvider) {
+        try {
+            return StringUtils.equals(Constants.JAHIANT_VIEWFILE,
+                    storeProvider.getDataSource().getItemByPath("src/main/resources" + resourcePath).getType());
+        } catch (PathNotFoundException e) {
+            // no such item
+        }
+        return false;
     }
 
     /**
