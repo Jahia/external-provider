@@ -66,12 +66,15 @@ import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 
 import org.jahia.api.Constants;
+import org.jahia.services.content.JCRCallback;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.sites.JahiaSite;
+import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.jahia.test.JahiaTestCase;
 import org.jahia.test.TestHelper;
 import org.jahia.test.services.importexport.ImportExportTest;
@@ -553,6 +556,38 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         assertEquals("Suisse", frenchCity.getProperty("country").getString());
         assertEquals("Genève", frenchCity.getPropertyAsString("city_name"));
         frenchSession.logout();
+    }
+
+    @Test
+    public void testI18nAndLazyPropertiesForGuest() throws RepositoryException {
+        JCRTemplate.getInstance().doExecute(JahiaUserManagerService.GUEST_USERNAME, null, Constants.LIVE_WORKSPACE, Locale.ENGLISH, new JCRCallback<Object>() {
+            public Object doInJCR(JCRSessionWrapper guestSession) throws RepositoryException {
+
+                JCRNodeWrapper city = guestSession.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/16");
+                assertTrue(city.hasI18N(Locale.ENGLISH));
+                assertTrue(city.hasI18N(Locale.FRENCH));
+                assertFalse(city.hasI18N(Locale.GERMAN));
+                assertTrue(city.hasProperty("country"));
+                assertTrue(city.hasProperty("city_name"));
+                assertFalse(city.hasProperty("city_name_en"));
+                assertTrue(city.hasProperty("airport"));
+                assertEquals("GVA", city.getPropertyAsString("airport"));
+                assertEquals("Switzerland", city.getPropertyAsString("country"));
+                assertEquals("Geneva", city.getPropertyAsString("city_name"));
+
+                return null;
+            }
+        });        
+        JCRTemplate.getInstance().doExecute(JahiaUserManagerService.GUEST_USERNAME, null, Constants.LIVE_WORKSPACE, Locale.FRENCH, new JCRCallback<Object>() {
+            public Object doInJCR(JCRSessionWrapper guestSession) throws RepositoryException {
+
+                JCRNodeWrapper city = guestSession.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/CITIES/16");
+                assertEquals("Suisse", city.getProperty("country").getString());
+                assertEquals("Genève", city.getPropertyAsString("city_name"));
+
+                return null;
+            }
+        });        
     }
 
     @Test
