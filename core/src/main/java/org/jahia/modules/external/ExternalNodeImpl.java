@@ -860,15 +860,30 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 }
                 data.getProperties().put(s, values);
                 data.getLazyProperties().remove(s);
-                ExternalPropertyImpl p = new ExternalPropertyImpl(new Name(s, NodeTypeRegistry.getInstance().getNamespaces()), this, session);
                 ExtendedPropertyDefinition definition = getPropertyDefinition(s);
                 if (definition != null && definition.getName().equals(MATCH_ALL_PATTERN) && data != null && data.getType() != null && data.getType().equals(Constants.JAHIANT_TRANSLATION)) {
                     definition = ((ExternalNodeImpl) getParent()).getPropertyDefinition(s);
                 }
+                ExternalPropertyImpl p;
                 if (definition != null && definition.isMultiple()) {
-                    p.setValue(values);
-                } else if (values != null && values.length > 0) {
-                    p.setValue(values[0]);
+                    Value[] jcrValues = null;
+                    if (values != null) {
+                        jcrValues = new Value[values.length];
+                        for (int i = 0; i < values.length; i++) {
+                            if (values[i] != null) {
+                                jcrValues[i] = session.getValueFactory().createValue(values[i], definition.getRequiredType());
+                            } else {
+                                jcrValues[i] = null;
+                            }
+                        }
+                    } 
+                    p = new ExternalPropertyImpl(new Name(s, NodeTypeRegistry.getInstance().getNamespaces()), this, session, jcrValues);
+                } else {
+                    Value jcrValue = null;
+                    if (values != null && values.length > 0) {
+                        jcrValue = session.getValueFactory().createValue(values[0], definition.getRequiredType());
+                    }
+                    p = new ExternalPropertyImpl(new Name(s, NodeTypeRegistry.getInstance().getNamespaces()), this, session, jcrValue);
                 }
                 properties.put(s, p);
                 return p;
@@ -876,11 +891,27 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 Binary[] values = session.getBinaryPropertyValues(data, s);
                 data.getBinaryProperties().put(s, values);
                 data.getLazyBinaryProperties().remove(s);
-                ExternalPropertyImpl p = new ExternalPropertyImpl(new Name(s, NodeTypeRegistry.getInstance().getNamespaces()), this, session);
-                if (getPropertyDefinition(s).isMultiple()) {
-                    p.setValue(values);
-                } else if (values != null && values.length > 0) {
-                    p.setValue(values[0]);
+                ExternalPropertyImpl p;
+                ExtendedPropertyDefinition definition = getPropertyDefinition(s);
+                if (definition != null && definition.isMultiple()) {
+                    Value[] jcrValues = null;
+                    if (values != null) {
+                        jcrValues = new Value[values.length];
+                        for (int i = 0; i < values.length; i++) {
+                            if (values[i] != null) {
+                                jcrValues[i] = session.getValueFactory().createValue(values[i]);
+                            } else {
+                                jcrValues[i] = null;
+                            }
+                        }
+                    } 
+                    p = new ExternalPropertyImpl(new Name(s, NodeTypeRegistry.getInstance().getNamespaces()), this, session, jcrValues);
+                } else {
+                    Value jcrValue = null;
+                    if (values != null && values.length > 0) {
+                        jcrValue = session.getValueFactory().createValue(values[0]);
+                    }
+                    p = new ExternalPropertyImpl(new Name(s, NodeTypeRegistry.getInstance().getNamespaces()), this, session, jcrValue);
                 }
                 properties.put(s, p);
                 return p;
