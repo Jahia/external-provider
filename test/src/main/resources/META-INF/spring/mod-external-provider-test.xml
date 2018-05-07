@@ -15,6 +15,7 @@
                <value>org.jahia.modules.external.test.vfs.VFSAclTest</value>
                <value>org.jahia.modules.external.test.db.ExternalDatabaseProviderTest</value>
                <value>org.jahia.modules.external.test.qom.QOMTest</value>
+               <value>org.jahia.modules.external.test.listener.ApiEventTest</value>
             </list>
         </property>
     </bean>
@@ -100,4 +101,21 @@
             <bean class="org.jahia.modules.external.test.db.WriteableMappedDatabaseProvider"/>
         </property>
     </bean>
+
+    <bean id="staticProvider" class="org.jahia.modules.external.ExternalContentStoreProvider" parent="AbstractJCRStoreProvider">
+        <property name="key" value="staticProvider"/>
+        <property name="mountPoint" value="/external-static"/>
+        <property name="externalProviderInitializerService" ref="ExternalProviderInitializerService"/>
+        <property name="extendableTypes">
+            <list>
+                <value>nt:base</value>
+            </list>
+        </property>
+        <property name="dataSource" ref="apiDataSource"/>
+    </bean>
+
+    <bean id="apiDataSource" class="org.jahia.modules.external.test.listener.ApiDataSource"/>
+
+    <bean id="testListener" class="org.jahia.modules.external.test.listener.TestApiEventListener"/>
+
 </beans>

@@ -44,6 +44,10 @@
 package org.jahia.modules.external.rest;
 
 import org.jahia.api.Constants;
+import org.jahia.modules.external.ExternalContentStoreProvider;
+import org.jahia.modules.external.ExternalData;
+import org.jahia.modules.external.ExternalNodeImpl;
+import org.jahia.modules.external.ExternalSessionImpl;
 import org.jahia.services.content.*;
 
 import javax.jcr.RepositoryException;
@@ -64,11 +68,17 @@ public class EventResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response postEvents(final List<APIEvent> events, @PathParam("providerKey") String providerKey) throws RepositoryException {
         final JCRStoreProvider provider = JCRSessionFactory.getInstance().getProviders().get(providerKey);
-        if (provider != null) {
+        if (provider instanceof ExternalContentStoreProvider) {
             JCRCallback<Object> callback = new JCRCallback<Object>() {
                 @Override
                 public Object doInJCR(JCRSessionWrapper jcrSessionWrapper) throws RepositoryException {
                     for (APIEvent apiEvent : events) {
+                        ExternalData data = (ExternalData) apiEvent.getInfo().get("externalData");
+                        if (data != null) {
+                            ExternalSessionImpl externalSession = (ExternalSessionImpl) jcrSessionWrapper.getProviderSession(provider);
+                            final ExternalNodeImpl node = new ExternalNodeImpl(data, externalSession);
+                            externalSession.registerNode(node);
+                        }
                         JCRObservationManager.addEvent(apiEvent, provider.getMountPoint(), "");
                     }
                     return null;
