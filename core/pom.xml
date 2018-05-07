@@ -44,23 +44,26 @@
         please contact the sales department at sales@jahia.com.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.jahia.modules</groupId>
-    <artifactId>external-provider-parent</artifactId>
-    <version>3.1.5-SNAPSHOT</version>
-  </parent>
-  <artifactId>external-provider</artifactId>
-  <packaging>bundle</packaging>
-  <name>Jahia External Provider</name>
-  <description>This module provide an API that allows mounting of external content provider (as is it comes with vfs provider).</description>
-  <scm>
-    <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
-    <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
-    <url>scm:git:git@github.com:Jahia/external-provider.git</url>
-    <tag>HEAD</tag>
-  </scm>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.jahia.modules</groupId>
+        <artifactId>external-provider-parent</artifactId>
+        <version>3.1.5-SNAPSHOT</version>
+    </parent>
+    <artifactId>external-provider</artifactId>
+    <packaging>bundle</packaging>
+    <name>Jahia External Provider</name>
+    <description>This module provide an API that allows mounting of external content provider (as is it comes with vfs
+        provider).
+    </description>
+    <scm>
+        <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
+        <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
+        <url>scm:git:git@github.com:Jahia/external-provider.git</url>
+        <tag>HEAD</tag>
+    </scm>
     <properties>
         <jahia-module-type>system</jahia-module-type>
         <jahia-depends>serverSettings</jahia-depends>
@@ -78,90 +81,141 @@
             org.jahia.services,
             javassist.util.proxy
         </jahia.modules.importPackage>
+        <jackson.version>2.9.0</jackson.version>
+        <jersey.version>2.6</jersey.version>
     </properties>
-  <repositories>
-    <repository>
-      <releases>
-        <enabled>true</enabled>
-        <updatePolicy>never</updatePolicy>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <id>jahia-public</id>
-      <name>Jahia Public Repository</name>
-      <url>https://devtools.jahia.com/nexus/content/groups/public</url>
-    </repository>
-  </repositories>
-  <profiles>
-    <profile>
-      <id>generate-ddl</id>
-      <activation>
-        <property>
-          <name>jahia.generate.ddl</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <build>
+    <repositories>
+        <repository>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <id>jahia-public</id>
+            <name>Jahia Public Repository</name>
+            <url>https://devtools.jahia.com/nexus/content/groups/public</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.glassfish.jersey.bundles</groupId>
+            <artifactId>jaxrs-ri</artifactId>
+            <version>${jersey.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+            <artifactId>jackson-jaxrs-base</artifactId>
+            <version>${jackson.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+            <artifactId>jackson-jaxrs-json-provider</artifactId>
+            <version>${jackson.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>generate-ddl</id>
+            <activation>
+                <property>
+                    <name>jahia.generate.ddl</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>de.juplo</groupId>
+                        <artifactId>hibernate4-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>ddl-derby</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.derby}</hibernateDialect>
+                                    <outputFile>
+                                        ${basedir}/src/main/resources/META-INF/db/derby/jahia-external-provider-schema.sql
+                                    </outputFile>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ddl-mssql</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.mssql}</hibernateDialect>
+                                    <outputFile>
+                                        ${basedir}/src/main/resources/META-INF/db/mssql/jahia-external-provider-schema.sql
+                                    </outputFile>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ddl-mysql</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.mysql}</hibernateDialect>
+                                    <outputFile>
+                                        ${basedir}/src/main/resources/META-INF/db/mysql/jahia-external-provider-schema.sql
+                                    </outputFile>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ddl-oracle</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.oracle}</hibernateDialect>
+                                    <outputFile>
+                                        ${basedir}/src/main/resources/META-INF/db/oracle/jahia-external-provider-schema.sql
+                                    </outputFile>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ddl-postgresql</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.postgresql}</hibernateDialect>
+                                    <outputFile>
+                                        ${basedir}/src/main/resources/META-INF/db/postgresql/jahia-external-provider-schema.sql
+                                    </outputFile>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
         <plugins>
-          <plugin>
-            <groupId>de.juplo</groupId>
-            <artifactId>hibernate4-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>ddl-derby</id>
-                <goals>
-                  <goal>export</goal>
-                </goals>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
                 <configuration>
-                  <hibernateDialect>${hibernateDialect.derby}</hibernateDialect>
-                  <outputFile>${basedir}/src/main/resources/META-INF/db/derby/jahia-external-provider-schema.sql</outputFile>
+                    <instructions>
+                        <JAX-RS-Alias>/external-provider/events</JAX-RS-Alias>
+                        <JAX-RS-Application>org.jahia.modules.external.rest.EventConfig</JAX-RS-Application>
+                    </instructions>
                 </configuration>
-              </execution>
-              <execution>
-                <id>ddl-mssql</id>
-                <goals>
-                  <goal>export</goal>
-                </goals>
-                <configuration>
-                  <hibernateDialect>${hibernateDialect.mssql}</hibernateDialect>
-                  <outputFile>${basedir}/src/main/resources/META-INF/db/mssql/jahia-external-provider-schema.sql</outputFile>
-                </configuration>
-              </execution>
-              <execution>
-                <id>ddl-mysql</id>
-                <goals>
-                  <goal>export</goal>
-                </goals>
-                <configuration>
-                  <hibernateDialect>${hibernateDialect.mysql}</hibernateDialect>
-                  <outputFile>${basedir}/src/main/resources/META-INF/db/mysql/jahia-external-provider-schema.sql</outputFile>
-                </configuration>
-              </execution>
-              <execution>
-                <id>ddl-oracle</id>
-                <goals>
-                  <goal>export</goal>
-                </goals>
-                <configuration>
-                  <hibernateDialect>${hibernateDialect.oracle}</hibernateDialect>
-                  <outputFile>${basedir}/src/main/resources/META-INF/db/oracle/jahia-external-provider-schema.sql</outputFile>
-                </configuration>
-              </execution>
-              <execution>
-                <id>ddl-postgresql</id>
-                <goals>
-                  <goal>export</goal>
-                </goals>
-                <configuration>
-                  <hibernateDialect>${hibernateDialect.postgresql}</hibernateDialect>
-                  <outputFile>${basedir}/src/main/resources/META-INF/db/postgresql/jahia-external-provider-schema.sql</outputFile>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
+            </plugin>
         </plugins>
-      </build>
-    </profile>
-  </profiles>
+    </build>
+
 </project>
