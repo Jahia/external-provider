@@ -47,6 +47,7 @@ import org.apache.tika.io.IOUtils;
 
 import javax.jcr.Binary;
 import javax.jcr.RepositoryException;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -62,11 +63,18 @@ public class ExternalBinaryImpl implements Binary {
     private InputStream inputStream = null;
 
     public ExternalBinaryImpl(InputStream inputStream) {
-        // here we should copy the content of the inputstream, but where ??? Keeping it in memory is a bad idea.
+        if (!inputStream.markSupported()) {
+            inputStream = new BufferedInputStream(inputStream);
+        }
         this.inputStream = inputStream;
     }
 
     public InputStream getStream() throws RepositoryException {
+        try {
+            inputStream.reset();
+        } catch (IOException e) {
+            throw new RepositoryException(e);
+        }
         return inputStream;
     }
 

@@ -43,14 +43,16 @@
  */
 package org.jahia.modules.external.rest;
 
+import org.jahia.modules.external.ExternalBinaryImpl;
 import org.jahia.modules.external.ExternalData;
 
 import javax.jcr.Binary;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
+import java.io.ByteArrayInputStream;
 import java.lang.reflect.Array;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Adapter for info field, converting externalData into ExternalData object
@@ -67,7 +69,7 @@ public class EventInfoAdapter extends XmlAdapter<Map<String, Object>, Map<String
             Map<String, Object> transformed = new HashMap<>(info);
 
             ExternalData data = new ExternalData((String) dataAsMap.get("id"), (String) dataAsMap.get("path"), (String) dataAsMap.get("type"),
-                    convertMembersFromListToArray((Map<String, List<String>>) dataAsMap.get("properties"), String.class));
+                    dataAsMap.containsKey("properties") ? convertMembersFromListToArray((Map<String, List<String>>) dataAsMap.get("properties"), String.class) : Collections.emptyMap());
 
             if (dataAsMap.containsKey("mixin")) {
                 data.setMixin((List<String>) dataAsMap.get("mixin"));
@@ -83,7 +85,7 @@ public class EventInfoAdapter extends XmlAdapter<Map<String, Object>, Map<String
             }
 
             if (dataAsMap.containsKey("binaryProperties")) {
-                data.setBinaryProperties(convertMembersFromListToArray((Map<String, List<Binary>>) dataAsMap.get("binaryProperties"), Binary.class));
+                data.setBinaryProperties(convertMembersFromListToArray((Map<String, List<String>>) dataAsMap.get("binaryProperties"), Binary.class, s-> (new ExternalBinaryImpl(new ByteArrayInputStream(Base64.getDecoder().decode(s))))));
             }
 
             transformed.put("externalData", data);
@@ -99,12 +101,18 @@ public class EventInfoAdapter extends XmlAdapter<Map<String, Object>, Map<String
         return info;
     }
 
-    @SuppressWarnings("unchecked")
+
     private <T> Map<String, T[]> convertMembersFromListToArray(Map<String, List<T>> map, Class<T> itemType) {
+        return convertMembersFromListToArray(map,itemType,u->u);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T,U> Map<String, T[]> convertMembersFromListToArray(Map<String, List<U>> map, Class<T> itemType, Function<U,T> f) {
         Map<String, T[]> m = new HashMap<>();
-        for (Map.Entry<String, List<T>> entry : map.entrySet()) {
-            List<T> list = entry.getValue();
-            m.put(entry.getKey(), list.toArray((T[]) Array.newInstance(itemType, list.size())));
+        for (Map.Entry<String, List<U>> entry : map.entrySet()) {
+            List<U> list = entry.getValue();
+
+            m.put(entry.getKey(), list.stream().map(f).collect(Collectors.toList()).toArray((T[]) Array.newInstance(itemType, list.size())));
         }
         return m;
     }

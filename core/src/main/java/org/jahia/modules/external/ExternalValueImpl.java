@@ -43,10 +43,13 @@
  */
 package org.jahia.modules.external;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ISO8601;
 
 import javax.jcr.*;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
@@ -109,7 +112,14 @@ public class ExternalValueImpl implements Value {
     public String getString() throws ValueFormatException, IllegalStateException, RepositoryException {
         if (value instanceof Calendar) {
             return ISO8601.format((Calendar) value);
+        } else if (value instanceof Binary) {
+            try (InputStream stream = ((Binary) value).getStream()) {
+                return StringUtils.join(IOUtils.readLines(stream), '\n');
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
         }
+
         return value.toString();
     }
 
