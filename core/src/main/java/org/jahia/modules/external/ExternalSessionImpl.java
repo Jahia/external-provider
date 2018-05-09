@@ -843,6 +843,12 @@ public class ExternalSessionImpl implements Session {
         return orderedData;
     }
 
+    public void registerNode(ExternalData data) throws RepositoryException {
+        final ExternalNodeImpl node = new ExternalNodeImpl(data, this);
+        nodesByPath.put(node.getPath(), node);
+        nodesByIdentifier.put(node.getIdentifier(), node);
+    }
+
     public void registerNode(ExternalNodeImpl node) throws RepositoryException {
         nodesByPath.put(node.getPath(), node);
         nodesByIdentifier.put(node.getIdentifier(), node);

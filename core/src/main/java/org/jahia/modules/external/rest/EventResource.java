@@ -46,7 +46,6 @@ package org.jahia.modules.external.rest;
 import org.jahia.api.Constants;
 import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.jahia.modules.external.ExternalData;
-import org.jahia.modules.external.ExternalNodeImpl;
 import org.jahia.modules.external.ExternalSessionImpl;
 import org.jahia.services.content.*;
 
@@ -76,8 +75,7 @@ public class EventResource {
                         ExternalData data = (ExternalData) apiEvent.getInfo().get("externalData");
                         if (data != null) {
                             ExternalSessionImpl externalSession = (ExternalSessionImpl) jcrSessionWrapper.getProviderSession(provider);
-                            final ExternalNodeImpl node = new ExternalNodeImpl(data, externalSession);
-                            externalSession.registerNode(node);
+                            externalSession.registerNode(data);
                         }
                         JCRObservationManager.addEvent(apiEvent, provider.getMountPoint(), "");
                     }
