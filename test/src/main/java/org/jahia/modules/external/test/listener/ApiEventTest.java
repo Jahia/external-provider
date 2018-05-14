@@ -64,6 +64,7 @@ import org.springframework.context.support.AbstractApplicationContext;
 import javax.jcr.RepositoryException;
 import javax.jcr.observation.Event;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.function.Consumer;
 import java.util.*;
@@ -188,6 +189,45 @@ public class ApiEventTest  extends JahiaTestCase {
     }
 
     @Test
+    public void testEventWithIncompleteExternalData() throws IOException  {
+        int i = executeCall("[{\n" +
+                "    \"path\":\"/tata\",\n" +
+                "    \"userID\":\"root\",\n" +
+                "    \"info\": {\n" +
+                "      \"externalData\":{\n" +
+                "        \"id\":\"/tata\",\n" +
+                "        \"type\":\"jnt:bigText\"\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }]");
+        assertEquals(500, i);
+
+        i = executeCall("[{\n" +
+                "    \"path\":\"/tata\",\n" +
+                "    \"userID\":\"root\",\n" +
+                "    \"info\": {\n" +
+                "      \"externalData\":{\n" +
+                "        \"path\":\"/tata\",\n" +
+                "        \"type\":\"jnt:bigText\"\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }]");
+        assertEquals(500, i);
+
+        i = executeCall("[{\n" +
+                "    \"path\":\"/tata\",\n" +
+                "    \"userID\":\"root\",\n" +
+                "    \"info\": {\n" +
+                "      \"externalData\":{\n" +
+                "        \"path\":\"/tata\",\n" +
+                "        \"id\":\"/tata\"\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }]");
+        assertEquals(500, i);
+    }
+
+    @Test
     public void testEventWithBinary() throws IOException  {
         executeCall("[{\n" +
                 "    \"path\":\"/tutu\",\n" +
@@ -230,7 +270,7 @@ public class ApiEventTest  extends JahiaTestCase {
         });
     }
 
-    private void executeCall(String body, Consumer<JCREventIterator> apiListenerCallback, Consumer<JCREventIterator> listenerCallback) throws IOException {
+    private int executeCall(String body) throws IOException {
         HttpClient client = new HttpClient();
 
         URL url = new URL(getBaseServerURL() + Jahia.getContextPath() + "/modules/external-provider/events/staticProvider");
@@ -247,11 +287,15 @@ public class ApiEventTest  extends JahiaTestCase {
         method.addRequestHeader("Content-Type", "application/json");
         method.setRequestEntity(new StringRequestEntity(body, "application/json","UTF-8"));
 
+        return client.executeMethod(method);
+    }
+
+    private void executeCall(String body, Consumer<JCREventIterator> apiListenerCallback, Consumer<JCREventIterator> listenerCallback) throws IOException {
         apiListener.setCallback(apiListenerCallback);
         listener.setCallback(listenerCallback);
 
         try {
-            int i = client.executeMethod(method);
+            int i = executeCall(body);
             assertEquals(200, i);
 
             if (apiListener.getAssertionError() != null) {
