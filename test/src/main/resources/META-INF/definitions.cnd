@@ -62,4 +62,7 @@
  - flying_time (double)
  - miles (long)
  - aircraft (string)
+
+[jtestnt:binary] > jnt:content
+ - jcr:data (binary) primary mandatory
  

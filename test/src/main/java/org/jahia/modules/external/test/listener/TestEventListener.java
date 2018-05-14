@@ -43,10 +43,8 @@
  */
 package org.jahia.modules.external.test.listener;
 
-import org.jahia.services.content.ApiEventListener;
-
 /**
- * Event listener for testing, listen on API events
+ * Event listener for testing, do not listen on API events
  */
-public class TestApiEventListener extends BaseTestListener implements ApiEventListener {
+public class TestEventListener extends BaseTestListener {
 }

@@ -116,6 +116,7 @@
 
     <bean id="apiDataSource" class="org.jahia.modules.external.test.listener.ApiDataSource"/>
 
-    <bean id="testListener" class="org.jahia.modules.external.test.listener.TestApiEventListener"/>
+    <bean id="apiTestListener" class="org.jahia.modules.external.test.listener.TestApiEventListener"/>
+    <bean id="testListener" class="org.jahia.modules.external.test.listener.TestEventListener"/>
 
 </beans>
