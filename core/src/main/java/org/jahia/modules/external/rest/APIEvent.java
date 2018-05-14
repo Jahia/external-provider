@@ -43,6 +43,8 @@
  */
 package org.jahia.modules.external.rest;
 
+import org.apache.jackrabbit.util.ISO8601;
+
 import javax.jcr.observation.Event;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.util.HashMap;
@@ -59,7 +61,7 @@ public class APIEvent implements Event {
     private String identifier;
     private Map info = new HashMap();
     private String userData;
-    private long date = 0L;
+    private long date = System.currentTimeMillis();
 
     @Override
     public int getType() {
@@ -121,7 +123,7 @@ public class APIEvent implements Event {
         return date;
     }
 
-    public void setDate(long date) {
-        this.date = date;
+    public void setDate(String date) {
+        this.date = ISO8601.parse(date).getTimeInMillis();
     }
 }
