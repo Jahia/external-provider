@@ -43,7 +43,10 @@
  */
 package org.jahia.modules.external.rest;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ISO8601;
+import org.hibernate.validator.constraints.NotEmpty;
+import org.jahia.modules.external.rest.validation.ValidExternalData;
 import org.jahia.services.content.ApiEvent;
 
 import javax.jcr.observation.Event;
@@ -57,9 +60,11 @@ import java.util.Map;
 public class ApiEventImpl implements ApiEvent {
 
     private int type = Event.NODE_ADDED;
+    @NotEmpty
     private String path;
-    private String userID;
+    private String userID = StringUtils.EMPTY;
     private String identifier;
+    @ValidExternalData
     private Map info = new HashMap();
     private String userData;
     private long date = System.currentTimeMillis();

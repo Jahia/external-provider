@@ -47,13 +47,14 @@ import org.jahia.api.Constants;
 import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.ExternalSessionImpl;
+import org.jahia.modules.external.rest.validation.ValidList;
 import org.jahia.services.content.*;
 
 import javax.jcr.RepositoryException;
+import javax.validation.Valid;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.List;
 
 /**
  * REST endpoint for external-provider events
@@ -65,23 +66,22 @@ public class EventResource {
     @POST
     @Path("/{providerKey:.*}")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response postEvents(final List<APIEvent> events, @PathParam("providerKey") String providerKey) throws RepositoryException {
+    public Response postEvents(@Valid final ValidList<ApiEventImpl> events, @PathParam("providerKey") String providerKey) throws RepositoryException {
         final JCRStoreProvider provider = JCRSessionFactory.getInstance().getProviders().get(providerKey);
         if (provider instanceof ExternalContentStoreProvider) {
-            JCRCallback<Object> callback = new JCRCallback<Object>() {
-                @Override
-                public Object doInJCR(JCRSessionWrapper jcrSessionWrapper) throws RepositoryException {
-                    for (APIEvent apiEvent : events) {
-                        ExternalData data = (ExternalData) apiEvent.getInfo().get("externalData");
-                        if (data != null) {
-                            ExternalSessionImpl externalSession = (ExternalSessionImpl) jcrSessionWrapper.getProviderSession(provider);
-                            externalSession.registerNode(data);
-                        }
-                        JCRObservationManager.addEvent(apiEvent, provider.getMountPoint(), "");
+
+            JCRCallback<Object> callback = jcrSessionWrapper -> {
+                for (ApiEventImpl apiEvent : events) {
+                    ExternalData data = (ExternalData) apiEvent.getInfo().get("externalData");
+                    if (data != null) {
+                        ExternalSessionImpl externalSession = (ExternalSessionImpl) jcrSessionWrapper.getProviderSession(provider);
+                        externalSession.registerNode(data);
                     }
-                    return null;
+                    JCRObservationManager.addEvent(apiEvent, provider.getMountPoint(), "");
                 }
+                return null;
             };
+
             JCRObservationManager.doWorkspaceWriteCall(JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null), JCRObservationManager.API, callback);
             JCRObservationManager.doWorkspaceWriteCall(JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.LIVE_WORKSPACE, null, null), JCRObservationManager.API, callback);
 

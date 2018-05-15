@@ -41,89 +41,52 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.external.rest;
+package org.jahia.modules.external.rest.validation;
 
-import org.apache.jackrabbit.util.ISO8601;
+import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.external.ExternalData;
 
-import javax.jcr.observation.Event;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-import java.util.HashMap;
+import javax.validation.Constraint;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
+import javax.validation.Payload;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.util.Map;
 
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 /**
- * Implementation of event for Rest API
+ * Validator to valid that the external data stored in the event info contains the minimal required data
  */
-public class APIEvent implements Event {
+@Target({FIELD})
+@Retention(RUNTIME)
+@Constraint(validatedBy = ValidExternalData.ExternalDataValidator.class)
+@Documented
+public @interface ValidExternalData {
+    String message() default "Missing mandatory properties on external data object, mandatory properties: id, path, type";
 
-    private int type = Event.NODE_ADDED;
-    private String path;
-    private String userID;
-    private String identifier;
-    private Map info = new HashMap();
-    private String userData;
-    private long date = System.currentTimeMillis();
+    Class<?>[] groups() default {};
 
-    @Override
-    public int getType() {
-        return type;
-    }
+    Class<? extends Payload>[] payload() default {};
 
-    public void setType(int type) {
-        this.type = type;
-    }
+    class ExternalDataValidator implements ConstraintValidator<ValidExternalData, Map> {
 
-    @Override
-    public String getPath() {
-        return path;
-    }
+        @Override
+        public void initialize(ValidExternalData validExternalData) {
+        }
 
-    public void setPath(String path) {
-        this.path = path;
-    }
+        @Override
+        @SuppressWarnings("unchecked")
+        public boolean isValid(Map info, ConstraintValidatorContext constraintValidatorContext) {
+            ExternalData externalData = (ExternalData) info.get("externalData");
 
-    @Override
-    public String getUserID() {
-        return userID;
-    }
-
-    public void setUserID(String userID) {
-        this.userID = userID;
-    }
-
-    @Override
-    public String getIdentifier() {
-        return identifier;
-    }
-
-    public void setIdentifier(String identifier) {
-        this.identifier = identifier;
-    }
-
-    @Override
-    @XmlJavaTypeAdapter(EventInfoAdapter.class)
-    public Map getInfo() {
-        return info;
-    }
-
-    public void setInfo(Map info) {
-        this.info = info;
-    }
-
-    @Override
-    public String getUserData() {
-        return userData;
-    }
-
-    public void setUserData(String userData) {
-        this.userData = userData;
-    }
-
-    @Override
-    public long getDate() {
-        return date;
-    }
-
-    public void setDate(String date) {
-        this.date = ISO8601.parse(date).getTimeInMillis();
+            if (externalData != null) {
+                return StringUtils.isNotEmpty(externalData.getId()) && StringUtils.isNotEmpty(externalData.getPath()) && StringUtils.isNotEmpty(externalData.getType());
+            }
+            return true;
+        }
     }
 }

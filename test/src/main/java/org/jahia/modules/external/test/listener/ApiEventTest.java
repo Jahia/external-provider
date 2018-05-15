@@ -99,8 +99,7 @@ public class ApiEventTest  extends JahiaTestCase {
     @Test
     public void testSimpleEvent() throws IOException {
         executeCall("[{\n" +
-                "    \"path\":\"/tata\",\n" +
-                "    \"userID\":\"root\"\n" +
+                "    \"path\":\"/tata\"\n" +
                 "  }]", it -> {
 
             try {
@@ -200,7 +199,7 @@ public class ApiEventTest  extends JahiaTestCase {
                 "      }\n" +
                 "    }\n" +
                 "  }]");
-        assertEquals(500, i);
+        assertEquals(400, i);
 
         i = executeCall("[{\n" +
                 "    \"path\":\"/tata\",\n" +
@@ -212,7 +211,7 @@ public class ApiEventTest  extends JahiaTestCase {
                 "      }\n" +
                 "    }\n" +
                 "  }]");
-        assertEquals(500, i);
+        assertEquals(400, i);
 
         i = executeCall("[{\n" +
                 "    \"path\":\"/tata\",\n" +
@@ -224,7 +223,20 @@ public class ApiEventTest  extends JahiaTestCase {
                 "      }\n" +
                 "    }\n" +
                 "  }]");
-        assertEquals(500, i);
+        assertEquals(400, i);
+    }
+
+    @Test
+    public void testEventWithIncompleteProperties() throws IOException  {
+        int i = executeCall("[{\n" +
+                "    \"userID\":\"root\"\n" +
+                "  }]");
+        assertEquals(400, i);
+
+        i = executeCall("[{\n" +
+                "    \"path\":\"\"\n" +
+                "  }]");
+        assertEquals(400, i);
     }
 
     @Test

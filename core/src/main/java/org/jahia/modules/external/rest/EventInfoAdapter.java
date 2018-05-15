@@ -43,7 +43,6 @@
  */
 package org.jahia.modules.external.rest;
 
-import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.external.ExternalBinaryImpl;
 import org.jahia.modules.external.ExternalData;
 
@@ -69,7 +68,7 @@ public class EventInfoAdapter extends XmlAdapter<Map<String, Object>, Map<String
         if (dataAsMap != null) {
             Map<String, Object> transformed = new HashMap<>(info);
 
-            ExternalData data = new ExternalData(getExternalDataProperty(dataAsMap, "id"), getExternalDataProperty(dataAsMap, "path"), getExternalDataProperty(dataAsMap, "type"),
+            ExternalData data = new ExternalData((String) dataAsMap.get("id"), (String) dataAsMap.get("path"), (String) dataAsMap.get("type"),
                     dataAsMap.containsKey("properties") ? convertMembersFromListToArray((Map<String, List<String>>) dataAsMap.get("properties"), String.class) : Collections.emptyMap());
 
             if (dataAsMap.containsKey("mixin")) {
@@ -97,18 +96,10 @@ public class EventInfoAdapter extends XmlAdapter<Map<String, Object>, Map<String
         return info;
     }
 
-    private String getExternalDataProperty(Map<String, Object> dataAsMap, String property) {
-        if (StringUtils.isEmpty((String) dataAsMap.get(property))) {
-            throw new IllegalArgumentException("Missing property [" + property + "] on external data");
-        }
-        return (String) dataAsMap.get(property);
-    }
-
     @Override
     public Map<String, Object> marshal(Map<String, Object> info) throws Exception {
         return info;
     }
-
 
     private <T> Map<String, T[]> convertMembersFromListToArray(Map<String, List<T>> map, Class<T> itemType) {
         return convertMembersFromListToArray(map,itemType,u->u);

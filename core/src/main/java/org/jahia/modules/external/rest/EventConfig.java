@@ -45,6 +45,8 @@ package org.jahia.modules.external.rest;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.ServerProperties;
+import org.glassfish.jersey.server.validation.ValidationFeature;
 
 /**
  * Configuration for /external-provider/events end point
@@ -53,7 +55,9 @@ public class EventConfig extends ResourceConfig {
     public EventConfig() {
         super(
                 EventResource.class,
-                JacksonJaxbJsonProvider.class
+                JacksonJaxbJsonProvider.class,
+                ValidationFeature.class
         );
+        property(ServerProperties.BV_SEND_ERROR_IN_RESPONSE, true);
     }
 }
