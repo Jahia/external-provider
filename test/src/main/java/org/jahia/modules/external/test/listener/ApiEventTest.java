@@ -124,7 +124,7 @@ public class ApiEventTest  extends JahiaTestCase {
         executeCall("[{\n" +
                 "    \"path\":\"/tata\",\n" +
                 "    \"userID\":\"root\",\n" +
-                "    \"type\":2\n" +
+                "    \"type\":1\n" +
                 "  }]", it -> {
 
             try {
