@@ -47,9 +47,12 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ISO8601;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.jahia.modules.external.rest.validation.ValidExternalData;
+import org.jahia.modules.external.rest.validation.ValidISO8601;
 import org.jahia.services.content.ApiEvent;
 
 import javax.jcr.observation.Event;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Pattern;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,7 +62,29 @@ import java.util.Map;
  */
 public class ApiEventImpl implements ApiEvent {
 
-    private int type = Event.NODE_ADDED;
+    public enum EventType {
+        NODE_ADDED(Event.NODE_ADDED),
+        NODE_REMOVED(Event.NODE_REMOVED),
+        PROPERTY_ADDED(Event.PROPERTY_ADDED),
+        PROPERTY_REMOVED(Event.PROPERTY_REMOVED),
+        PROPERTY_CHANGED(Event.PROPERTY_CHANGED),
+        NODE_MOVED(Event.NODE_MOVED);
+
+        private final int value;
+
+        EventType(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+    }
+
+    @Pattern(regexp = "NODE_ADDED|NODE_REMOVED|PROPERTY_ADDED|PROPERTY_REMOVED|PROPERTY_CHANGED|NODE_MOVED")
+    private String type = "NODE_ADDED";
+    private int resolvedType = Event.NODE_ADDED;
+
     @NotEmpty
     private String path;
     private String userID = StringUtils.EMPTY;
@@ -67,15 +92,29 @@ public class ApiEventImpl implements ApiEvent {
     @ValidExternalData
     private Map info = new HashMap();
     private String userData;
-    private long date = System.currentTimeMillis();
+
+    @ValidISO8601
+    private String date;
+    private long resolvedDate = System.currentTimeMillis();
 
     @Override
     public int getType() {
-        return type;
+        return resolvedType;
     }
 
-    public void setType(int type) {
+    public void setType(String type) {
         this.type = type;
+        try {
+            this.resolvedType = EventType.valueOf(type).getValue();
+        } catch (IllegalArgumentException e) {
+            try {
+                EventType eventType = EventType.values()[Integer.parseInt(type)];
+                this.resolvedType = eventType.getValue();
+                this.type = eventType.name();
+            } catch (NumberFormatException | IndexOutOfBoundsException e1) {
+                // Invalid type
+            }
+        }
     }
 
     @Override
@@ -126,10 +165,11 @@ public class ApiEventImpl implements ApiEvent {
 
     @Override
     public long getDate() {
-        return date;
+        return resolvedDate;
     }
 
     public void setDate(String date) {
-        this.date = ISO8601.parse(date).getTimeInMillis();
+        this.date = date;
+        this.resolvedDate = ISO8601.parse(date).getTimeInMillis();
     }
 }
