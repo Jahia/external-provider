@@ -83,7 +83,6 @@ public class ApiEventImpl implements ApiEvent {
 
     @Pattern(regexp = "NODE_ADDED|NODE_REMOVED|PROPERTY_ADDED|PROPERTY_REMOVED|PROPERTY_CHANGED|NODE_MOVED")
     private String type = "NODE_ADDED";
-    private int resolvedType = Event.NODE_ADDED;
 
     @NotEmpty
     private String path;
@@ -95,26 +94,14 @@ public class ApiEventImpl implements ApiEvent {
 
     @ValidISO8601
     private String date;
-    private long resolvedDate = System.currentTimeMillis();
 
     @Override
     public int getType() {
-        return resolvedType;
+        return EventType.valueOf(type).getValue();
     }
 
     public void setType(String type) {
         this.type = type;
-        try {
-            this.resolvedType = EventType.valueOf(type).getValue();
-        } catch (IllegalArgumentException e) {
-            try {
-                EventType eventType = EventType.values()[Integer.parseInt(type)];
-                this.resolvedType = eventType.getValue();
-                this.type = eventType.name();
-            } catch (NumberFormatException | IndexOutOfBoundsException e1) {
-                // Invalid type
-            }
-        }
     }
 
     @Override
@@ -165,11 +152,10 @@ public class ApiEventImpl implements ApiEvent {
 
     @Override
     public long getDate() {
-        return resolvedDate;
+        return ISO8601.parse(date).getTimeInMillis();
     }
 
     public void setDate(String date) {
         this.date = date;
-        this.resolvedDate = ISO8601.parse(date).getTimeInMillis();
     }
 }
