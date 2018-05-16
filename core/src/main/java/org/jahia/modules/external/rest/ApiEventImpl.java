@@ -51,7 +51,6 @@ import org.jahia.modules.external.rest.validation.ValidISO8601;
 import org.jahia.services.content.ApiEvent;
 
 import javax.jcr.observation.Event;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.Pattern;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.util.HashMap;
