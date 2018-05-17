@@ -43,13 +43,16 @@
  */
 package org.jahia.modules.external.rest;
 
+import org.hibernate.validator.constraints.NotEmpty;
 import org.jahia.api.Constants;
-import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.ExternalSessionImpl;
+import org.jahia.modules.external.rest.model.ApiEventImpl;
 import org.jahia.modules.external.rest.validation.ValidList;
+import org.jahia.modules.external.rest.validation.ValidProvider;
 import org.jahia.services.content.*;
 
+import javax.inject.Inject;
 import javax.jcr.RepositoryException;
 import javax.validation.Valid;
 import javax.ws.rs.*;
@@ -63,30 +66,41 @@ import javax.ws.rs.core.Response;
 @Produces({ MediaType.APPLICATION_JSON })
 public class EventResource {
 
+    private EventApiConfig eventApiConfig;
+
+    @Inject
+    public EventResource(EventApiConfig eventApiConfig) {
+        this.eventApiConfig = eventApiConfig;
+    }
+
     @POST
     @Path("/{providerKey:.*}")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response postEvents(@Valid final ValidList<ApiEventImpl> events, @PathParam("providerKey") String providerKey) throws RepositoryException {
+    public Response postEvents(@Valid final ValidList<ApiEventImpl> events,
+                               @ValidProvider @PathParam("providerKey") String providerKey,
+                               @HeaderParam("apiKey") String apiKey) throws RepositoryException {
+
         final JCRStoreProvider provider = JCRSessionFactory.getInstance().getProviders().get(providerKey);
-        if (provider instanceof ExternalContentStoreProvider) {
 
-            JCRCallback<Object> callback = jcrSessionWrapper -> {
-                for (ApiEventImpl apiEvent : events) {
-                    ExternalData data = (ExternalData) apiEvent.getInfo().get("externalData");
-                    if (data != null) {
-                        ExternalSessionImpl externalSession = (ExternalSessionImpl) jcrSessionWrapper.getProviderSession(provider);
-                        externalSession.registerNode(data);
-                    }
-                    JCRObservationManager.addEvent(apiEvent, provider.getMountPoint(), "");
-                }
-                return null;
-            };
-
-            JCRObservationManager.doWorkspaceWriteCall(JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null), JCRObservationManager.API, callback);
-            JCRObservationManager.doWorkspaceWriteCall(JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.LIVE_WORKSPACE, null, null), JCRObservationManager.API, callback);
-
+        if (!eventApiConfig.checkApiKey(apiKey, providerKey)) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
+
+        JCRCallback<Object> callback = jcrSessionWrapper -> {
+            for (ApiEventImpl apiEvent : events) {
+                ExternalData data = (ExternalData) apiEvent.getInfo().get("externalData");
+                if (data != null) {
+                    ExternalSessionImpl externalSession = (ExternalSessionImpl) jcrSessionWrapper.getProviderSession(provider);
+                    externalSession.registerNode(data);
+                }
+                JCRObservationManager.addEvent(apiEvent, provider.getMountPoint(), "");
+            }
+            return null;
+        };
+
+        JCRObservationManager.doWorkspaceWriteCall(JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null), JCRObservationManager.API, callback);
+        JCRObservationManager.doWorkspaceWriteCall(JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.LIVE_WORKSPACE, null, null), JCRObservationManager.API, callback);
+
         return Response.ok().build();
     }
-
 }

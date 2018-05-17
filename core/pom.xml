@@ -217,7 +217,7 @@
                 <configuration>
                     <instructions>
                         <JAX-RS-Alias>/external-provider/events</JAX-RS-Alias>
-                        <JAX-RS-Application>org.jahia.modules.external.rest.EventConfig</JAX-RS-Application>
+                        <JAX-RS-Application>org.jahia.modules.external.rest.EventResourceConfig</JAX-RS-Application>
                     </instructions>
                 </configuration>
             </plugin>

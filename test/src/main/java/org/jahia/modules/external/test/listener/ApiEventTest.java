@@ -240,6 +240,21 @@ public class ApiEventTest  extends JahiaTestCase {
     }
 
     @Test
+    public void testEventWithInvalidProvider() throws IOException  {
+        int i = executeCall("[{\n" +
+                "    \"userID\":\"root\",\n" +
+                "    \"path\":\"/tata\"\n" +
+                "  }]", "");
+        assertEquals(400, i);
+
+        i = executeCall("[{\n" +
+                "    \"userID\":\"root\",\n" +
+                "    \"path\":\"/tata\"\n" +
+                "  }]", "invalidProvider");
+        assertEquals(400, i);
+    }
+
+    @Test
     public void testEventWithBinary() throws IOException  {
         executeCall("[{\n" +
                 "    \"path\":\"/tutu\",\n" +
@@ -282,10 +297,10 @@ public class ApiEventTest  extends JahiaTestCase {
         });
     }
 
-    private int executeCall(String body) throws IOException {
+    private int executeCall(String body, String provider) throws IOException {
         HttpClient client = new HttpClient();
 
-        URL url = new URL(getBaseServerURL() + Jahia.getContextPath() + "/modules/external-provider/events/staticProvider");
+        URL url = new URL(getBaseServerURL() + Jahia.getContextPath() + "/modules/external-provider/events/" + provider);
 
         client.getParams().setAuthenticationPreemptive(true);
         if (user != null && password != null) {
@@ -300,6 +315,10 @@ public class ApiEventTest  extends JahiaTestCase {
         method.setRequestEntity(new StringRequestEntity(body, "application/json","UTF-8"));
 
         return client.executeMethod(method);
+    }
+
+    private int executeCall(String body) throws IOException {
+        return executeCall(body, "staticProvider");
     }
 
     private void executeCall(String body, Consumer<JCREventIterator> apiListenerCallback, Consumer<JCREventIterator> listenerCallback) throws IOException {

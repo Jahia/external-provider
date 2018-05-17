@@ -41,23 +41,47 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.external.rest;
+package org.jahia.modules.external.rest.validation;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.server.ServerProperties;
-import org.glassfish.jersey.server.validation.ValidationFeature;
+import org.jahia.modules.external.ExternalContentStoreProvider;
+import org.jahia.services.content.JCRSessionFactory;
+
+import javax.validation.Constraint;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
+import javax.validation.Payload;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Configuration for /external-provider/events end point
+ * Validator to valid the provider key
  */
-public class EventConfig extends ResourceConfig {
-    public EventConfig() {
-        super(
-                EventResource.class,
-                JacksonJaxbJsonProvider.class,
-                ValidationFeature.class
-        );
-        property(ServerProperties.BV_SEND_ERROR_IN_RESPONSE, true);
+@Target({PARAMETER, FIELD})
+@Retention(RUNTIME)
+@Constraint(validatedBy = ValidProvider.ProviderValidator.class)
+@Documented
+public @interface ValidProvider {
+    String message() default "No external provider found";
+
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
+
+    class ProviderValidator implements ConstraintValidator<ValidProvider, String> {
+
+        @Override
+        public void initialize(ValidProvider validExternalData) {
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public boolean isValid(String providerKey, ConstraintValidatorContext constraintValidatorContext) {
+            return JCRSessionFactory.getInstance().getProviders().get(providerKey) instanceof ExternalContentStoreProvider;
+        }
     }
 }
