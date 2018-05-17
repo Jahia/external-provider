@@ -61,7 +61,6 @@ import javax.jcr.nodetype.*;
 import javax.jcr.version.Version;
 import javax.jcr.version.VersionException;
 import javax.jcr.version.VersionHistory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -742,7 +741,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
         final List<String> externalChildren = getExternalChildren();
         if (!externalChildren.isEmpty()) {
-            if (!namePattern.equals("j:translation*") && !data.isNew()) {
+            if (!namePattern.equals("j:translation*")) {
                 if (!matchAll) {
                     for (String path : externalChildren) {
                         if (ChildrenCollectorFilter.matches(path, namePattern)) {
