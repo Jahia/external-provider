@@ -1116,7 +1116,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             return;
         }
 
-        if (getSession().getExtensionForbiddenMixins().contains(mixinName) && !(data.getMixin() != null && data.getMixin().contains(mixinName))) {
+        if (isExtensionForbiddenMixin(mixinName) && !(data.getMixin() != null && data.getMixin().contains(mixinName))) {
             List<String> mixins = data.getMixin() == null ? new ArrayList<String>() : new ArrayList<>(data.getMixin());
             mixins.add(mixinName);
             data.setMixin(mixins);
@@ -1132,6 +1132,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         throw new UnsupportedRepositoryOperationException();
     }
 
+    protected boolean isExtensionForbiddenMixin(String mixinName) throws RepositoryException {
+        return getSession().getExtensionForbiddenMixins().contains(mixinName) || getSession().getExtensionForbiddenMixins().contains("*");
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -1142,7 +1146,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
             return;
         }
 
-        if (getSession().getExtensionForbiddenMixins().contains(mixinName) && data.getMixin() != null && data.getMixin().contains(mixinName)) {
+        if (isExtensionForbiddenMixin(mixinName) && data.getMixin() != null && data.getMixin().contains(mixinName)) {
             List<String> mixins = new ArrayList<>(data.getMixin());
             mixins.remove(mixinName);
             data.setMixin(mixins);
@@ -1220,7 +1224,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      */
     @Override
     public boolean canAddMixin(String mixinName) throws NoSuchNodeTypeException, RepositoryException {
-        if (getSession().getExtensionForbiddenMixins().contains(mixinName) && canManageNodeTypes()) {
+        if (isExtensionForbiddenMixin(mixinName) && canManageNodeTypes()) {
             return true;
         }
         Node extensionNode = getExtensionNode(true);
