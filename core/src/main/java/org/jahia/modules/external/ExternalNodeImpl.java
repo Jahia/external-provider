@@ -455,15 +455,6 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                     data.setBinaryProperties(new HashMap<String, Binary[]>());
                 }
                 data.getBinaryProperties().put(name, new Binary[]{value.getBinary()});
-            } else if (epd.isInternationalized()) {
-                Map<String, String[]> valMap = new HashMap<String, String[]>();
-                if (getName().startsWith(J_TRANSLATION)) {
-                    String lang = StringUtils.substringAfter(getName(), "_");
-                    valMap.put(lang, new String[]{value.getString()});
-                    data.getI18nProperties().put(name, valMap);
-                } else {
-                    throw new ConstraintViolationException("Property " + name + " is internationalized");
-                }
             } else {
                 data.getProperties().put(name, new String[]{value.getString()});
             }
