@@ -41,7 +41,7 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.external.rest.model;
+package org.jahia.modules.external.events.model;
 
 import org.jahia.modules.external.ExternalBinaryImpl;
 import org.jahia.modules.external.ExternalData;

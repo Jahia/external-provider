@@ -41,45 +41,20 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.external.rest.validation;
+package org.jahia.modules.external.events.rest;
 
-import org.apache.jackrabbit.util.ISO8601;
-
-import javax.validation.Constraint;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
-import javax.validation.Payload;
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import org.glassfish.hk2.api.Factory;
 
 /**
- * Validator to valid that the external data stored in the event info contains the minimal required data
+ * Service factory used for inject EventApiConfig in EventResource
  */
-@Target({FIELD})
-@Retention(RUNTIME)
-@Constraint(validatedBy = ValidISO8601.Validator.class)
-@Documented
-public @interface ValidISO8601 {
-    String message() default "invalid date format, must be ISO8601 ( YYYY-MM-ddTHH:mm:ss.SSSZ )";
+public class EventApiConfigServiceFactory implements Factory<EventApiConfig> {
 
-    Class<?>[] groups() default {};
-
-    Class<? extends Payload>[] payload() default {};
-
-    class Validator implements ConstraintValidator<ValidISO8601, String> {
-
-        @Override
-        public void initialize(ValidISO8601 validExternalData) {
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public boolean isValid(String date, ConstraintValidatorContext constraintValidatorContext) {
-            return date == null || ISO8601.parse(date) != null;
-        }
+    @Override
+    public EventApiConfig provide() {
+        return SpringBeansAccess.getInstance().getEventApiConfig();
     }
+
+    @Override
+    public void dispose(EventApiConfig instance) { /* nothing */ }
 }

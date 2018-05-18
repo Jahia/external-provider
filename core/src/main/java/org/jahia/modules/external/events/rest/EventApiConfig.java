@@ -42,12 +42,10 @@
  *     please contact the sales department at sales@jahia.com.
  */
 
-package org.jahia.modules.external.rest;
+package org.jahia.modules.external.events.rest;
 
 import org.apache.commons.lang.StringUtils;
-import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedService;
-import org.osgi.service.cm.ManagedServiceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

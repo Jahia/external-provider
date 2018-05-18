@@ -41,47 +41,54 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.external.rest.validation;
+package org.jahia.modules.external.events.rest;
 
 import org.jahia.modules.external.ExternalContentStoreProvider;
+import org.jahia.modules.external.events.EventServiceImpl;
+import org.jahia.modules.external.events.model.ApiEventImpl;
+import org.jahia.modules.external.events.validation.ValidList;
+import org.jahia.modules.external.events.validation.ValidProvider;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRStoreProvider;
 
-import javax.validation.Constraint;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
-import javax.validation.Payload;
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import javax.inject.Inject;
+import javax.jcr.RepositoryException;
+import javax.validation.Valid;
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 /**
- * Validator to valid the provider key
+ * REST endpoint for external-provider events
  */
-@Target({PARAMETER, FIELD})
-@Retention(RUNTIME)
-@Constraint(validatedBy = ValidProvider.ProviderValidator.class)
-@Documented
-public @interface ValidProvider {
-    String message() default "No external provider found";
+@Path("/external-provider/events")
+@Produces({ MediaType.APPLICATION_JSON })
+public class EventResource {
 
-    Class<?>[] groups() default {};
+    private EventApiConfig eventApiConfig;
 
-    Class<? extends Payload>[] payload() default {};
+    @Inject
+    public EventResource(EventApiConfig eventApiConfig) {
+        this.eventApiConfig = eventApiConfig;
+    }
 
-    class ProviderValidator implements ConstraintValidator<ValidProvider, String> {
+    @POST
+    @Path("/{providerKey:.*}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response postEvents(@Valid final ValidList<ApiEventImpl> events,
+                               @ValidProvider @PathParam("providerKey") String providerKey,
+                               @HeaderParam("apiKey") String apiKey) throws RepositoryException {
 
-        @Override
-        public void initialize(ValidProvider validExternalData) {
+        final JCRStoreProvider provider = JCRSessionFactory.getInstance().getProviders().get(providerKey);
+
+        if (!eventApiConfig.checkApiKey(apiKey, providerKey)) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
-        @Override
-        @SuppressWarnings("unchecked")
-        public boolean isValid(String providerKey, ConstraintValidatorContext constraintValidatorContext) {
-            return JCRSessionFactory.getInstance().getProviders().get(providerKey) instanceof ExternalContentStoreProvider;
+        if (provider instanceof ExternalContentStoreProvider) {
+            EventServiceImpl.doSendEvents(events, provider);
         }
+
+        return Response.ok().build();
     }
 }

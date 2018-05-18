@@ -36,7 +36,7 @@
 
     <bean class="org.jahia.modules.external.cache.ExternalReferenceCacheKeyPartGenerator"/>
 
-    <bean id="eventApiConfig" class="org.jahia.modules.external.rest.EventApiConfig"/>
+    <bean id="eventApiConfig" class="org.jahia.modules.external.events.rest.EventApiConfig"/>
     <osgi:service interface="org.osgi.service.cm.ManagedService" ref="eventApiConfig">
         <osgi:service-properties>
             <entry key="service.pid" value="org.jahia.modules.api.external_provider.event"/>
@@ -45,8 +45,13 @@
         </osgi:service-properties>
     </osgi:service>
 
-    <bean id="springBeansAccess" class="org.jahia.modules.external.rest.SpringBeansAccess"
+    <bean id="springBeansAccess" class="org.jahia.modules.external.events.rest.SpringBeansAccess"
           factory-method="getInstance">
         <property name="eventApiConfig" ref="eventApiConfig"/>
     </bean>
+
+    <bean id="eventService" class="org.jahia.modules.external.events.EventServiceImpl"/>
+
+    <osgi:service id="EventServiceOsgi" ref="eventService" interface="org.jahia.modules.external.events.EventService"/>
+
 </beans>

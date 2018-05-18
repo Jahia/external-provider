@@ -41,20 +41,47 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.external.rest;
+package org.jahia.modules.external.events.validation;
 
-import org.glassfish.hk2.api.Factory;
+import org.jahia.modules.external.ExternalContentStoreProvider;
+import org.jahia.services.content.JCRSessionFactory;
+
+import javax.validation.Constraint;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
+import javax.validation.Payload;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Service factory used for inject EventApiConfig in EventResource
+ * Validator to valid the provider key
  */
-public class EventApiConfigServiceFactory implements Factory<EventApiConfig> {
+@Target({PARAMETER, FIELD})
+@Retention(RUNTIME)
+@Constraint(validatedBy = ValidProvider.ProviderValidator.class)
+@Documented
+public @interface ValidProvider {
+    String message() default "No external provider found";
 
-    @Override
-    public EventApiConfig provide() {
-        return SpringBeansAccess.getInstance().getEventApiConfig();
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
+
+    class ProviderValidator implements ConstraintValidator<ValidProvider, String> {
+
+        @Override
+        public void initialize(ValidProvider validExternalData) {
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public boolean isValid(String providerKey, ConstraintValidatorContext constraintValidatorContext) {
+            return JCRSessionFactory.getInstance().getProviders().get(providerKey) instanceof ExternalContentStoreProvider;
+        }
     }
-
-    @Override
-    public void dispose(EventApiConfig instance) { /* nothing */ }
 }

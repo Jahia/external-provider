@@ -72,6 +72,7 @@
         <export-package>org.jahia.modules.external,
             org.jahia.modules.external.query,
             org.jahia.modules.external.acl,
+            org.jahia.modules.external.events,
             org.jahia.modules.external.admin.mount,
             org.jahia.modules.external.admin.mount.validator
         </export-package>
@@ -217,7 +218,7 @@
                 <configuration>
                     <instructions>
                         <JAX-RS-Alias>/external-provider/events</JAX-RS-Alias>
-                        <JAX-RS-Application>org.jahia.modules.external.rest.EventResourceConfig</JAX-RS-Application>
+                        <JAX-RS-Application>org.jahia.modules.external.events.rest.EventResourceConfig</JAX-RS-Application>
                     </instructions>
                 </configuration>
             </plugin>

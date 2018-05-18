@@ -41,25 +41,36 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.external.rest;
+package org.jahia.modules.external.events.rest;
+
+import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
+import org.glassfish.hk2.api.Factory;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.ServerProperties;
+import org.glassfish.jersey.server.validation.ValidationFeature;
 
 /**
- * Middle layer for injection purpose of beans into REST resource
+ * Configuration for /external-provider/events end point
  */
-public final class SpringBeansAccess {
-    private final static SpringBeansAccess INSTANCE = new SpringBeansAccess();
+public class EventResourceConfig extends ResourceConfig {
 
-    private EventApiConfig eventApiConfig;
-
-    public static SpringBeansAccess getInstance() {
-        return INSTANCE;
+    public EventResourceConfig() {
+        this(EventApiConfigServiceFactory.class);
     }
 
-    public EventApiConfig getEventApiConfig() {
-        return eventApiConfig;
-    }
-
-    public void setEventApiConfig(EventApiConfig eventApiConfig) {
-        this.eventApiConfig = eventApiConfig;
+    private EventResourceConfig(final Class<? extends Factory<EventApiConfig>> eventApiConfigFactoryClass) {
+        super(
+                EventResource.class,
+                JacksonJaxbJsonProvider.class,
+                ValidationFeature.class
+        );
+        register(new AbstractBinder() {
+            @Override
+            protected void configure() {
+                bindFactory(eventApiConfigFactoryClass).to(EventApiConfig.class);
+            }
+        });
+        property(ServerProperties.BV_SEND_ERROR_IN_RESPONSE, true);
     }
 }

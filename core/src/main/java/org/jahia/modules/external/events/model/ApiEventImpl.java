@@ -41,13 +41,14 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.external.rest.model;
+package org.jahia.modules.external.events.model;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ISO8601;
 import org.hibernate.validator.constraints.NotEmpty;
-import org.jahia.modules.external.rest.validation.ValidExternalData;
-import org.jahia.modules.external.rest.validation.ValidISO8601;
+import org.jahia.modules.external.ExternalData;
+import org.jahia.modules.external.events.validation.ValidExternalData;
+import org.jahia.modules.external.events.validation.ValidISO8601;
 import org.jahia.services.content.ApiEvent;
 
 import javax.jcr.observation.Event;
@@ -93,6 +94,15 @@ public class ApiEventImpl implements ApiEvent {
 
     @ValidISO8601
     private String date;
+
+    public ApiEventImpl() {
+    }
+
+    public ApiEventImpl(ExternalData data) {
+        setPath(data.getPath());
+        setIdentifier(data.getId());
+        info.put("externalData", data);
+    }
 
     @Override
     public int getType() {
