@@ -175,6 +175,25 @@ public class ApiEventTest  extends JahiaTestCase {
     }
 
     @Test
+    public void testPathOfEventWhenEventOnRoot() {
+        executeCall("[{\n" +
+                "    \"path\":\"/\",\n" +
+                "    \"userID\":\"root\",\n" +
+                "    \"type\":\"NODE_REMOVED\"\n" +
+                "  }]", it -> {
+
+            try {
+                assertEquals(1, it.getSize());
+                Event e = it.nextEvent();
+                assertEquals(Event.NODE_REMOVED, e.getType());
+                assertEquals("/external-static", e.getPath());
+            } catch (RepositoryException e1) {
+                fail(e1.getMessage());
+            }
+        });
+    }
+
+    @Test
     public void testEventWithDataREST() {
         executeCall("[{\n" +
                 "    \"path\":\"/tata\",\n" +
