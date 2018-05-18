@@ -51,7 +51,10 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.jahia.bin.Jahia;
 import org.jahia.modules.external.ExternalData;
+import org.jahia.modules.external.events.EventService;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.registries.ServicesRegistry;
+import org.jahia.services.content.ApiEvent;
 import org.jahia.services.content.JCREventIterator;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -64,10 +67,10 @@ import org.springframework.context.support.AbstractApplicationContext;
 import javax.jcr.RepositoryException;
 import javax.jcr.observation.Event;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.function.Consumer;
 import java.util.*;
+import java.util.function.Supplier;
 
 import static org.junit.Assert.*;
 
@@ -80,10 +83,51 @@ public class ApiEventTest  extends JahiaTestCase {
 
     private TestApiEventListener apiListener;
     private TestEventListener listener;
-    private ApiDataSource dataSource;
+    private static ApiDataSource dataSource;
+    private EventService eventService;
+
+    private static final Consumer<JCREventIterator> failCallback = it -> {
+        fail("Listener that do not listen on API events should not be triggered");
+    };
+
+    private static final Consumer<JCREventIterator> eventWithExternalDataCB = it -> {
+
+        try {
+            assertEquals(1,it.getSize());
+            Event e = it.nextEvent();
+            assertEquals(Event.NODE_ADDED, e.getType());
+            assertEquals("/external-static/tata", e.getPath());
+
+            ExternalData externalData = (ExternalData) e.getInfo().get("externalData");
+            assertNotNull(externalData);
+            assertEquals("/tata", externalData.getPath());
+
+            JCRNodeWrapper node = it.getSession().getNode(e.getPath());
+            assertEquals("2017-10-10T10:50:43.000+02:00", node.getProperty("jcr:created").getString());
+            assertEquals("Should not go to datasource if externaldata is provided", 0, dataSource.getLog().size());
+        } catch (RepositoryException e1) {
+            fail(e1.getMessage());
+        }
+    };
+
+    private static final Consumer<JCREventIterator> simpleEventCB = it -> {
+
+        try {
+            assertEquals(1,it.getSize());
+            Event e = it.nextEvent();
+            assertEquals(Event.NODE_ADDED, e.getType());
+            assertEquals("/external-static/tata", e.getPath());
+
+            JCRNodeWrapper node = it.getSession().getNode(e.getPath());
+        } catch (RepositoryException e1) {
+            fail(e1.getMessage());
+        }
+
+    };
 
     @Before
-    public void setUp() throws RepositoryException {
+    public void setUp() {
+        eventService = BundleUtils.getOsgiService(EventService.class, null);
         AbstractApplicationContext context = ServicesRegistry.getInstance().getJahiaTemplateManagerService().getTemplatePackageById("external-provider-test").getContext();
         apiListener = (TestApiEventListener) context.getBean("apiTestListener");
         listener = (TestEventListener) context.getBean("testListener");
@@ -93,34 +137,26 @@ public class ApiEventTest  extends JahiaTestCase {
     }
 
     @After
-    public void tearDown() throws RepositoryException {
+    public void tearDown() {
     }
 
     @Test
-    public void testSimpleEvent() throws IOException {
+    public void testSimpleEventREST() {
         executeCall("[{\n" +
                 "    \"path\":\"/tata\"\n" +
-                "  }]", it -> {
-
-            try {
-                assertEquals(1,it.getSize());
-                Event e = it.nextEvent();
-                assertEquals(Event.NODE_ADDED, e.getType());
-                assertEquals("/external-static/tata", e.getPath());
-
-                JCRNodeWrapper node = it.getSession().getNode(e.getPath());
-            } catch (RepositoryException e1) {
-                fail(e1.getMessage());
-            }
-
-        }, it -> {
-            fail("Listener that do not listen on API events should not be triggered");
-        });
-
+                "  }]", simpleEventCB);
     }
 
     @Test
-    public void testRemoveEvent() throws IOException {
+    public void testSimpleEventOSGI() {
+        // try OSGI service call
+        ApiEventImplTest apiEvent = new ApiEventImplTest();
+        apiEvent.setPath("/tata");
+        executeOSGICall(Collections.singleton(apiEvent), simpleEventCB);
+    }
+
+    @Test
+    public void testRemoveEvent() {
         executeCall("[{\n" +
                 "    \"path\":\"/tata\",\n" +
                 "    \"userID\":\"root\",\n" +
@@ -135,13 +171,11 @@ public class ApiEventTest  extends JahiaTestCase {
             } catch (RepositoryException e1) {
                 fail(e1.getMessage());
             }
-        }, it -> {
-            fail("Listener that do not listen on API events should not be triggered");
         });
     }
 
     @Test
-    public void testEventWithData() throws IOException  {
+    public void testEventWithDataREST() {
         executeCall("[{\n" +
                 "    \"path\":\"/tata\",\n" +
                 "    \"userID\":\"root\",\n" +
@@ -164,27 +198,26 @@ public class ApiEventTest  extends JahiaTestCase {
                 "        }\n" +
                 "      }\n" +
                 "    }\n" +
-                "  }]", it -> {
+                "  }]", eventWithExternalDataCB);
+    }
 
-            try {
-                assertEquals(1,it.getSize());
-                Event e = it.nextEvent();
-                assertEquals(Event.NODE_ADDED, e.getType());
-                assertEquals("/external-static/tata", e.getPath());
+    @Test
+    public void testEventWithDataOSGI() {
+        Map<String, String[]> properties = new HashMap<>();
+        properties.put("jcr:created", new String[] {"2017-10-10T10:50:43.000+02:00"});
+        properties.put("jcr:lastModified", new String[] {"2017-10-10T10:50:43.000+02:00"});
 
-                ExternalData externalData = (ExternalData) e.getInfo().get("externalData");
-                assertNotNull(externalData);
-                assertEquals("/tata", externalData.getPath());
+        Map<String, Map<String, String[]>> i18nProperties = new HashMap<>();
+        Map<String, String[]> enProps = new HashMap<>();
+        enProps.put("text", new String[] {"test title en"});
+        Map<String, String[]> frProps = new HashMap<>();
+        frProps.put("text", new String[] {"test title fr"});
+        i18nProperties.put("en", enProps);
+        i18nProperties.put("fr", frProps);
 
-                JCRNodeWrapper node = it.getSession().getNode(e.getPath());
-                assertEquals("2017-10-10T10:50:43.000+02:00", node.getProperty("jcr:created").getString());
-                assertEquals("Should not go to datasource if externaldata is provided", 0, dataSource.getLog().size());
-            } catch (RepositoryException e1) {
-                fail(e1.getMessage());
-            }
-        }, it -> {
-            fail("Listener that do not listen on API events should not be triggered");
-        });
+        ExternalData externalData = new ExternalData("/tata", "/tata", "jnt:bigText", properties);
+        externalData.setI18nProperties(i18nProperties);
+        executeOSGICallWithExternalData(Collections.singleton(externalData), eventWithExternalDataCB);
     }
 
     @Test
@@ -292,8 +325,6 @@ public class ApiEventTest  extends JahiaTestCase {
             } catch (RepositoryException e1) {
                 fail(e1.getMessage());
             }
-        }, it -> {
-            fail("Listener that do not listen on API events should not be triggered");
         });
     }
 
@@ -321,13 +352,46 @@ public class ApiEventTest  extends JahiaTestCase {
         return executeCall(body, "staticProvider");
     }
 
-    private void executeCall(String body, Consumer<JCREventIterator> apiListenerCallback, Consumer<JCREventIterator> listenerCallback) throws IOException {
+    private void executeCall(String body, Consumer<JCREventIterator> apiListenerCallback) {
+        executeListeners(() -> {
+            try {
+                int i = executeCall(body);
+                assertEquals(200, i);
+            } catch (IOException e) {
+                fail(e.getMessage());
+            }
+            return null;
+        }, apiListenerCallback);
+    }
+
+    private void executeOSGICall(Iterable<ApiEvent> apiEvents, Consumer<JCREventIterator> apiListenerCallback) {
+        executeListeners(() -> {
+            try {
+                eventService.sendEvents(apiEvents, JCRSessionFactory.getInstance().getProviders().get("staticProvider"));
+            } catch (RepositoryException e) {
+                fail(e.getMessage());
+            }
+            return null;
+        }, apiListenerCallback);
+    }
+
+    private void executeOSGICallWithExternalData(Iterable<ExternalData> externalDatas, Consumer<JCREventIterator> apiListenerCallback) {
+        executeListeners(() -> {
+            try {
+                eventService.sendAddedNodes(externalDatas, JCRSessionFactory.getInstance().getProviders().get("staticProvider"));
+            } catch (RepositoryException e) {
+                fail(e.getMessage());
+            }
+            return null;
+        }, apiListenerCallback);
+    }
+
+    private void executeListeners(Supplier doAction, Consumer<JCREventIterator> apiListenerCallback) {
         apiListener.setCallback(apiListenerCallback);
-        listener.setCallback(listenerCallback);
+        listener.setCallback(ApiEventTest.failCallback);
 
         try {
-            int i = executeCall(body);
-            assertEquals(200, i);
+            doAction.get();
 
             if (apiListener.getAssertionError() != null) {
                 throw apiListener.getAssertionError();
