@@ -46,6 +46,7 @@ package org.jahia.modules.external.test.listener;
 import com.google.common.collect.Sets;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.ExternalDataSource;
+import org.jahia.services.SpringContextSingleton;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
@@ -54,15 +55,39 @@ import java.util.*;
 
 public class ApiDataSource implements ExternalDataSource {
 
-    private static final Map<String, String> nodes;
+    private static final Map<String, ExternalData> nodes;
     static {
-        Map<String, String> initNodes = new HashMap<>();
-        initNodes.put("/", "jnt:contentList");
-        initNodes.put("/toto", "jnt:bigText");
-        initNodes.put("/tata", "jnt:bigText");
-        initNodes.put("/titi", "jnt:bigText");
-        initNodes.put("/tutu", "jtestnt:binary");
+        Map<String, ExternalData> initNodes = new HashMap<>();
+
+        Map<String, String[]> properties = new HashMap<>();
+        properties.put("jcr:created", new String[] {"2017-10-10T10:50:43.000+02:00"});
+        properties.put("jcr:lastModified", new String[] {"2017-10-10T10:50:43.000+02:00"});
+
+        initNodes.put("/", new ExternalData("/", "/", "jnt:contentFolder", new HashMap<>()));
+        initNodes.put("/toto", new ExternalData("/toto", "/toto", "jnt:bigText", properties));
+        initNodes.put("/tata", new ExternalData("/tata", "/tata", "jnt:bigText", properties));
+        initNodes.put("/titi", new ExternalData("/titi", "/titi", "jnt:bigText", properties));
+        initNodes.put("/tutu", new ExternalData("/tutu", "/tutu", "jtestnt:binary", new HashMap<>()));
+
+        initNodes.get("/toto").setI18nProperties(geti18nProps("/toto"));
+        initNodes.get("/tata").setI18nProperties(geti18nProps("/tata"));
+        initNodes.get("/titi").setI18nProperties(geti18nProps("/titi"));
+
         nodes = Collections.unmodifiableMap(initNodes);
+    }
+
+    private static Map<String, Map<String, String[]>> geti18nProps(String path) {
+        Map<String, Map<String, String[]>> i18nProperties = new HashMap<>();
+
+        Map<String, String[]> enProps = new HashMap<>();
+        enProps.put("text", new String[] {path + " en"});
+        Map<String, String[]> frProps = new HashMap<>();
+        frProps.put("text", new String[] {path + " fr"});
+
+        i18nProperties.put("en", enProps);
+        i18nProperties.put("fr", frProps);
+
+        return i18nProperties;
     }
 
     private List<String> log = new ArrayList<>();
@@ -84,7 +109,7 @@ public class ApiDataSource implements ExternalDataSource {
     public ExternalData getItemByIdentifier(String identifier) throws ItemNotFoundException {
         log.add("ApiDataSource.getItemByIdentifier:"+identifier);
         if(nodes.containsKey(identifier)) {
-            return new ExternalData(identifier, identifier, nodes.get(identifier), new HashMap<>());
+            return nodes.get(identifier);
         } else {
             throw new ItemNotFoundException(identifier);
         }
@@ -94,7 +119,7 @@ public class ApiDataSource implements ExternalDataSource {
     public ExternalData getItemByPath(String path) throws PathNotFoundException {
         log.add("ApiDataSource.getItemByPath:"+path);
         if(nodes.containsKey(path)) {
-            return new ExternalData(path, path, nodes.get(path), new HashMap<>());
+            return nodes.get(path);
         } else {
             throw new PathNotFoundException(path);
         }
@@ -102,7 +127,7 @@ public class ApiDataSource implements ExternalDataSource {
 
     @Override
     public Set<String> getSupportedNodeTypes() {
-        return Sets.newHashSet("jnt:contentList", "jnt:bigText", "jtestnt:binary");
+        return Sets.newHashSet("jnt:contentFolder", "jnt:bigText", "jtestnt:binary");
     }
 
     @Override

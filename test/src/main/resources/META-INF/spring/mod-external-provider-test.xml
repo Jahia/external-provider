@@ -114,6 +114,22 @@
         <property name="dataSource" ref="apiDataSource"/>
     </bean>
 
+    <bean id="tatatititoto" class="org.jahia.modules.external.ExternalContentStoreProvider" destroy-method="stop">
+        <property name="userManagerService" ref="JahiaUserManagerService"/>
+        <property name="groupManagerService" ref="JahiaGroupManagerService"/>
+        <property name="sitesService" ref="JahiaSitesService"/>
+        <property name="service" ref="JCRStoreService"/>
+        <property name="sessionFactory" ref="jcrSessionFactory"/>
+        <property name="key" value="tatatititoto"/>
+        <property name="externalProviderInitializerService" ref="ExternalProviderInitializerService"/>
+        <property name="extendableTypes">
+            <list>
+                <value>nt:base</value>
+            </list>
+        </property>
+        <property name="dataSource" ref="apiDataSource"/>
+    </bean>
+
     <bean id="apiDataSource" class="org.jahia.modules.external.test.listener.ApiDataSource"/>
 
     <bean id="apiTestListener" class="org.jahia.modules.external.test.listener.TestApiEventListener"/>
