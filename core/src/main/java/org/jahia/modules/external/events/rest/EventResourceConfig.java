@@ -48,7 +48,6 @@ import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
-import org.glassfish.jersey.server.validation.ValidationFeature;
 
 /**
  * Configuration for /external-provider/events end point
@@ -63,7 +62,7 @@ public class EventResourceConfig extends ResourceConfig {
         super(
                 EventResource.class,
                 JacksonJaxbJsonProvider.class,
-                ValidationFeature.class
+                SimpleValidationFeature.class
         );
         register(new AbstractBinder() {
             @Override
