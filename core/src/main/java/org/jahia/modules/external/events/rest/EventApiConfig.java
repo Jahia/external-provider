@@ -110,11 +110,6 @@ public class EventApiConfig implements ManagedService {
      * @return <code>true</code> if the apiKey is allowed to access the provider; <code>false</code> otherwise
      */
     boolean checkApiKey(String apiKey, String providerKey) {
-        // no apiKey configured = access allowed
-        if (apiKeys.size() == 0) {
-            return true;
-        }
-
         ApiKeyCapabilities apiKeyCapabilities = apiKeys.get(apiKey);
         if (apiKeyCapabilities != null) {
             return apiKeyCapabilities.getProviders().isEmpty() || apiKeyCapabilities.getProviders().contains(providerKey);
