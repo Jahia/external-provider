@@ -59,9 +59,9 @@ import org.jahia.services.content.JCREventIterator;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.test.JahiaTestCase;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.osgi.service.cm.Configuration;
+import org.osgi.service.cm.ConfigurationAdmin;
 import org.springframework.context.support.AbstractApplicationContext;
 
 import javax.jcr.RepositoryException;
@@ -80,6 +80,10 @@ import static org.junit.Assert.*;
 public class ApiEventTest  extends JahiaTestCase {
     private String user = "root";
     private String password = "root1234";
+
+    private static Dictionary<String, Object> originalProperties;
+    private static final String API_KEY = "42267ebc-f8d0-4f4d-ac98-21fb8eeda653";
+    private static final String PROVIDER = "staticProvider";
 
     private TestApiEventListener apiListener;
     private TestEventListener listener;
@@ -124,6 +128,24 @@ public class ApiEventTest  extends JahiaTestCase {
         }
 
     };
+
+    @BeforeClass
+    public static void oneTimeSetUp() throws Exception {
+        ConfigurationAdmin configurationAdmin = BundleUtils.getOsgiService(ConfigurationAdmin.class, null);
+        Configuration configuration = configurationAdmin.getConfiguration("org.jahia.modules.api.external_provider.event");
+        originalProperties = configuration.getProperties();
+
+        Hashtable<String, Object> newProps = new Hashtable<>();
+        newProps.put("providers.event.api.key", "42267ebc-f8d0-4f4d-ac98-21fb8eeda653");
+        configuration.update(newProps);
+    }
+
+    @AfterClass
+    public static void oneTearDown() throws Exception {
+        ConfigurationAdmin configurationAdmin = BundleUtils.getOsgiService(ConfigurationAdmin.class, null);
+        Configuration configuration = configurationAdmin.getConfiguration("org.jahia.modules.api.external_provider.event");
+        configuration.update(originalProperties);
+    }
 
     @Before
     public void setUp() {
@@ -307,6 +329,21 @@ public class ApiEventTest  extends JahiaTestCase {
     }
 
     @Test
+    public void testEventWithInvalidAPIKey() throws IOException  {
+        int i = executeCall("[{\n" +
+                "    \"userID\":\"root\",\n" +
+                "    \"path\":\"/tata\"\n" +
+                "  }]", PROVIDER, "");
+        assertEquals(403, i);
+
+        i = executeCall("[{\n" +
+                "    \"userID\":\"root\",\n" +
+                "    \"path\":\"/tata\"\n" +
+                "  }]", PROVIDER, "invalidApiKey");
+        assertEquals(403, i);
+    }
+
+    @Test
     public void testEventWithBinary() throws IOException  {
         executeCall("[{\n" +
                 "    \"path\":\"/tutu\",\n" +
@@ -347,7 +384,7 @@ public class ApiEventTest  extends JahiaTestCase {
         });
     }
 
-    private int executeCall(String body, String provider) throws IOException {
+    private int executeCall(String body, String provider, String apiKey) throws IOException {
         HttpClient client = new HttpClient();
 
         URL url = new URL(getBaseServerURL() + Jahia.getContextPath() + "/modules/external-provider/events/" + provider);
@@ -363,12 +400,17 @@ public class ApiEventTest  extends JahiaTestCase {
         PostMethod method = new PostMethod(url.toExternalForm());
         method.addRequestHeader("Content-Type", "application/json");
         method.setRequestEntity(new StringRequestEntity(body, "application/json","UTF-8"));
+        method.setRequestHeader("apiKey", apiKey);
 
         return client.executeMethod(method);
     }
 
+    private int executeCall(String body, String provider) throws IOException {
+        return executeCall(body, provider, API_KEY);
+    }
+
     private int executeCall(String body) throws IOException {
-        return executeCall(body, "staticProvider");
+        return executeCall(body, PROVIDER);
     }
 
     private void executeCall(String body, Consumer<JCREventIterator> apiListenerCallback) {
@@ -386,7 +428,7 @@ public class ApiEventTest  extends JahiaTestCase {
     private void executeOSGICall(Iterable<ApiEvent> apiEvents, Consumer<JCREventIterator> apiListenerCallback) {
         executeListeners(() -> {
             try {
-                eventService.sendEvents(apiEvents, JCRSessionFactory.getInstance().getProviders().get("staticProvider"));
+                eventService.sendEvents(apiEvents, JCRSessionFactory.getInstance().getProviders().get(PROVIDER));
             } catch (RepositoryException e) {
                 fail(e.getMessage());
             }
@@ -397,7 +439,7 @@ public class ApiEventTest  extends JahiaTestCase {
     private void executeOSGICallWithExternalData(Iterable<ExternalData> externalDatas, Consumer<JCREventIterator> apiListenerCallback) {
         executeListeners(() -> {
             try {
-                eventService.sendAddedNodes(externalDatas, JCRSessionFactory.getInstance().getProviders().get("staticProvider"));
+                eventService.sendAddedNodes(externalDatas, JCRSessionFactory.getInstance().getProviders().get(PROVIDER));
             } catch (RepositoryException e) {
                 fail(e.getMessage());
             }
