@@ -517,18 +517,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 for (int i = 0; i < values.length; i++) {
                     s[i] = values[i] != null ? values[i].getString() : null;
                 }
-                if (epd.isInternationalized()) {
-                    Map<String, String[]> valMap = new HashMap<String, String[]>();
-                    if (getName().startsWith(J_TRANSLATION)) {
-                        String lang = StringUtils.substringAfter(getName(), "_");
-                        valMap.put(lang, s);
-                        data.getI18nProperties().put(name, valMap);
-                    } else {
-                        throw new ConstraintViolationException("Property " + name + " is internationalized");
-                    }
-                } else {
-                    data.getProperties().put(name, s);
-                }
+                data.getProperties().put(name, s);
             }
             final ExternalPropertyImpl newProperty = new ExternalPropertyImpl(new Name(name, NodeTypeRegistry.getInstance().getNamespaces()), this, session, values);
             properties.put(name, newProperty);
