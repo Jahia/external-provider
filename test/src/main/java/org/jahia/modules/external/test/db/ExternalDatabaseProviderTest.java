@@ -97,6 +97,10 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     private final static String BATCH_CHILDREN_PROVIDER_MOUNTPOINT = "/external-database-mapped-batch-children";
 
+    private final static String MAPPED_PROVIDER_MOUNTPOINT_NO_MIXIN = "/external-database-mapped-no-mixin";
+
+    private final static String MAPPED_PROVIDER_MOUNTPOINT_NO_NAMED_MIXIN = "/external-database-mapped-no-named-mixin";
+
     private static final String TESTSITE_NAME = "externalProviderExportTest";
 
     @BeforeClass
@@ -183,6 +187,12 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
         assertTrue("Cannot find mounted provider at " + BATCH_CHILDREN_PROVIDER_MOUNTPOINT,
                 session.nodeExists(BATCH_CHILDREN_PROVIDER_MOUNTPOINT));
+
+        assertTrue("Cannot find mounted provider at " + MAPPED_PROVIDER_MOUNTPOINT_NO_MIXIN,
+                session.nodeExists(MAPPED_PROVIDER_MOUNTPOINT_NO_MIXIN));
+
+        assertTrue("Cannot find mounted provider at " + MAPPED_PROVIDER_MOUNTPOINT_NO_NAMED_MIXIN,
+                session.nodeExists(MAPPED_PROVIDER_MOUNTPOINT_NO_NAMED_MIXIN));
     }
 
     @After
@@ -443,6 +453,14 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         testExtensionProperty(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
     }
 
+    @Test
+    public void testExtensionMixin() throws Exception {
+        testExtensionMixin(MAPPED_PROVIDER_MOUNTPOINT, true);
+        testExtensionMixin(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, true);
+        testExtensionMixin(MAPPED_PROVIDER_MOUNTPOINT_NO_MIXIN, false);
+        testExtensionMixin(MAPPED_PROVIDER_MOUNTPOINT_NO_NAMED_MIXIN, false);
+    }
+
     public void testExtensionProperty(String mountpoint) throws RepositoryException {
         JCRNodeWrapper root = session.getNode(mountpoint);
         JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
@@ -455,6 +473,25 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
             threwException = true;
         }
         assertTrue("Setting a non-overridable property shouldn't be possible", threwException);
+    }
+
+    public void testExtensionMixin(String mountpoint, boolean mixinAllowedOnExtension) throws Exception {
+        try {
+            Session jcrSession = session.getNode("/").getRealNode().getSession();
+
+            JCRNodeWrapper root = session.getNode(mountpoint);
+            JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
+            AA.addMixin("mix:title");
+            session.save();
+
+            if (mixinAllowedOnExtension) {
+                assertTrue("Mixin should be added on extension node", jcrSession.getNode(AA.getPath()).isNodeType("mix:title"));
+            } else {
+                assertFalse("Mixin should no be stored on extension node", jcrSession.nodeExists(AA.getPath()));
+            }
+        } finally {
+            cleanExtension(mountpoint);
+        }
     }
 
     @Test
@@ -685,7 +722,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
             session.save();
 
             File zip = ImportExportTest.exportSite(TESTSITE_NAME);
-            cleanExtension();
+            cleanExtension(MAPPED_PROVIDER_MOUNTPOINT);
 
             TestHelper.createSite(TESTSITE_NAME, "localhost", TestHelper.WEB_TEMPLATES, zip.getAbsolutePath(), TESTSITE_NAME + ".zip");
             session.save();
@@ -694,17 +731,17 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
             assertEquals("Property not imported", 10, AA.getProperty("firstclass_seats").getLong());
         } finally {
             try {
-                cleanExtension();
+                cleanExtension(MAPPED_PROVIDER_MOUNTPOINT);
                 TestHelper.deleteSite(TESTSITE_NAME);
                 session.save();
             } catch (Exception e) {}
         }
     }
 
-    private void cleanExtension() throws Exception {
+    private void cleanExtension(String mountpoint) throws Exception {
         Session jcrSession = session.getNode("/").getRealNode().getSession();
-        if (jcrSession.nodeExists(MAPPED_PROVIDER_MOUNTPOINT)) {
-            jcrSession.getNode(MAPPED_PROVIDER_MOUNTPOINT).remove();
+        if (jcrSession.nodeExists(mountpoint)) {
+            jcrSession.getNode(mountpoint).remove();
         }
         Node rootNode = jcrSession.getNode("/");
         if (rootNode.isNodeType("jmix:hasExternalProviderExtension")) {

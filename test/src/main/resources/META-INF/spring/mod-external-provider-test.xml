@@ -62,6 +62,68 @@
         </property>
     </bean>
 
+    <bean id="ExternalMappedDatabaseProviderNoMixin" class="org.jahia.modules.external.ExternalContentStoreProvider" parent="AbstractJCRStoreProvider">
+        <property name="key" value="ExternalMappedDatabaseProviderNoMixin"/>
+        <property name="mountPoint" value="/external-database-mapped-no-mixin"/>
+        <property name="externalProviderInitializerService" ref="ExternalProviderInitializerService"/>
+        <property name="extendableTypes">
+            <list>
+                <value>nt:base</value>
+            </list>
+        </property>
+        <property name="overridableItems">
+            <list>
+                <value>jtestnt:directory.*</value>
+                <value>jtestnt:airline.*</value>
+            </list>
+        </property>
+        <property name="nonOverridableItems">
+            <list>
+                <value>jtestnt:airline.business_seats</value>
+            </list>
+        </property>
+        <property name="nonExtendableMixins">
+            <list>
+                <value>*</value>
+            </list>
+        </property>
+        <property name="lockSupport" value="true"/>
+        <property name="dataSource">
+            <bean class="org.jahia.modules.external.test.db.MappedDatabaseDataSource"/>
+        </property>
+    </bean>
+
+    <bean id="ExternalMappedDatabaseProviderNoNamedMixin" class="org.jahia.modules.external.ExternalContentStoreProvider" parent="AbstractJCRStoreProvider">
+        <property name="key" value="ExternalMappedDatabaseProviderNoNamedMixin"/>
+        <property name="mountPoint" value="/external-database-mapped-no-named-mixin"/>
+        <property name="externalProviderInitializerService" ref="ExternalProviderInitializerService"/>
+        <property name="extendableTypes">
+            <list>
+                <value>nt:base</value>
+            </list>
+        </property>
+        <property name="overridableItems">
+            <list>
+                <value>jtestnt:directory.*</value>
+                <value>jtestnt:airline.*</value>
+            </list>
+        </property>
+        <property name="nonOverridableItems">
+            <list>
+                <value>jtestnt:airline.business_seats</value>
+            </list>
+        </property>
+        <property name="nonExtendableMixins">
+            <list>
+                <value>mix:title</value>
+            </list>
+        </property>
+        <property name="lockSupport" value="true"/>
+        <property name="dataSource">
+            <bean class="org.jahia.modules.external.test.db.MappedDatabaseDataSource"/>
+        </property>
+    </bean>
+
     <bean id="ExternalCanLoadChildrenInBatchMappedDatabaseProvider" class="org.jahia.modules.external.ExternalContentStoreProvider" parent="AbstractJCRStoreProvider">
         <property name="key" value="ExternalCanLoadChildrenInBatchMappedDatabaseProvider"/>
         <property name="mountPoint" value="/external-database-mapped-batch-children"/>
