@@ -47,7 +47,6 @@ import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.jahia.modules.external.events.EventServiceImpl;
 import org.jahia.modules.external.events.model.ApiEventImpl;
 import org.jahia.modules.external.events.validation.ValidList;
-import org.jahia.modules.external.events.validation.ValidProvider;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRStoreProvider;
 
@@ -76,8 +75,16 @@ public class EventResource {
     @Path("/{providerKey:.*}")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response postEvents(@Valid final ValidList<ApiEventImpl> events,
-                               @ValidProvider @PathParam("providerKey") String providerKey,
+                               @PathParam("providerKey") String providerKey,
                                @HeaderParam("apiKey") String apiKey) throws RepositoryException {
+
+        if (!(JCRSessionFactory.getInstance().getProviders().get(providerKey) instanceof ExternalContentStoreProvider)) {
+            Response.ResponseBuilder response = Response
+                    .status(Response.Status.BAD_REQUEST)
+                    .type(MediaType.TEXT_PLAIN_TYPE)
+                    .entity("No external provider found (invalidValue = " + providerKey +  ")");
+            return response.build();
+        }
 
         final JCRStoreProvider provider = JCRSessionFactory.getInstance().getProviders().get(providerKey);
 

@@ -5,22 +5,19 @@ import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.internal.inject.ConfiguredValidator;
 import org.glassfish.jersey.server.model.Invocable;
+import org.glassfish.jersey.server.model.Parameter;
 import org.jahia.services.content.JCRSessionFactory;
 
 import javax.inject.Singleton;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.ValidationException;
-import javax.validation.Validator;
+import javax.validation.*;
 import javax.validation.executable.ExecutableValidator;
 import javax.validation.metadata.BeanDescriptor;
-import javax.validation.metadata.MethodDescriptor;
 import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
-import java.lang.reflect.Method;
+import java.lang.annotation.Annotation;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -101,16 +98,19 @@ public class SimpleValidationFeature implements Feature {
                 constraintViolations.addAll(validate(resource));
             }
 
-            if (resourceMethod != null) {
-                final Method handlingMethod = resourceMethod.getHandlingMethod();
-
-                // Resource method validation - input parameters.
-                final MethodDescriptor methodDescriptor = beanDescriptor.getConstraintsForMethod(handlingMethod.getName(),
-                        handlingMethod.getParameterTypes());
-
-                if (methodDescriptor != null
-                        && methodDescriptor.hasConstrainedParameters()) {
-                    constraintViolations.addAll(forExecutables().validateParameters(resource, handlingMethod, args));
+            for (int i = 0; i < resourceMethod.getParameters().size(); i++) {
+                Parameter parameter = resourceMethod.getParameters().get(i);
+                for (Annotation annotation : parameter.getAnnotations()) {
+                    if (Valid.class.isAssignableFrom(annotation.annotationType())) {
+                        try {
+                            if (args != null && args[i] != null) {
+                                constraintViolations.addAll(validate(args[i]));
+                            }
+                        } catch (IndexOutOfBoundsException e){
+                            // do nothing
+                        }
+                        break;
+                    }
                 }
             }
 
