@@ -62,8 +62,10 @@ import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.ExternalDataSource;
 import org.jahia.modules.external.modules.osgi.ModulesSourceHttpServiceTracker;
+import org.jahia.modules.external.modules.osgi.ModulesSourceMonitor;
 import org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer;
 import org.jahia.modules.external.vfs.VFSDataSource;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
@@ -84,6 +86,9 @@ import org.jahia.settings.SettingsBean;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.ScriptEngineUtils;
 import org.jahia.utils.i18n.Messages;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
@@ -222,6 +227,17 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     logger.debug(result.getInfo());
                 }
                 boolean nodeTypeLabelsFlushed = false;
+
+                Bundle bundle = BundleUtils.getBundleBySymbolicName("external-provider-modules", null);
+                ServiceReference<?>[] allServiceReferences;
+                try {
+                    allServiceReferences = bundle.getBundleContext().getAllServiceReferences(ModulesSourceMonitor.class.getName(), null);
+                } catch (InvalidSyntaxException e) {
+                    if (logger.isDebugEnabled()) {
+                        logger.error(e.getMessage(), e);
+                    }
+                    allServiceReferences = null;
+                }
                 List<File> importFiles = new ArrayList<File>();
                 for (final File file : result.getAllAsList()) {
                     invalidateVfsParentCache(fullFolderPath, file);
@@ -232,8 +248,18 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
 
                     String type;
+                    FileObject fileObject = null;
                     try {
-                        type = getDataType(getFile(file.getPath()));
+                        fileObject = getFile(file.getPath());
+                        if(fileObject!= null && allServiceReferences != null) {
+                            for (ServiceReference<?> serviceReference : allServiceReferences) {
+                                ModulesSourceMonitor service = (ModulesSourceMonitor) bundle.getBundleContext().getService(serviceReference);
+                                if (service.canHandleFileType(fileObject)) {
+                                    service.handleFile(file);
+                                }
+                            }
+                        }
+                        type = getDataType(fileObject);
                     } catch (FileSystemException e) {
                         if (logger.isDebugEnabled()) {
                             logger.error(e.getMessage(), e);
