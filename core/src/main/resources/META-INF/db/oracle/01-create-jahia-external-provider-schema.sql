@@ -1,10 +1,4 @@
 
-    drop table jahia_external_mapping cascade constraints;
-
-    drop table jahia_external_provider_id cascade constraints;
-
-    drop sequence jahia_external_provider_id_seq;
-
     create table jahia_external_mapping (
         internalUuid varchar2(36 char) not null,
         externalId clob not null,

@@ -140,65 +140,142 @@
                     <plugin>
                         <groupId>de.juplo</groupId>
                         <artifactId>hibernate4-maven-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.javassist</groupId>
+                                <artifactId>javassist</artifactId>
+                                <version>3.18.1-GA</version>
+                            </dependency>
+                        </dependencies>
                         <executions>
                             <execution>
-                                <id>ddl-derby</id>
+                                <id>ddl-derby-drop</id>
                                 <goals>
                                     <goal>export</goal>
                                 </goals>
                                 <configuration>
                                     <hibernateDialect>${hibernateDialect.derby}</hibernateDialect>
                                     <outputFile>
-                                        ${basedir}/src/main/resources/META-INF/db/derby/jahia-external-provider-schema.sql
+                                        ${basedir}/src/main/resources/META-INF/db/derby/00-drop-jahia-external-provider-schema.sql
                                     </outputFile>
+                                    <type>DROP</type>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>ddl-mssql</id>
+                                <id>ddl-derby-create</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.derby}</hibernateDialect>
+                                    <outputFile>
+                                        ${basedir}/src/main/resources/META-INF/db/derby/01-create-jahia-external-provider-schema.sql
+                                    </outputFile>
+                                    <type>CREATE</type>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ddl-mssql-drop</id>
                                 <goals>
                                     <goal>export</goal>
                                 </goals>
                                 <configuration>
                                     <hibernateDialect>${hibernateDialect.mssql}</hibernateDialect>
                                     <outputFile>
-                                        ${basedir}/src/main/resources/META-INF/db/mssql/jahia-external-provider-schema.sql
+                                        ${basedir}/src/main/resources/META-INF/db/mssql/00-drop-jahia-external-provider-schema.sql
                                     </outputFile>
+                                    <type>DROP</type>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>ddl-mysql</id>
+                                <id>ddl-mssql-create</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.mssql}</hibernateDialect>
+                                    <outputFile>
+                                        ${basedir}/src/main/resources/META-INF/db/mssql/01-create-jahia-external-provider-schema.sql
+                                    </outputFile>
+                                    <type>CREATE</type>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ddl-mysql-drop</id>
                                 <goals>
                                     <goal>export</goal>
                                 </goals>
                                 <configuration>
                                     <hibernateDialect>${hibernateDialect.mysql}</hibernateDialect>
                                     <outputFile>
-                                        ${basedir}/src/main/resources/META-INF/db/mysql/jahia-external-provider-schema.sql
+                                        ${basedir}/src/main/resources/META-INF/db/mysql/00-drop-jahia-external-provider-schema.sql
                                     </outputFile>
+                                    <type>DROP</type>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>ddl-oracle</id>
+                                <id>ddl-mysql-create</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.mysql}</hibernateDialect>
+                                    <outputFile>
+                                        ${basedir}/src/main/resources/META-INF/db/mysql/01-create-jahia-external-provider-schema.sql
+                                    </outputFile>
+                                    <type>CREATE</type>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ddl-oracle-drop</id>
                                 <goals>
                                     <goal>export</goal>
                                 </goals>
                                 <configuration>
                                     <hibernateDialect>${hibernateDialect.oracle}</hibernateDialect>
                                     <outputFile>
-                                        ${basedir}/src/main/resources/META-INF/db/oracle/jahia-external-provider-schema.sql
+                                        ${basedir}/src/main/resources/META-INF/db/oracle/00-drop-jahia-external-provider-schema.sql
                                     </outputFile>
+                                    <type>DROP</type>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>ddl-postgresql</id>
+                                <id>ddl-oracle-create</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.oracle}</hibernateDialect>
+                                    <outputFile>
+                                        ${basedir}/src/main/resources/META-INF/db/oracle/01-create-jahia-external-provider-schema.sql
+                                    </outputFile>
+                                    <type>CREATE</type>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ddl-postgresql-drop</id>
                                 <goals>
                                     <goal>export</goal>
                                 </goals>
                                 <configuration>
                                     <hibernateDialect>${hibernateDialect.postgresql}</hibernateDialect>
                                     <outputFile>
-                                        ${basedir}/src/main/resources/META-INF/db/postgresql/jahia-external-provider-schema.sql
+                                        ${basedir}/src/main/resources/META-INF/db/postgresql/00-drop-jahia-external-provider-schema.sql
                                     </outputFile>
+                                    <type>DROP</type>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ddl-postgresql-create</id>
+                                <goals>
+                                    <goal>export</goal>
+                                </goals>
+                                <configuration>
+                                    <hibernateDialect>${hibernateDialect.postgresql}</hibernateDialect>
+                                    <outputFile>
+                                        ${basedir}/src/main/resources/META-INF/db/postgresql/01-create-jahia-external-provider-schema.sql
+                                    </outputFile>
+                                    <type>CREATE</type>
                                 </configuration>
                             </execution>
                         </executions>
