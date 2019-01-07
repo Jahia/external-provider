@@ -213,6 +213,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private SourceControlFactory sourceControlFactory;
 
+    private List<ModulesSourceMonitor> sourceMonitors;
+
     public void start() {
         final String fullFolderPath = module.getSourcesFolder().getPath() + File.separator;
         final String importFilesRootFolder = fullFolderPath + "src" + File.separator + "main" + File.separator + "import" +
@@ -228,16 +230,6 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                 }
                 boolean nodeTypeLabelsFlushed = false;
 
-                Bundle bundle = BundleUtils.getBundleBySymbolicName("external-provider-modules", null);
-                ServiceReference<?>[] allServiceReferences;
-                try {
-                    allServiceReferences = bundle.getBundleContext().getAllServiceReferences(ModulesSourceMonitor.class.getName(), null);
-                } catch (InvalidSyntaxException e) {
-                    if (logger.isDebugEnabled()) {
-                        logger.error(e.getMessage(), e);
-                    }
-                    allServiceReferences = null;
-                }
                 List<File> importFiles = new ArrayList<File>();
                 for (final File file : result.getAllAsList()) {
                     invalidateVfsParentCache(fullFolderPath, file);
@@ -251,11 +243,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     FileObject fileObject = null;
                     try {
                         fileObject = getFile(file.getPath());
-                        if(fileObject!= null && allServiceReferences != null) {
-                            for (ServiceReference<?> serviceReference : allServiceReferences) {
-                                ModulesSourceMonitor service = (ModulesSourceMonitor) bundle.getBundleContext().getService(serviceReference);
-                                if (service.canHandleFileType(fileObject)) {
-                                    service.handleFile(file);
+                        if(fileObject!= null && !CollectionUtils.isEmpty(sourceMonitors)) {
+                            for (ModulesSourceMonitor sourceMonitor : sourceMonitors) {
+                                if (sourceMonitor.canHandleFileType(fileObject)) {
+                                    sourceMonitor.handleFile(file);
                                 }
                             }
                         }
@@ -2345,6 +2336,10 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     public void setSourceControlFactory(SourceControlFactory sourceControlFactory) {
         this.sourceControlFactory = sourceControlFactory;
+    }
+
+    public void setSourceMonitors(List<ModulesSourceMonitor> sourceMonitors) {
+        this.sourceMonitors = sourceMonitors;
     }
 
     static class SortedProperties extends Properties {

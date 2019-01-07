@@ -70,6 +70,9 @@
         <property name="jcrStoreService" ref="JCRStoreService" />
         <property name="modulesSourceSpringInitializer" ref="ModulesSourceSpringInitializer" />
         <property name="modulesImportExportHelper" ref="ModulesImportExportHelper" />
+        <property name="sourceMonitors">
+            <osgi:list interface="org.jahia.modules.external.modules.osgi.ModulesSourceMonitor" availability="optional"/>
+        </property>
     </bean>
 
     <bean id="ModulesSourceSpringInitializer" class="org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer" factory-method="getInstance">
