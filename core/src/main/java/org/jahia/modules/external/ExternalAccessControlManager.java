@@ -29,17 +29,16 @@
  *     along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- *     2/ JSEL - Commercial and Supported Versions of the program
- *     ===================================================================================
+ * 2/ JSEL - Commercial and Supported Versions of the program
+ * ===================================================================================
  *
- *     IF YOU DECIDE TO CHOOSE THE JSEL LICENSE, YOU MUST COMPLY WITH THE FOLLOWING TERMS:
+ * IF YOU DECIDE TO CHOOSE THE JSEL LICENSE, YOU MUST COMPLY WITH THE FOLLOWING TERMS:
  *
- *     Alternatively, commercial and supported versions of the program - also known as
- *     Enterprise Distributions - must be used in accordance with the terms and conditions
- *     contained in a separate written agreement between you and Jahia Solutions Group SA.
+ * Alternatively, commercial and supported versions of the program - also known as Enterprise Distributions - must be
+ * used in accordance with the terms and conditions contained in a separate written agreement between you and Jahia
+ * Solutions Group SA.
  *
- *     If you are unsure which license is appropriate for your use,
- *     please contact the sales department at sales@jahia.com.
+ * If you are unsure which license is appropriate for your use, please contact the sales department at sales@jahia.com.
  */
 package org.jahia.modules.external;
 
@@ -67,6 +66,9 @@ import javax.jcr.version.VersionException;
 import java.util.*;
 
 import static javax.jcr.security.Privilege.*;
+import org.jahia.services.content.JCRCallback;
+import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.JCRTemplate;
 
 /**
  * Implementation of the {@link javax.jcr.security.AccessControlManager} for the {@link org.jahia.modules.external.ExternalData}.
@@ -166,28 +168,31 @@ public class ExternalAccessControlManager implements AccessControlManager {
             throws PathNotFoundException, RepositoryException {
 
         // check ACLs
-        Set<String> privs = new HashSet<>();
+        final Set<String> privs = new HashSet<>();
         for (Privilege privilege : privileges) {
             privs.add(privilege.getName());
         }
-        String mountPoint = session.getRepository().getStoreProvider().getMountPoint();
-        Session securitySession = JCRSessionFactory.getInstance().getCurrentSystemSession(session.getWorkspace().getName(), null, null);
-        PathWrapper pathWrapper = new ExternalPathWrapperImpl(StringUtils.equals(absPath, "/") ? mountPoint : mountPoint + absPath, securitySession);
-        boolean isGranted = AccessManagerUtils.isGranted(pathWrapper, privs, securitySession,
-                jahiaPrincipal, workspaceName, false, pathPermissionCache, compiledAcls, registry);
+        final String mountPoint = session.getRepository().getStoreProvider().getMountPoint();
+        return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, session.getWorkspace().getName(), null, new JCRCallback<Boolean>() {
+            @Override
+            public Boolean doInJCR(JCRSessionWrapper securitySession) throws RepositoryException {
+                PathWrapper pathWrapper = new ExternalPathWrapperImpl(StringUtils.equals(absPath, "/") ? mountPoint : mountPoint + absPath, securitySession);
+                boolean isGranted = AccessManagerUtils.isGranted(pathWrapper, privs, securitySession,
+                        jahiaPrincipal, workspaceName, false, pathPermissionCache, compiledAcls, registry);
 
-        if (supportPrivileges) {
-            // if the node is created in the same session, return true
-            for (Item item : session.getNewItems()) {
-                if (item.getPath().equals(absPath)) {
-                    return true;
+                if (supportPrivileges) {
+                    // if the node is created in the same session, return true
+                    for (Item item : session.getNewItems()) {
+                        if (item.getPath().equals(absPath)) {
+                            return true;
+                        }
+                    }
+                    // check privilege names
+                    isGranted = isGranted && hasPrivilegesLegacy(absPath, privileges);
                 }
+                return isGranted;
             }
-            // check privilege names
-            isGranted = isGranted && hasPrivilegesLegacy(absPath, privileges);
-        }
-
-        return isGranted;
+        });
     }
 
     private Privilege[] getPrivilegesLegacy(String absPath) throws PathNotFoundException,
