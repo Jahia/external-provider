@@ -59,7 +59,7 @@
         <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
         <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
         <url>scm:git:git@github.com:Jahia/external-provider.git</url>
-        <tag>HEAD</tag>
+        <tag>3-1-X-BRANCH</tag>
     </scm>
     <properties>
         <jahia-module-type>system</jahia-module-type>

@@ -60,7 +60,7 @@
         <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
         <url>scm:git:git@github.com:Jahia/external-provider.git</url>
         <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>3-1-X-BRANCH</tag>
     </scm>
     <properties>
         <jahia-depends>default,external-provider,external-provider-vfs,rating</jahia-depends>
