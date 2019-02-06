@@ -28,7 +28,7 @@
         GNU General Public License for more details.
 
         You should have received a copy of the GNU General Public License
-        along with this program. If not, see <http://www.gnu.org/licenses/>.
+        along with this program. If not, see <http://www.gnu.org/licenses />.
 
 
         2/ JSEL - Commercial and Supported Versions of the program
@@ -52,7 +52,7 @@
         <version>7.2.3.1</version>
         <relativePath />
     </parent>
-    <version>3.1.7-SNAPSHOT</version>
+    <version>3.1.7</version>
     <artifactId>external-provider-parent</artifactId>
     <name>Jahia External Provider Parent</name>
     <packaging>pom</packaging>
@@ -61,7 +61,7 @@
         <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
         <url>scm:git:git@github.com:Jahia/external-provider.git</url>
         <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
-        <tag>3-1-X-BRANCH</tag>
+        <tag>3_1_7</tag>
     </scm>
     <repositories>
         <repository>
