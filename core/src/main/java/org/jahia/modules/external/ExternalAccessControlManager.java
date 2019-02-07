@@ -76,6 +76,7 @@ import static javax.jcr.security.Privilege.*;
 public class ExternalAccessControlManager implements AccessControlManager {
 
     private static final AccessControlPolicy[] POLICIES = new AccessControlPolicy[0];
+    private static final String SYSTEM_USER = " system ";
 
     private Map<String, Boolean> pathPermissionCache = null;
     private Map<Object, AccessManagerUtils.CompiledAcl> compiledAcls = new HashMap<>();
@@ -171,7 +172,8 @@ public class ExternalAccessControlManager implements AccessControlManager {
             privs.add(privilege.getName());
         }
         String mountPoint = session.getRepository().getStoreProvider().getMountPoint();
-        Session securitySession = JCRSessionFactory.getInstance().getCurrentSystemSession(session.getWorkspace().getName(), null, null);
+        Session securitySession = (session.getUserID().startsWith(SYSTEM_USER)) ? session
+                : JCRSessionFactory.getInstance().getCurrentSystemSession(session.getWorkspace().getName(), null, null);
         PathWrapper pathWrapper = new ExternalPathWrapperImpl(StringUtils.equals(absPath, "/") ? mountPoint : mountPoint + absPath, securitySession);
         boolean isGranted = AccessManagerUtils.isGranted(pathWrapper, privs, securitySession,
                 jahiaPrincipal, workspaceName, false, pathPermissionCache, compiledAcls, registry);
