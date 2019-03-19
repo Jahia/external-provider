@@ -148,15 +148,16 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
     public ExternalData getItemByPath(String path) throws PathNotFoundException {
         try {
+            String unescapedPath = JCRContentUtils.unescapeLocalNodeName(path);
             if (path.endsWith(JCR_CONTENT_SUFFIX)) {
-                FileObject fileObject = getFile(StringUtils.substringBeforeLast(path, JCR_CONTENT_SUFFIX));
+                FileObject fileObject = getFile(StringUtils.substringBeforeLast(unescapedPath, JCR_CONTENT_SUFFIX));
                 FileContent content = fileObject.getContent();
                 if (!fileObject.exists()) {
                     throw new PathNotFoundException(path);
                 }
                 return getFileContent(content);
             } else {
-                FileObject fileObject = getFile(path);
+                FileObject fileObject = getFile(unescapedPath);
                 if (!fileObject.exists()) {
                     throw new PathNotFoundException(path);
                 }
@@ -186,7 +187,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                         List<String> children = new LinkedList<String>();
                         for (FileObject object : files) {
                             if (getSupportedNodeTypes().contains(getDataType(object))) {
-                                children.add(object.getName().getBaseName());
+                                children.add(JCRContentUtils.escapeLocalNodeName(object.getName().getBaseName()));
                             }
                         }
                         return children;
@@ -218,7 +219,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     final FileContent content = fileObject.getContent();
                     return Collections.singletonList(getFileContent(content));
                 } else if (fileObject.getType() == FileType.FOLDER) {
-      fileObject.refresh();  //in case of folder, refresh because it could be changed external					
+                    fileObject.refresh();  //in case of folder, refresh because it could be changed external
                     FileObject[] files = fileObject.getChildren();
                     if (files.length > 0) {
                         List<ExternalData> children = new LinkedList<ExternalData>();
@@ -309,11 +310,11 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         }
         try {
             FileObject origin = getFile(oldPath);
-            if(origin.isContentOpen()) {
+            if (origin.isContentOpen()) {
                 origin.close();
             }
             FileObject destination = getFile(newPath);
-            if(destination.exists() && destination.isContentOpen()){
+            if (destination.exists() && destination.isContentOpen()) {
                 destination.close();
             }
             origin.moveTo(destination);
@@ -338,15 +339,15 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 properties.put(Constants.JCR_LASTMODIFIED, timestamp);
             }
             // Add jmix:image mixin in case of the file is a picture.
-            if(content.getContentInfo()!=null && content.getContentInfo().getContentType() != null
-                    && fileObject.getContent().getContentInfo().getContentType().matches("image/(.*)"))
-            {
+            if (content.getContentInfo() != null && content.getContentInfo().getContentType() != null
+                    && fileObject.getContent().getContentInfo().getContentType().matches("image/(.*)")) {
                 addedMixins.add(Constants.JAHIAMIX_IMAGE);
             }
 
         }
 
         String path = fileObject.getName().getPath().substring(rootPath.length());
+        path = JCRContentUtils.escapeNodePath(path);
         if (!path.startsWith("/")) {
             path = "/" + path;
         }
@@ -366,7 +367,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
         properties.put(Constants.JCR_MIMETYPE, new String[]{getContentType(content)});
 
-        String path = content.getFile().getName().getPath().substring(rootPath.length());
+        String path = JCRContentUtils.escapeNodePath(content.getFile().getName().getPath().substring(rootPath.length()));
         String jcrContentPath = path + "/" + Constants.JCR_CONTENT;
         ExternalData externalData = new ExternalData(jcrContentPath, jcrContentPath, Constants.JAHIANT_RESOURCE, properties);
 
