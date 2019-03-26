@@ -49,7 +49,7 @@
     <parent>
         <groupId>org.jahia.modules</groupId>
         <artifactId>external-provider-parent</artifactId>
-        <version>3.2.1-SNAPSHOT</version>
+        <version>3.2.1-count__edp__backlog_9298-SNAPSHOT</version>
     </parent>
     <artifactId>external-provider-vfs</artifactId>
     <packaging>bundle</packaging>
