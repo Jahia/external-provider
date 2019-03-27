@@ -110,6 +110,22 @@ public interface ExternalDataSource {
     }
 
     /**
+     * If implemented, this interface allow and defines count feature support.
+     */
+    public interface SupportCount {
+        /**
+         * Add support of count column in the provided query
+         * A count column is identified by "rep:count(" string.
+         *
+         * @param query The JCR Query
+         * @return number of items that match the query count column
+         * @throws RepositoryException
+         * @see org.jahia.modules.external.query.QueryHelper
+         */
+        long count(ExternalQuery query) throws RepositoryException;
+    }
+
+    /**
      * If implemented, this interface allow and defines writing
      */
     public interface Writable {
