@@ -76,7 +76,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Sergiy Shyrkov
  */
-public class MappedDatabaseDataSource extends GenericDatabaseDataSource implements ExternalDataSource.Searchable, ExternalDataSource.LazyProperty {
+public class MappedDatabaseDataSource extends GenericDatabaseDataSource implements ExternalDataSource.Searchable, ExternalDataSource.SupportCount, ExternalDataSource.LazyProperty {
 
     static final String DATA_TYPE_AIRLINE = "jtestnt:airline".intern();
 
@@ -229,6 +229,16 @@ public class MappedDatabaseDataSource extends GenericDatabaseDataSource implemen
 
     @Override
     public List<String> search(ExternalQuery query) throws RepositoryException {
+        return search(query, false);
+    }
+
+    @Override
+    public long count(ExternalQuery query) throws RepositoryException {
+        List<String> results = search(query, true);
+        return results != null ? results.size() : 0;
+    }
+
+    private List<String> search(ExternalQuery query, boolean count) throws RepositoryException {
         List<String> allResults = null;
 
         String nodeType = QueryHelper.getNodeType(query.getSource());
@@ -245,14 +255,16 @@ public class MappedDatabaseDataSource extends GenericDatabaseDataSource implemen
             }
         }
 
-        if (allResults != null && query.getOffset() > 0) {
-            if (query.getOffset() >= allResults.size()) {
-                return Collections.<String>emptyList();
+        if (!count) {
+            if (allResults != null && query.getOffset() > 0) {
+                if (query.getOffset() >= allResults.size()) {
+                    return Collections.<String>emptyList();
+                }
+                allResults = allResults.subList((int) query.getOffset(), allResults.size());
             }
-            allResults = allResults.subList((int) query.getOffset(), allResults.size());
-        }
-        if (allResults != null && query.getLimit() > -1 && query.getLimit() < allResults.size()) {
-            allResults = allResults.subList(0, (int) query.getLimit());
+            if (allResults != null && query.getLimit() > -1 && query.getLimit() < allResults.size()) {
+                allResults = allResults.subList(0, (int) query.getLimit());
+            }
         }
 
         return allResults != null ? allResults : Collections.<String>emptyList();
