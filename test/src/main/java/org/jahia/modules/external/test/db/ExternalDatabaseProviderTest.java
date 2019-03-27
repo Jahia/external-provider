@@ -156,14 +156,21 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     	amazonAirline.getProperty("maintenance_center").getValue();
 	}
 
-    private long getResultCount(String query) throws RepositoryException, InvalidQueryException {
-        return getResultCount(query, 0, 0);
+    private long getResultCount(String query, boolean useRealCount) throws RepositoryException, InvalidQueryException {
+        return getResultCount(query, 0, 0, useRealCount);
     }
 
-    private long getResultCount(String query, long limit, long offset) throws RepositoryException,
+    private long getResultCount(String query, long limit, long offset, boolean useRealCount) throws RepositoryException,
             InvalidQueryException {
-        return query(query, limit, offset).getNodes().getSize();
+        QueryResult result = query(query, limit, offset);
+        return useRealCount ? result.getRows().nextRow().getValue("").getLong() : result.getNodes().getSize();
     }
+
+    private String getQuerySelector(boolean useRealCount, String column) throws RepositoryException,
+            InvalidQueryException {
+        return useRealCount ? "[rep:count(" + column + ")]" : "*";
+    }
+
 
     private QueryResult query(String query, long limit, long offset) throws RepositoryException, InvalidQueryException {
         Query queryObject = session.getWorkspace().getQueryManager().createQuery(query, Query.JCR_SQL2);
@@ -344,106 +351,143 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     
     @Test
     public void testQueryConstraints() throws RepositoryException {
-        testQueryConstraints(MAPPED_PROVIDER_MOUNTPOINT);
-        testQueryConstraints(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+        testQueryConstraints(MAPPED_PROVIDER_MOUNTPOINT, false);
+        testQueryConstraints(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, false);
     }
 
-    public void testQueryConstraints(String mountpoint) throws RepositoryException {
-        assertEquals(1, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [language] = 'Dutch' and isdescendantnode('" + mountpoint + "')"));
+    @Test
+    public void testCountConstraints() throws RepositoryException {
+        testQueryConstraints(MAPPED_PROVIDER_MOUNTPOINT, true);
+        testQueryConstraints(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, true);
+    }
 
-        assertEquals(3, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [language] = 'Arabic' and isdescendantnode('" + mountpoint + "')"));
-        assertEquals(1, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [language] = 'Arabic' and [city_name] = 'Cairo' and isdescendantnode('" + mountpoint + "')"));
-        assertEquals(0, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [language] = 'Arabic' and [city_name] = 'Amstaredam' and isdescendantnode('" + mountpoint + "')"));
+    public void testQueryConstraints(String mountpoint, boolean useRealCount) throws RepositoryException {
+        String selector = useRealCount ? "[rep:count(city)]" : "*";
 
-        assertEquals(37, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                + "] where [country_iso_code] = 'US' and isdescendantnode('" + mountpoint + "')"));
+        assertEquals(1, getResultCount("select " + selector + " from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                + "] as city where city.[language] = 'Dutch' and isdescendantnode(city, '" + mountpoint + "')", useRealCount));
+
+        assertEquals(3, getResultCount("select " + selector + " from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                + "] as city where city.[language] = 'Arabic' and isdescendantnode(city, '" + mountpoint + "')", useRealCount));
+        assertEquals(1, getResultCount("select " + selector + " from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                + "] as city where city.[language] = 'Arabic' and city.[city_name] = 'Cairo' and isdescendantnode(city, '" + mountpoint + "')", useRealCount));
+        assertEquals(0, getResultCount("select " + selector + " from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                + "] as city where city.[language] = 'Arabic' and city.[city_name] = 'Amstaredam' and isdescendantnode(city, '" + mountpoint + "')", useRealCount));
+
+        assertEquals(37, getResultCount("select " + selector + " from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                + "] as city where city.[country_iso_code] = 'US' and isdescendantnode('" + mountpoint + "')", useRealCount));
         assertEquals(
-                17,
-                getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                        + "] where [country_iso_code] = 'US' and isdescendantnode('" + mountpoint + "')", 0, 20));
+                useRealCount ? 37 : 17,
+                getResultCount("select " + selector + " from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                        + "] as city where city.[country_iso_code] = 'US' and isdescendantnode(city, '" + mountpoint + "')", 0, 20, useRealCount));
         assertEquals(
-                3,
-                getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                        + "] where [country_iso_code] = 'US' and isdescendantnode('" + mountpoint + "')", 3, 20));
+                useRealCount ? 37 : 3,
+                getResultCount("select " + selector + " from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                        + "] as city where city.[country_iso_code] = 'US' and isdescendantnode(city, '" + mountpoint + "')", 3, 20, useRealCount));
         assertEquals(
-                0,
-                getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
-                        + "] where [country_iso_code] = 'US' and isdescendantnode('" + mountpoint + "')", 3, 100));
+                useRealCount ? 37 : 0,
+                getResultCount("select " + selector + " from [" + MappedDatabaseDataSource.DATA_TYPE_CITY
+                        + "] as city where city.[country_iso_code] = 'US' and isdescendantnode(city, '" + mountpoint + "')", 3, 100, useRealCount));
     }
 
     @Test
     public void testQueryPaths() throws RepositoryException {
-        testQueryPaths(MAPPED_PROVIDER_MOUNTPOINT);
-        testQueryPaths(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+        testQueryPaths(MAPPED_PROVIDER_MOUNTPOINT, false);
+        testQueryPaths(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, false);
     }
 
-    public void testQueryPaths(String mountpoint) throws RepositoryException {
-        assertEquals(87, getResultCount("select * from [jtestnt:city] where ischildnode('" + mountpoint + "/CITIES')"));
-        assertEquals(0, getResultCount("select * from [jtestnt:city] where ischildnode('" + mountpoint + "/AIRLINES')"));
-        assertEquals(0, getResultCount("select * from [jtestnt:city] where ischildnode('" + mountpoint + "')"));
-        assertEquals(0, getResultCount("select * from [jtestnt:city] where ischildnode('/sites/systemsite')"));
-        assertEquals(87, getResultCount("select * from [jtestnt:city] where isdescendantnode('" + mountpoint + "/CITIES')"));
-        assertEquals(0, getResultCount("select * from [jtestnt:city] where isdescendantnode('" + mountpoint + "/AIRLINES')"));
-        assertEquals(87, getResultCount("select * from [jtestnt:city] where isdescendantnode('" + mountpoint + "/')"));
-        assertEquals(0, getResultCount("select * from [jtestnt:city] where isdescendantnode('/sites/systemsite')"));
+    @Test
+    public void testCountPaths() throws RepositoryException {
+        testQueryPaths(MAPPED_PROVIDER_MOUNTPOINT, true);
+        testQueryPaths(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, true);
+    }
+
+    public void testQueryPaths(String mountpoint, boolean useRealCount) throws RepositoryException {
+        String selector = useRealCount ? "[rep:count(city)]" : "*";
+
+        assertEquals(87, getResultCount("select " + selector + " from [jtestnt:city] as city where ischildnode(city, '" + mountpoint + "/CITIES')", useRealCount));
+        assertEquals(0, getResultCount("select " + selector + " from [jtestnt:city] as city where ischildnode(city, '" + mountpoint + "/AIRLINES')", useRealCount));
+        assertEquals(0, getResultCount("select " + selector + " from [jtestnt:city] as city where ischildnode(city, '" + mountpoint + "')", useRealCount));
+        assertEquals(0, getResultCount("select " + selector + " from [jtestnt:city] as city where ischildnode(city, '/sites/systemsite')", useRealCount));
+        assertEquals(87, getResultCount("select " + selector + " from [jtestnt:city] as city where isdescendantnode(city, '" + mountpoint + "/CITIES')", useRealCount));
+        assertEquals(0, getResultCount("select " + selector + " from [jtestnt:city] as city where isdescendantnode(city, '" + mountpoint + "/AIRLINES')", useRealCount));
+        assertEquals(87, getResultCount("select " + selector + " from [jtestnt:city] as city where isdescendantnode(city, '" + mountpoint + "/')", useRealCount));
+        assertEquals(0, getResultCount("select " + selector + " from [jtestnt:city] as city where isdescendantnode(city, '/sites/systemsite')", useRealCount));
     }
 
     @Test
     public void testQueryLimitAndOffset() throws RepositoryException {
-        testQueryLimitAndOffset(MAPPED_PROVIDER_MOUNTPOINT);
-        testQueryLimitAndOffset(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+        testQueryLimitAndOffset(MAPPED_PROVIDER_MOUNTPOINT, false);
+        testQueryLimitAndOffset(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, false);
     }
 
-    public void testQueryLimitAndOffset(String mountpoint) throws RepositoryException {
-        String queryDirs = "select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "] where isdescendantnode('" + mountpoint + "')";
+    @Test
+    public void testCountLimitAndOffset() throws RepositoryException {
+        testQueryLimitAndOffset(MAPPED_PROVIDER_MOUNTPOINT, true);
+        testQueryLimitAndOffset(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, true);
+    }
 
-        assertEquals(4, getResultCount(queryDirs, 0, 0));
+    public void testQueryLimitAndOffset(String mountpoint, boolean useRealCount) throws RepositoryException {
+        String selector = useRealCount ? "[rep:count(directory)]" : "*";
+        String queryDirs = "select " + selector + " from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "] as directory where isdescendantnode(directory, '" + mountpoint + "')";
 
-        assertEquals(1, getResultCount(queryDirs, 1, 0));
-        assertEquals(2, getResultCount(queryDirs, 2, 0));
-        assertEquals(3, getResultCount(queryDirs, 3, 0));
-        assertEquals(4, getResultCount(queryDirs, 4, 0));
+        assertEquals(4, getResultCount(queryDirs, 0, 0, useRealCount));
 
-        assertEquals(3, getResultCount(queryDirs, 0, 1));
-        assertEquals(2, getResultCount(queryDirs, 0, 2));
-        assertEquals(1, getResultCount(queryDirs, 0, 3));
-        assertEquals(0, getResultCount(queryDirs, 0, 4));
-        assertEquals(0, getResultCount(queryDirs, 0, 10));
+        assertEquals(useRealCount ? 4 : 1, getResultCount(queryDirs, 1, 0, useRealCount));
+        assertEquals(useRealCount ? 4 : 2, getResultCount(queryDirs, 2, 0, useRealCount));
+        assertEquals(useRealCount ? 4 : 3, getResultCount(queryDirs, 3, 0, useRealCount));
+        assertEquals(4, getResultCount(queryDirs, 4, 0, useRealCount));
 
-        assertEquals(3, getResultCount(queryDirs, 3, 1));
-        assertEquals(2, getResultCount(queryDirs, 3, 2));
-        assertEquals(1, getResultCount(queryDirs, 3, 3));
-        assertEquals(0, getResultCount(queryDirs, 3, 4));
-        assertEquals(0, getResultCount(queryDirs, 3, 5));
+        assertEquals(useRealCount ? 4 : 3, getResultCount(queryDirs, 0, 1, useRealCount));
+        assertEquals(useRealCount ? 4 : 2, getResultCount(queryDirs, 0, 2, useRealCount));
+        assertEquals(useRealCount ? 4 : 1, getResultCount(queryDirs, 0, 3, useRealCount));
+        assertEquals(useRealCount ? 4 : 0, getResultCount(queryDirs, 0, 4, useRealCount));
+        assertEquals(useRealCount ? 4 : 0, getResultCount(queryDirs, 0, 10, useRealCount));
+
+        assertEquals(useRealCount ? 4 : 3, getResultCount(queryDirs, 3, 1, useRealCount));
+        assertEquals(useRealCount ? 4 : 2, getResultCount(queryDirs, 3, 2, useRealCount));
+        assertEquals(useRealCount ? 4 : 1, getResultCount(queryDirs, 3, 3, useRealCount));
+        assertEquals(useRealCount ? 4 : 0, getResultCount(queryDirs, 3, 4, useRealCount));
+        assertEquals(useRealCount ? 4 : 0, getResultCount(queryDirs, 3, 5, useRealCount));
     }
 
     @Test
     public void testQueryLimitAndOffsetMultipleProviders() throws RepositoryException {
         String query = "select * from [nt:base]";
-        long total = getResultCount(query, 0, 0);
+        long total = getResultCount(query, 0, 0, false);
 
-        assertEquals(200, getResultCount(query, 0, total - 200));
+        assertEquals(200, getResultCount(query, 0, total - 200, false));
+    }
+
+    @Test
+    public void testCountMultipleProviders() throws RepositoryException {
+       // TODO
     }
 
     @Test
     public void testQueryNodeType() throws RepositoryException {
-        testQueryNodeType(MAPPED_PROVIDER_MOUNTPOINT);
-        testQueryNodeType(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+        testQueryNodeType(MAPPED_PROVIDER_MOUNTPOINT, false);
+        testQueryNodeType(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, false);
     }
 
-    public void testQueryNodeType(String mountpoint) throws RepositoryException {
-        // count
-        assertEquals(4, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "] where isdescendantnode('" + mountpoint + "')"));
-        assertEquals(2, getResultCount("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "] where isdescendantnode('" + mountpoint + "')"));
-        assertEquals(0, getResultCount("select * from [" + GenericDatabaseDataSource.DATA_TYPE_TABLE + "] where isdescendantnode('" + mountpoint + "')"));
+    @Test
+    public void testCountNodeType() throws RepositoryException {
+        testQueryNodeType(MAPPED_PROVIDER_MOUNTPOINT, true);
+        testQueryNodeType(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, true);
+    }
 
-        for (NodeIterator ni = query("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "] where isdescendantnode('" + mountpoint + "')", 0, 0)
-                .getNodes(); ni.hasNext();) {
-            assertTrue(ni.nextNode().isNodeType(MappedDatabaseDataSource.DATA_TYPE_AIRLINE));
+    public void testQueryNodeType(String mountpoint, boolean useRealCount) throws RepositoryException {
+        String selector = useRealCount ? "[rep:count(item)]" : "*";
+        // count
+        assertEquals(4, getResultCount("select " + selector + " from [" + MappedDatabaseDataSource.DATA_TYPE_DIRECTORY + "] as item where isdescendantnode(item, '" + mountpoint + "')", useRealCount));
+        assertEquals(2, getResultCount("select " + selector + " from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "] as item where isdescendantnode(item, '" + mountpoint + "')", useRealCount));
+        assertEquals(0, getResultCount("select " + selector + " from [" + GenericDatabaseDataSource.DATA_TYPE_TABLE + "] as item where isdescendantnode(item, '" + mountpoint + "')", useRealCount));
+
+        if (!useRealCount) {
+            for (NodeIterator ni = query("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "] where isdescendantnode('" + mountpoint + "')", 0, 0)
+                    .getNodes(); ni.hasNext();) {
+                assertTrue(ni.nextNode().isNodeType(MappedDatabaseDataSource.DATA_TYPE_AIRLINE));
+            }
         }
     }
 
@@ -557,18 +601,25 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @Test
     public void testSearchOnExtension() throws RepositoryException {
-        testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT);
-        testSearchOnExtension(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+        testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT, false);
+        testSearchOnExtension(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, false);
     }
 
-    public void testSearchOnExtension(String mountpoint) throws RepositoryException {
+    @Test
+    public void testCountOnExtension() throws RepositoryException {
+        testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT, true);
+        testSearchOnExtension(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, true);
+    }
+
+    public void testSearchOnExtension(String mountpoint, boolean useRealCount) throws RepositoryException {
+        String selector = useRealCount ? "[rep:count(c)]" : "*";
         JCRNodeWrapper root = session.getNode(mountpoint);
         JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
         AA.addMixin("jmix:comments");
         AA.setProperty("shortView",true);
         session.save();
 
-        assertEquals(1, getResultCount("select * from [jmix:comments] as c where isdescendantnode(c, '" + mountpoint + "')", 0, 0));
+        assertEquals(1, getResultCount("select " + selector + " from [jmix:comments] as c where isdescendantnode(c, '" + mountpoint + "')", 0, 0, useRealCount));
 
         AA.removeMixin("jmix:comments");
         session.save();
@@ -750,4 +801,9 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         jcrSession.save();
     }
 
+    @Test
+    public void testCountMixedJCRAndExternalAndExtensions() throws Exception {
+        // TODO create nodes in JCR
+        // create nodes as extensions
+    }
 }
