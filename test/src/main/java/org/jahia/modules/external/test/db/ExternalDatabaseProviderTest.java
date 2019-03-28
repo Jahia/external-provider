@@ -50,7 +50,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
@@ -65,6 +68,7 @@ import javax.jcr.query.InvalidQueryException;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 
+import com.google.common.collect.Sets;
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRCallback;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -91,6 +95,8 @@ import org.junit.Test;
  */
 public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
+    private final static String STATIC_PROVIDER_MOUNTPOINT = "/external-static";
+
     private final static String GENERIC_PROVIDER_MOUNTPOINT = "/external-database-generic";
 
     private final static String MAPPED_PROVIDER_MOUNTPOINT = "/external-database-mapped";
@@ -100,6 +106,8 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     private final static String MAPPED_PROVIDER_MOUNTPOINT_NO_MIXIN = "/external-database-mapped-no-mixin";
 
     private final static String MAPPED_PROVIDER_MOUNTPOINT_NO_NAMED_MIXIN = "/external-database-mapped-no-named-mixin";
+
+    private final static String MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT = "/external-database-mapped-support-count";
 
     private static final String TESTSITE_NAME = "externalProviderExportTest";
 
@@ -353,12 +361,12 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     public void testQueryConstraints() throws RepositoryException {
         testQueryConstraints(MAPPED_PROVIDER_MOUNTPOINT, false);
         testQueryConstraints(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, false);
+        testQueryConstraints(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, false);
     }
 
     @Test
     public void testCountConstraints() throws RepositoryException {
-        testQueryConstraints(MAPPED_PROVIDER_MOUNTPOINT, true);
-        testQueryConstraints(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, true);
+        testQueryConstraints(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, true);
     }
 
     public void testQueryConstraints(String mountpoint, boolean useRealCount) throws RepositoryException {
@@ -394,12 +402,12 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     public void testQueryPaths() throws RepositoryException {
         testQueryPaths(MAPPED_PROVIDER_MOUNTPOINT, false);
         testQueryPaths(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, false);
+        testQueryPaths(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, false);
     }
 
     @Test
     public void testCountPaths() throws RepositoryException {
-        testQueryPaths(MAPPED_PROVIDER_MOUNTPOINT, true);
-        testQueryPaths(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, true);
+        testQueryPaths(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, true);
     }
 
     public void testQueryPaths(String mountpoint, boolean useRealCount) throws RepositoryException {
@@ -419,12 +427,12 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     public void testQueryLimitAndOffset() throws RepositoryException {
         testQueryLimitAndOffset(MAPPED_PROVIDER_MOUNTPOINT, false);
         testQueryLimitAndOffset(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, false);
+        testQueryLimitAndOffset(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, false);
     }
 
     @Test
     public void testCountLimitAndOffset() throws RepositoryException {
-        testQueryLimitAndOffset(MAPPED_PROVIDER_MOUNTPOINT, true);
-        testQueryLimitAndOffset(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, true);
+        testQueryLimitAndOffset(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, true);
     }
 
     public void testQueryLimitAndOffset(String mountpoint, boolean useRealCount) throws RepositoryException {
@@ -460,20 +468,15 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testCountMultipleProviders() throws RepositoryException {
-       // TODO
-    }
-
-    @Test
     public void testQueryNodeType() throws RepositoryException {
         testQueryNodeType(MAPPED_PROVIDER_MOUNTPOINT, false);
         testQueryNodeType(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, false);
+        testQueryNodeType(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, false);
     }
 
     @Test
     public void testCountNodeType() throws RepositoryException {
-        testQueryNodeType(MAPPED_PROVIDER_MOUNTPOINT, true);
-        testQueryNodeType(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, true);
+        testQueryNodeType(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, true);
     }
 
     public void testQueryNodeType(String mountpoint, boolean useRealCount) throws RepositoryException {
@@ -600,15 +603,15 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testSearchOnExtension() throws RepositoryException {
+    public void testSearchOnExtensionNotSupportedNodeType() throws RepositoryException {
         testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT, false);
         testSearchOnExtension(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, false);
+        testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, false);
     }
 
     @Test
-    public void testCountOnExtension() throws RepositoryException {
-        testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT, true);
-        testSearchOnExtension(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, true);
+    public void testCountOnExtensionNotSupportedNodeType() throws RepositoryException {
+        testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, true);
     }
 
     public void testSearchOnExtension(String mountpoint, boolean useRealCount) throws RepositoryException {
@@ -616,7 +619,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         JCRNodeWrapper root = session.getNode(mountpoint);
         JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
         AA.addMixin("jmix:comments");
-        AA.setProperty("shortView",true);
+        AA.setProperty("shortView", true);
         session.save();
 
         assertEquals(1, getResultCount("select " + selector + " from [jmix:comments] as c where isdescendantnode(c, '" + mountpoint + "')", 0, 0, useRealCount));
@@ -802,8 +805,74 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testCountMixedJCRAndExternalAndExtensions() throws Exception {
-        // TODO create nodes in JCR
-        // create nodes as extensions
+    public void testAggregatedCountFromAllKindOfProviders() throws Exception {
+        try {
+            // add in JCR
+            JCRNodeWrapper root = session.getNode("/");
+            JCRNodeWrapper catalog = root.addNode("catalog", "jtestnt:catalog");
+            JCRNodeWrapper directory = catalog.addNode("directory", "jtestnt:directory");
+            directory.addNode("airlineJCR", "jtestnt:airline");
+            session.save();
+
+            // add extension in provider supporting Count, and supporting nodetype
+            directory = session.getNode(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT + "/AIRLINES");
+            directory.addNode("airlineExtension", "jtestnt:airline");
+            session.save();
+
+            // add extension in provider not supporting Count, not supporting nodetype
+            root = session.getNode(STATIC_PROVIDER_MOUNTPOINT);
+            directory = root.addNode("directory", "jnt:contentFolder");
+            directory.addNode("airlineExtensionNotSupportef", "jtestnt:airline");
+            session.save();
+
+            // add extension in provider supporting Count, not supporting nodetype
+            // Already tested by: testCountOnExtensionNotSupportedNodeType()
+
+            // add extension in provider not supporting Count, supporting nodetype
+            directory = session.getNode(MAPPED_PROVIDER_MOUNTPOINT + "/AIRLINES");
+            directory.addNode("airlineExtension", "jtestnt:airline");
+            session.save();
+
+            Map<String, Long> countPerPath = new HashMap<>();
+            countPerPath.put("/catalog", 1L); // JCR store
+            countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT, 1L); // NOT supporting count, supported NT, 1 ext
+            countPerPath.put(STATIC_PROVIDER_MOUNTPOINT, 1L); // NOT supporting count, NOT supported NT, 1 ext
+            countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT_NO_MIXIN, 0L);// NOT supporting count, supported NT, 0 ext
+            countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, 3L); // supporting count, supported NT, 1 ext
+
+            String baseQuery = "SELECT [rep:count(airline)] FROM [jtestnt:airline] as airline";
+
+            // test all combinations
+            for (Set<String> combination : Sets.powerSet(countPerPath.keySet())) {
+                if (combination.size() > 0) {
+                    StringBuilder combinationQuery = new StringBuilder(baseQuery + " WHERE");
+                    Long expectedCount = 0L;
+
+                    for (String providerPath : combination) {
+                        // add provider path constraint
+                        String providerPathConstraint = " isdescendantnode(airline, '" + providerPath + "')";
+                        if (!combinationQuery.toString().endsWith(" WHERE")) {
+                            providerPathConstraint = (" OR" + providerPathConstraint);
+                        }
+                        combinationQuery.append(providerPathConstraint);
+
+                        // add expected count for provider path
+                        expectedCount += countPerPath.get(providerPath);
+                    }
+
+                    long result = getResultCount(combinationQuery.toString(), true);
+                    assertEquals("Expected count: " + expectedCount + " but was: " + result + ", for paths: " + combination.toString(),
+                            expectedCount.longValue(), result);
+                }
+            }
+        } finally {
+            if (session.nodeExists("/catalog")) {
+                session.getNode("/catalog").remove();
+                session.save();
+            }
+            cleanExtension(MAPPED_PROVIDER_MOUNTPOINT);
+            cleanExtension(STATIC_PROVIDER_MOUNTPOINT);
+            cleanExtension(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT);
+        }
     }
 }
