@@ -86,7 +86,7 @@ import static org.junit.Assert.*;
 
 /**
  * Integration tests for the external provider implementation.
- * 
+ *
  * @author Sergiy Shyrkov
  */
 public class ExternalDatabaseProviderTest extends JahiaTestCase {
@@ -148,7 +148,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
             // property is not present
         }
     }
-    
+
     public void checkMultipleI18nProperties(JCRNodeWrapper amazonAirline) throws RepositoryException {
     	assertTrue(amazonAirline.hasProperty("maintenance_center"));
     	JCRPropertyWrapper centers = amazonAirline.getProperty("maintenance_center");
@@ -157,7 +157,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     	for (int i = 0; i < center_names.length; i++) {
     		assertTrue(center_names[i].getString().equals( "Centre Technique de Washington DC") || center_names[i].getString().equals("Centre Technique de Portland"));
     	}
-    	
+
     	// should throw a ValueFormatException
     	amazonAirline.getProperty("maintenance_center").getValue();
 	}
@@ -354,7 +354,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     	JCRNodeWrapper US = root.getNode("AIRLINES").getNode("US");
     	checkMultipleI18nProperties(US);
     }
-    
+
     @Test
     public void testQueryConstraints() throws RepositoryException {
         testQueryConstraints(MAPPED_PROVIDER_MOUNTPOINT, false);
@@ -677,7 +677,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
                 return null;
             }
-        });        
+        });
         JCRTemplate.getInstance().doExecute(JahiaUserManagerService.GUEST_USERNAME, null, Constants.LIVE_WORKSPACE, Locale.FRENCH, new JCRCallback<Object>() {
             public Object doInJCR(JCRSessionWrapper guestSession) throws RepositoryException {
 
@@ -687,7 +687,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
                 return null;
             }
-        });        
+        });
     }
 
     @Test
@@ -845,7 +845,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
             Map<String, Long> countPerPath = new HashMap<>();
             countPerPath.put("/catalog", 1L); // JCR store
             countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT, 1L); // NOT supporting count, supported NT, 1 ext
-            countPerPath.put(STATIC_PROVIDER_MOUNTPOINT, 1L); // NOT supporting count, NOT supported NT, 1 ext
+            countPerPath.put(STATIC_PROVIDER_MOUNTPOINT, 0L); // NOT supporting search, NOT supporting count, NOT supported NT, 1 ext
             countPerPath.put(GENERIC_PROVIDER_MOUNTPOINT, 0L); // NOT supporting count, NOT supported NT, 0 ext
             countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT_NO_MIXIN, 0L);// NOT supporting count, supported NT, 0 ext
             countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, 3L); // supporting count, supported NT, 1 ext
