@@ -76,7 +76,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Sergiy Shyrkov
  */
-public class MappedDatabaseDataSource extends GenericDatabaseDataSource implements ExternalDataSource.Searchable, ExternalDataSource.SupportCount, ExternalDataSource.LazyProperty {
+public class MappedDatabaseDataSource extends GenericDatabaseDataSource implements ExternalDataSource.Searchable, ExternalDataSource.LazyProperty {
 
     static final String DATA_TYPE_AIRLINE = "jtestnt:airline".intern();
 
@@ -232,13 +232,7 @@ public class MappedDatabaseDataSource extends GenericDatabaseDataSource implemen
         return search(query, false);
     }
 
-    @Override
-    public long count(ExternalQuery query) throws RepositoryException {
-        List<String> results = search(query, true);
-        return results != null ? results.size() : 0;
-    }
-
-    private List<String> search(ExternalQuery query, boolean count) throws RepositoryException {
+    protected List<String> search(ExternalQuery query, boolean count) throws RepositoryException {
         List<String> allResults = null;
 
         String nodeType = QueryHelper.getNodeType(query.getSource());
