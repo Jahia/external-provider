@@ -43,12 +43,6 @@
  */
 package org.jahia.modules.external.test.db;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Locale;
@@ -87,6 +81,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Integration tests for the external provider implementation.
@@ -876,7 +872,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
                     }
 
                     long result = getResultCount(combinationQuery.toString(), true);
-                    assertEquals("Expected count: " + expectedCount + " but was: " + result + ", for paths: " + combination.toString(),
+                    assertEquals("incorrect aggregated count for path(s): " + combination.toString(),
                             expectedCount.longValue(), result);
                 }
             }
@@ -889,5 +885,43 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
             cleanExtension(STATIC_PROVIDER_MOUNTPOINT);
             cleanExtension(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT);
         }
+    }
+
+    @Test
+    public void testCountOnExtendedNodeIsNotSupported() throws Exception {
+        try {
+            testCountOnExtendedNodeIsNotSupported(MAPPED_PROVIDER_MOUNTPOINT, false);
+            testCountOnExtendedNodeIsNotSupported(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, true);
+        } finally {
+            cleanExtension(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT);
+            cleanExtension(MAPPED_PROVIDER_MOUNTPOINT);
+        }
+    }
+
+    private void testCountOnExtendedNodeIsNotSupported(String provider, boolean supportCount) throws Exception {
+        String baseQuery = "SELECT [rep:count(city)] FROM [jtestnt:city] as city WHERE " +
+                "isdescendantnode(city, '" + provider + "') AND " +
+                "city.[language] = 'Arabic'";
+
+        assertEquals(supportCount ? 3 : 0, getResultCount(baseQuery, true));
+
+        // modify an existing city as Extended node
+        assertNotEquals(session.getNode(provider + "/CITIES/2").getPropertyAsString("language"), "Arabic");
+        JCRNodeWrapper city = session.getNode(provider + "/CITIES/2");
+        city.setProperty("language", "Arabic");
+        session.save();
+        assertEquals(session.getNode(provider + "/CITIES/2").getPropertyAsString("language"), "Arabic");
+
+        // count in extended node is not supported
+        assertEquals(supportCount ? 3 : 0, getResultCount(baseQuery, true));
+
+        // modify an existing city as Extended node
+        JCRNodeWrapper cities = session.getNode(provider + "/CITIES");
+        city = cities.addNode("city_extension", "jtestnt:city");
+        city.setProperty("language", "Arabic");
+        session.save();
+
+        // count should retrieve the new added city
+        assertEquals(supportCount ? 4 : 1, getResultCount(baseQuery, true));
     }
 }

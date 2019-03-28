@@ -49,6 +49,7 @@
             <list>
                 <value>jtestnt:directory.*</value>
                 <value>jtestnt:airline.*</value>
+                <value>jtestnt:city.language</value>
             </list>
         </property>
       <property name="nonOverridableItems">
