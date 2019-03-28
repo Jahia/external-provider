@@ -109,6 +109,8 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     private final static String MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT = "/external-database-mapped-support-count";
 
+    private final static String MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT_2 = "/external-database-mapped-support-count-2";
+
     private static final String TESTSITE_NAME = "externalProviderExportTest";
 
     @BeforeClass
@@ -837,8 +839,10 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
             countPerPath.put("/catalog", 1L); // JCR store
             countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT, 1L); // NOT supporting count, supported NT, 1 ext
             countPerPath.put(STATIC_PROVIDER_MOUNTPOINT, 1L); // NOT supporting count, NOT supported NT, 1 ext
+            countPerPath.put(GENERIC_PROVIDER_MOUNTPOINT, 0L); // NOT supporting count, NOT supported NT, 0 ext
             countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT_NO_MIXIN, 0L);// NOT supporting count, supported NT, 0 ext
             countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, 3L); // supporting count, supported NT, 1 ext
+            countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT_2, 2L); // supporting count, supported NT, 0 ext
 
             String baseQuery = "SELECT [rep:count(airline)] FROM [jtestnt:airline] as airline";
 
