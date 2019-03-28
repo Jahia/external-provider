@@ -497,9 +497,14 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testExtensionProperty() throws RepositoryException {
-        testExtensionProperty(MAPPED_PROVIDER_MOUNTPOINT);
-        testExtensionProperty(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+    public void testExtensionProperty() throws Exception {
+        try {
+            testExtensionProperty(MAPPED_PROVIDER_MOUNTPOINT);
+            testExtensionProperty(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+        } finally {
+            cleanExtension(MAPPED_PROVIDER_MOUNTPOINT);
+            cleanExtension(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+        }
     }
 
     @Test
@@ -544,9 +549,14 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testMixin() throws RepositoryException {
-        testMixin(MAPPED_PROVIDER_MOUNTPOINT);
-        testMixin(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+    public void testMixin() throws Exception {
+        try {
+            testMixin(MAPPED_PROVIDER_MOUNTPOINT);
+            testMixin(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+        } finally {
+            cleanExtension(MAPPED_PROVIDER_MOUNTPOINT);
+            cleanExtension(BATCH_CHILDREN_PROVIDER_MOUNTPOINT);
+        }
     }
 
     public void testMixin(String mountpoint) throws RepositoryException {
@@ -605,29 +615,30 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     @Test
-    public void testSearchOnExtensionNotSupportedNodeType() throws RepositoryException {
+    public void testSearchOnExtensionNotSupportedNodeType() throws Exception {
         testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT, false);
         testSearchOnExtension(BATCH_CHILDREN_PROVIDER_MOUNTPOINT, false);
         testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, false);
     }
 
     @Test
-    public void testCountOnExtensionNotSupportedNodeType() throws RepositoryException {
+    public void testCountOnExtensionNotSupportedNodeType() throws Exception {
         testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, true);
     }
 
-    public void testSearchOnExtension(String mountpoint, boolean useRealCount) throws RepositoryException {
-        String selector = useRealCount ? "[rep:count(c)]" : "*";
-        JCRNodeWrapper root = session.getNode(mountpoint);
-        JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
-        AA.addMixin("jmix:comments");
-        AA.setProperty("shortView", true);
-        session.save();
+    public void testSearchOnExtension(String mountpoint, boolean useRealCount) throws Exception {
+        try {
+            String selector = useRealCount ? "[rep:count(c)]" : "*";
+            JCRNodeWrapper root = session.getNode(mountpoint);
+            JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
+            AA.addMixin("jmix:comments");
+            AA.setProperty("shortView", true);
+            session.save();
 
-        assertEquals(1, getResultCount("select " + selector + " from [jmix:comments] as c where isdescendantnode(c, '" + mountpoint + "')", 0, 0, useRealCount));
-
-        AA.removeMixin("jmix:comments");
-        session.save();
+            assertEquals(1, getResultCount("select " + selector + " from [jmix:comments] as c where isdescendantnode(c, '" + mountpoint + "')", 0, 0, useRealCount));
+        } finally {
+            cleanExtension(mountpoint);
+        }
     }
 
     @Test
