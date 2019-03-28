@@ -915,7 +915,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         // count in extended node is not supported
         assertEquals(supportCount ? 3 : 0, getResultCount(baseQuery, true));
 
-        // modify an existing city as Extended node
+        // add a new city as extension, should be retrieved by the count
         JCRNodeWrapper cities = session.getNode(provider + "/CITIES");
         city = cities.addNode("city_extension", "jtestnt:city");
         city.setProperty("language", "Arabic");
