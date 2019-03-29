@@ -275,8 +275,8 @@ public class ExternalQueryManager implements QueryManager {
                                 if (!node.isNodeType(EXTENSION_TYPE) || (!noConstraints && session.itemExists(path))) {
                                     results.add(path);
                                     if (hasLimit && results.size() > lastItemIndex) {
-                                        // return result as all required results are found
-                                        return buildQueryResult(results, dataSource, isCount, count);
+                                        // stop to add item in the list, continue with the merge
+                                        break;
                                     }
                                 }
                             }
@@ -295,7 +295,8 @@ public class ExternalQueryManager implements QueryManager {
                         results.clear();
                     } else if (getLimit() > -1) {
                         // Strip results to limit and offset
-                        results = results.subList((int) getOffset(), Math.min((int) getLimit(), results.size()));
+                        int resultsSize = results.size();
+                        results = results.subList((int) getOffset(), Math.min((int) getOffset() + (int) getLimit(), resultsSize));
                         //  set the offset and the limit for the external query (starting at 0 to the current limit minus the results from the extensions
                         setOffset(0);
                         setLimit(getLimit() - results.size());
@@ -305,6 +306,11 @@ public class ExternalQueryManager implements QueryManager {
                         // set back the Offset to 0 has it has been consumed
                         setOffset(0);
                     }
+                    // if the list contains all items
+                    if (getLimit() == 0) {
+                        return buildQueryResult(results, dataSource, isCount, count);
+                    }
+
                 }
             }
 
