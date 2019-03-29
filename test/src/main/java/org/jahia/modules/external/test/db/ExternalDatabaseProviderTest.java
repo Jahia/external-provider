@@ -928,4 +928,40 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         // count should retrieve the new added city
         assertEquals(supportCount ? 4 : 1, getResultCount(baseQuery, true));
     }
+
+    @Test
+    public void testQueryLimitAndOffSetOnExtension() throws Exception {
+        testQueryLimitAndOffSetOnExtension(false, false, MAPPED_PROVIDER_MOUNTPOINT);
+        testQueryLimitAndOffSetOnExtension(true, false, MAPPED_PROVIDER_MOUNTPOINT);
+        testQueryLimitAndOffSetOnExtension(false, true, MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT);
+        testQueryLimitAndOffSetOnExtension(true, true, MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT);
+    }
+
+    private void testQueryLimitAndOffSetOnExtension(boolean useRealCount, boolean supportCount, String providerPath) throws Exception {
+        try {
+            String baseQuery = "SELECT " + (useRealCount ? "[rep:count(airline)]" : "*") +
+                    " FROM [jtestnt:airline] as airline where isdescendantnode(airline, '" + providerPath + "')";
+
+            // add extensions:
+            JCRNodeWrapper directory = session.getNode(providerPath + "/AIRLINES");
+            directory.addNode("airline1", "jtestnt:airline");
+            directory.addNode("airline2", "jtestnt:airline");
+            directory.addNode("airline3", "jtestnt:airline");
+            directory.addNode("airline4", "jtestnt:airline");
+            session.save();
+
+            // OFFSET and LIMIT should be take into account only with query
+            long countExpected = supportCount ? 6 : 4;
+            assertEquals(useRealCount ? countExpected : 2, getResultCount(baseQuery, 0, 4, useRealCount));
+            assertEquals(useRealCount ? countExpected : 4, getResultCount(baseQuery, 0, 2, useRealCount));
+            assertEquals(useRealCount ? countExpected : 1, getResultCount(baseQuery, 1, 4, useRealCount));
+            assertEquals(useRealCount ? countExpected : 3, getResultCount(baseQuery, 3, 0, useRealCount));
+            assertEquals(useRealCount ? countExpected : 0, getResultCount(baseQuery, 0, 6, useRealCount));
+            assertEquals(useRealCount ? countExpected : 0, getResultCount(baseQuery, 2, 6, useRealCount));
+            assertEquals(useRealCount ? countExpected : 6, getResultCount(baseQuery, 6, 0, useRealCount));
+            assertEquals(useRealCount ? countExpected : 5, getResultCount(baseQuery, 6, 1, useRealCount));
+        } finally {
+            cleanExtension(providerPath);
+        }
+    }
 }
