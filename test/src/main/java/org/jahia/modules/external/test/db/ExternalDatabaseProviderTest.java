@@ -619,7 +619,8 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @Test
     public void testCountOnExtensionNotSupportedNodeType() throws Exception {
-        testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, true);
+        testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, true); // supporting count, NOT supported NT, 1 ext
+        testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT, true); // NOT supporting count, NOT supported NT, 1 ext
     }
 
     public void testSearchOnExtension(String mountpoint, boolean useRealCount) throws Exception {
@@ -828,13 +829,16 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
             directory.addNode("airlineExtension", "jtestnt:airline");
             session.save();
 
-            // add extension in provider not supporting Count, not supporting nodetype
+            // add extension in provider niot supporting search
             root = session.getNode(STATIC_PROVIDER_MOUNTPOINT);
             directory = root.addNode("directory", "jnt:contentFolder");
             directory.addNode("airlineExtensionNotSupportef", "jtestnt:airline");
             session.save();
 
             // add extension in provider supporting Count, not supporting nodetype
+            // Already tested by: testCountOnExtensionNotSupportedNodeType()
+
+            // add extension in provider NOT supporting Count, NOT supporting nodetype
             // Already tested by: testCountOnExtensionNotSupportedNodeType()
 
             // add extension in provider not supporting Count, supporting nodetype
