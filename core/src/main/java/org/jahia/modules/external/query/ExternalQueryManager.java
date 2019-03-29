@@ -181,6 +181,7 @@ public class ExternalQueryManager implements QueryManager {
             boolean isMixinOrFacet = false;
             boolean isCount = false;
             long count = 0;
+            long originalLimit = getLimit();
             String selectorType = null;
             String selectorName = null;
             if (source instanceof Selector) {
@@ -283,6 +284,27 @@ public class ExternalQueryManager implements QueryManager {
                     } else {
                         count = getCount(queryResult);
                     }
+
+                    if (results.isEmpty()) {
+                        // No results at all, ignore search in extension
+                        results = null;
+                    } else if (getOffset() >= results.size()) {
+                        // Offset greater than results here - return an empty result list, still need to merge results
+                        // Change offset to the remaining results to get
+                        setOffset(getOffset() - results.size());
+                        results.clear();
+                    } else if (getLimit() > -1) {
+                        // Strip results to limit and offset
+                        results = results.subList((int) getOffset(), Math.min((int) getLimit(), results.size()));
+                        //  set the offset and the limit for the external query (starting at 0 to the current limit minus the results from the extensions
+                        setOffset(0);
+                        setLimit(getLimit() - results.size());
+                    } else if (getOffset() > 0) {
+                        // Use offset
+                        results = results.subList((int) getOffset(), results.size());
+                        // set back the Offset to 0 has it has been consumed
+                        setOffset(0);
+                    }
                 }
             }
 
@@ -290,30 +312,19 @@ public class ExternalQueryManager implements QueryManager {
 
             ExternalContentStoreProvider.setCurrentSession(session);
             try {
-                final long originalLimit = getLimit();
 
                 if (isCount && dataSource instanceof ExternalDataSource.SupportCount) {
                     count += ((ExternalDataSource.SupportCount) dataSource).count(this);
                 } else if (!isCount) {
-                    if (noConstraints) {
+                    if (results == null) {
+                        // No previous results, no merge to do
+                        results = ((ExternalDataSource.Searchable) dataSource).search(this);
+                    } else if (noConstraints) {
                         // Previous results, but only in extended nodes, no merge required - concat only
-                        if (getOffset() >= results.size()) {
-                            setOffset(getOffset() - results.size());
-                        } else {
-                            setOffset(0);
-                            if (getLimit() != -1) {
-                                setLimit(getLimit() - results.size());
-                            }
-                        }
                         results.addAll(((ExternalDataSource.Searchable) dataSource).search(this));
                     } else {
-                        if (originalLimit > -1) {
-                            // Remove results found. Extend limit with total size of extended result to skip duplicate results
-                            setLimit(lastItemIndex);
-                        }
-                        // Need to merge, move offset to 0
-                        int skips = Math.max(0, (int) getOffset() - results.size());
-                        setOffset(0);
+                        // Need to merge, skip until match required offset
+                        int skips = Math.max(0, (int) getOffset());
                         List<String> providerResult = ((ExternalDataSource.Searchable) dataSource).search(this);
                         for (String s : providerResult) {
                             // Skip duplicate result
@@ -322,6 +333,7 @@ public class ExternalQueryManager implements QueryManager {
                                     skips--;
                                 } else {
                                     results.add(s);
+                                    // if results size match the original limit, return them ..
                                     if (originalLimit > -1 && results.size() >= originalLimit) {
                                         break;
                                     }
