@@ -140,10 +140,18 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
     }
 
     protected JSONArray getSiteFolders(Workspace workspace) throws RepositoryException {
-        return getSiteFolders(workspace, true);
+        return getSiteFolders(workspace, true, "files");
+    }
+
+    protected JSONArray getSiteFolders(Workspace workspace, String nodeName) throws RepositoryException {
+        return getSiteFolders(workspace, true, nodeName);
     }
 
     protected JSONArray getSiteFolders(Workspace workspace, boolean local) throws RepositoryException {
+        return getSiteFolders(workspace, local, "files");
+    }
+
+    protected JSONArray getSiteFolders(Workspace workspace, boolean local, String nodeName) throws RepositoryException {
         JSONArray folders = new JSONArray();
         Query sitesQuery = workspace.getQueryManager().createQuery(SITES_QUERY, Query.JCR_SQL2);
         NodeIterator sites = sitesQuery.execute().getNodes();
@@ -152,7 +160,7 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
             Node site = sites.nextNode();
             Node siteFiles;
             try {
-                siteFiles = site.getNode("files");
+                siteFiles = site.getNode(nodeName);
                 folders.put(escape(siteFiles.getPath()));
             } catch (RepositoryException e) {
                 // no files under the site
