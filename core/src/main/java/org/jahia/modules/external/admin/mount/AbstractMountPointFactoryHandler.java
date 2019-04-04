@@ -69,7 +69,7 @@ import java.util.Locale;
 public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPointFactory> implements Serializable{
     private static final long serialVersionUID = 6394236759186947423L;
     private static final String SITES_QUERY = "select * from [jnt:virtualsite] as f where ischildnode(f,['/sites'])";
-    private final String FILES_NODENAME = "files";
+    private static final String FILES_NODENAME = "files";
 
     public T init(RequestContext requestContext, final T mountPointFactory) throws RepositoryException {
         if(mountPointFactory == null){
