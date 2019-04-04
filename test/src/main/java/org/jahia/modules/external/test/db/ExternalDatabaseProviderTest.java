@@ -44,10 +44,7 @@
 package org.jahia.modules.external.test.db;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
@@ -64,13 +61,7 @@ import javax.jcr.query.QueryResult;
 
 import com.google.common.collect.Sets;
 import org.jahia.api.Constants;
-import org.jahia.services.content.JCRCallback;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRPropertyWrapper;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.JCRTemplate;
-import org.jahia.services.content.JCRValueWrapper;
+import org.jahia.services.content.*;
 import org.jahia.services.sites.JahiaSite;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.jahia.test.JahiaTestCase;
@@ -106,6 +97,8 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     private final static String MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT = "/external-database-mapped-support-count";
 
     private final static String MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT_2 = "/external-database-mapped-support-count-2";
+
+    private final static String MAPPED_PROVIDER_MOUNTPOINT_NO_ARILINES_WITH_COUNT = "/external-database-mapped-no-airlines-with-count";
 
     private static final String TESTSITE_NAME = "externalProviderExportTest";
 
@@ -150,17 +143,17 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     public void checkMultipleI18nProperties(JCRNodeWrapper amazonAirline) throws RepositoryException {
-    	assertTrue(amazonAirline.hasProperty("maintenance_center"));
-    	JCRPropertyWrapper centers = amazonAirline.getProperty("maintenance_center");
-    	JCRValueWrapper[] center_names = centers.getValues();
-    	assertTrue(center_names.length == 2);
-    	for (int i = 0; i < center_names.length; i++) {
-    		assertTrue(center_names[i].getString().equals( "Centre Technique de Washington DC") || center_names[i].getString().equals("Centre Technique de Portland"));
-    	}
+        assertTrue(amazonAirline.hasProperty("maintenance_center"));
+        JCRPropertyWrapper centers = amazonAirline.getProperty("maintenance_center");
+        JCRValueWrapper[] centerNames = centers.getValues();
+        assertEquals(2, centerNames.length);
+        for (int i = 0; i < centerNames.length; i++) {
+            assertTrue(centerNames[i].getString().equals("Centre Technique de Washington DC") || centerNames[i].getString().equals("Centre Technique de Portland"));
+        }
 
-    	// should throw a ValueFormatException
-    	amazonAirline.getProperty("maintenance_center").getValue();
-	}
+        // should throw a ValueFormatException
+        amazonAirline.getProperty("maintenance_center").getValue();
+    }
 
     private long getResultCount(String query, boolean useRealCount) throws RepositoryException, InvalidQueryException {
         return getResultCount(query, 0, 0, useRealCount);
@@ -210,7 +203,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @After
     public void tearDown() {
-        session.logout();
+        JCRSessionFactory.getInstance().closeAllSessions();
     }
 
     @Test
@@ -244,12 +237,12 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         assertEquals(2, root.getNodes("FLIGHTS*").getSize());
         assertEquals(3, root.getNodes("FLIGHT*").getSize());
         assertEquals(4, root.getNodes("AIR* | FLIGHT*").getSize());
-        assertEquals(1, root.getNodes(new String[] { "AIRLINES" }).getSize());
-        assertEquals(2, root.getNodes(new String[] { "AIRLINES", "MAPS" }).getSize());
-        assertEquals(1, root.getNodes(new String[] { "AIR*" }).getSize());
-        assertEquals(2, root.getNodes(new String[] { "FLIGHTS*" }).getSize());
-        assertEquals(3, root.getNodes(new String[] { "FLIGHT*" }).getSize());
-        assertEquals(4, root.getNodes(new String[] { "AIR*", "FLIGHT*" }).getSize());
+        assertEquals(1, root.getNodes(new String[]{"AIRLINES"}).getSize());
+        assertEquals(2, root.getNodes(new String[]{"AIRLINES", "MAPS"}).getSize());
+        assertEquals(1, root.getNodes(new String[]{"AIR*"}).getSize());
+        assertEquals(2, root.getNodes(new String[]{"FLIGHTS*"}).getSize());
+        assertEquals(3, root.getNodes(new String[]{"FLIGHT*"}).getSize());
+        assertEquals(4, root.getNodes(new String[]{"AIR*", "FLIGHT*"}).getSize());
 
         // node type mapping
         assertTrue(session.getNode(mountpoint).isNodeType(GenericDatabaseDataSource.DATA_TYPE_SCHEMA));
@@ -306,12 +299,12 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         assertEquals(2, root.getNodes("C*").getSize());
         assertEquals(1, root.getNodes("FLIGHT*").getSize());
         assertEquals(3, root.getNodes("AIR* | C*").getSize());
-        assertEquals(1, root.getNodes(new String[] { "AIRLINES" }).getSize());
-        assertEquals(2, root.getNodes(new String[] { "AIRLINES", "CITIES" }).getSize());
-        assertEquals(1, root.getNodes(new String[] { "AIR*" }).getSize());
-        assertEquals(2, root.getNodes(new String[] { "C*" }).getSize());
-        assertEquals(1, root.getNodes(new String[] { "FLIGHT*" }).getSize());
-        assertEquals(3, root.getNodes(new String[] { "AIR*", "C*" }).getSize());
+        assertEquals(1, root.getNodes(new String[]{"AIRLINES"}).getSize());
+        assertEquals(2, root.getNodes(new String[]{"AIRLINES", "CITIES"}).getSize());
+        assertEquals(1, root.getNodes(new String[]{"AIR*"}).getSize());
+        assertEquals(2, root.getNodes(new String[]{"C*"}).getSize());
+        assertEquals(1, root.getNodes(new String[]{"FLIGHT*"}).getSize());
+        assertEquals(3, root.getNodes(new String[]{"AIR*", "C*"}).getSize());
 
         // node type mapping
         assertTrue(session.getNode(mountpoint).isNodeType(MappedDatabaseDataSource.DATA_TYPE_CATALOG));
@@ -344,15 +337,16 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     /**
-    * QA-6426
-    * @throws RepositoryException
-    */
-    @Test(expected=ValueFormatException.class)
+     * QA-6426
+     *
+     * @throws RepositoryException
+     */
+    @Test(expected = ValueFormatException.class)
     public void testMultipleI18nMappedProperties() throws RepositoryException {
-    	JCRSessionWrapper frenchSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE, Locale.FRENCH);
-    	JCRNodeWrapper root = frenchSession.getNode(MAPPED_PROVIDER_MOUNTPOINT);
-    	JCRNodeWrapper US = root.getNode("AIRLINES").getNode("US");
-    	checkMultipleI18nProperties(US);
+        JCRSessionWrapper frenchSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE, Locale.FRENCH);
+        JCRNodeWrapper root = frenchSession.getNode(MAPPED_PROVIDER_MOUNTPOINT);
+        JCRNodeWrapper US = root.getNode("AIRLINES").getNode("US");
+        checkMultipleI18nProperties(US);
     }
 
     @Test
@@ -455,6 +449,10 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         assertEquals(useRealCount ? 4 : 1, getResultCount(queryDirs, 3, 3, useRealCount));
         assertEquals(useRealCount ? 4 : 0, getResultCount(queryDirs, 3, 4, useRealCount));
         assertEquals(useRealCount ? 4 : 0, getResultCount(queryDirs, 3, 5, useRealCount));
+
+        if (!useRealCount) {
+            testLimitAndOffset(queryDirs);
+        }
     }
 
     @Test
@@ -486,7 +484,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
         if (!useRealCount) {
             for (NodeIterator ni = query("select * from [" + MappedDatabaseDataSource.DATA_TYPE_AIRLINE + "] where isdescendantnode('" + mountpoint + "')", 0, 0)
-                    .getNodes(); ni.hasNext();) {
+                    .getNodes(); ni.hasNext(); ) {
                 assertTrue(ni.nextNode().isNodeType(MappedDatabaseDataSource.DATA_TYPE_AIRLINE));
             }
         }
@@ -559,7 +557,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         JCRNodeWrapper root = session.getNode(mountpoint);
         JCRNodeWrapper AA = root.getNode("AIRLINES").getNode("AA");
         AA.addMixin("jmix:comments");
-        AA.setProperty("shortView",true);
+        AA.setProperty("shortView", true);
 
         assertTrue("Mixin not set", AA.isNodeType("jmix:comments"));
         assertEquals("Property not updated", true, AA.getProperty("shortView").getBoolean());
@@ -582,14 +580,14 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         AA.addMixin("jmix:comments");
         session.save();
 
-        assertEquals(1,AA.getNodes().getSize());
+        assertEquals(1, AA.getNodes().getSize());
 
         JCRNodeWrapper comments = AA.getNode("comments");
 
         assertEquals(comments.getPath(), session.getNodeByIdentifier(comments.getIdentifier()).getPath());
         assertEquals(comments.getIdentifier(), session.getNode(comments.getPath()).getIdentifier());
         assertEquals(AA.getIdentifier(), comments.getParent().getIdentifier());
-        assertEquals(4,comments.getDepth());
+        assertEquals(4, comments.getDepth());
         assertTrue(comments.isNodeType("jnt:topic"));
 
         JCRPropertyWrapper propertyWrapper = comments.setProperty("topicSubject", "testSubject");
@@ -600,7 +598,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         assertEquals(comments.getPath() + "/topicSubject", propertyWrapper.getPath());
         assertEquals("testSubject", propertyWrapper.getValue().getString());
 
-        JCRNodeWrapper post1 = comments.addNode("post1","jnt:post");
+        JCRNodeWrapper post1 = comments.addNode("post1", "jnt:post");
         assertEquals(post1.getPath(), session.getNodeByIdentifier(post1.getIdentifier()).getPath());
         assertEquals(post1.getIdentifier(), session.getNode(post1.getPath()).getIdentifier());
         assertEquals(comments.getIdentifier(), post1.getParent().getIdentifier());
@@ -623,7 +621,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         testSearchOnExtension(MAPPED_PROVIDER_MOUNTPOINT, true); // NOT supporting count, NOT supported NT, 1 ext
     }
 
-    public void testSearchOnExtension(String mountpoint, boolean useRealCount) throws Exception {
+    private void testSearchOnExtension(String mountpoint, boolean useRealCount) throws Exception {
         try {
             String selector = useRealCount ? "[rep:count(c)]" : "*";
             JCRNodeWrapper root = session.getNode(mountpoint);
@@ -714,7 +712,7 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
             }
         }
 
-        Lock lock = city.lock(false,false);
+        Lock lock = city.lock(false, false);
         assertNotNull(city.getPath() + " : Lock is null", lock);
         assertTrue(city.getPath() + " : Node not locked", city.isLocked());
         city.unlock();
@@ -726,29 +724,29 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         final JCRNodeWrapper parent = session.getNode("/external-writeable-database-mapped/AIRLINES");
         JCRNodeWrapper n = parent.addNode("TS", "jtestnt:airline");
 //        JCRNodeWrapper n = session.getNode("/external-writeable-database-mapped/AIRLINES/AT")
-        n.setProperty("airline","TS");
-        n.setProperty("airline_full","air transat");
-        n.setProperty("basic_rate","0.15");
-        n.setProperty("distance_discount","0.01");
+        n.setProperty("airline", "TS");
+        n.setProperty("airline_full", "air transat");
+        n.setProperty("basic_rate", "0.15");
+        n.setProperty("distance_discount", "0.01");
 
-        assertEquals(3,parent.getNodes().getSize());
-        assertEquals(1,parent.getNodes("TS*").getSize());
+        assertEquals(3, parent.getNodes().getSize());
+        assertEquals(1, parent.getNodes("TS*").getSize());
         JCRNodeWrapper n2 = parent.getNode("TS");
         assertTrue(n.equals(n2));
 
         session.save();
 
-        assertEquals(3,parent.getNodes().getSize());
-        assertEquals(1,parent.getNodes("TS*").getSize());
+        assertEquals(3, parent.getNodes().getSize());
+        assertEquals(1, parent.getNodes("TS*").getSize());
         n2 = parent.getNode("TS");
         assertTrue(n.equals(n2));
 
-        n.setProperty("basic_rate","0.20");
+        n.setProperty("basic_rate", "0.20");
         session.save();
 
         n.remove();
-        assertEquals(2,parent.getNodes().getSize());
-        assertEquals(0,parent.getNodes("TS*").getSize());
+        assertEquals(2, parent.getNodes().getSize());
+        assertEquals(0, parent.getNodes("TS*").getSize());
 
         try {
             parent.getNode("TS");
@@ -758,8 +756,8 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         }
 
         session.save();
-        assertEquals(2,parent.getNodes().getSize());
-        assertEquals(0,parent.getNodes("TS").getSize());
+        assertEquals(2, parent.getNodes().getSize());
+        assertEquals(0, parent.getNodes("TS").getSize());
         try {
             parent.getNode("TS");
             fail("node still exists");
@@ -798,7 +796,8 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
                 cleanExtension(MAPPED_PROVIDER_MOUNTPOINT);
                 TestHelper.deleteSite(TESTSITE_NAME);
                 session.save();
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
         }
     }
 
@@ -816,10 +815,20 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @Test
     public void testAggregatedCountFromAllKindOfProviders() throws Exception {
+        testAggregatedFromAllKindOfProviders(new TestCount());
+    }
+
+    @Test
+    public void testQueryLimitAndOffSetFromAllKindOfProviders() throws Exception {
+        testAggregatedFromAllKindOfProviders(new TestLimitAndOffset());
+    }
+
+    private void testAggregatedFromAllKindOfProviders(TestAggregate test) throws Exception {
+        String catalogName = test.getCatalogName();
         try {
             // add in JCR
             JCRNodeWrapper root = session.getNode("/");
-            JCRNodeWrapper catalog = root.addNode("catalog", "jtestnt:catalog");
+            JCRNodeWrapper catalog = root.addNode(catalogName, "jtestnt:catalog");
             JCRNodeWrapper directory = catalog.addNode("directory", "jtestnt:directory");
             directory.addNode("airlineJCR", "jtestnt:airline");
             session.save();
@@ -829,7 +838,12 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
             directory.addNode("airlineExtension", "jtestnt:airline");
             session.save();
 
-            // add extension in provider niot supporting search
+            // add extension in provider supporting Count, and supporting nodetype
+            directory = session.getNode(MAPPED_PROVIDER_MOUNTPOINT_NO_ARILINES_WITH_COUNT + "/AIRLINES");
+            directory.addNode("airlineExtented", "jtestnt:airline");
+            session.save();
+
+            // add extension in provider not supporting search
             root = session.getNode(STATIC_PROVIDER_MOUNTPOINT);
             directory = root.addNode("directory", "jnt:contentFolder");
             directory.addNode("airlineExtensionNotSupportef", "jtestnt:airline");
@@ -847,47 +861,43 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
             session.save();
 
             Map<String, Long> countPerPath = new HashMap<>();
-            countPerPath.put("/catalog", 1L); // JCR store
+            countPerPath.put("/" + catalogName, 1L); // JCR store
             countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT, 1L); // NOT supporting count, supported NT, 1 ext
             countPerPath.put(STATIC_PROVIDER_MOUNTPOINT, 0L); // NOT supporting search, NOT supporting count, NOT supported NT, 1 ext
             countPerPath.put(GENERIC_PROVIDER_MOUNTPOINT, 0L); // NOT supporting count, NOT supported NT, 0 ext
             countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT_NO_MIXIN, 0L);// NOT supporting count, supported NT, 0 ext
             countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT, 3L); // supporting count, supported NT, 1 ext
             countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT_2, 2L); // supporting count, supported NT, 0 ext
+            countPerPath.put(MAPPED_PROVIDER_MOUNTPOINT_NO_ARILINES_WITH_COUNT, 1L); // supporting count, not supported NT, 1 ext
 
-            String baseQuery = "SELECT [rep:count(airline)] FROM [jtestnt:airline] as airline";
+            countPerPath.keySet().forEach(key -> {
+                // add extended node to ensure that they are not count twice
+                try {
+                    session.getNode(key).getNode("AIRLINES").getNode("AA").setProperty("basic_rate", 0);
+                    session.save();
+                } catch (Exception e) {
+                    // do nothing in case the provider not extendable
+
+                }
+            });
 
             // test all combinations
             for (Set<String> combination : Sets.powerSet(countPerPath.keySet())) {
-                if (combination.size() > 0) {
-                    StringBuilder combinationQuery = new StringBuilder(baseQuery + " WHERE");
-                    Long expectedCount = 0L;
-
-                    for (String providerPath : combination) {
-                        // add provider path constraint
-                        String providerPathConstraint = " isdescendantnode(airline, '" + providerPath + "')";
-                        if (!combinationQuery.toString().endsWith(" WHERE")) {
-                            providerPathConstraint = (" OR" + providerPathConstraint);
-                        }
-                        combinationQuery.append(providerPathConstraint);
-
-                        // add expected count for provider path
-                        expectedCount += countPerPath.get(providerPath);
-                    }
-
-                    long result = getResultCount(combinationQuery.toString(), true);
-                    assertEquals("incorrect aggregated count for path(s): " + combination.toString(),
-                            expectedCount.longValue(), result);
-                }
+                test.execute(countPerPath, combination);
             }
         } finally {
-            if (session.nodeExists("/catalog")) {
-                session.getNode("/catalog").remove();
+            if (session.nodeExists("/" + catalogName)) {
+                session.getNode("/" + catalogName).remove();
                 session.save();
             }
             cleanExtension(MAPPED_PROVIDER_MOUNTPOINT);
             cleanExtension(STATIC_PROVIDER_MOUNTPOINT);
+            cleanExtension(GENERIC_PROVIDER_MOUNTPOINT);
+            cleanExtension(MAPPED_PROVIDER_MOUNTPOINT_NO_MIXIN);
             cleanExtension(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT);
+            cleanExtension(MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT_2);
+            cleanExtension(MAPPED_PROVIDER_MOUNTPOINT_NO_ARILINES_WITH_COUNT);
+
         }
     }
 
@@ -903,11 +913,15 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
     }
 
     private void testCountOnExtendedNodeIsNotSupported(String provider, boolean supportCount) throws Exception {
-        String baseQuery = "SELECT [rep:count(city)] FROM [jtestnt:city] as city WHERE " +
+        String baseQuery = "SELECT %s FROM [jtestnt:city] as city WHERE " +
                 "isdescendantnode(city, '" + provider + "') AND " +
                 "city.[language] = 'Arabic'";
 
-        assertEquals(supportCount ? 3 : 0, getResultCount(baseQuery, true));
+        String baseQueryCount = String.format(baseQuery, "[rep:count(city)]");
+        String baseQueryList = String.format(baseQuery, "*");
+
+        assertEquals(supportCount ? 3 : 0, getResultCount(baseQueryCount, true));
+        testLimitAndOffset(baseQueryList);
 
         // modify an existing city as Extended node
         assertNotEquals(session.getNode(provider + "/CITIES/2").getPropertyAsString("language"), "Arabic");
@@ -917,7 +931,8 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         assertEquals(session.getNode(provider + "/CITIES/2").getPropertyAsString("language"), "Arabic");
 
         // count in extended node is not supported
-        assertEquals(supportCount ? 3 : 0, getResultCount(baseQuery, true));
+        assertEquals(supportCount ? 3 : 0, getResultCount(baseQueryCount, true));
+        testLimitAndOffset(baseQueryList);
 
         // add a new city as extension, should be retrieved by the count
         JCRNodeWrapper cities = session.getNode(provider + "/CITIES");
@@ -926,13 +941,14 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
         session.save();
 
         // count should retrieve the new added city
-        assertEquals(supportCount ? 4 : 1, getResultCount(baseQuery, true));
+        assertEquals(supportCount ? 4 : 1, getResultCount(baseQueryCount, true));
+        testLimitAndOffset(baseQueryList);
     }
 
     @Test
     public void testQueryLimitAndOffSetOnExtension() throws Exception {
-        testQueryLimitAndOffSetOnExtension(false, false, MAPPED_PROVIDER_MOUNTPOINT);
-        testQueryLimitAndOffSetOnExtension(true, false, MAPPED_PROVIDER_MOUNTPOINT);
+        testQueryLimitAndOffSetOnExtension(false, false,  MAPPED_PROVIDER_MOUNTPOINT);
+        testQueryLimitAndOffSetOnExtension(true, false,  MAPPED_PROVIDER_MOUNTPOINT);
         testQueryLimitAndOffSetOnExtension(false, true, MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT);
         testQueryLimitAndOffSetOnExtension(true, true, MAPPED_PROVIDER_MOUNTPOINT_SUPPORT_COUNT);
     }
@@ -960,8 +976,111 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
             assertEquals(useRealCount ? countExpected : 0, getResultCount(baseQuery, 2, 6, useRealCount));
             assertEquals(useRealCount ? countExpected : 6, getResultCount(baseQuery, 6, 0, useRealCount));
             assertEquals(useRealCount ? countExpected : 5, getResultCount(baseQuery, 6, 1, useRealCount));
+            if (!useRealCount) {
+                testLimitAndOffset(baseQuery);
+            }
         } finally {
             cleanExtension(providerPath);
         }
     }
+
+    private interface TestAggregate {
+        void execute(Map<String, Long> countPerPath, Set<String> combination) throws RepositoryException;
+
+        String getCatalogName();
+    }
+
+    private class TestCount implements TestAggregate {
+
+        @Override
+        public String getCatalogName() {
+            return "catalogCount";
+        }
+
+        public void execute(Map<String, Long> countPerPath, Set<String> combination) throws RepositoryException {
+            String baseQuery = "SELECT [rep:count(airline)] FROM [jtestnt:airline] as airline";
+
+            if (!combination.isEmpty()) {
+                StringBuilder combinationQuery = new StringBuilder(baseQuery + " WHERE");
+                Long expectedCount = 0L;
+
+                for (String providerPath : combination) {
+                    // add provider path constraint
+                    String providerPathConstraint = " isdescendantnode(airline, '" + providerPath + "')";
+                    if (!combinationQuery.toString().endsWith(" WHERE")) {
+                        providerPathConstraint = " OR" + providerPathConstraint;
+                    }
+                    combinationQuery.append(providerPathConstraint);
+
+                    // add expected count for provider path
+                    expectedCount += countPerPath.get(providerPath);
+                }
+
+                long result = getResultCount(combinationQuery.toString(), true);
+                assertEquals("incorrect aggregated count for path(s): " + combination.toString(),
+                        expectedCount.longValue(), result);
+            }
+        }
+    }
+
+    private class TestLimitAndOffset implements TestAggregate {
+
+        @Override
+        public String getCatalogName() {
+            return "catalogLimitAndOffset";
+        }
+
+        @Override
+        public void execute(Map<String, Long> countPerPath, Set<String> combination) throws RepositoryException {
+            // only test set of counterPath size less 3 to speed up the test
+            if (combination.size() > 3   ) {
+                return;
+            }
+
+            String baseQuery = "SELECT * FROM [jtestnt:airline] as airline";
+
+            if (!combination.isEmpty()) {
+                StringBuilder combinationQuery = new StringBuilder(baseQuery + " WHERE");
+
+                for (String providerPath : combination) {
+                    // add provider path constraint
+                    String providerPathConstraint = " isdescendantnode(airline, '" + providerPath + "')";
+                    if (!combinationQuery.toString().endsWith(" WHERE")) {
+                        providerPathConstraint = " OR" + providerPathConstraint;
+                    }
+                    combinationQuery.append(providerPathConstraint);
+                }
+                testLimitAndOffset(combinationQuery.toString());
+            }
+        }
+    }
+
+    public void testLimitAndOffset(String query) throws RepositoryException {
+        List<String> allResults = getResultsAsList(query, 0, 0);
+
+        for (int limit = 0; limit <= allResults.size(); limit++) {
+            for (int offset = 0; offset <= allResults.size() - limit; offset++) {
+                List<String> results = getResultsAsList(query, limit, offset);
+                // if limit is 0, ignore it
+                int toIndex = limit == 0 ? allResults.size() : limit;
+                // compute right border
+                toIndex = offset + toIndex < allResults.size() ? (offset + toIndex) : allResults.size();
+
+                List<String> expectedResults = allResults.subList(offset, toIndex);
+
+                assertEquals(String.format("incorrect results for offset %d and limit %d for query %s", offset, limit, query), expectedResults, results);
+            }
+        }
+    }
+
+    private List<String> getResultsAsList(String query, int limit, int offset) throws RepositoryException {
+        List<String> results = new ArrayList<>();
+        QueryResult qr = query(query, limit, offset);
+        NodeIterator ni = qr.getNodes();
+        while (ni.hasNext()) {
+            results.add(ni.nextNode().getIdentifier());
+        }
+        return results;
+    }
+
 }
