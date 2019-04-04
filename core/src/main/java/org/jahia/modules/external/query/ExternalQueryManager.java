@@ -272,7 +272,9 @@ public class ExternalQueryManager implements QueryManager {
                             } else {
                                 String path = node.getPath().substring(mountPoint.length());
                                 // If no constraint was set, only take extended nodes, as the datasource will return them all anyway
-                                if (!node.isNodeType(EXTENSION_TYPE) || (!noConstraints && session.itemExists(path))) {
+                                boolean isNotExtension = !node.isNodeType(EXTENSION_TYPE);
+                                boolean matchExtensionConstraint = !noConstraints && session.itemExists(path);
+                                if (isNotExtension || matchExtensionConstraint) {
                                     results.add(path);
                                     if (hasLimit && results.size() > lastItemIndex) {
                                         // stop to add item in the list, continue with the merge
@@ -288,23 +290,29 @@ public class ExternalQueryManager implements QueryManager {
                     if (results.isEmpty()) {
                         // No results at all, ignore search in extension
                         results = null;
-                    } else if (getOffset() >= results.size()) {
-                        // Offset greater than results here - return an empty result list, still need to merge results
-                        // Change offset to the remaining results to get
-                        setOffset(getOffset() - results.size());
-                        results.clear();
-                    } else if (getLimit() > -1) {
-                        // Strip results to limit and offset
-                        int resultsSize = results.size();
-                        results = results.subList((int) getOffset(), Math.min((int) getOffset() + (int) getLimit(), resultsSize));
-                        //  set the offset and the limit for the external query (starting at 0 to the current limit minus the results from the extensions
-                        setOffset(0);
-                        setLimit(getLimit() - results.size());
-                    } else if (getOffset() > 0) {
-                        // Use offset
-                        results = results.subList((int) getOffset(), results.size());
-                        // set back the Offset to 0 has it has been consumed
-                        setOffset(0);
+                    } else {
+                        boolean offsetNotReached = getOffset() >= results.size();
+                        if (offsetNotReached) {
+                            // Offset greater than results here - return an empty result list, still need to merge results
+                            // Change offset to the remaining results to get
+                            setOffset(getOffset() - results.size());
+                            results.clear();
+                        } else if (hasLimit) {
+                            // Strip results to limit and offset
+                            int resultsSize = results.size();
+                            results = results.subList((int) getOffset(), Math.min((int) getOffset() + (int) getLimit(), resultsSize));
+                            //  set the offset and the limit for the external query (starting at 0 to the current limit minus the results from the extensions
+                            setOffset(0);
+                            setLimit(getLimit() - results.size());
+                        } else {
+                            boolean hasOffset = getOffset() > 0;
+                            if (hasOffset) {
+                                // Use offset
+                                results = results.subList((int) getOffset(), results.size());
+                                // set back the Offset to 0 has it has been consumed
+                                setOffset(0);
+                            }
+                        }
                     }
                     // if the list contains all items
                     if (getLimit() == 0) {
@@ -318,9 +326,8 @@ public class ExternalQueryManager implements QueryManager {
 
             ExternalContentStoreProvider.setCurrentSession(session);
             try {
-
                 if (isCount && dataSource instanceof ExternalDataSource.SupportCount) {
-                    count += ((ExternalDataSource.SupportCount) dataSource).count(this);
+                     count += ((ExternalDataSource.SupportCount) dataSource).count(this);
                 } else if (!isCount) {
                     if (results == null) {
                         // No previous results, no merge to do
@@ -329,20 +336,14 @@ public class ExternalQueryManager implements QueryManager {
                         // Previous results, but only in extended nodes, no merge required - concat only
                         results.addAll(((ExternalDataSource.Searchable) dataSource).search(this));
                     } else {
-                        // Need to merge, skip until match required offset
-                        int skips = Math.max(0, (int) getOffset());
                         List<String> providerResult = ((ExternalDataSource.Searchable) dataSource).search(this);
                         for (String s : providerResult) {
                             // Skip duplicate result
                             if (!results.contains(s)) {
-                                if (skips > 0) {
-                                    skips--;
-                                } else {
-                                    results.add(s);
-                                    // if results size match the original limit, return them ..
-                                    if (originalLimit > -1 && results.size() >= originalLimit) {
-                                        break;
-                                    }
+                                results.add(s);
+                                // if results size match the original limit, return them ..
+                                if (originalLimit > -1 && results.size() >= originalLimit) {
+                                    break;
                                 }
                             }
                         }
