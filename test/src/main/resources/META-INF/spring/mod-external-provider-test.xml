@@ -19,7 +19,7 @@
             </list>
         </property>
     </bean>
-    
+
     <osgi:reference id="ExternalProviderInitializerService" interface="org.jahia.modules.external.ExternalProviderInitializerService"/>
 
     <bean id="ExternalGenericDatabaseProvider" class="org.jahia.modules.external.ExternalContentStoreProvider" parent="AbstractJCRStoreProvider">
@@ -61,6 +61,16 @@
         <property name="dataSource">
             <bean class="org.jahia.modules.external.test.db.MappedDatabaseDataSource"/>
         </property>
+    </bean>
+
+    <bean id="ExternalMappedDatabaseProviderNoAirlineWithCount" class="org.jahia.modules.external.ExternalContentStoreProvider" parent="ExternalMappedDatabaseProviderSupportCount">
+        <property name="key" value="ExternalMappedDatabaseProviderNonExentable"/>
+        <property name="dataSource">
+            <bean class="org.jahia.modules.external.test.db.MappedDatabaseDataSource">
+                <property name="noAirlineType" value="true"/>
+            </bean>
+        </property>
+        <property name="mountPoint" value="/external-database-mapped-no-airlines-with-count"/>
     </bean>
 
     <bean id="ExternalMappedDatabaseProviderSupportCount2" class="org.jahia.modules.external.ExternalContentStoreProvider" parent="ExternalMappedDatabaseProviderSupportCount">
