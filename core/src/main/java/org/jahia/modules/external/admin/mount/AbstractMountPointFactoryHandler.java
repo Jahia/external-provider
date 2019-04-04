@@ -69,6 +69,7 @@ import java.util.Locale;
 public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPointFactory> implements Serializable{
     private static final long serialVersionUID = 6394236759186947423L;
     private static final String SITES_QUERY = "select * from [jnt:virtualsite] as f where ischildnode(f,['/sites'])";
+    private final String FILES_NODENAME = "files";
 
     public T init(RequestContext requestContext, final T mountPointFactory) throws RepositoryException {
         if(mountPointFactory == null){
@@ -140,7 +141,7 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
     }
 
     protected JSONArray getSiteFolders(Workspace workspace) throws RepositoryException {
-        return getSiteFolders(workspace, true, "files");
+        return getSiteFolders(workspace, true, FILES_NODENAME);
     }
 
     protected JSONArray getSiteFolders(Workspace workspace, String nodeName) throws RepositoryException {
@@ -148,7 +149,7 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
     }
 
     protected JSONArray getSiteFolders(Workspace workspace, boolean local) throws RepositoryException {
-        return getSiteFolders(workspace, local, "files");
+        return getSiteFolders(workspace, local, FILES_NODENAME);
     }
 
     protected JSONArray getSiteFolders(Workspace workspace, boolean local, String nodeName) throws RepositoryException {
