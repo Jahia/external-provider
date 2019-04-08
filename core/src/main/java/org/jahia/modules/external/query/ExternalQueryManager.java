@@ -46,6 +46,8 @@ package org.jahia.modules.external.query;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.commons.iterator.NodeIteratorAdapter;
 import org.apache.jackrabbit.commons.query.sql2.Parser;
+import org.apache.jackrabbit.core.query.JahiaSimpleQueryResult;
+import org.apache.jackrabbit.core.query.lucene.CountRow;
 import org.apache.jackrabbit.spi.commons.conversion.NamePathResolver;
 import org.apache.jackrabbit.spi.commons.query.qom.QueryObjectModelFactoryImpl;
 import org.apache.jackrabbit.spi.commons.query.qom.QueryObjectModelTree;
@@ -59,16 +61,18 @@ import javax.jcr.*;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.query.*;
 import javax.jcr.query.qom.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Implementation of the {@link javax.jcr.query.QueryManager} for the {@link org.jahia.modules.external.ExternalData}.
  */
 public class ExternalQueryManager implements QueryManager {
     private static final String[] SUPPORTED_LANGUAGES = new String[]{Query.JCR_SQL2};
+    private static final String FACET_MARKER = "rep:facet(";
+    private static final String COUNT_MARKER = "rep:count(";
+    private static final String EXTENSION_MIXIN = "jmix:externalProviderExtension";
+    private static final String EXTENDED_TYPE_PROPERTY = "j:extendedType";
+    private static final String EXTENSION_TYPE = "jnt:externalProviderExtension";
 
     private static Logger logger = LoggerFactory.getLogger(ExternalQueryManager.class);
 
@@ -167,49 +171,49 @@ public class ExternalQueryManager implements QueryManager {
 
         @Override
         public QueryResult execute() throws InvalidQueryException, RepositoryException {
-            List<String> allExtendedResults = new ArrayList<>();
-            List<String> results = null;
+            List<String> results = new ArrayList<>();
             final ExternalSessionImpl session = workspace.getSession();
+            final ExternalDataSource dataSource = session.getRepository().getDataSource();
 
-            boolean noConstraints = false;
-            try {
-                // Check if query has
-                if (QueryHelper.getSimpleAndConstraints(getConstraint()).size() == 0) {
-                    noConstraints = true;
+            boolean noConstraints = isNoConstraints();
+
+            Source source = getSource();
+            boolean isMixinOrFacet = false;
+            boolean isCount = false;
+            long count = 0;
+            long originalLimit = getLimit();
+            String selectorType = null;
+            String selectorName = null;
+            if (source instanceof Selector) {
+                selectorType = ((Selector) source).getNodeTypeName();
+                selectorName = ((Selector) source).getSelectorName();
+                isMixinOrFacet = NodeTypeRegistry.getInstance().getNodeType(selectorType).isMixin();
+                for (Column c : getColumns()) {
+                    final String columnName = c.getColumnName();
+                    if (StringUtils.startsWith(columnName, FACET_MARKER)) {
+                        isMixinOrFacet = true;
+                        break;
+                    }
+                    if (StringUtils.startsWith(columnName, COUNT_MARKER)) {
+                        isCount = true;
+                        break;
+                    }
                 }
-            } catch (UnsupportedRepositoryOperationException e) {
-                // Query has complex constraints, continue
             }
+            long lastItemIndex = getOffset() + getLimit();
 
+            // Check first for extensions
             if (hasExtension) {
                 Session extSession = session.getExtensionSession();
                 QueryManager queryManager = extSession.getWorkspace().getQueryManager();
 
                 final QueryObjectModelFactory qomFactory = queryManager.getQOMFactory();
 
-                Source source = getSource();
-                boolean isMixinOrFacet = false;
-                boolean isCount = false;
-                String selectorType = null;
-                String selectorName = null;
                 if (source instanceof Selector) {
-                    selectorType = ((Selector) source).getNodeTypeName();
-                    selectorName = ((Selector) source).getSelectorName();
-                    isMixinOrFacet = NodeTypeRegistry.getInstance().getNodeType(selectorType).isMixin();
-                    for (Column c : getColumns()) {
-                        final String columnName = c.getColumnName();
-                        if (StringUtils.startsWith(columnName, "rep:facet(")) {
-                            isMixinOrFacet = true;
-                            break;
-                        }
-                        if (StringUtils.startsWith(columnName, "rep:count(")) {
-                            isCount = true;
-                            break;
-                        }
-                    }
                     // for extension node,but not mixin , change the type to jnt:externalProviderExtension
-                    String selector = isMixinOrFacet ? selectorType : "jmix:externalProviderExtension";
+                    String selector = isMixinOrFacet || isCount ? selectorType : EXTENSION_MIXIN;
                     source = qomFactory.selector(selector, selectorName);
+
                 }
 
                 final ExternalContentStoreProvider storeProvider = session.getRepository().getStoreProvider();
@@ -220,15 +224,17 @@ public class ExternalQueryManager implements QueryManager {
                     convertedConstraint = addPathConstraints(convertedConstraint, source, mountPoint, qomFactory);
                 }
 
-                if (!isMixinOrFacet && selectorName != null && selectorType != null) {
-                    Comparison c = qomFactory.comparison(qomFactory.propertyValue(selectorName, "j:extendedType"), QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO, qomFactory.literal(extSession.getValueFactory().createValue(selectorType)));
+                // in case of normal (neither facet or count) query, search in extended type property types.
+                if (!isCount && !isMixinOrFacet && selectorName != null && selectorType != null) {
+                    Comparison c = qomFactory.comparison(qomFactory.propertyValue(selectorName, EXTENDED_TYPE_PROPERTY), QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO, qomFactory.literal(extSession.getValueFactory().createValue(selectorType)));
                     convertedConstraint = qomFactory.and(c, convertedConstraint);
                 }
 
                 Query q = qomFactory.createQuery(source, convertedConstraint, getOrderings(), getColumns());
+                boolean hasLimit = getLimit() > -1;
                 if (!nodeTypeSupported) {
                     // Query is only done in JCR, directly pass limit and offset
-                    if (getLimit() > -1) {
+                    if (hasLimit) {
                         q.setLimit(getLimit());
                     }
                     q.setOffset(getOffset());
@@ -244,14 +250,14 @@ public class ExternalQueryManager implements QueryManager {
                                         + "Lucene indexes might be corrupted", q.getStatement());
                                 logger.warn(warnMsg);
                             } else {
-                                allExtendedResults.add(node.getPath().substring(mountPoint.length()));
+                                results.add(node.getPath().substring(mountPoint.length()));
                             }
                         }
-                        results = allExtendedResults;
                     } else {
-                        return result;
+                        count = getCount(result);
                     }
-
+                    // As the node type is not supported by the DataSource, return the result directly
+                    return buildQueryResult(results, dataSource, isCount, count);
                 } else {
                     // Need to get all results to prepare merge
                     final QueryResult queryResult = q.execute();
@@ -266,89 +272,123 @@ public class ExternalQueryManager implements QueryManager {
                             } else {
                                 String path = node.getPath().substring(mountPoint.length());
                                 // If no constraint was set, only take extended nodes, as the datasource will return them all anyway
-                                if (!node.isNodeType("jnt:externalProviderExtension") || (!noConstraints && session.itemExists(path))) {
-                                    allExtendedResults.add(path);
-                                    if (getLimit() > -1 && allExtendedResults.size() > getOffset() + getLimit()) {
+                                boolean isNotExtension = !node.isNodeType(EXTENSION_TYPE);
+                                boolean matchExtensionConstraint = !noConstraints && session.itemExists(path);
+                                if (isNotExtension || matchExtensionConstraint) {
+                                    results.add(path);
+                                    if (hasLimit && results.size() > lastItemIndex) {
+                                        // stop to add item in the list, continue with the merge
                                         break;
                                     }
                                 }
                             }
                         }
                     } else {
-                        return queryResult;
+                        count = getCount(queryResult);
                     }
 
-                    if (allExtendedResults.size() == 0) {
+                    if (results.isEmpty()) {
                         // No results at all, ignore search in extension
                         results = null;
-                    } else if (getOffset() >= allExtendedResults.size()) {
-                        // Offset greater than results here - return an empty result list, still need to merge results
-                        results = new ArrayList<String>();
-                    } else if (getLimit() > -1) {
-                        // Strip results to limit and offset
-                        results = allExtendedResults.subList((int) getOffset(), Math.min((int) getLimit(), allExtendedResults.size()));
-                    } else if (getOffset() > 0) {
-                        // Use offset
-                        results = allExtendedResults.subList((int) getOffset(), allExtendedResults.size());
                     } else {
-                        // Retuen all results
-                        results = allExtendedResults;
+                        boolean offsetNotReached = getOffset() >= results.size();
+                        if (offsetNotReached) {
+                            // Offset greater than results here - return an empty result list, still need to merge results
+                            // Change offset to the remaining results to get
+                            setOffset(getOffset() - results.size());
+                            results.clear();
+                        } else if (hasLimit) {
+                            // Strip results to limit and offset
+                            int resultsSize = results.size();
+                            results = results.subList((int) getOffset(), Math.min((int) getOffset() + (int) getLimit(), resultsSize));
+                            //  set the offset and the limit for the external query (starting at 0 to the current limit minus the results from the extensions
+                            setOffset(0);
+                            setLimit(getLimit() - results.size());
+                        } else {
+                            boolean hasOffset = getOffset() > 0;
+                            if (hasOffset) {
+                                // Use offset
+                                results = results.subList((int) getOffset(), results.size());
+                                // set back the Offset to 0 has it has been consumed
+                                setOffset(0);
+                            }
+                        }
                     }
+                    // if the list contains all items
+                    if (getLimit() == 0) {
+                        return buildQueryResult(results, dataSource, isCount, count);
+                    }
+
                 }
             }
-            if (nodeTypeSupported && (getLimit() == -1 || results == null || results.size() < getLimit())) {
-                ExternalContentStoreProvider.setCurrentSession(session);
-                try {
-                    ExternalDataSource dataSource = session.getRepository().getDataSource();
-                    final long originalLimit = getLimit();
 
+            // Add Provider's results
+
+            ExternalContentStoreProvider.setCurrentSession(session);
+            try {
+                if (isCount && dataSource instanceof ExternalDataSource.SupportCount) {
+                     count += ((ExternalDataSource.SupportCount) dataSource).count(this);
+                } else if (!isCount) {
                     if (results == null) {
                         // No previous results, no merge to do
                         results = ((ExternalDataSource.Searchable) dataSource).search(this);
                     } else if (noConstraints) {
                         // Previous results, but only in extended nodes, no merge required - concat only
-                        if (getOffset() >= allExtendedResults.size()) {
-                            setOffset(getOffset() - allExtendedResults.size());
-                        } else {
-                            setOffset(0);
-                            if (getLimit() != -1) {
-                                setLimit(getLimit() - results.size());
-                            }
-                        }
                         results.addAll(((ExternalDataSource.Searchable) dataSource).search(this));
                     } else {
-                        if (originalLimit > -1) {
-                            // Remove results found. Extend limit with total size of extended result to skip duplicate results
-                            setLimit(getOffset() + getLimit());
-                        }
-                        // Need to merge, move offset to 0
-                        int skips = Math.max(0, (int) getOffset() - allExtendedResults.size());
-                        setOffset(0);
                         List<String> providerResult = ((ExternalDataSource.Searchable) dataSource).search(this);
                         for (String s : providerResult) {
                             // Skip duplicate result
-                            if (!allExtendedResults.contains(s)) {
-                                if (skips > 0) {
-                                    skips--;
-                                } else {
-                                    results.add(s);
-                                    if (originalLimit > -1 && results.size() >= originalLimit) {
-                                        break;
-                                    }
+                            if (!results.contains(s)) {
+                                results.add(s);
+                                // if results size match the original limit, return them ..
+                                if (originalLimit > -1 && results.size() >= originalLimit) {
+                                    break;
                                 }
                             }
                         }
                     }
-                } catch (UnsupportedRepositoryOperationException e) {
-                    logger.debug("Unsupported query ", e);
-                } finally {
-                    ExternalContentStoreProvider.removeCurrentSession();
                 }
+            } catch (UnsupportedRepositoryOperationException e) {
+                logger.debug("Unsupported query ", e);
+            } finally {
+                ExternalContentStoreProvider.removeCurrentSession();
+            }
+
+            return buildQueryResult(results, dataSource, isCount, count);
+        }
+
+        private boolean isNoConstraints() throws RepositoryException {
+            boolean noConstraints = false;
+            try {
+                // Check if query has
+                if (QueryHelper.getSimpleAndConstraints(getConstraint()).size() == 0) {
+                    noConstraints = true;
+                }
+            } catch (UnsupportedRepositoryOperationException e) {
+                // Query has complex constraints, continue
+            }
+            return noConstraints;
+        }
+
+        private QueryResult buildQueryResult(List<String> results, ExternalDataSource dataSource, boolean isCount, long count) throws RepositoryException {
+            if (isCount) {
+                QueryResult rowCountResult = new ExternalCountRowResult(this, count, workspace);
+                return new JahiaSimpleQueryResult(rowCountResult.getColumnNames(), rowCountResult.getSelectorNames(), rowCountResult.getRows());
             }
             if (results == null) {
-                results = new ArrayList<String>();
+                results = Collections.emptyList();
             }
             return new ExternalQueryResult(this, results, workspace);
+        }
+
+        private long getCount(QueryResult result) throws RepositoryException {
+            Row row = result.getRows().hasNext() ? result.getRows().nextRow() : null;
+            // Add null check as the RowIterator can return a null entry
+            if (row instanceof CountRow) {
+                return row.getValue(StringUtils.EMPTY).getLong();
+            }
+            return 0;
         }
 
         private boolean hasDescendantNode(Constraint convertedConstraint) {

@@ -96,8 +96,17 @@ public class MappedDatabaseDataSource extends GenericDatabaseDataSource implemen
 
     private static final Logger logger = LoggerFactory.getLogger(MappedDatabaseDataSource.class);
 
-    private static final Set<String> SUPPORTED_NODETYPES = new HashSet<String>(Arrays.asList(DATA_TYPE_CATALOG,
-            DATA_TYPE_DIRECTORY, DATA_TYPE_AIRLINE, DATA_TYPE_CITY, DATA_TYPE_COUNTRY, DATA_TYPE_FLIGHT));
+    private static final Set<String> SUPPORTED_NODETYPES_WITHOUT_AIRPLAIN = new HashSet<>(Arrays.asList(DATA_TYPE_CATALOG,
+            DATA_TYPE_DIRECTORY, DATA_TYPE_CITY, DATA_TYPE_COUNTRY, DATA_TYPE_FLIGHT));
+
+    private static final Set<String> SUPPORTED_NODETYPES = new HashSet<>(SUPPORTED_NODETYPES_WITHOUT_AIRPLAIN);
+
+    private boolean useAltSupportedNodeTypes;
+
+    static {
+        SUPPORTED_NODETYPES.add(DATA_TYPE_AIRLINE);
+    }
+
 
     static {
         DIRECTORY_TYPE_MAPPING = new DualHashBidiMap();
@@ -209,7 +218,7 @@ public class MappedDatabaseDataSource extends GenericDatabaseDataSource implemen
 
     @Override
     public Set<String> getSupportedNodeTypes() {
-        return SUPPORTED_NODETYPES;
+        return useAltSupportedNodeTypes ? SUPPORTED_NODETYPES_WITHOUT_AIRPLAIN : SUPPORTED_NODETYPES;
     }
 
     @Override
@@ -229,6 +238,10 @@ public class MappedDatabaseDataSource extends GenericDatabaseDataSource implemen
 
     @Override
     public List<String> search(ExternalQuery query) throws RepositoryException {
+        return search(query, false);
+    }
+
+    protected List<String> search(ExternalQuery query, boolean count) throws RepositoryException {
         List<String> allResults = null;
 
         String nodeType = QueryHelper.getNodeType(query.getSource());
@@ -245,14 +258,16 @@ public class MappedDatabaseDataSource extends GenericDatabaseDataSource implemen
             }
         }
 
-        if (allResults != null && query.getOffset() > 0) {
-            if (query.getOffset() >= allResults.size()) {
-                return Collections.<String>emptyList();
+        if (!count) {
+            if (allResults != null && query.getOffset() > 0) {
+                if (query.getOffset() >= allResults.size()) {
+                    return Collections.<String>emptyList();
+                }
+                allResults = allResults.subList((int) query.getOffset(), allResults.size());
             }
-            allResults = allResults.subList((int) query.getOffset(), allResults.size());
-        }
-        if (allResults != null && query.getLimit() > -1 && query.getLimit() < allResults.size()) {
-            allResults = allResults.subList(0, (int) query.getLimit());
+            if (allResults != null && query.getLimit() > -1 && query.getLimit() < allResults.size()) {
+                allResults = allResults.subList(0, (int) query.getLimit());
+            }
         }
 
         return allResults != null ? allResults : Collections.<String>emptyList();
@@ -402,5 +417,13 @@ public class MappedDatabaseDataSource extends GenericDatabaseDataSource implemen
     @Override
     public Binary[] getBinaryPropertyValues(String path, String propertyName) throws PathNotFoundException {
         throw new PathNotFoundException(path + "/" + propertyName);
+    }
+
+    public boolean isNoAirlineType() {
+        return useAltSupportedNodeTypes;
+    }
+
+    public void setNoAirlineType(boolean noAirlineType) {
+        this.useAltSupportedNodeTypes = noAirlineType;
     }
 }
