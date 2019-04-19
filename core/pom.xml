@@ -49,7 +49,7 @@
     <parent>
         <groupId>org.jahia.modules</groupId>
         <artifactId>external-provider-parent</artifactId>
-        <version>3.2.1</version>
+        <version>3.2.2-SNAPSHOT</version>
     </parent>
     <artifactId>external-provider</artifactId>
     <packaging>bundle</packaging>
@@ -61,7 +61,7 @@
         <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
         <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
         <url>scm:git:git@github.com:Jahia/external-provider.git</url>
-        <tag>3_2_1</tag>
+        <tag>HEAD</tag>
     </scm>
     <properties>
         <jahia-module-type>system</jahia-module-type>
