@@ -69,6 +69,8 @@ import java.util.Locale;
 public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPointFactory> implements Serializable{
     private static final long serialVersionUID = 6394236759186947423L;
     private static final String SITES_QUERY = "select * from [jnt:virtualsite] as f where ischildnode(f,['/sites'])";
+    private static final String FILES_NODENAME = "files";
+    private static final String JNT_FOLDER = "jnt:folder";
 
     public T init(RequestContext requestContext, final T mountPointFactory) throws RepositoryException {
         if(mountPointFactory == null){
@@ -140,10 +142,22 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
     }
 
     protected JSONArray getSiteFolders(Workspace workspace) throws RepositoryException {
-        return getSiteFolders(workspace, true);
+        return getSiteFolders(workspace, true, FILES_NODENAME, JNT_FOLDER);
+    }
+
+    protected JSONArray getSiteFolders(Workspace workspace, String nodeName) throws RepositoryException {
+        return getSiteFolders(workspace, true, nodeName, JNT_FOLDER);
+    }
+
+    protected JSONArray getSiteFolders(Workspace workspace, String nodeName, String folderType) throws RepositoryException {
+        return getSiteFolders(workspace, true, nodeName, folderType);
     }
 
     protected JSONArray getSiteFolders(Workspace workspace, boolean local) throws RepositoryException {
+        return getSiteFolders(workspace, local, FILES_NODENAME, JNT_FOLDER);
+    }
+
+    protected JSONArray getSiteFolders(Workspace workspace, boolean local, String nodeName, String folderType) throws RepositoryException {
         JSONArray folders = new JSONArray();
         Query sitesQuery = workspace.getQueryManager().createQuery(SITES_QUERY, Query.JCR_SQL2);
         NodeIterator sites = sitesQuery.execute().getNodes();
@@ -152,7 +166,7 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
             Node site = sites.nextNode();
             Node siteFiles;
             try {
-                siteFiles = site.getNode("files");
+                siteFiles = site.getNode(nodeName);
                 folders.put(escape(siteFiles.getPath()));
             } catch (RepositoryException e) {
                 // no files under the site
@@ -166,7 +180,7 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
             }
 
 
-            Query siteFoldersQuery = workspace.getQueryManager().createQuery("select * from [jnt:folder] as f where " + filter
+            Query siteFoldersQuery = workspace.getQueryManager().createQuery("select * from [" + folderType + "] as f where " + filter
                     , Query.JCR_SQL2);
 
             NodeIterator siteFolders = siteFoldersQuery.execute().getNodes();
