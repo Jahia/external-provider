@@ -52,7 +52,7 @@
         <version>7.3.0.1</version>
         <relativePath />
     </parent>
-    <version>3.2.1-target__qa_11693-SNAPSHOT</version>
+    <version>3.2.1-SNAPSHOT</version>
     <artifactId>external-provider-parent</artifactId>
     <name>Jahia External Provider Parent</name>
     <packaging>pom</packaging>
