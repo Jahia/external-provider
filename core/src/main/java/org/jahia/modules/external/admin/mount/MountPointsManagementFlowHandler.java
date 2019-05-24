@@ -77,14 +77,14 @@ public class MountPointsManagementFlowHandler implements Serializable {
     private static Logger logger = LoggerFactory.getLogger(MountPointsManagementFlowHandler.class);
     private static final String BUNDLE = "resources.JahiaExternalProvider";
 
-    public static enum Actions {
-        mount, unmount, delete
+    public enum Actions {
+        MOUNT, UNMOUNT, DELETE
     }
 
     @Autowired
     private transient JCRStoreService jcrStoreService;
 
-    public void init(RequestContext requestContext, MessageContext messageContext) throws RepositoryException {
+    public void init(RequestContext requestContext, MessageContext messageContext) {
 
         String stateCode = requestContext.getRequestParameters().get("stateCode");
         String messageKey = requestContext.getRequestParameters().get("messageKey");
@@ -93,19 +93,19 @@ public class MountPointsManagementFlowHandler implements Serializable {
         {
             Locale locale = LocaleContextHolder.getLocale();
 
-            MessageBuilder messageBuilder = null;
+            MessageBuilder messageBuilder = new MessageBuilder();
             String message = Messages.get(bundleSource, messageKey, locale);
             if("ERROR".equals(stateCode) &&  message != null)
             {
-                messageBuilder = new MessageBuilder().error().defaultText(message);
+                messageBuilder = messageBuilder.error().defaultText(message);
             }
             if("WARNING".equals(stateCode))
             {
-                messageBuilder = new MessageBuilder().warning().defaultText(message);
+                messageBuilder = messageBuilder.warning().defaultText(message);
             }
             if("SUCCESS".equals(stateCode))
             {
-                messageBuilder = new MessageBuilder().info().defaultText(message);
+                messageBuilder = messageBuilder.info().defaultText(message);
             }
             messageContext.addMessage(messageBuilder.build());
         }
@@ -161,13 +161,13 @@ public class MountPointsManagementFlowHandler implements Serializable {
         boolean success = false;
 
         switch (action) {
-            case mount:
+            case MOUNT:
                 success = mount(mountPointName);
                 break;
-            case unmount:
+            case UNMOUNT:
                 success = unmount(mountPointName);
                 break;
-            case delete:
+            case DELETE:
                 success = delete(mountPointName);
                 break;
         }
@@ -184,8 +184,7 @@ public class MountPointsManagementFlowHandler implements Serializable {
                     JCRMountPointNode mountPointNode = getMountPoint(session, mountPointName);
                     if (mountPointNode != null) {
                         if (mountPointNode.getMountStatus() != JCRMountPointNode.MountStatus.unmounted) {
-                            String detail = "Can't mount " + mountPointName + ", mount status of the mount point is not unmounted";
-                            logger.error(detail);
+                            logger.error("Can't mount {}, mount status of the mount point is not unmounted", mountPointName);
                             return false;
                         }
                         mountPointNode.setMountStatus(JCRMountPointNode.MountStatus.mounted);
@@ -193,7 +192,7 @@ public class MountPointsManagementFlowHandler implements Serializable {
                         JCRStoreProvider mountProvider = mountPointNode.getMountProvider();
                         return mountProvider.isAvailable();
                     } else {
-                        logger.error("Can't mount " + mountPointName + ", no mount point node found");
+                        logger.error("Can't mount {}, no mount point node found", mountPointName);
                         return false;
                     }
                 }
@@ -213,7 +212,7 @@ public class MountPointsManagementFlowHandler implements Serializable {
                     JCRMountPointNode mountPointNode = getMountPoint(session, mountPointName);
                     if (mountPointNode != null) {
                         if (mountPointNode.getMountStatus() != JCRMountPointNode.MountStatus.mounted) {
-                            logger.error("Can't mount " + mountPointName + ", current mount status of the mount point is not mounted");
+                            logger.error("Can't mount {}, current mount status of the mount point is not mounted", mountPointName);
                             return false;
                         }
 
@@ -221,7 +220,7 @@ public class MountPointsManagementFlowHandler implements Serializable {
                         session.save();
                         return mountPointNode.getMountProvider() == null;
                     } else {
-                        logger.error("Can't mount " + mountPointName + ", no mount point node found");
+                        logger.error("Can't mount {}, no mount point node found", mountPointName);
                         return false;
                     }
                 }
@@ -244,7 +243,7 @@ public class MountPointsManagementFlowHandler implements Serializable {
                         session.save();
                         return getMountPoint(session, mountPointName) == null;
                     } else {
-                        logger.error("Can't delete " + mountPointName + ", no mount point node found");
+                        logger.error("Can't delete {}, no mount point node found", mountPointName);
                         return false;
                     }
                 }
