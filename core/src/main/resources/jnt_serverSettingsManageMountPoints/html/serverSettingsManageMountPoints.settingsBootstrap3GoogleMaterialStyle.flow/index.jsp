@@ -150,14 +150,14 @@
                     <td>
                         <c:if test="${mountPoint.showMountAction}">
                             <fmt:message key="serverSettings.mountPointsManagement.action.mount" var="mountLabel"/>
-                            <button class="btn btn-info" type="button" onclick="submitEvent('mount', '${mountPoint.realName}')" data-toggle="tooltip"
+                            <button class="btn btn-info" type="button" onclick="submitEvent('MOUNT', '${mountPoint.realName}')" data-toggle="tooltip"
                                     data-placement="bottom" title="" data-original-title="${mountLabel}">
                                 <i class="material-icons">file_download</i>
                             </button>
                         </c:if>
                         <c:if test="${mountPoint.showUnmountAction}">
                             <fmt:message key="serverSettings.mountPointsManagement.action.unmount" var="unmountLabel"/>
-                            <button class="btn btn-info" type="button" onclick="submitEvent('unmount', '${mountPoint.realName}')" data-toggle="tooltip"
+                            <button class="btn btn-info" type="button" onclick="submitEvent('UNMOUNT', '${mountPoint.realName}')" data-toggle="tooltip"
                                     data-placement="bottom" title="" data-original-title="${unmountLabel}">
                                 <i class="material-icons">file_upload</i>
                             </button>
@@ -175,7 +175,7 @@
                         </c:if>
                             <fmt:message key="label.delete" var="deleteLabel"/>
                         <button data-toggle="tooltip" class="btn btn-sm btn-danger" type="button" data-placement="bottom"  title=""
-                                data-original-title="${deleteLabel}" onclick="submitEventWithConfirm('delete', '${mountPoint.realName}', '${functions:escapeJavaScript(confirmDelete)}')">
+                                data-original-title="${deleteLabel}" onclick="submitEventWithConfirm('DELETE', '${mountPoint.realName}', '${functions:escapeJavaScript(confirmDelete)}')">
                             <i class="material-icons">delete</i>
                         </button>
                     </td>
