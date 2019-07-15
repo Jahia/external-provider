@@ -24,11 +24,12 @@
 <div class="page-header">
     <h2><fmt:message key="vfsFactory"/></h2>
 </div>
-<div class="folderPickerApp" ng-app="folderPicker">
 
+<%@ include file="errors.jspf" %>
+
+<div class="folderPickerApp" ng-app="folderPicker">
     <div class="panel panel-default">
         <div class="panel-body">
-            <%@ include file="errors.jspf" %>
 
             <fmt:message var="selectTarget" key="vfsFactory.selectTarget"/>
             <c:set var="i18NSelectTarget" value="${functions:escapeJavaScript(selectTarget)}"/>
@@ -37,26 +38,26 @@
                 <form:form modelAttribute="vfsFactory" method="post" cssClass="form">
                     <fieldset title="local">
                         <div>
-                            <div class="form-group is-empty">
+                            <div class="form-group label-floating">
                                 <form:label path="name" cssClass="control-label"><fmt:message key="label.name"/> <span style="color:
                                 red">*</span></form:label>
                                 <form:input path="name" cssClass="form-control"/>
                             </div>
-                            <div class="form-group is-empty">
+                            <div class="form-group label-floating">
                                 <form:label path="root" cssClass="control-label"><fmt:message key="vfsFactory.root"/> <span style="color: red">*</span></form:label>
                                 <form:input path="root" cssClass="form-control"/>
                             </div>
-                            <div class="form-group is-empty">
+                            <div class="form-group">
                                 <jsp:include page="/modules/external-provider/angular/folderPicker.settingsBootstrap3GoogleMaterialStyle.jsp"/>
                             </div>
                         </div>
                     </fieldset>
                     <fieldset>
                         <div class="col-md-12">
-                            <button class="btn btn-default btn-sm btn-primary" type="submit" name="_eventId_save">
+                            <button class="btn btn-primary btn-raised pull-right" type="submit" name="_eventId_save">
                                 <span><fmt:message key="label.save"/></span>
                             </button>
-                            <button class="btn btn-sm btn-danger" type="submit" name="_eventId_cancel">
+                            <button class="btn btn-default pull-right" type="submit" name="_eventId_cancel">
                                 <span><fmt:message key="label.cancel"/></span>
                             </button>
                         </div>

@@ -19,7 +19,7 @@
 
 <div class="panel panel-default">
     <div class="panel-body">
-        <h3><fmt:message key="label.capabilities"/></h3>
+        <h4><fmt:message key="label.capabilities"/></h4>
         <ul>
             <li><fmt:message key="label.canWrite"/> : <c:if test="${datasourceInfo.writeable}"><span
                     class="label label-success"><fmt:message
@@ -39,14 +39,14 @@
                     class="label label-warning"><fmt:message key="label.no"/></span></c:if></li>
         </ul>
 
-        <h3><fmt:message key="label.nodeInfos"/></h3>
+        <h4><fmt:message key="label.nodeInfos"/></h4>
         <ul>
             <li><fmt:message key="label.supportedTypes"/> : ${datasourceInfo.supportedTypes}</li>
             <li><fmt:message key="label.rootNodeType"/> : ${datasourceInfo.rootNodeType}</li>
         </ul>
 
         <c:if test="${datasourceInfo.extendable}">
-            <h3><fmt:message key="label.extensions"/></h3>
+            <h4><fmt:message key="label.extensions"/></h4>
             <ul>
                 <li><fmt:message key="label.overridableItems"/> : ${datasourceInfo.overridableItems}</li>
                 <li><fmt:message key="label.nonOverridableItems"/> : ${datasourceInfo.nonOverridableItems}</li>
@@ -54,7 +54,7 @@
             </ul>
         </c:if>
         <c:if test="${datasourceInfo.searchable}">
-            <h3><fmt:message key="label.searchCapabilities"/></h3>
+            <h4><fmt:message key="label.searchCapabilities"/></h4>
             <ul>
                 <c:forEach items="${datasourceInfo.supportedQueries}" var="entry">
                     <li>${entry.key} : <c:if test="${entry.value}"><span class="label label-success"><fmt:message
