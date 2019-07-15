@@ -55,57 +55,58 @@
     <input type="hidden" name="action" id="MPFormAction"/>
     <input type="hidden" name="_eventId" value="doAction">
 </form>
+
 <div class="page-header">
     <h2><fmt:message key="serverSettings.mountPointsManagement"/></h2>
 </div>
 
-<div class="panel panel-default">
-    <div class="panel-body">
 
-        <div>
-            <h3><fmt:message key="serverSettings.mountPointsManagement.add"/></h3>
-            <form style="margin: 0;">
-                <div class="input-group">
-                    <select class="form-control" id="mountPointFactory">
-                        <c:forEach var="providerFactory" items="${mountPointManager.mountPointFactories}">
-                            <c:if test="${not empty providerFactory.value.endOfURL}">
-                                <option value="<c:url value='${url.base}${providerFactory.value.endOfURL}'/>">${providerFactory.value.displayableName}</option>
-                            </c:if>
-                        </c:forEach>
-                    </select>
-                    <span class="input-group-btn">
-                        <a class="btn btn-default btn-sm btn-primary" href="#" onclick="goToFactory()">
-                            <span><fmt:message key="label.add"/></span>
-                         </a>
-                    </span>
-                </div>
-            </form>
-        </div>
-
-        <p>
-            <c:forEach items="${flowRequestContext.messageContext.allMessages}" var="message">
-            <c:if test="${message.severity eq 'INFO'}">
+<c:forEach items="${flowRequestContext.messageContext.allMessages}" var="message">
+    <c:if test="${message.severity eq 'INFO'}">
         <div class="alert alert-success">
             <button type="button" class="close" data-dismiss="alert">&times;</button>
                 ${message.text}
         </div>
-        </c:if>
-        <c:if test="${message.severity eq 'WARNING'}">
-            <div class="alert alert-warning">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                    ${message.text}
-            </div>
-        </c:if>
-        <c:if test="${message.severity eq 'ERROR'}">
-            <div class="alert alert-error">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                    ${message.text}
-            </div>
-        </c:if>
-        </c:forEach>
-        </p>
+    </c:if>
+    <c:if test="${message.severity eq 'WARNING'}">
+        <div class="alert alert-warning">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+                ${message.text}
+        </div>
+    </c:if>
+    <c:if test="${message.severity eq 'ERROR'}">
+        <div class="alert alert-error">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+                ${message.text}
+        </div>
+    </c:if>
+</c:forEach>
 
-        <table id="mountsTable" class="table table-bordered table-striped table-hover">
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h4><fmt:message key="serverSettings.mountPointsManagement.add"/></h4>
+    </div>
+    <div class="panel-body">
+        <form style="margin: 0;">
+            <div class="input-group">
+                <select class="form-control" id="mountPointFactory">
+                    <c:forEach var="providerFactory" items="${mountPointManager.mountPointFactories}">
+                        <c:if test="${not empty providerFactory.value.endOfURL}">
+                            <option value="<c:url value='${url.base}${providerFactory.value.endOfURL}'/>">${providerFactory.value.displayableName}</option>
+                        </c:if>
+                    </c:forEach>
+                </select>
+                <span class="input-group-btn">
+                    <button type="button" class="btn btn-fab-mini btn-fab btn-primary"
+                            data-toggle="tooltip" data-container="body" data-title="<fmt:message key='label.add'/>"
+                            onclick="goToFactory()">
+                        <i class="material-icons">add</i>
+                    </button>
+                </span>
+            </div>
+        </form>
+
+        <table id="mountsTable" class="table table-bordered table-striped">
             <thead>
             <tr>
                 <th>
@@ -130,10 +131,10 @@
             <c:forEach items="${mountPointManager.mountPoints}" var="mountPoint" varStatus="loopStatus">
                 <tr>
                     <td>
-                            ${mountPoint.name}
+                        ${mountPoint.name}
                     </td>
                     <td>
-                            ${mountPoint.path}
+                        ${mountPoint.path}
                     </td>
                     <td>
                         <c:forEach items="${mountPoint.remoteProperties}" var="prop">
@@ -143,21 +144,23 @@
                         </c:forEach>
                     </td>
                     <td>
-                <span class="label ${mountPoint.displayStatusClass}">
-                    <fmt:message key="serverSettings.mountPointsManagement.mountStatus.${mountPoint.status}"/>
-                </span>
+                        <span class="label ${mountPoint.displayStatusClass}">
+                            <fmt:message key="serverSettings.mountPointsManagement.mountStatus.${mountPoint.status}"/>
+                        </span>
                     </td>
                     <td>
                         <c:if test="${mountPoint.showMountAction}">
                             <fmt:message key="serverSettings.mountPointsManagement.action.mount" var="mountLabel"/>
-                            <button class="btn btn-info" type="button" onclick="submitEvent('mount', '${mountPoint.realName}')" data-toggle="tooltip"
+                            <button class="btn btn-default btn-fab btn-fab-xs" type="button"
+                                    onclick="submitEvent('mount', '${mountPoint.realName}')" data-toggle="tooltip"
                                     data-placement="bottom" title="" data-original-title="${mountLabel}">
                                 <i class="material-icons">file_download</i>
                             </button>
                         </c:if>
                         <c:if test="${mountPoint.showUnmountAction}">
                             <fmt:message key="serverSettings.mountPointsManagement.action.unmount" var="unmountLabel"/>
-                            <button class="btn btn-info" type="button" onclick="submitEvent('unmount', '${mountPoint.realName}')" data-toggle="tooltip"
+                            <button class="btn btn-default btn-fab btn-fab-xs" type="button"
+                                    onclick="submitEvent('unmount', '${mountPoint.realName}')" data-toggle="tooltip"
                                     data-placement="bottom" title="" data-original-title="${unmountLabel}">
                                 <i class="material-icons">file_upload</i>
                             </button>
@@ -168,14 +171,18 @@
                         <c:if test="${not empty mountPointManager.mountPointFactories[mountPoint.nodetype]}">
                             <c:url var="editURL" value="${url.base}${mountPointManager.mountPointFactories[mountPoint.nodetype].endOfURL}"/>
                             <fmt:message key="label.edit" var="editLabel"/>
-                            <button data-toggle="tooltip" class="btn btn-sm btn-primary" type="button" data-placement="bottom" title=""
-                                    data-original-title="${editLabel}" onclick="window.parent.goToUrl('${editURL}?edit=${mountPoint.identifier}')">
+                            <button class="btn btn-default btn-fab btn-fab-xs" type="button"
+                                    data-placement="bottom" title="" data-toggle="tooltip"
+                                    data-original-title="${editLabel}"
+                                    onclick="window.parent.goToUrl('${editURL}?edit=${mountPoint.identifier}')">
                                 <i class="material-icons">edit</i>
                             </button>
                         </c:if>
                             <fmt:message key="label.delete" var="deleteLabel"/>
-                        <button data-toggle="tooltip" class="btn btn-sm btn-danger" type="button" data-placement="bottom"  title=""
-                                data-original-title="${deleteLabel}" onclick="submitEventWithConfirm('delete', '${mountPoint.realName}', '${functions:escapeJavaScript(confirmDelete)}')">
+                        <button class="btn btn-danger btn-fab btn-fab-xs" type="button"
+                                data-placement="bottom" title="" data-toggle="tooltip"
+                                data-original-title="${deleteLabel}"
+                                onclick="submitEventWithConfirm('delete', '${mountPoint.realName}', '${functions:escapeJavaScript(confirmDelete)}')">
                             <i class="material-icons">delete</i>
                         </button>
                     </td>
