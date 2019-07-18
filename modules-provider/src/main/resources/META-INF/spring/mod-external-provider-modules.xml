@@ -34,6 +34,7 @@
                 <value>jnt:xmlFile</value>
                 <value>jnt:javascriptFile</value>
                 <value>jnt:viewFile</value>
+                <value>jnt:templateFile</value>
                 <value>jnt:definitionFile</value>
                 <value>jnt:metaInfFolder</value>
                 <value>nt:nodeType</value>
