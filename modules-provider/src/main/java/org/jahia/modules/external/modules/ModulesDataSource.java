@@ -148,6 +148,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private static final String PROPERTIES_EXTENSION = ".properties";
     public static final String UNSTRUCTURED_PROPERTY = "__prop__";
     public static final String UNSTRUCTURED_CHILD_NODE = "__node__";
+    public static final String JSP = "jsp";
     public static final String CND = ".cnd";
     public static final String CND_SLASH = ".cnd/";
     public static final String JNT_EDITABLE_FILE = "jnt:editableFile";
@@ -189,6 +190,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private static final int TEMPLATE_TYPE_FOLDER_DEPTH_TOKEN = 5;
     private static final int VIEWS_FOLDER_DEPTH_TOKEN = 5;
     private static final String SRC_MAIN_RESOURCES = "/src/main/resources/";
+    private static final String JNT_TEMPLATE_JSP_RELATIVE_PATH = "src/main/resources/jnt_template/html";
 
     private JahiaTemplatesPackage module;
 
@@ -510,14 +512,20 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         } else {
             String extension = fileObject.getName().getExtension();
             if (StringUtils.isNotEmpty(extension)) {
-                type = fileTypeMapping.get(extension);
-                if (type == null) {
-                    try {
-                        if(ScriptEngineUtils.canFactoryForExtensionProcessViews(extension, module.getBundle().getHeaders())) {
-                            type = Constants.JAHIANT_VIEWFILE;
+                // check if template
+                String parentPath = StringUtils.substringBeforeLast(relativeName, "/");
+                if (JNT_TEMPLATE_JSP_RELATIVE_PATH.equals(parentPath) && JSP.equals(extension)) {
+                    type = Constants.JAHIANT_TEMPLATEFILE;
+                } else {
+                    type = fileTypeMapping.get(extension);
+                    if (type == null) {
+                        try {
+                            if(ScriptEngineUtils.canFactoryForExtensionProcessViews(extension, module.getBundle().getHeaders())) {
+                                type = Constants.JAHIANT_VIEWFILE;
+                            }
+                        } catch (IllegalArgumentException e) {
+                            // ignore: no ScriptEngineFactory exists for the provided extension
                         }
-                    } catch (IllegalArgumentException e) {
-                        // ignore: no ScriptEngineFactory exists for the provided extension
                     }
                 }
             }
