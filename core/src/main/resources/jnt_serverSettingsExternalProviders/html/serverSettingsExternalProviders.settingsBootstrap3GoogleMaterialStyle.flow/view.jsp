@@ -33,11 +33,9 @@
 
 <div class="panel panel-default">
     <div class="panel-body">
-        <table id="providersTable" class="table table-bordered table-striped table-hover">
+        <table id="providersTable" class="table table-bordered table-striped">
             <thead>
             <tr>
-                <%--<th class="{sorter: false}">&nbsp;</th>--%>
-                <%--<th>#</th>--%>
                 <th>
                     <fmt:message key="label.key"/>
                 </th>
@@ -57,27 +55,22 @@
 
             <c:forEach items="${mountedProviders}" var="mount" varStatus="loopStatus">
                 <tr>
-                        <%--<td><input name="selectedProviders" type="checkbox" value="${mount.id}"/></td>--%>
-                        <%--<td>--%>
-                        <%--${mount.id}--%>
-                        <%--</td>--%>
                     <td>
-                            ${mount.key}
+                        ${mount.key}
                     </td>
                     <td>
-                            ${mount.mountPoint}
+                        ${mount.mountPoint}
                     </td>
                     <td>
-                            ${mount.dataSource.clazz}
-
+                        ${mount.dataSource.clazz}
                     </td>
                     <td>
                         <form style="margin: 0;" action="${flowExecutionUrl}" method="post">
                             <input type="hidden" name="mountpoint" value="${mount.mountPoint}"/>
 
-                            <button data-toggle="tooltip" class="btn btn-info" type="submit" name="_eventId_viewDataSource"
+                            <button data-toggle="tooltip" class="btn btn-fab btn-fab-xs btn-info" type="submit" name="_eventId_viewDataSource"
                                     onclick=""  data-placement="bottom" title="" data-original-title="<fmt:message key="label.info"/>">
-                                <i class="material-icons">info_outline</i>
+                                <i class="material-icons">notes</i>
                             </button>
                         </form>
                     </td>
