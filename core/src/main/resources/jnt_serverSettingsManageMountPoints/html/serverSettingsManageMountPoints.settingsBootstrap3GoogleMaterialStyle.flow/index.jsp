@@ -99,7 +99,7 @@
                 <span class="input-group-btn">
                     <button type="button" class="btn btn-fab-mini btn-fab btn-primary"
                             data-toggle="tooltip" data-container="body" data-title="<fmt:message key='label.add'/>"
-                            onclick="goToFactory()">
+                            onclick="goToFactory()" data-sel-role="addMountPoint">
                         <i class="material-icons">add</i>
                     </button>
                 </span>
