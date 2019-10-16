@@ -1586,7 +1586,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             }
             propertyDefinition.setSelector(selectorType);
             values = properties.get(J_SELECTOR_OPTIONS);
-            Map<String, String> selectorOptions = new HashMap<String, String>();
+            Map<String, String> selectorOptions = new LinkedHashMap<>();
             if (values != null) {
                 for (String option : values) {
                     String[] keyValue = StringUtils.split(option, "=", 3);
