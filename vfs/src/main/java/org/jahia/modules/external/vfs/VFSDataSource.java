@@ -347,7 +347,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         }
 
         String path = fileObject.getName().getPath().substring(rootPath.length());
-        path = JCRContentUtils.escapeNodePath(path);
+        path = escapePath(path);
         if (!path.startsWith("/")) {
             path = "/" + path;
         }
@@ -367,7 +367,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
         properties.put(Constants.JCR_MIMETYPE, new String[]{getContentType(content)});
 
-        String path = JCRContentUtils.escapeNodePath(content.getFile().getName().getPath().substring(rootPath.length()));
+        String path = escapePath(content.getFile().getName().getPath().substring(rootPath.length()));
         String jcrContentPath = path + "/" + Constants.JCR_CONTENT;
         ExternalData externalData = new ExternalData(jcrContentPath, jcrContentPath, Constants.JAHIANT_RESOURCE, properties);
 
@@ -388,4 +388,26 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         }
         return s1;
     }
+
+    /**
+     * Escape characters not supported by JCR
+     *
+     * @param path the path to escape
+     * @return a JCR compliant path
+     */
+    private static String escapePath(String path) {
+        StringBuilder buffer = new StringBuilder(path.length() * 2);
+        for (int i = 0; i < path.length(); i++) {
+            char ch = path.charAt(i);
+            if (ch == '[' || ch == ']' || ch == '*' || ch == '|' || ch == ':') {
+                buffer.append('%');
+                buffer.append(Character.toUpperCase(Character.forDigit(ch / 16, 16)));
+                buffer.append(Character.toUpperCase(Character.forDigit(ch % 16, 16)));
+            } else {
+                buffer.append(ch);
+            }
+        }
+        return buffer.toString();
+    }
+
 }
