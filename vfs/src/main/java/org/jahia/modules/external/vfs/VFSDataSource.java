@@ -171,6 +171,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
 
     public FileObject getFile(String path) throws FileSystemException {
+        path = JCRContentUtils.unescapeLocalNodeName(path);
         return (path == null || path.length() == 0 || path.equals("/")) ? root : root
                 .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
     }
@@ -187,7 +188,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                         List<String> children = new LinkedList<String>();
                         for (FileObject object : files) {
                             if (getSupportedNodeTypes().contains(getDataType(object))) {
-                                children.add(JCRContentUtils.escapeLocalNodeName(object.getName().getBaseName()));
+                                children.add(escapeName(object.getName().getBaseName()));
                             }
                         }
                         return children;
@@ -390,7 +391,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     /**
-     * Escape characters not supported by JCR
+     * Escape characters not supported by JCR from a path
      *
      * @param path the path to escape
      * @return a JCR compliant path
@@ -403,6 +404,32 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 buffer.append('%');
                 buffer.append(Character.toUpperCase(Character.forDigit(ch / 16, 16)));
                 buffer.append(Character.toUpperCase(Character.forDigit(ch % 16, 16)));
+            } else {
+                buffer.append(ch);
+            }
+        }
+        return buffer.toString();
+    }
+
+    /**
+     * Escape characters not support by JCR from a name
+     *
+     * @param name the name to escape
+     * @return a JCR compliant name
+     */
+    private static String escapeName(String name) {
+        name = name.trim();
+        StringBuilder buffer = new StringBuilder(name.length() * 2);
+        for (int i = 0; i < name.length(); i++) {
+            char ch = name.charAt(i);
+            if (ch == '[' || ch == ']' || ch == '*' || ch == '|' || ch == ':') {
+                buffer.append('%');
+                buffer.append(Character.toUpperCase(Character.forDigit(ch / 16, 16)));
+                buffer.append(Character.toUpperCase(Character.forDigit(ch % 16, 16)));
+            } else if (ch == '/' || ch == '\\' || Character.isWhitespace(ch)) {
+                if (buffer.length() > 0) {
+                    buffer.append(' ');
+                }
             } else {
                 buffer.append(ch);
             }
