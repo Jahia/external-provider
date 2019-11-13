@@ -150,14 +150,14 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         try {
             String unescapedPath = Escaping.unescapeIllegalJcrChars(path);
             if (path.endsWith(JCR_CONTENT_SUFFIX)) {
-                FileObject fileObject = getFile(StringUtils.substringBeforeLast(unescapedPath, JCR_CONTENT_SUFFIX));
+                FileObject fileObject = getFile(StringUtils.substringBeforeLast(unescapedPath, JCR_CONTENT_SUFFIX), false);
                 FileContent content = fileObject.getContent();
                 if (!fileObject.exists()) {
                     throw new PathNotFoundException(path);
                 }
                 return getFileContent(content);
             } else {
-                FileObject fileObject = getFile(unescapedPath);
+                FileObject fileObject = getFile(unescapedPath, false);
                 if (!fileObject.exists()) {
                     throw new PathNotFoundException(path);
                 }
@@ -170,9 +170,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     public FileObject getFile(String path) throws FileSystemException {
-        path = Escaping.unescapeIllegalJcrChars(path);
-        return (path == null || path.length() == 0 || path.equals("/")) ? root : root
-                .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
+        return getFile(path, true);
     }
 
     public List<String> getChildren(String path) throws RepositoryException {
@@ -387,6 +385,14 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             s1 = "application/octet-stream";
         }
         return s1;
+    }
+
+    private FileObject getFile(String path, boolean escapePath) throws FileSystemException {
+        if (escapePath) {
+            path = Escaping.unescapeIllegalJcrChars(path);
+        }
+        return (path == null || path.length() == 0 || path.equals("/")) ? root : root
+                .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
     }
 
 }
