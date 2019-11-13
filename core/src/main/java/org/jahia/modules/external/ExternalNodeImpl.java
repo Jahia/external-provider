@@ -1810,7 +1810,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
         private Node fetchNext() {
             nextNode = null;
             if (it.hasNext()) {
-                Node next = null;
+                Node next;
                 do {
                     try {
                         next = getNode(it.next());
@@ -1818,7 +1818,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                         next = null;
                         logger.debug(e.getMessage(), e);
                     }
-                } while (next == null && hasNext());
+                } while (next == null && it.hasNext());
                 nextNode = next;
                 return nextNode;
             }
