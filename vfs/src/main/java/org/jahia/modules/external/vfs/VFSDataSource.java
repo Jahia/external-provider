@@ -148,7 +148,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
     public ExternalData getItemByPath(String path) throws PathNotFoundException {
         try {
-            String unescapedPath = JCRContentUtils.unescapeLocalNodeName(path);
+            String unescapedPath = Escaping.unescapeIllegalJcrChars(path);
             if (path.endsWith(JCR_CONTENT_SUFFIX)) {
                 FileObject fileObject = getFile(StringUtils.substringBeforeLast(unescapedPath, JCR_CONTENT_SUFFIX));
                 FileContent content = fileObject.getContent();
@@ -169,9 +169,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         }
     }
 
-
     public FileObject getFile(String path) throws FileSystemException {
-        path = JCRContentUtils.unescapeLocalNodeName(path);
+        path = Escaping.unescapeIllegalJcrChars(path);
         return (path == null || path.length() == 0 || path.equals("/")) ? root : root
                 .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
     }
@@ -188,7 +187,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                         List<String> children = new LinkedList<String>();
                         for (FileObject object : files) {
                             if (getSupportedNodeTypes().contains(getDataType(object))) {
-                                children.add(escapeName(object.getName().getBaseName()));
+                                children.add(Escaping.escapeIllegalJcrChars(object.getName().getBaseName()));
                             }
                         }
                         return children;
@@ -348,7 +347,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         }
 
         String path = fileObject.getName().getPath().substring(rootPath.length());
-        path = escapePath(path);
+        path = Escaping.escapeIllegalJcrChars(path);
         if (!path.startsWith("/")) {
             path = "/" + path;
         }
@@ -368,7 +367,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
         properties.put(Constants.JCR_MIMETYPE, new String[]{getContentType(content)});
 
-        String path = escapePath(content.getFile().getName().getPath().substring(rootPath.length()));
+        String path = Escaping.escapeIllegalJcrChars(content.getFile().getName().getPath().substring(rootPath.length()));
         String jcrContentPath = path + "/" + Constants.JCR_CONTENT;
         ExternalData externalData = new ExternalData(jcrContentPath, jcrContentPath, Constants.JAHIANT_RESOURCE, properties);
 
@@ -388,53 +387,6 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             s1 = "application/octet-stream";
         }
         return s1;
-    }
-
-    /**
-     * Escape characters not supported by JCR from a path
-     *
-     * @param path the path to escape
-     * @return a JCR compliant path
-     */
-    private static String escapePath(String path) {
-        StringBuilder buffer = new StringBuilder(path.length() * 2);
-        for (int i = 0; i < path.length(); i++) {
-            char ch = path.charAt(i);
-            if (ch == '[' || ch == ']' || ch == '*' || ch == '|' || ch == ':') {
-                buffer.append('%');
-                buffer.append(Character.toUpperCase(Character.forDigit(ch / 16, 16)));
-                buffer.append(Character.toUpperCase(Character.forDigit(ch % 16, 16)));
-            } else {
-                buffer.append(ch);
-            }
-        }
-        return buffer.toString();
-    }
-
-    /**
-     * Escape characters not support by JCR from a name
-     *
-     * @param name the name to escape
-     * @return a JCR compliant name
-     */
-    private static String escapeName(String name) {
-        name = name.trim();
-        StringBuilder buffer = new StringBuilder(name.length() * 2);
-        for (int i = 0; i < name.length(); i++) {
-            char ch = name.charAt(i);
-            if (ch == '[' || ch == ']' || ch == '*' || ch == '|' || ch == ':') {
-                buffer.append('%');
-                buffer.append(Character.toUpperCase(Character.forDigit(ch / 16, 16)));
-                buffer.append(Character.toUpperCase(Character.forDigit(ch % 16, 16)));
-            } else if (ch == '/' || ch == '\\' || Character.isWhitespace(ch)) {
-                if (buffer.length() > 0) {
-                    buffer.append(' ');
-                }
-            } else {
-                buffer.append(ch);
-            }
-        }
-        return buffer.toString();
     }
 
 }
