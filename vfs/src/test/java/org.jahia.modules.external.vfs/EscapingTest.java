@@ -47,11 +47,11 @@ public final class EscapingTest {
     }
 
     @Test
-    public void testUnescape() {
-        testUnescape("/foo[]|*/bar::test", Escaping::escapeIllegalJcrChars);
+    public void testUnescapeIllegalJcrChars() {
+        testUnescapeIllegalJcrChars("/foo[]|*/bar::test", Escaping::escapeIllegalJcrChars);
     }
 
-    private static void testUnescape(String s, UnaryOperator<String> escape) {
+    private static void testUnescapeIllegalJcrChars(String s, UnaryOperator<String> escape) {
         assertEquals(s, unescapeIllegalJcrChars(escape.apply(s)));
     }
 
