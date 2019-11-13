@@ -387,8 +387,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         return s1;
     }
 
-    private FileObject getFile(String path, boolean escapePath) throws FileSystemException {
-        if (escapePath) {
+    private FileObject getFile(String path, boolean unescapePath) throws FileSystemException {
+        if (unescapePath) {
             path = Escaping.unescapeIllegalJcrChars(path);
         }
         return (path == null || path.length() == 0 || path.equals("/")) ? root : root
