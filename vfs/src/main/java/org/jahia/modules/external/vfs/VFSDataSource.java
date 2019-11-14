@@ -148,16 +148,16 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
     public ExternalData getItemByPath(String path) throws PathNotFoundException {
         try {
-            String unescapedPath = JCRContentUtils.unescapeLocalNodeName(path);
+            String unescapedPath = Escaping.unescapeIllegalJcrChars(path);
             if (path.endsWith(JCR_CONTENT_SUFFIX)) {
-                FileObject fileObject = getFile(StringUtils.substringBeforeLast(unescapedPath, JCR_CONTENT_SUFFIX));
+                FileObject fileObject = getFile(StringUtils.substringBeforeLast(unescapedPath, JCR_CONTENT_SUFFIX), false);
                 FileContent content = fileObject.getContent();
                 if (!fileObject.exists()) {
                     throw new PathNotFoundException(path);
                 }
                 return getFileContent(content);
             } else {
-                FileObject fileObject = getFile(unescapedPath);
+                FileObject fileObject = getFile(unescapedPath, false);
                 if (!fileObject.exists()) {
                     throw new PathNotFoundException(path);
                 }
@@ -169,10 +169,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         }
     }
 
-
     public FileObject getFile(String path) throws FileSystemException {
-        return (path == null || path.length() == 0 || path.equals("/")) ? root : root
-                .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
+        return getFile(path, true);
     }
 
     public List<String> getChildren(String path) throws RepositoryException {
@@ -187,7 +185,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                         List<String> children = new LinkedList<String>();
                         for (FileObject object : files) {
                             if (getSupportedNodeTypes().contains(getDataType(object))) {
-                                children.add(JCRContentUtils.escapeLocalNodeName(object.getName().getBaseName()));
+                                children.add(Escaping.escapeIllegalJcrChars(object.getName().getBaseName()));
                             }
                         }
                         return children;
@@ -347,7 +345,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         }
 
         String path = fileObject.getName().getPath().substring(rootPath.length());
-        path = JCRContentUtils.escapeNodePath(path);
+        path = Escaping.escapeIllegalJcrChars(path);
         if (!path.startsWith("/")) {
             path = "/" + path;
         }
@@ -367,7 +365,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
         properties.put(Constants.JCR_MIMETYPE, new String[]{getContentType(content)});
 
-        String path = JCRContentUtils.escapeNodePath(content.getFile().getName().getPath().substring(rootPath.length()));
+        String path = Escaping.escapeIllegalJcrChars(content.getFile().getName().getPath().substring(rootPath.length()));
         String jcrContentPath = path + "/" + Constants.JCR_CONTENT;
         ExternalData externalData = new ExternalData(jcrContentPath, jcrContentPath, Constants.JAHIANT_RESOURCE, properties);
 
@@ -388,4 +386,13 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         }
         return s1;
     }
+
+    private FileObject getFile(String path, boolean unescapePath) throws FileSystemException {
+        if (unescapePath) {
+            path = Escaping.unescapeIllegalJcrChars(path);
+        }
+        return (path == null || path.length() == 0 || path.equals("/")) ? root : root
+                .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
+    }
+
 }
