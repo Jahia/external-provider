@@ -1,0 +1,21 @@
+
+#### Sample file to create a VFS mount point
+#### This file should be filled with your properties
+
+### Mandatory
+
+## Node name
+# mount.j_nodename=
+
+## Path to your local folder
+# mount.j_rootPath=/Users/Username/Desktop
+
+## Node type
+# mount.jcr_primaryType=jnt:vfsMountPoint
+
+### Optional
+
+#### By default the mount point will be created to the location: /mount/
+#### To create the mount point to another location, fill the following property
+#### For example mount.j_path=/sites/siteName/files
+# mount.j_path=
