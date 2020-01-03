@@ -197,7 +197,7 @@ public abstract class AbstractMountPointFactoryHandler<T extends AbstractMountPo
         return StringUtils.isNotEmpty(path) ? StringEscapeUtils.escapeXml(path) : path;
     }
 
-    private String findAvailableNodeName(Node dest, String name, String suffix) {
+    protected String findAvailableNodeName(Node dest, String name, String suffix) {
         int i = 1;
 
         String basename = name;
