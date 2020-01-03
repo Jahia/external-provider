@@ -25,7 +25,9 @@ package org.jahia.modules.external.admin.mount.config;
 
 import org.jahia.modules.external.admin.mount.AbstractMountPointFactoryHandler;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.content.decorator.JCRMountPointNode;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
 import org.slf4j.Logger;
@@ -62,8 +64,7 @@ public class MountPointConfigFactory extends AbstractMountPointFactoryHandler im
     public ConfigMountPointDTO init(final String pid) throws RepositoryException {
 
         return JCRTemplate.getInstance().doExecuteWithSystemSession((session -> {
-            Query mountNodeQuery = session.getWorkspace().getQueryManager().createQuery(String.format(QUERY_BY_PID, pid), Query.JCR_SQL2);
-            NodeIterator mountNodes = mountNodeQuery.execute().getNodes();
+            NodeIterator mountNodes = getNodeIterator(pid, session);
 
             ConfigMountPointDTO mountPointDTO = new ConfigMountPointDTO();
             mountNodes.forEachRemaining(node -> {
@@ -93,7 +94,28 @@ public class MountPointConfigFactory extends AbstractMountPointFactoryHandler im
     }
 
     @Override public void deleted(String pid) {
-        //TODO BACKLOG-12007
+        try {
+            JCRTemplate.getInstance().doExecuteWithSystemSession(session -> {
+                NodeIterator mountNodes = getNodeIterator(pid, session);
+                mountNodes.forEachRemaining(node -> {
+                    try {
+                        JCRMountPointNode mountPointNode = (JCRMountPointNode) node;
+                        mountPointNode.remove();
+                    } catch (RepositoryException e) {
+                        logger.error(String.format("Error while populate node for the pid %s", pid), e);
+                    }
+                });
+                session.save();
+                return null;
+            });
+        } catch (RepositoryException e) {
+            logger.error(String.format("Error while trying to delete the node with the config pid %s", pid), e);
+        }
+    }
+
+    private NodeIterator getNodeIterator(String pid, JCRSessionWrapper session) throws RepositoryException {
+        Query mountNodeQuery = session.getWorkspace().getQueryManager().createQuery(String.format(QUERY_BY_PID, pid), Query.JCR_SQL2);
+        return mountNodeQuery.execute().getNodes();
     }
 
     private List<String> getPropertiesKeyToSave(Dictionary<String, ?> dictionary) {
