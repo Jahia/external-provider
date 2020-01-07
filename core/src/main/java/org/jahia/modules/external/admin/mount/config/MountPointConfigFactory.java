@@ -51,6 +51,14 @@ import java.util.stream.Collectors;
  */
 public class MountPointConfigFactory extends AbstractMountPointFactoryHandler implements ManagedServiceFactory {
     private static final String PROPERTY_NOT_FOUND = "Property not found";
+    public static final String MOUNT_USER = "mount.user";
+    public static final String MOUNT_PASSWORD = "mount.password";
+    public static final String MOUNT_URL = "mount.url";
+    public static final String MOUNT_SLOW_CONNECTION = "mount.slowConnection";
+    public static final String MOUNT_TYPE = "mount.type";
+    public static final String MOUNT_REMOTE_PATH = "mount.remotePath";
+    public static final String MOUNT_PUBLIC_USER = "mount.publicUser";
+    public static final String MOUNT_REPOSITORY_ID = "mount.repositoryId";
     private static Logger logger = LoggerFactory.getLogger(MountPointConfigFactory.class);
 
     private static final String MOUNT_PROPERTY_PREFIX = "mount.";
@@ -58,6 +66,9 @@ public class MountPointConfigFactory extends AbstractMountPointFactoryHandler im
     private static final String PRIMARY_TYPE_PROPERTY = "mount.jcr_primaryType";
     private static final String LOCAL_PATH_PROPERTY = "mount.j_path";
     private static final String ROOT_PATH_PROPERTY = "mount.j_rootPath";
+
+    private static final String VFS_MOUNT_POINT_NODE_TYPE = "jnt:vfsMountPoint";
+    private static final String CMIS_MOUNT_POINT_NODE_TYPE = "cmis:cmisMountPoint";
 
     private static final String QUERY_BY_PID = "SELECT node.* FROM [jnt:mountPoint] AS node WHERE node.configPid = '%s'";
 
@@ -129,21 +140,55 @@ public class MountPointConfigFactory extends AbstractMountPointFactoryHandler im
 
     private void save(Dictionary<String, ?> dictionary, ConfigMountPointDTO filledMountPointFactory) {
 
-        ConfigMountPointDTO mountPointDTO = Optional.ofNullable(filledMountPointFactory).orElseGet(ConfigMountPointDTO::new);
-
         try {
-            mountPointDTO.setName(Optional.ofNullable(dictionary.get(NODE_NAME_PROPERTY)).map(Object::toString)
-                    .orElseThrow(() -> new ConfigurationException(NODE_NAME_PROPERTY, PROPERTY_NOT_FOUND)));
-            mountPointDTO.setRoot(Optional.ofNullable(dictionary.get(ROOT_PATH_PROPERTY)).map(Object::toString)
-                    .orElseThrow(() -> new ConfigurationException(ROOT_PATH_PROPERTY, PROPERTY_NOT_FOUND)));
-            mountPointDTO.setMountNodeType(Optional.ofNullable(dictionary.get(PRIMARY_TYPE_PROPERTY)).map(Object::toString)
-                    .orElseThrow(() -> new ConfigurationException(PRIMARY_TYPE_PROPERTY, PROPERTY_NOT_FOUND)));
-            mountPointDTO.setLocalPath(Optional.ofNullable(dictionary.get(LOCAL_PATH_PROPERTY)).map(Object::toString).orElse(null));
-            mountPointDTO.setDictionary(dictionary);
-            mountPointDTO.setKeysToSave(getPropertiesKeyToSave(dictionary));
+            ConfigMountPointDTO mountPointDTO = fillDTOWithProperties(
+                    Optional.ofNullable(filledMountPointFactory).orElseGet(ConfigMountPointDTO::new), dictionary);
             super.save(mountPointDTO);
         } catch (RepositoryException | ConfigurationException e) {
             logger.error("Error while saving the mount point", e);
+        }
+    }
+
+    private ConfigMountPointDTO fillDTOWithProperties(ConfigMountPointDTO mountPointDTO, Dictionary<String, ?> dictionary)
+            throws ConfigurationException {
+        try {
+            checkMandatoryProperties(dictionary);
+        } catch (ConfigurationException e) {
+            logger.warn("Missing some property");
+            throw e;
+        }
+        mountPointDTO.setName(dictionary.get(NODE_NAME_PROPERTY).toString());
+        mountPointDTO.setMountNodeType(dictionary.get(PRIMARY_TYPE_PROPERTY).toString());
+        mountPointDTO.setLocalPath(Optional.ofNullable(dictionary.get(LOCAL_PATH_PROPERTY)).map(Object::toString).orElse(null));
+        mountPointDTO.setDictionary(dictionary);
+        mountPointDTO.setKeysToSave(getPropertiesKeyToSave(dictionary));
+        return mountPointDTO;
+    }
+
+    private void checkMandatoryProperties(Dictionary<String, ?> dictionary) throws ConfigurationException {
+
+        String nodeType = Optional.ofNullable(dictionary.get(PRIMARY_TYPE_PROPERTY)).map(Object::toString)
+                .orElseThrow(() -> new ConfigurationException(PRIMARY_TYPE_PROPERTY, PROPERTY_NOT_FOUND));
+        Optional.ofNullable(dictionary.get(NODE_NAME_PROPERTY))
+                .orElseThrow(() -> new ConfigurationException(NODE_NAME_PROPERTY, PROPERTY_NOT_FOUND));
+        if (VFS_MOUNT_POINT_NODE_TYPE.equals(nodeType)) {
+            Optional.ofNullable(dictionary.get(ROOT_PATH_PROPERTY))
+                    .orElseThrow(() -> new ConfigurationException(ROOT_PATH_PROPERTY, PROPERTY_NOT_FOUND));
+
+        } else if (CMIS_MOUNT_POINT_NODE_TYPE.equals(nodeType)) {
+            Optional.ofNullable(dictionary.get(MOUNT_USER)).orElseThrow(() -> new ConfigurationException(MOUNT_USER, PROPERTY_NOT_FOUND));
+            Optional.ofNullable(dictionary.get(MOUNT_PASSWORD))
+                    .orElseThrow(() -> new ConfigurationException(MOUNT_PASSWORD, PROPERTY_NOT_FOUND));
+            Optional.ofNullable(dictionary.get(MOUNT_URL)).orElseThrow(() -> new ConfigurationException(MOUNT_URL, PROPERTY_NOT_FOUND));
+            Optional.ofNullable(dictionary.get(MOUNT_SLOW_CONNECTION))
+                    .orElseThrow(() -> new ConfigurationException(MOUNT_SLOW_CONNECTION, PROPERTY_NOT_FOUND));
+            Optional.ofNullable(dictionary.get(MOUNT_TYPE)).orElseThrow(() -> new ConfigurationException(MOUNT_TYPE, PROPERTY_NOT_FOUND));
+            Optional.ofNullable(dictionary.get(MOUNT_REMOTE_PATH))
+                    .orElseThrow(() -> new ConfigurationException(MOUNT_REMOTE_PATH, PROPERTY_NOT_FOUND));
+            Optional.ofNullable(dictionary.get(MOUNT_PUBLIC_USER))
+                    .orElseThrow(() -> new ConfigurationException(MOUNT_PUBLIC_USER, PROPERTY_NOT_FOUND));
+            Optional.ofNullable(dictionary.get(MOUNT_REPOSITORY_ID))
+                    .orElseThrow(() -> new ConfigurationException(MOUNT_REPOSITORY_ID, PROPERTY_NOT_FOUND));
         }
     }
 }
