@@ -16,6 +16,7 @@
                <value>org.jahia.modules.external.test.db.ExternalDatabaseProviderTest</value>
                <value>org.jahia.modules.external.test.qom.QOMTest</value>
                <value>org.jahia.modules.external.test.listener.ApiEventTest</value>
+               <value>org.jahia.modules.external.test.configuration.ConfigurationTest</value>
             </list>
         </property>
     </bean>
