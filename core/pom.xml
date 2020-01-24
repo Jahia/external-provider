@@ -83,6 +83,7 @@
         </jahia.modules.importPackage>
         <jackson.version>2.9.0</jackson.version>
         <jersey.version>2.6</jersey.version>
+        <jahia-module-signature>MCwCFH9irzv3xK7BfN+vGy1wL76tUlvCAhQrMcGJJYogG85gr8+RFOmDEWszXA==</jahia-module-signature>
     </properties>
     <repositories>
         <repository>

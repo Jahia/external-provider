@@ -66,6 +66,7 @@
         <jahia-depends>default,external-provider,external-provider-vfs,rating</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <embed-dependency>derby;scope=runtime;inline=false</embed-dependency>
+        <jahia-module-signature>MCwCFHqPLHWnh5Q1/Zr8uRCLwvGNMRuhAhQHEL9yiOHCSNozgfKx1HNhXUx1ww==</jahia-module-signature>
     </properties>
     <repositories>
         <repository>

@@ -67,6 +67,7 @@
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
         <jahia-static-resources>/css,/javascript</jahia-static-resources>
         <export-package>org.jahia.modules.external.modules,org.jahia.modules.external.modules.osgi</export-package>
+        <jahia-module-signature>MC0CFEgh4YI64UT8BREMmTjPMpPaxFqhAhUAliJXgVBs+cNj05ZfMzXmqDoIQCA=</jahia-module-signature>
     </properties>
     <dependencies>
         <dependency>
