@@ -65,6 +65,7 @@
         <jahia-depends>external-provider,serverSettings</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <export-package>org.jahia.modules.external.vfs,org.jahia.modules.external.vfs.factory</export-package>
+        <jahia-module-signature>MCwCFAiZ1o4Rbfh04bofT9sfL7+ZEqZEAhQ4JnIZJ5wUsOow2VgzjbaDodc3pA==</jahia-module-signature>
     </properties>
     <dependencies>
         <dependency>
