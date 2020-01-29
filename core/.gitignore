@@ -5,3 +5,8 @@
 *.iml
 *.ipr
 target
+/src/main/resources/javascript/apps
+/node
+/node_modules
+/yarn-error.log
+/.yalc
