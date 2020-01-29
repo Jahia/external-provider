@@ -49,7 +49,7 @@
     <parent>
         <groupId>org.jahia.modules</groupId>
         <artifactId>external-provider-parent</artifactId>
-        <version>3.5.0-SNAPSHOT</version>
+        <version>4.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>external-provider-modules</artifactId>
     <packaging>bundle</packaging>
@@ -67,7 +67,7 @@
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
         <jahia-static-resources>/css,/javascript</jahia-static-resources>
         <export-package>org.jahia.modules.external.modules,org.jahia.modules.external.modules.osgi</export-package>
-        <jahia-module-signature>MC0CFEgh4YI64UT8BREMmTjPMpPaxFqhAhUAliJXgVBs+cNj05ZfMzXmqDoIQCA=</jahia-module-signature>
+        <jahia-module-signature>MCwCFCWSASC/f/rGc9rf9gyaw9bbgW9MAhRwd39brwoZiWAdsoB1/AIA9tA83A==</jahia-module-signature>
     </properties>
     <dependencies>
         <dependency>
