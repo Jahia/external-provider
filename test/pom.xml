@@ -49,7 +49,7 @@
     <parent>
         <artifactId>external-provider-parent</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>3.5.0-SNAPSHOT</version>
+        <version>4.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>external-provider-test</artifactId>
     <groupId>org.jahia.test</groupId>
@@ -66,7 +66,7 @@
         <jahia-depends>default,external-provider,external-provider-vfs,rating</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <embed-dependency>derby;scope=runtime;inline=false</embed-dependency>
-        <jahia-module-signature>MCwCFHqPLHWnh5Q1/Zr8uRCLwvGNMRuhAhQHEL9yiOHCSNozgfKx1HNhXUx1ww==</jahia-module-signature>
+        <jahia-module-signature>MCwCFAsHlolYWOBw0x39ep5mKDtASqLeAhQqqeQcZG/m7S14eSrC38yTvRA/ng==</jahia-module-signature>
     </properties>
     <repositories>
         <repository>

@@ -49,7 +49,7 @@
     <parent>
         <groupId>org.jahia.modules</groupId>
         <artifactId>external-provider-parent</artifactId>
-        <version>3.5.0-SNAPSHOT</version>
+        <version>4.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>external-provider</artifactId>
     <packaging>bundle</packaging>
@@ -83,7 +83,7 @@
         </jahia.modules.importPackage>
         <jackson.version>2.9.0</jackson.version>
         <jersey.version>2.6</jersey.version>
-        <jahia-module-signature>MCwCFH9irzv3xK7BfN+vGy1wL76tUlvCAhQrMcGJJYogG85gr8+RFOmDEWszXA==</jahia-module-signature>
+        <jahia-module-signature>MC0CFFZj64hyJQTrS4VYBCg/+cxCJdsIAhUAlM5WFyUDM70bDz92KPj3FbrlFXc=</jahia-module-signature>
     </properties>
     <repositories>
         <repository>
