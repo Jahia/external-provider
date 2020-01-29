@@ -5,4 +5,4 @@ import RegistrationComponent from './registrations';
 var mountElement = document.createElement('div');
 ReactDOM.render(<RegistrationComponent/>, mountElement);
 
-console.log('%c Server Settings routes have been registered', 'color: #3c8cba');
+console.log('%c External Provider routes have been registered', 'color: #3c8cba');
