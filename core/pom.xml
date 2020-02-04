@@ -72,6 +72,7 @@
             org.jahia.modules.external.query,
             org.jahia.modules.external.acl,
             org.jahia.modules.external.events,
+            org.jahia.modules.external.events.rest,
             org.jahia.modules.external.admin.mount,
             org.jahia.modules.external.admin.mount.validator
         </export-package>
