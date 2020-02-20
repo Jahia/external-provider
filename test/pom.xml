@@ -67,6 +67,7 @@
         <jahia-module-type>system</jahia-module-type>
         <embed-dependency>derby;scope=runtime;inline=false</embed-dependency>
         <jahia-module-signature>MCwCFAsHlolYWOBw0x39ep5mKDtASqLeAhQqqeQcZG/m7S14eSrC38yTvRA/ng==</jahia-module-signature>
+        <jahia.modules.importPackage>org.jahia.defaults.config.spring,org.springframework.core</jahia.modules.importPackage>
     </properties>
     <repositories>
         <repository>
@@ -83,6 +84,12 @@
         </repository>
     </repositories>
     <dependencies>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>${spring.version}</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.jahia.test</groupId>
             <artifactId>jahia-test-module</artifactId>
