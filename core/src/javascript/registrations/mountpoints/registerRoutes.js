@@ -12,6 +12,7 @@ export const registerRoutes = function () {
         path: mpPath,
         route: mpRouteId,
         defaultPath: mpPath,
+        requiredPermission: 'adminMountPoints',
         icon: null,
         label: 'external-provider:mountpoints.label',
         childrenTarget: null,

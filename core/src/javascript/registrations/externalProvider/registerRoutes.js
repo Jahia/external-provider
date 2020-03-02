@@ -12,6 +12,7 @@ export const registerRoutes = function () {
         path: path,
         route: route,
         defaultPath: path,
+        requiredPermission: 'adminRoles',
         icon: null,
         label: 'external-provider:externalProvider.label',
         childrenTarget: 'systemcomponents',
