@@ -26,6 +26,11 @@
   "dx-extends": {
     "@jahia/jahia-ui-root": "0.0.1"
   },
+  "jahia": {
+    "apps": {
+      "jahia": "javascript/apps/jahia.bundle.js"
+    }
+  },
   "dependencies": {
     "@jahia/ui-extender": "^0.1.1",
     "i18next": "^19.1.0",
