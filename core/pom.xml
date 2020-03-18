@@ -129,7 +129,7 @@
         </dependency>
         <dependency>
             <groupId>org.jahia.modules</groupId>
-            <artifactId>dx-commons-webpack</artifactId>
+            <artifactId>app-shell</artifactId>
             <version>1.4.0-SNAPSHOT</version>
             <type>json</type>
             <classifier>manifest</classifier>
@@ -137,7 +137,7 @@
         </dependency>
         <dependency>
             <groupId>org.jahia.modules</groupId>
-            <artifactId>dx-commons-webpack</artifactId>
+            <artifactId>app-shell</artifactId>
             <version>1.4.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
@@ -384,7 +384,7 @@
                     <artifactItems>
                         <artifactItem>
                             <groupId>org.jahia.modules</groupId>
-                            <artifactId>dx-commons-webpack</artifactId>
+                            <artifactId>app-shell</artifactId>
                             <type>json</type>
                             <classifier>manifest</classifier>
                         </artifactItem>
