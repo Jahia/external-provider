@@ -1,22 +1,12 @@
 import {registry} from '@jahia/ui-extender';
 
 export const registerRoutes = function () {
-    const level = 'server';
-    const parentTarget = 'administration-server';
-
-    const path = '/administration/external-provider';
-    const route = 'external-provider';
-    registry.add('adminRoute', `${level}-${path.toLowerCase()}`, {
-        id: route,
-        targets: [`${parentTarget}-systemcomponents:0`],
-        path: path,
-        route: route,
-        defaultPath: path,
+    registry.add('adminRoute', 'external-provider', {
+        targets: ['administration-server-systemComponents:0'],
         requiredPermission: 'adminRoles',
         icon: null,
         label: 'external-provider:externalProvider.label',
-        childrenTarget: 'systemcomponents',
         isSelectable: true,
-        level: level
+        iframeUrl: window.contextJsParameters.contextPath + '/cms/adminframe/default/en/settings.external-provider.html?redirect=false'
     });
 };
