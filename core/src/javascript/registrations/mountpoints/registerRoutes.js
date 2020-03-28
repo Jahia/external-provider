@@ -2,7 +2,7 @@ import {registry} from '@jahia/ui-extender';
 
 export const registerRoutes = function () {
     registry.add('adminRoute', 'manageMountPoints', {
-        targets: ['administration-server-systemComponents:3'],
+        targets: ['administration-server-systemComponents:20'],
         requiredPermission: 'adminMountPoints',
         icon: null,
         label: 'external-provider:mountpoints.label',
