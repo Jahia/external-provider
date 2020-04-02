@@ -1,6 +1,6 @@
 {
   "externalProvider": {
-    "label": "Fournisseurs externes"
+    "label": "Gestion des EDP"
   },
   "mountpoints": {
     "label": "Points de montage"
