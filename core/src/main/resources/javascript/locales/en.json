@@ -1,8 +1,8 @@
 {
   "externalProvider": {
-    "label": "External Providers"
+    "label": "External providers"
   },
   "mountpoints": {
-    "label": "Mountpoints"
+    "label": "Mount points"
   }
 }
