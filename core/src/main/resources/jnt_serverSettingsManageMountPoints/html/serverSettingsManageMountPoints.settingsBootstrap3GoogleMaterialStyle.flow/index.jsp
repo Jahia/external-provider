@@ -45,7 +45,7 @@
     function goToFactory() {
         var url = $("#mountPointFactory").val();
         if (url) {
-            window.parent.goToUrl(url);
+            window.location = url;
         }
     }
 </script>
@@ -174,7 +174,7 @@
                             <button class="btn btn-default btn-fab btn-fab-xs" type="button"
                                     data-placement="bottom" title="" data-toggle="tooltip"
                                     data-original-title="${editLabel}"
-                                    onclick="window.parent.goToUrl('${editURL}?edit=${mountPoint.identifier}')">
+                                    onclick="window.location = '${editURL}?edit=${mountPoint.identifier}'">
                                 <i class="material-icons">edit</i>
                             </button>
                         </c:if>
