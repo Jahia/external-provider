@@ -883,7 +883,7 @@
   dependencies:
     "@hapi/hoek" "^8.3.0"
 
-"@jahia/eslint-config@^1.0.0-beta.20200920132338":
+"@jahia/eslint-config@^1.1.0":
   version "1.1.0"
   resolved "https://npm.jahia.com/@jahia%2feslint-config/-/eslint-config-1.1.0.tgz#1b5d8835b516f2ad572e66484b410fab23c29373"
   integrity sha512-Be8Jgx9B/b4HS1KidUm2txWwqVvBFL/3sFuOAVy5MtDUpnVEQ/GSsRc3rXdNElMM5SoAvazCzLTTk4FAc9Ggqw==
