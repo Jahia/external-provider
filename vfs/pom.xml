@@ -66,7 +66,7 @@
         <jahia-module-type>system</jahia-module-type>
         <export-package>org.jahia.modules.external.vfs,org.jahia.modules.external.vfs.factory</export-package>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
-        <jahia-module-signature>MCwCFDCk1ytd19q/kV3SMid9DFhkF8aAAhQx99zjkHuULhykakwtAbDNTYDbEg==</jahia-module-signature>
+        <jahia-module-signature>MC0CFFkuJ8a5mrAu1UdRd3ad3WCOjzmzAhUAiX7p+5FNvNT40f3EG8J+wrG458E=</jahia-module-signature>
     </properties>
     <dependencies>
         <dependency>

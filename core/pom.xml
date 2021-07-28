@@ -84,7 +84,7 @@
         </jahia.modules.importPackage>
         <jackson.version>2.9.0</jackson.version>
         <jersey.version>2.6</jersey.version>
-        <jahia-module-signature>MCwCFCOcleIPDjR3KaL4kyk8Dwd9U/YfAhRo436a/GX1lv4Rd8pMCL509enWEQ==</jahia-module-signature>
+        <jahia-module-signature>MCwCFBZVN9ZKhYRQBHoGGEqyJQ3V/BJtAhRW+jlOO8FSMI+Ca+iVfS2Kfg3UdQ==</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <yarn.arguments>build:production</yarn.arguments>
     </properties>
