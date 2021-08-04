@@ -1179,7 +1179,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 if (!canAddChildNode) {
                     for (NodeType mixinType : getMixinNodeTypes(true)) {
                         if (!StringUtils.equals(mixinType.getName(), mixinName)) {
-                            if (mixinType.canAddChildNode(extensionChildNode.getName(), getPrimaryNodeType().getName())) {
+                            if (mixinType.canAddChildNode(extensionChildNode.getName())) {
                                 canAddChildNode = true;
                                 break;
                             }
