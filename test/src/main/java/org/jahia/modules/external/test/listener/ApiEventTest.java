@@ -43,12 +43,10 @@
  */
 package org.jahia.modules.external.test.listener;
 
-import org.apache.commons.httpclient.Credentials;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
-import org.apache.commons.httpclient.auth.AuthScope;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.jahia.bin.Jahia;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.events.EventService;
@@ -68,8 +66,8 @@ import javax.jcr.RepositoryException;
 import javax.jcr.observation.Event;
 import java.io.IOException;
 import java.net.URL;
-import java.util.function.Consumer;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.*;
@@ -385,24 +383,22 @@ public class ApiEventTest  extends JahiaTestCase {
     }
 
     private int executeCall(String body, String provider, String apiKey) throws IOException {
-        HttpClient client = new HttpClient();
+        HttpClient client = getHttpClient();
 
         URL url = new URL(getBaseServerURL() + Jahia.getContextPath() + "/modules/external-provider/events/" + provider);
 
-        client.getParams().setAuthenticationPreemptive(true);
+        HttpPost method = new HttpPost(url.toExternalForm());
+
         if (user != null && password != null) {
-            Credentials defaultcreds = new UsernamePasswordCredentials(user, password);
-            client.getState().setCredentials(new AuthScope(url.getHost(), url.getPort(), AuthScope.ANY_REALM), defaultcreds);
+            method.addHeader("Authorization", "Basic " + org.apache.xerces.impl.dv.util.Base64.encode((user + ":" + password).getBytes()));
         }
 
-        client.getHostConfiguration().setHost(url.getHost(), url.getPort(), url.getProtocol());
 
-        PostMethod method = new PostMethod(url.toExternalForm());
-        method.addRequestHeader("Content-Type", "application/json");
-        method.setRequestEntity(new StringRequestEntity(body, "application/json","UTF-8"));
-        method.setRequestHeader("apiKey", apiKey);
+        method.addHeader("Content-Type", "application/json");
+        method.setEntity(new StringEntity(body, ContentType.create("application/json","UTF-8")));
+        method.setHeader("apiKey", apiKey);
 
-        return client.executeMethod(method);
+        return client.execute(method).getStatusLine().getStatusCode();
     }
 
     private int executeCall(String body, String provider) throws IOException {
