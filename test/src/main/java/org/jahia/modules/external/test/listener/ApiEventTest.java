@@ -43,10 +43,13 @@
  */
 package org.jahia.modules.external.test.listener;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.jahia.bin.Jahia;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.events.EventService;
@@ -383,7 +386,7 @@ public class ApiEventTest  extends JahiaTestCase {
     }
 
     private int executeCall(String body, String provider, String apiKey) throws IOException {
-        HttpClient client = getHttpClient();
+        CloseableHttpClient client = getHttpClient();
 
         URL url = new URL(getBaseServerURL() + Jahia.getContextPath() + "/modules/external-provider/events/" + provider);
 
@@ -398,7 +401,9 @@ public class ApiEventTest  extends JahiaTestCase {
         method.setEntity(new StringEntity(body, ContentType.create("application/json","UTF-8")));
         method.setHeader("apiKey", apiKey);
 
-        return client.execute(method).getStatusLine().getStatusCode();
+        try (CloseableHttpResponse httpResponse = client.execute(method)) {
+            return httpResponse.getCode();
+        }
     }
 
     private int executeCall(String body, String provider) throws IOException {
