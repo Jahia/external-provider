@@ -15,7 +15,7 @@
     "webpack": "node --max_old_space_size=2048 ./node_modules/webpack/bin/webpack.js",
     "build:analyze": "yarn build --analyze",
     "build:production": "yarn build --mode=production",
-    "build:production-analyze": "yarn build -p --analyze",
+    "build:production-analyze": "yarn build --mode=production --analyze",
     "clean": "rimraf *.log src/main/resources/javascript/apps",
     "clean:all": "yarn clean && rimraf node_modules node",
     "lint": "./node_modules/.bin/eslint --ext js,jsx .",
