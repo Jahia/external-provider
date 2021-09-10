@@ -14,8 +14,8 @@
     "dev": "yarn webpack --watch",
     "webpack": "node --max_old_space_size=2048 ./node_modules/webpack/bin/webpack.js",
     "build:analyze": "yarn build --analyze",
-    "build:production": "yarn build -p",
-    "build:production-analyze": "yarn build -p --analyze",
+    "build:production": "yarn build --mode=production",
+    "build:production-analyze": "yarn build --mode=production --analyze",
     "clean": "rimraf *.log src/main/resources/javascript/apps",
     "clean:all": "yarn clean && rimraf node_modules node",
     "lint": "./node_modules/.bin/eslint --ext js,jsx .",
@@ -23,16 +23,13 @@
   },
   "main": "index.js",
   "license": "MIT",
-  "dx-extends": {
-    "@jahia/jahia-ui-root": "0.0.1"
-  },
   "jahia": {
-    "apps": {
-      "jahia": "javascript/apps/jahia.bundle.js"
+    "remotes": {
+      "jahia": "javascript/apps/remoteEntry.js"
     }
   },
   "dependencies": {
-    "@jahia/ui-extender": "^0.1.1",
+    "@jahia/ui-extender": "^1.0.3",
     "i18next": "^19.1.0",
     "prop-types": "^15.7.2",
     "react": "^16.10.2",
@@ -52,26 +49,20 @@
     "@jahia/eslint-config": "^1.1.0",
     "babel-jest": "^24.9.0",
     "babel-loader": "^8.0.6",
-    "clean-webpack-plugin": "^3.0.0",
-    "copy-webpack-plugin": "^5.0.4",
+    "clean-webpack-plugin": "^4.0.0",
+    "copy-webpack-plugin": "^9.0.1",
     "css-loader": "^3.2.0",
     "eslint": "^6.8.0",
     "eslint-loader": "^3.0.2",
     "eslint-plugin-json": "^2.0.1",
     "husky": "^3.0.9",
-    "jest": "^24.9.0",
-    "jest-image-snapshot": "^2.11.0",
-    "jest-puppeteer": "^4.3.0",
-    "jest-teamcity-reporter": "github:mhodgson/jest-teamcity-reporter",
-    "node-sass": "^4.12.0",
+    "node-sass": "^6.0.1",
     "path": "^0.12.7",
-    "puppeteer": "^2.0.0",
-    "puppeteer-edge": "^0.12.4",
     "rimraf": "^3.0.0",
-    "sass-loader": "^8.0.0",
+    "sass-loader": "^12.1.0",
     "style-loader": "^1.0.0",
-    "webpack": "^4.41.0",
-    "webpack-bundle-analyzer": "^3.5.2",
-    "webpack-cli": "^3.3.9"
+    "webpack": "^5.52.0",
+    "webpack-bundle-analyzer": "^4.4.2",
+    "webpack-cli": "^4.8.0"
   }
 }

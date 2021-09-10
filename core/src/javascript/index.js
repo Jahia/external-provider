@@ -1,12 +1,6 @@
-import registrations from './registrations';
-import {registry} from '@jahia/ui-extender';
-import i18next from 'i18next';
-
-registry.add('callback', 'external-provider', {
-    targets: ['jahiaApp-init:50'],
-    callback: async () => {
-        await i18next.loadNamespaces('external-provider');
-        registrations();
-        console.log('%c External Provider routes have been registered', 'color: #3c8cba');
-    }
+// Used only if jahia-ui-root is the host, experimental
+import('@jahia/app-shell/bootstrap').then(res => {
+    console.log(res);
+    window.jahia = res;
+    res.startAppShell(window.appShell.remotes, window.appShell.targetId);
 });
