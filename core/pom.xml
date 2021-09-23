@@ -77,9 +77,6 @@
             org.jahia.modules.external.admin.mount,
             org.jahia.modules.external.admin.mount.validator
         </export-package>
-        <import-package>
-            org.jahia.modules.external;version="[4.2,5)",
-        </import-package>
         <jahia.modules.importPackage>
             org.jahia.defaults.config.spring,
             org.jahia.exceptions,
