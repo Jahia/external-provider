@@ -66,9 +66,16 @@
         <jahia-depends>external-provider,external-provider-vfs</jahia-depends>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
         <jahia-static-resources>/css,/javascript</jahia-static-resources>
-        <export-package>org.jahia.modules.external.modules,org.jahia.modules.external.modules.osgi</export-package>
+        <export-package>
+            org.jahia.modules.external.modules,
+            org.jahia.modules.external.modules.osgi
+        </export-package>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <jahia-module-signature>MCwCFBQGoQAJ7hzQK1C4tRWKDUyCP+pyAhQyN224xf6YtrjxkVMiUBPr9OqvMA==</jahia-module-signature>
+        <import-package>
+            org.jahia.modules.external;version="[4.2,5)",
+            org.jahia.modules.external.vfs;version="[4.2,5)"
+        </import-package>
     </properties>
     <dependencies>
         <dependency>

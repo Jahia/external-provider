@@ -68,7 +68,8 @@
         <jahia-depends>serverSettings</jahia-depends>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
         <jahia-static-resources>/css,/javascript</jahia-static-resources>
-        <export-package>org.jahia.modules.external,
+        <export-package>
+            org.jahia.modules.external,
             org.jahia.modules.external.query,
             org.jahia.modules.external.acl,
             org.jahia.modules.external.events,
