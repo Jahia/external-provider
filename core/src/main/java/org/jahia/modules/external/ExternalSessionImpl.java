@@ -709,6 +709,10 @@ public class ExternalSessionImpl implements Session {
             nodesByPath.keySet().retainAll(pathsToKeep);
             nodesByIdentifier.keySet().retainAll(idsToKeep);
         }
+
+        if (extensionSession != null) {
+            extensionSession.refresh(keepChanges);
+        }
     }
 
     @Override
