@@ -711,6 +711,7 @@ public class ExternalSessionImpl implements Session {
         }
 
         if (extensionSession != null) {
+            logger.debug("Refreshing extension session with keepChanges flag set to: {}", keepChanges);
             extensionSession.refresh(keepChanges);
         }
     }
