@@ -84,6 +84,7 @@ public class EventServiceImpl implements EventService {
                 }
                 JCRObservationManager.addEvent(apiEvent, provider.getMountPoint(), "");
             }
+            jcrSessionWrapper.logout();
             return null;
         };
 
