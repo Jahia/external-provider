@@ -84,14 +84,26 @@ public class EventServiceImpl implements EventService {
                 }
                 JCRObservationManager.addEvent(apiEvent, provider.getMountPoint(), "");
             }
-            jcrSessionWrapper.logout();
             return null;
         };
 
-        logger.debug("Processing API events for default");
-        JCRObservationManager.doWorkspaceWriteCall(JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null), JCRObservationManager.API, callback);
-        logger.debug("Processing API events for live");
-        JCRObservationManager.doWorkspaceWriteCall(JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.LIVE_WORKSPACE, null, null), JCRObservationManager.API, callback);
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, new JCRCallback<Object>() {
+            @Override
+            public Object doInJCR(JCRSessionWrapper jcrSessionWrapper) throws RepositoryException {
+                logger.debug("Processing API events for default");
+                JCRObservationManager.doWorkspaceWriteCall(jcrSessionWrapper, JCRObservationManager.API, callback);
+                return null;
+            }
+        });
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.LIVE_WORKSPACE, null, new JCRCallback<Object>() {
+            @Override
+            public Object doInJCR(JCRSessionWrapper jcrSessionWrapper) throws RepositoryException {
+                logger.debug("Processing API events for live");
+                JCRObservationManager.doWorkspaceWriteCall(jcrSessionWrapper, JCRObservationManager.API, callback);
+                return null;
+            }
+        });
 
         logger.info("API events processed");
     }
