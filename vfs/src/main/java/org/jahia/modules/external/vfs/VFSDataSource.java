@@ -185,10 +185,10 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         try {
             if (!path.endsWith(JCR_CONTENT_SUFFIX)) {
                 FileObject fileObject = getFile(path);
-                if (fileObject.getType() == FileType.FILE) {
+                if (fileObject.getType() == FileType.FILE && fileObject.isReadable()) {
                     final FileContent content = fileObject.getContent();
                     return Collections.singletonList(getFileContent(content));
-                } else if (fileObject.getType() == FileType.FOLDER) {
+                } else if (fileObject.getType() == FileType.FOLDER && fileObject.isReadable()) {
                     fileObject.refresh();  //in case of folder, refresh because it could be changed external
                     FileObject[] files = fileObject.getChildren();
                     if (files.length > 0) {
@@ -207,7 +207,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     }
                 } else {
                     if (fileObject.exists()) {
-                        logger.warn("Found non file or folder entry at path {}, maybe an alias. VFS file type: {}",
+                        logger.warn("Found non file or folder entry at path {}, maybe an alias or maybe it is unreadable. VFS file type: {}",
                                 fileObject, fileObject.getType());
                     } else {
                         throw new PathNotFoundException(path);
