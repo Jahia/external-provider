@@ -311,8 +311,11 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
         int type = PropertyType.UNDEFINED;
         if (value != null) {
             type = value.getType();
-        } else if (values != null) {
+        } else if (values != null && values.length > 0) {
             type = values[0].getType();
+        }
+        if (type == PropertyType.UNDEFINED) {
+            type = getDefinition().getRequiredType();
         }
         if (type == PropertyType.UNDEFINED) {
             throw new ValueFormatException("No value associated with this property or type is UNDEFINED");
