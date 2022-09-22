@@ -257,7 +257,7 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     }
 
     public int getType() throws RepositoryException {
-        return getDefinition().getRequiredType();
+        return getSafePropertyType();
     }
 
     public void setValue(Binary value) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
@@ -305,5 +305,18 @@ public class ExternalPropertyImpl extends ExternalItemImpl implements Property {
     @Override
     public void remove() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
         ((ExternalNodeImpl) getParent()).removeProperty(getName());
+    }
+
+    private int getSafePropertyType() throws RepositoryException {
+        int type = PropertyType.UNDEFINED;
+        if (value != null) {
+            type = value.getType();
+        } else if (values != null) {
+            type = values[0].getType();
+        }
+        if (type == PropertyType.UNDEFINED) {
+            throw new ValueFormatException("No value associated with this property or type is UNDEFINED");
+        }
+        return type;
     }
 }
