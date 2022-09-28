@@ -827,7 +827,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                                 jcrValues[i] = null;
                             }
                         }
-                    } 
+                    }
                     p = new ExternalPropertyImpl(new Name(s, NodeTypeRegistry.getInstance().getNamespaces()), this, session, jcrValues);
                 } else {
                     Value jcrValue = null;
@@ -855,7 +855,7 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                                 jcrValues[i] = null;
                             }
                         }
-                    } 
+                    }
                     p = new ExternalPropertyImpl(new Name(s, NodeTypeRegistry.getInstance().getNamespaces()), this, session, jcrValues);
                 } else {
                     Value jcrValue = null;
@@ -958,7 +958,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
      */
     @Override
     public boolean hasNode(String s) throws RepositoryException {
-        return session.itemExists(getPath().endsWith("/") ? getPath() + s : getPath() + "/" + s);
+        String absPath = getPath().endsWith("/") ? getPath() + s : getPath() + "/" + s;
+        return session.nodeExists(absPath) && session.getItem(absPath) instanceof Node;
     }
 
     /**
