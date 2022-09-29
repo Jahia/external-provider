@@ -124,7 +124,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             if (path.endsWith(JCR_CONTENT_SUFFIX)) {
                 FileObject fileObject = getFile(StringUtils.substringBeforeLast(unescapedPath, JCR_CONTENT_SUFFIX), false);
                 FileContent content = fileObject.getContent();
-                if (!fileObject.exists()) {
+                if (!fileObject.exists() || fileObject.isFolder()) {
                     throw new PathNotFoundException(path);
                 }
                 return getFileContent(content);
