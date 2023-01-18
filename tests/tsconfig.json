@@ -1,0 +1,12 @@
+{
+  "include": [
+    "node_modules/cypress",
+    "cypress/*/*.ts"
+  ],
+  "compilerOptions": {
+    "types": [
+      "@jahia/cypress",
+      "cypress-iframe"
+    ]
+  },
+}
