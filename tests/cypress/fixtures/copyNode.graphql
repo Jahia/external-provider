@@ -1,0 +1,7 @@
+mutation m($path:String!) {
+    jcr {
+        copyNode(pathOrId:"/sites/digitall/files/images/people/portrait-bill-taylor.jpg", destParentPathOrId:$path) {
+            uuid
+        }
+    }
+}

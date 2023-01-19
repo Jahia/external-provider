@@ -1,0 +1,11 @@
+mutation {
+    jcr {
+        mutateNode(pathOrId: "/sites/digitall/contents") {
+            addChild(name: "testReference", primaryNodeType: "jnt:fileReference") {
+                mutateProperty(name: "j:node") {
+                    setValue(type: WEAKREFERENCE, value: "/mounts/mount-test-mountPoint/images/tomcat.gif")
+                }
+            }
+        }
+    }
+}

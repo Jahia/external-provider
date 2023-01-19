@@ -1,0 +1,12 @@
+query q($path:String!) {
+    jcr {
+        nodeByPath(path:$path){
+            mixinTypes {
+                name
+            }
+            property(name:"j:tagList") {
+                values
+            }
+        }
+    }
+}

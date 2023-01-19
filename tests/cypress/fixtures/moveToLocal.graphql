@@ -1,0 +1,9 @@
+mutation {
+    jcr {
+        mutateNode(pathOrId: "/mounts/mount-test") {
+            mutateProperty(name: "mountPoint") {
+                setValue(type: WEAKREFERENCE, value: "/sites/digitall/files")
+            }
+        }
+    }
+}

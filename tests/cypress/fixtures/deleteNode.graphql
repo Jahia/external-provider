@@ -1,0 +1,7 @@
+mutation m($path:String!) {
+    jcr {
+        mutateNode(pathOrId: $path) {
+            delete
+        }
+    }
+}
