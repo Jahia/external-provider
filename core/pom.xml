@@ -101,12 +101,6 @@
             <version>${jackson.version}</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.jahia.modules</groupId>
-            <artifactId>app-shell</artifactId>
-            <version>2.0.0</version>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
     <profiles>
@@ -333,28 +327,6 @@
                         <JAX-RS-Alias>/external-provider/events</JAX-RS-Alias>
                         <JAX-RS-Application>org.jahia.modules.external.events.rest.EventResourceConfig</JAX-RS-Application>
                     </instructions>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <artifactItems>
-                        <artifactItem>
-                            <groupId>org.jahia.modules</groupId>
-                            <artifactId>app-shell</artifactId>
-                            <type>json</type>
-                            <classifier>manifest</classifier>
-                        </artifactItem>
-                    </artifactItems>
                 </configuration>
             </plugin>
         </plugins>

@@ -8,7 +8,7 @@ on:
       jahia_image:
         description: 'Jahia Image'
         required: true
-        default: 'jahia/jahia-ee-dev:8-SNAPSHOT'
+        default: 'jahia/jahia-discovery-dev:8-SNAPSHOT'
       manifest:
         description: 'Provisioning manifest. Can be a local repository file in the tests folder or a publicly accessible link'
         required: true
@@ -37,7 +37,7 @@ jobs:
           should_skip_notifications: true
           should_skip_testrail: true
           should_skip_zencrepes: false
-          github_artifact_name: sam-artifacts-${{ github.run_number }}
+          github_artifact_name: external-provider-artifacts-${{ github.run_number }}
           bastion_ssh_private_key: ${{ secrets.BASTION_SSH_PRIVATE_KEY_JAHIACI }}
           tests_manifest: ${{ github.event.inputs.manifest }}
           jahia_license: ${{ secrets.JAHIA_LICENSE_8X_FULL }}

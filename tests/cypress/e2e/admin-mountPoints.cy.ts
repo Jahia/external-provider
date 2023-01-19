@@ -11,11 +11,11 @@ describe('VFS admin panel mount tests', () => {
 
     describe('without an existing mount point', () => {
         beforeEach(function () {
-            cy.visit('http://localhost:8080/cms/adminframe/default/en/settings.manageMountPoints.html?redirect=false');
+            cy.visit('/cms/adminframe/default/en/settings.manageMountPoints.html?redirect=false');
         });
 
         it('create a global mount point', function () {
-            cy.visit('http://localhost:8080/cms/adminframe/default/en/settings.manageMountPoints.html?redirect=false');
+            cy.visit('/cms/adminframe/default/en/settings.manageMountPoints.html?redirect=false');
             cy.get('button[data-sel-role="addMountPoint"]').click();
             cy.get('input[name="name"]').type('mount-test');
             cy.get('input[name="root"]').type('/tmp/mount-test');
@@ -24,7 +24,7 @@ describe('VFS admin panel mount tests', () => {
             cy.contains('/mounts/mount-test');
         });
         it('can create a local mountpoint', function () {
-            cy.visit('http://localhost:8080/cms/adminframe/default/en/settings.manageMountPoints.html?redirect=false');
+            cy.visit('/cms/adminframe/default/en/settings.manageMountPoints.html?redirect=false');
             cy.get('button[data-sel-role="addMountPoint"]').click();
             cy.get('input[name="name"]').type('mount-test');
             cy.get('input[name="root"]').type('/tmp/mount-test');
@@ -39,7 +39,7 @@ describe('VFS admin panel mount tests', () => {
     describe('with an existing mount point', () => {
         beforeEach(function () {
             cy.apollo({queryFile: 'mount.graphql'});
-            cy.visit('http://localhost:8080/cms/adminframe/default/en/settings.manageMountPoints.html?redirect=false');
+            cy.visit('/cms/adminframe/default/en/settings.manageMountPoints.html?redirect=false');
         });
 
         it('should be displayed in admin', function () {

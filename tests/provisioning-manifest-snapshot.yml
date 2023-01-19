@@ -1,5 +1,6 @@
-- addMavenRepository: "https://NEXUS_USERNAME:NEXUS_PASSWORD@devtools.jahia.com/nexus/content/groups/enterprise@id=jahia-enterprise@snapshots"
 - installBundle:
+  - 'mvn:org.jahia.modules/jcontent'
+  - 'mvn:org.jahia.modules/content-editor'
   - 'mvn:org.jahia.modules/external-provider'
   - 'mvn:org.jahia.modules/external-provider-vfs'
   autoStart: true
