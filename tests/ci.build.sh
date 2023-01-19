@@ -13,8 +13,16 @@ if [ ! -d ./artifacts ]; then
   mkdir -p ./artifacts
 fi
 
-if [[ -e ../target ]]; then
-  cp ../target/*-SNAPSHOT.jar ./artifacts/
+if [[ -e ../core/target ]]; then
+  cp ../core/target/*-SNAPSHOT.jar ./artifacts/
+fi
+
+if [[ -e ../vfs/target ]]; then
+  cp ../vfs/target/*-SNAPSHOT.jar ./artifacts/
+fi
+
+if [[ -e ../modules-provider/target ]]; then
+  cp ../modules-provider/target/*-SNAPSHOT.jar ./artifacts/
 fi
 
 docker build -t ${TESTS_IMAGE} .
