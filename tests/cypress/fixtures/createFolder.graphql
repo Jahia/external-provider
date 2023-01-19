@@ -1,0 +1,9 @@
+mutation m($path:String!) {
+    jcr {
+        mutateNode(pathOrId: $path) {
+            addChild(name: "toto", primaryNodeType: "jnt:folder") {
+                uuid
+            }
+        }
+    }
+}

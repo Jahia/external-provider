@@ -1,0 +1,5 @@
+- installBundle:
+  - 'mvn:org.jahia.modules/jcontent'
+  - 'mvn:org.jahia.modules/content-editor'
+  autoStart: true
+  uninstallPreviousVersion: true

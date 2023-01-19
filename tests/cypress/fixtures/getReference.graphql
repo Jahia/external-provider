@@ -1,0 +1,12 @@
+query {
+    jcr {
+        nodeByPath(path:"/sites/digitall/contents/testReference") {
+            property(name:"j:node") {
+                value
+                refNode {
+                    path
+                }
+            }
+        }
+    }
+}
