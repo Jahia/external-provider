@@ -1,155 +1,32 @@
 version: '3.6'
 services:
-    mariadb:
-        image: library/mariadb:10-focal
-        container_name: mariadb
-        deploy:
-            resources:
-                limits:
-                    memory: 1gb
-        networks:
-            - stack
-        command: --max_allowed_packet=1073741824 --transaction-isolation=READ-UNCOMMITTED --innodb-lock-wait-timeout=10
-        environment:
-            MYSQL_ROOT_PASSWORD: root1234
-            MYSQL_DATABASE: jahia
-            MYSQL_USER: jahia
-            MYSQL_PASSWORD: jahia
-            TZ: ${TIMEZONE}
-
     jahia:
         image: '${JAHIA_IMAGE}'
         container_name: jahia
-        restart: 'no'
-        deploy:
-            resources:
-                limits:
-                    memory: 4gb
-        depends_on:
-            - mariadb
-        networks:
-            - stack
+        environment:
+            - SUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}        
+            - MAX_RAM_PERCENTAGE=95
         ports:
-            - "8080:8080"
-            - "8101:8101"
-            - "8000:8000"
+            - '8080:8080'
         extra_hosts:
             - jahia:127.0.0.1
-        environment:
-            jahia_cfg_karaf_remoteShellHost: 0.0.0.0
-            DB_VENDOR: mariadb
-            DB_HOST: mariadb
-            DB_NAME: jahia
-            DB_USER: jahia
-            DB_PASS: jahia
-            JAHIA_LICENSE: ${JAHIA_LICENSE}
-            SUPER_USER_PASSWORD: ${JAHIA_PASSWORD}
-            CLUSTER_ENABLED: '${JAHIA_CLUSTER_ENABLED}'
-            PROCESSING_SERVER: 'true'
-            MAX_RAM_PERCENTAGE: 95
-            JAHIA_PROPERTIES: ${JAHIA_PROPERTIES}
-            CATALINA_OPTS: ${CATALINA_OPTS}
-            RESTORE_MODULE_STATES: 'false'
-            NEXUS_USERNAME: ${NEXUS_USERNAME}
-            NEXUS_PASSWORD: ${NEXUS_PASSWORD}
-            TZ: ${TIMEZONE}
-            JPDA: 'true'
-
-    jahia-browsing-a:
-        image: '${JAHIA_IMAGE}'
-        container_name: jahia-browsing-a
-        restart: 'no'
-        deploy:
-            resources:
-                limits:
-                    memory: 4gb
-        depends_on:
-            - mariadb
         networks:
             - stack
-        ports:
-            - '8081:8080'
-            - '8102:8101'
-        environment:
-            jahia_cfg_karaf_remoteShellHost: 0.0.0.0
-            DB_VENDOR: mariadb
-            DB_HOST: mariadb
-            DB_NAME: jahia
-            DB_USER: jahia
-            DB_PASS: jahia
-            JAHIA_LICENSE: ${JAHIA_LICENSE}
-            SUPER_USER_PASSWORD: ${JAHIA_PASSWORD}
-            CLUSTER_ENABLED: '${JAHIA_CLUSTER_ENABLED}'
-            PROCESSING_SERVER: 'false'
-            PROCESSING_HOST: jahia
-            MAX_RAM_PERCENTAGE: 95
-            JAHIA_PROPERTIES: ${JAHIA_PROPERTIES}
-            CATALINA_OPTS: ${CATALINA_OPTS}
-            RESTORE_MODULE_STATES: 'false'
-            NEXUS_USERNAME: ${NEXUS_USERNAME}
-            NEXUS_PASSWORD: ${NEXUS_PASSWORD}
-            TZ: ${TIMEZONE}
-
-    jahia-browsing-b:
-        image: '${JAHIA_IMAGE}'
-        container_name: jahia-browsing-b
-        restart: 'no'
-        deploy:
-            resources:
-                limits:
-                    memory: 4gb
-        depends_on:
-            - mariadb
-        networks:
-            - stack
-        ports:
-            - '8082:8080'
-            - '8103:8101'
-        environment:
-            jahia_cfg_karaf_remoteShellHost: 0.0.0.0
-            DB_VENDOR: mariadb
-            DB_HOST: mariadb
-            DB_NAME: jahia
-            DB_USER: jahia
-            DB_PASS: jahia
-            JAHIA_LICENSE: ${JAHIA_LICENSE}
-            SUPER_USER_PASSWORD: ${JAHIA_PASSWORD}
-            CLUSTER_ENABLED: '${JAHIA_CLUSTER_ENABLED}'
-            PROCESSING_SERVER: 'false'
-            PROCESSING_HOST: jahia
-            MAX_RAM_PERCENTAGE: 95
-            JAHIA_PROPERTIES: ${JAHIA_PROPERTIES}
-            CATALINA_OPTS: ${CATALINA_OPTS}
-            RESTORE_MODULE_STATES: 'false'
-            TZ: ${TIMEZONE}
-            NEXUS_USERNAME: ${NEXUS_USERNAME}
-            NEXUS_PASSWORD: ${NEXUS_PASSWORD}
     # Cypress container
     cypress:
-      image: '${TESTS_IMAGE}'
-      # https://github.com/cypress-io/cypress/issues/350
-      ipc: host
-      container_name: cypress
-      deploy:
-        resources:
-          limits:
-            memory: 4gb
-      depends_on:
-        - jahia
-      environment:
-        # Uses variable substitution: https://docs.docker.com/compose/compose-file/compose-file-v3/#variable-substitution
-        MANIFEST: ${MANIFEST:-provisioning-manifest-build.yml}
-        JAHIA_USERNAME: ${JAHIA_USERNAME}
-        JAHIA_PASSWORD: ${JAHIA_PASSWORD}
-        JAHIA_URL: ${JAHIA_URL}
-        JAHIA_HOST: ${JAHIA_HOST}
-        JAHIA_PORT: ${JAHIA_PORT}
-        NEXUS_USERNAME: ${NEXUS_USERNAME}
-        NEXUS_PASSWORD: ${NEXUS_PASSWORD}
-        SUPER_USER_PASSWORD: ${SUPER_USER_PASSWORD}
-        JAHIA_CLUSTER_ENABLED: '${JAHIA_CLUSTER_ENABLED}'
-        TZ: ${TIMEZONE}
-      networks:
-        - stack
+        image: '${TESTS_IMAGE}'
+        # https://github.com/cypress-io/cypress/issues/350
+        ipc: host
+        container_name: cypress
+        depends_on:
+            - jahia
+        environment:
+            - MANIFEST=${MANIFEST}
+            - SUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
+            - JAHIA_URL=http://jahia:8080
+            - NEXUS_USERNAME=${NEXUS_USERNAME}
+            - NEXUS_PASSWORD=${NEXUS_PASSWORD}
+        networks:
+            - stack
 networks:
     stack:
