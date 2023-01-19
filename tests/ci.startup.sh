@@ -10,8 +10,8 @@ echo " MANIFEST: ${MANIFEST}"
 echo " TESTS_IMAGE: ${TESTS_IMAGE}"
 echo " JAHIA_IMAGE: ${JAHIA_IMAGE}"
 
-docker-compose pull jahia
-docker-compose up -d --renew-anon-volumes --remove-orphans --force-recreate jahia
+docker-compose pull jahia ldap
+docker-compose up -d --renew-anon-volumes --remove-orphans --force-recreate jahia ldap
 
 if [[ $1 != "notests" ]]; then
     echo "$(date +'%d %B %Y - %k:%M') [TESTS] == Starting cypress tests =="

@@ -5,3 +5,11 @@
   - 'mvn:org.jahia.modules/external-provider-vfs'
   autoStart: true
   uninstallPreviousVersion: true
+- editConfiguration: "org.jahia.services.usermanager.ldap"
+  configIdentifier: "ldap"
+  properties:
+    user.uid.search.name: "dc=jahia,dc=com"
+    group.search.name: "dc=jahia,dc=com"
+    url: "ldap://ldap"
+    public.bind.dn: "cn=admin,dc=jahia,dc=com"
+    public.bind.password: "ldappassword"

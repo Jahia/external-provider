@@ -12,6 +12,22 @@ services:
             - jahia:127.0.0.1
         networks:
             - stack
+    ldap:
+        image: ${LDAP_IMAGE}
+        container_name: ldap
+        environment:
+            - LDAP_LOG_LEVEL=256
+            - LDAP_ORGANISATION=Jahia
+            - LDAP_DOMAIN=jahia.com
+            - LDAP_BASE_DN=cn=admin,dc=jahia,dc=com
+            - LDAP_ADMIN_PASSWORD=${LDAP_ADMIN_PASSWORD}
+            - LDAP_CONFIG_PASSWORD=config
+            - LDAP_READONLY_USER=false
+        ports:
+            - '389:389'
+            - '636:636'
+        networks:
+            - stack
     # Cypress container
     cypress:
         image: '${TESTS_IMAGE}'
