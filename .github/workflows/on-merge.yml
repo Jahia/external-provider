@@ -6,7 +6,7 @@ name: On merge to main
 on:
   push:
     branches:
-      - 'main'
+      - 'master'
     tags-ignore:
       - '**'
 
