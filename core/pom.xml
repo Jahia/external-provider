@@ -37,7 +37,6 @@
     </scm>
     <properties>
         <jahia-module-type>system</jahia-module-type>
-        <jahia-depends>serverSettings</jahia-depends>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
         <jahia-static-resources>/css,/javascript</jahia-static-resources>
         <export-package>
