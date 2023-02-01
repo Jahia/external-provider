@@ -16,20 +16,27 @@
 // Import commands.js using ES2015 syntax:
 import 'cypress-iframe';
 
-require('cypress-terminal-report/src/installLogsCollector')()
-require('@jahia/cypress/dist/support/registerSupport').registerSupport()
+require('cypress-terminal-report/src/installLogsCollector')({
+    xhr: {
+        printHeaderData: true,
+        printRequestData: true
+    },
+    enableExtendedCollector: true,
+    collectTypes: ['cons:log', 'cons:info', 'cons:warn', 'cons:error', 'cy:log', 'cy:xhr', 'cy:request', 'cy:intercept', 'cy:command']
+});
+require('@jahia/cypress/dist/support/registerSupport').registerSupport();
 Cypress.on('uncaught:exception', (err, runnable) => {
-    // returning false here prevents Cypress from
+    // Returning false here prevents Cypress from
     // failing the test
-    return false
-})
+    return false;
+});
 if (Cypress.browser.family === 'chromium') {
     Cypress.automation('remote:debugger:protocol', {
         command: 'Network.enable',
-        params: {},
-    })
+        params: {}
+    });
     Cypress.automation('remote:debugger:protocol', {
         command: 'Network.setCacheDisabled',
-        params: { cacheDisabled: true },
-    })
+        params: {cacheDisabled: true}
+    });
 }

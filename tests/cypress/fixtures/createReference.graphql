@@ -1,9 +1,9 @@
-mutation {
+mutation ($referencePath: String = "/mounts/mount-test-mountPoint/images/tomcat.gif"){
     jcr {
         mutateNode(pathOrId: "/sites/digitall/contents") {
             addChild(name: "testReference", primaryNodeType: "jnt:fileReference") {
                 mutateProperty(name: "j:node") {
-                    setValue(type: WEAKREFERENCE, value: "/mounts/mount-test-mountPoint/images/tomcat.gif")
+                    setValue(type: WEAKREFERENCE, value: $referencePath)
                 }
             }
         }

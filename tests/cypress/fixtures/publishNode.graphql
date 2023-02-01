@@ -1,0 +1,7 @@
+mutation($pathOrId: String!, $language: [String] = ["en"]) {
+    jcr(workspace: EDIT) {
+        mutateNode(pathOrId: $pathOrId) {
+            publish(languages: $language)
+        }
+    }
+}

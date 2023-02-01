@@ -1,0 +1,7 @@
+mutation {
+    jcr {
+        mutateNode(pathOrId: "/sites/digitall/contents/testReference") {
+            markForDeletion
+        }
+    }
+}

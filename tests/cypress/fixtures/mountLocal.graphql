@@ -1,6 +1,10 @@
 mutation mount {
     jcr {
-        addNode(parentPathOrId: "/mounts", primaryNodeType: "jnt:vfsMountPoint", name: "mount-test", properties: [{name: "j:rootPath", value: "/tmp/mount-test"}, {name: "mountPoint", type:WEAKREFERENCE, value:"/sites/digitall/files"}]) {
+        addNode(parentPathOrId: "/mounts", primaryNodeType: "jnt:vfsMountPoint", name: "mount-test",
+            properties: [
+                {name: "j:rootPath", value: "/tmp/mount-test"},
+                {name: "mountPoint", type:WEAKREFERENCE, value:"/sites/digitall/files"}
+            ]) {
             uuid
         }
     }

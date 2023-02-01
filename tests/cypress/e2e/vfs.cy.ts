@@ -49,6 +49,12 @@ describe('VFS mount operations tests', () => {
     });
 
     afterEach(function () {
+        cy.apollo({mutationFile: 'markForDeletionReference.graphql', errorPolicy: 'all'});
+        cy.apollo({
+            mutationFile: 'publishNode.graphql',
+            variables: {pathOrId: '/sites/digitall/contents/testReference'}
+            , errorPolicy: 'all'
+        });
         cy.apollo({mutationFile: 'deleteReference.graphql', errorPolicy: 'all'});
         cy.executeGroovy('cleanup.groovy');
     });
@@ -80,12 +86,26 @@ describe('VFS mount operations tests', () => {
 
         it('should keep references after switching from global to local', function () {
             cy.apollo({mutationFile: 'createReference.graphql'});
+            cy.apollo({
+                mutationFile: 'publishNode.graphql',
+                variables: {pathOrId: '/sites/digitall/contents/testReference'}
+            });
             cy.apollo({queryFile: 'getReference.graphql'}).should(({data}) => {
                 expect(data.jcr.nodeByPath.property.refNode.path).eq('/mounts/mount-test-mountPoint/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/default/mounts/mount-test-mountPoint/images/tomcat.gif');
+            });
+            cy.apollo({queryFile: 'getReference.graphql', variables: {workspace: 'LIVE'}}).should(({data}) => {
+                expect(data.jcr.nodeByPath.property.refNode.path).eq('/mounts/mount-test-mountPoint/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/live/mounts/mount-test-mountPoint/images/tomcat.gif');
             });
             cy.apollo({mutationFile: 'moveToLocal.graphql'});
             cy.apollo({queryFile: 'getReference.graphql'}).should(({data}) => {
                 expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/default/sites/digitall/files/mount-test/images/tomcat.gif');
+            });
+            cy.apollo({queryFile: 'getReference.graphql', variables: {workspace: 'LIVE'}}).should(({data}) => {
+                expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/live/sites/digitall/files/mount-test/images/tomcat.gif');
             });
         });
     });
@@ -104,6 +124,86 @@ describe('VFS mount operations tests', () => {
             });
             cy.executeGroovy('checkFile.groovy', {'#path#': '/tmp/mount-test/toto'}).should(r => {
                 expect(r).to.eq('true');
+            });
+        });
+
+        it('should be able to rename a file', function () {
+            cy.apollo({mutationFile: 'renameTomcatGif.graphql'});
+            cy.executeGroovy('checkFile.groovy', {'#path#': '/tmp/mount-test/images/tomcatTest.gif'}).should(r => {
+                expect(r).to.eq('true');
+            });
+            cy.executeGroovy('checkFile.groovy', {'#path#': '/tmp/mount-test/images/tomcat.gif'}).should(r => {
+                expect(r).to.eq('false');
+            });
+        });
+
+        it('should keep references after renaming a file', function () {
+            cy.apollo({
+                mutationFile: 'createReference.graphql', variables: {
+                    referencePath: '/sites/digitall/files/mount-test/images/tomcat.gif'
+                }
+            });
+            cy.apollo({
+                mutationFile: 'publishNode.graphql',
+                variables: {pathOrId: '/sites/digitall/contents/testReference'}
+            });
+            cy.apollo({queryFile: 'getReference.graphql'}).should(({data}) => {
+                expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/default/sites/digitall/files/mount-test/images/tomcat.gif');
+            });
+            cy.apollo({queryFile: 'getReference.graphql', variables: {workspace: 'LIVE'}}).should(({data}) => {
+                expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/live/sites/digitall/files/mount-test/images/tomcat.gif');
+            });
+            cy.apollo({mutationFile: 'renameTomcatGif.graphql'});
+            cy.executeGroovy('checkFile.groovy', {'#path#': '/tmp/mount-test/images/tomcatTest.gif'}).should(r => {
+                expect(r).to.eq('true');
+            });
+            cy.executeGroovy('checkFile.groovy', {'#path#': '/tmp/mount-test/images/tomcat.gif'}).should(r => {
+                expect(r).to.eq('false');
+            });
+            cy.apollo({queryFile: 'getReference.graphql'}).should(({data}) => {
+                expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/images/tomcatTest.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/default/sites/digitall/files/mount-test/images/tomcatTest.gif');
+            });
+            cy.apollo({queryFile: 'getReference.graphql', variables: {workspace: 'LIVE'}}).should(({data}) => {
+                expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/images/tomcatTest.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/live/sites/digitall/files/mount-test/images/tomcatTest.gif');
+            });
+        });
+
+        it('should keep references after moving a file', function () {
+            cy.apollo({
+                mutationFile: 'createReference.graphql', variables: {
+                    referencePath: '/sites/digitall/files/mount-test/images/tomcat.gif'
+                }
+            });
+            cy.apollo({
+                mutationFile: 'publishNode.graphql',
+                variables: {pathOrId: '/sites/digitall/contents/testReference'}
+            });
+            cy.apollo({queryFile: 'getReference.graphql'}).should(({data}) => {
+                expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/default/sites/digitall/files/mount-test/images/tomcat.gif');
+            });
+            cy.apollo({queryFile: 'getReference.graphql', variables: {workspace: 'LIVE'}}).should(({data}) => {
+                expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/live/sites/digitall/files/mount-test/images/tomcat.gif');
+            });
+            cy.apollo({mutationFile: 'moveTomcatGif.graphql'});
+            cy.executeGroovy('checkFile.groovy', {'#path#': '/tmp/mount-test/tomcat.gif'}).should(r => {
+                expect(r).to.eq('true');
+            });
+            cy.executeGroovy('checkFile.groovy', {'#path#': '/tmp/mount-test/images/tomcat.gif'}).should(r => {
+                expect(r).to.eq('false');
+            });
+            cy.apollo({queryFile: 'getReference.graphql'}).should(({data}) => {
+                expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/tomcat.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/default/sites/digitall/files/mount-test/tomcat.gif');
+            });
+            cy.apollo({queryFile: 'getReference.graphql', variables: {workspace: 'LIVE'}}).should(({data}) => {
+                expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/tomcat.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/live/sites/digitall/files/mount-test/tomcat.gif');
             });
         });
     });
