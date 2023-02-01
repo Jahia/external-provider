@@ -1,0 +1,7 @@
+mutation {
+    jcr {
+        mutateNode(pathOrId: "/sites/digitall/files/mount-test/images/tomcat.gif") {
+            rename(name: "tomcatTest.gif")
+        }
+    }
+}

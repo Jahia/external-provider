@@ -1,11 +1,14 @@
-query {
-    jcr {
+query ($workspace: Workspace = EDIT) {
+    jcr(workspace: $workspace) {
         nodeByPath(path:"/sites/digitall/contents/testReference") {
             property(name:"j:node") {
                 value
                 refNode {
                     path
                 }
+            }
+            renderedContent(language: "en", templateType: "html", view: "default") {
+                output
             }
         }
     }
