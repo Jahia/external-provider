@@ -30,7 +30,6 @@ export default defineConfig({
             return require('./cypress/plugins/index.js')(on, config);
         },
         excludeSpecPattern: '*.ignore.ts',
-        baseUrl: 'http://localhost:8080',
-        experimentalSessionAndOrigin: false
+        baseUrl: 'http://localhost:8080'
     }
 });
