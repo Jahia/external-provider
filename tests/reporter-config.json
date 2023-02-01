@@ -1,9 +1,9 @@
 {
-  "reporterEnabled": "./reporter/json.js, mocha-junit-reporter",
-  "mochaJunitReporterReporterOptions": {
-    "mochaFile": "./results/xml_reports/[suiteFilename].xml"
+  "reporterEnabled": "mochawesome, mocha-junit-reporter",
+  "mochawesomeReporterOptions": {
+    "reportDir": "./results/reports/"
   },
-  "reporterJsonJsReporterOptions": {
-    "reportsPath": "./results/reports/"
+  "mochaJunitReporterReporterOptions": {
+    "mochaFile": "./results/xml_reports/[hash].xml"
   }
 }
