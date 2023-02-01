@@ -52,8 +52,8 @@ describe('VFS mount operations tests', () => {
         cy.apollo({mutationFile: 'markForDeletionReference.graphql', errorPolicy: 'all'});
         cy.apollo({
             mutationFile: 'publishNode.graphql',
-            variables: {pathOrId: '/sites/digitall/contents/testReference'}
-            , errorPolicy: 'all'
+            variables: {pathOrId: '/sites/digitall/contents/testReference'},
+            errorPolicy: 'all'
         });
         cy.apollo({mutationFile: 'deleteReference.graphql', errorPolicy: 'all'});
         cy.executeGroovy('cleanup.groovy');
