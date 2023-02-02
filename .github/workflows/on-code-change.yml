@@ -110,6 +110,6 @@ jobs:
         if: success() || failure()
         with:
           name: Tests Report (Standalone)
-          path: tests/artifacts/results/xml_reports/*.xml
-          reporter: java-junit
-          fail-on-error: 'false'
+          path: tests/artifacts/results/reports/*.json
+          reporter: mocha-json
+          fail-on-error: 'true'
