@@ -7,8 +7,8 @@
     "e2e:ci:standalone": "cypress run --browser chrome --config-file cypress.standalone.config.ts",
     "e2e:debug": "cypress open",
     "lint": "eslint . -c .eslintrc.json --ext .ts",
-    "report:merge": "mochawesome-merge results/reports/cypress*.json > results/reports/report.json && rm results/reports/cypress*.json",
-    "report:html": "marge --inline results/reports/report.json --reportDir results/reports/"
+    "report:merge": "mochawesome-merge results/reports/mochawesome*.json > results/reports/report.json && rm results/reports/mochawesome*.json",
+    "report:html": "marge results/reports/report.json --reportDir results --assetsDir results/assets"
   },
   "main": "index.js",
   "license": "MIT",
