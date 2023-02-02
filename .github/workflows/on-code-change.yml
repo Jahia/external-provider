@@ -50,6 +50,11 @@ jobs:
     name: Sonar Analysis
     needs: build
     runs-on: ubuntu-latest
+    container:
+      image: jahia/cimg-mvn-cache:ga_cimg_openjdk_8.0.312-node
+      credentials:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
     steps:
       - uses: actions/checkout@v2
       - uses: jahia/jahia-modules-action/sonar-analysis@v2
