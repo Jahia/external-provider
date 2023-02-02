@@ -110,6 +110,6 @@ jobs:
         if: success() || failure()
         with:
           name: Tests Report (Standalone)
-          path: tests/artifacts/results/reports/mochawesome.json
+          path: tests/artifacts/results/reports/mochawesome*.json
           reporter: mochawesome-json
           fail-on-error: 'true'
