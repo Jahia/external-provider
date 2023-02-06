@@ -1,0 +1,7 @@
+mutation ($path:String!, $role: [String]!, $user: String!) {
+    jcr {
+        mutateNode(pathOrId: $path) {
+            revokeRoles(principalName: $user, principalType: USER, roleNames: $role)
+        }
+    }
+}
