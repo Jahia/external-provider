@@ -1,7 +1,8 @@
 mutation {
     jcr {
         mutateNode(pathOrId: "/sites/digitall/contents/testReference") {
-            delete
+            markForDeletion
+            publish
         }
     }
 }

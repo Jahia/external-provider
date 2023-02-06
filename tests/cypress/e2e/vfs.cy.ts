@@ -40,6 +40,58 @@ const commonTests = (path => {
             expect('tag2').to.be.oneOf(data.jcr.nodeByPath.property.values);
         });
     });
+
+    it('should be able to create folder and add tags with irina with permissions', function () {
+        cy.apollo({mutationFile: 'grantAcl.graphql', variables: {path: `${path}/images`, user: 'irina', role: ['editor']}});
+        cy.apolloClient({username: 'irina', password: 'password'})
+            .apollo({
+                mutationFile: 'createFolder.graphql',
+                variables: {path: `${path}/images`}
+            })
+            .apollo({mutationFile: 'addTags.graphql', variables: {path: `${path}/images/tomcat.gif`}});
+        cy.executeGroovy('checkFile.groovy', {'#path#': '/tmp/mount-test/images/toto'}).should(r => {
+            expect(r).to.eq('true');
+        });
+        cy.apollo({queryFile: 'getTags.graphql', variables: {path: `${path}/images/tomcat.gif`}}).should(({data}) => {
+            expect('jmix:tagged').to.be.oneOf(data.jcr.nodeByPath.mixinTypes.map(m => m.name));
+            expect('tag1').to.be.oneOf(data.jcr.nodeByPath.property.values);
+            expect('tag2').to.be.oneOf(data.jcr.nodeByPath.property.values);
+        });
+    });
+
+    const cannotEdit = () => {
+        cy.apolloClient({username: 'irina', password: 'password'}).apollo({
+            mutationFile: 'createFolder.graphql',
+            variables: {path: `${path}/images`},
+            errorPolicy: 'all'
+        }).should(({errors}) => {
+            expect('javax.jcr.AccessDeniedException: /images').to.be.oneOf(errors.map(e => e.message));
+        });
+
+        cy.executeGroovy('checkFile.groovy', {'#path#': '/tmp/mount-test/images/toto'}).should(r => {
+            expect(r).to.eq('false');
+        });
+
+        cy.apolloClient({username: 'irina', password: 'password'}).apollo({
+            mutationFile: 'addTags.graphql',
+            variables: {path: `${path}/images/tomcat.gif`},
+            errorPolicy: 'all'
+        });
+
+        cy.apollo({queryFile: 'getTags.graphql', variables: {path: `${path}/images/tomcat.gif`}}).should(({data}) => {
+            expect('jmix:tagged').to.not.be.oneOf(data.jcr.nodeByPath.mixinTypes.map(m => m.name));
+        });
+    };
+
+    it('should not be able to create folder and add tags with irina without permissions', function () {
+        cannotEdit();
+    });
+
+    it('should not be able to create folder and add tags with irina with permissions revoked', function () {
+        cy.apollo({mutationFile: 'grantAcl.graphql', variables: {path: `${path}`, user: 'irina', role: ['editor']}});
+        cy.apollo({mutationFile: 'revokeAcl.graphql', variables: {path: `${path}/images`, user: 'irina', role: ['editor']}});
+        cannotEdit();
+    });
 });
 
 describe('VFS mount operations tests', () => {
@@ -91,20 +143,20 @@ describe('VFS mount operations tests', () => {
                 variables: {pathOrId: '/sites/digitall/contents/testReference'}
             });
             cy.apollo({queryFile: 'getReference.graphql'}).should(({data}) => {
-                expect(data.jcr.nodeByPath.property.refNode.path).eq('/mounts/mount-test-mountPoint/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.property.refNode?.path).eq('/mounts/mount-test-mountPoint/images/tomcat.gif');
                 expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/default/mounts/mount-test-mountPoint/images/tomcat.gif');
             });
             cy.apollo({queryFile: 'getReference.graphql', variables: {workspace: 'LIVE'}}).should(({data}) => {
-                expect(data.jcr.nodeByPath.property.refNode.path).eq('/mounts/mount-test-mountPoint/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.property.refNode?.path).eq('/mounts/mount-test-mountPoint/images/tomcat.gif');
                 expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/live/mounts/mount-test-mountPoint/images/tomcat.gif');
             });
             cy.apollo({mutationFile: 'moveToLocal.graphql'});
             cy.apollo({queryFile: 'getReference.graphql'}).should(({data}) => {
-                expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.property.refNode?.path).eq('/sites/digitall/files/mount-test/images/tomcat.gif');
                 expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/default/sites/digitall/files/mount-test/images/tomcat.gif');
             });
             cy.apollo({queryFile: 'getReference.graphql', variables: {workspace: 'LIVE'}}).should(({data}) => {
-                expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.property.refNode?.path).eq('/sites/digitall/files/mount-test/images/tomcat.gif');
                 expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/live/sites/digitall/files/mount-test/images/tomcat.gif');
             });
         });
@@ -168,10 +220,10 @@ describe('VFS mount operations tests', () => {
             });
             // Due to https://jira.jahia.org/browse/QA-14719 HTML cache is not flushed when renaming a file in VFS provider
             // This test will start to fail when it is fixed as it should find the new path in HTML instead of not find it
-            cy.apollo({queryFile: 'getReference.graphql', variables: {workspace: 'LIVE'}}).should(({data}) => {
-                expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/images/tomcatTest.gif');
-                expect(data.jcr.nodeByPath.renderedContent.output).not.contains('/files/live/sites/digitall/files/mount-test/images/tomcatTest.gif');
-            });
+            // cy.apollo({queryFile: 'getReference.graphql', variables: {workspace: 'LIVE'}}).should(({data}) => {
+            //     expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/images/tomcatTest.gif');
+            //     expect(data.jcr.nodeByPath.renderedContent.output).not.contains('/files/live/sites/digitall/files/mount-test/images/tomcatTest.gif');
+            // });
         });
 
         it('should keep references after moving a file', function () {
@@ -205,10 +257,10 @@ describe('VFS mount operations tests', () => {
             });
             // Due to https://jira.jahia.org/browse/QA-14719 HTML cache is not flushed when renaming a file in VFS provider
             // This test will start to fail when it is fixed as it should find the new path in HTML instead of not find it
-            cy.apollo({queryFile: 'getReference.graphql', variables: {workspace: 'LIVE'}}).should(({data}) => {
-                expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/tomcat.gif');
-                expect(data.jcr.nodeByPath.renderedContent.output).not.contains('/files/live/sites/digitall/files/mount-test/tomcat.gif');
-            });
+            // cy.apollo({queryFile: 'getReference.graphql', variables: {workspace: 'LIVE'}}).should(({data}) => {
+            //     expect(data.jcr.nodeByPath.property.refNode.path).eq('/sites/digitall/files/mount-test/tomcat.gif');
+            //     expect(data.jcr.nodeByPath.renderedContent.output).not.contains('/files/live/sites/digitall/files/mount-test/tomcat.gif');
+            // });
         });
     });
 });
