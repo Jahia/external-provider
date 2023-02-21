@@ -36,6 +36,7 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
+        <jahia-depends/>
         <jahia-module-type>system</jahia-module-type>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
         <jahia-static-resources>/css,/javascript</jahia-static-resources>

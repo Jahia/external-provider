@@ -63,7 +63,7 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
-        <jahia-depends>default,external-provider,external-provider-vfs,rating</jahia-depends>
+        <jahia-depends>external-provider,external-provider-vfs,rating</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <embed-dependency>derby;scope=runtime;inline=false</embed-dependency>
         <jahia-module-signature>MCwCFBOgYBmPKIBh9tsYbAoPWKDHnmuvAhQFOpRgOQGMnQ3Cn7UCgb22B5a1mg==</jahia-module-signature>
