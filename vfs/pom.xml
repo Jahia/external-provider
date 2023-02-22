@@ -34,7 +34,7 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
-        <jahia-depends>external-provider</jahia-depends>
+        <jahia-depends>external-provider,siteSettings</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <export-package>
             org.jahia.modules.external.vfs,
