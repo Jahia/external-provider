@@ -2,7 +2,7 @@
 <content xmlns:j="http://www.jahia.org/jahia/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0">
     <modules jcr:primaryType="jnt:modules">
         <external-provider j:modulePriority="0"
-                           j:dependencies="assets jquery"
+                           j:dependencies="siteSettings assets jquery"
                          j:moduleType="system"
                          j:title="Jahia External Provider"
                          jcr:mixinTypes="jmix:hasExternalProviderExtension"
