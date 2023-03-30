@@ -135,8 +135,9 @@ public class ApiEventTest  extends JahiaTestCase {
         ConfigurationAdmin configurationAdmin = BundleUtils.getOsgiService(ConfigurationAdmin.class, null);
         Configuration configuration = configurationAdmin.getConfiguration("org.jahia.modules.api.external_provider.event");
         originalProperties = configuration.getProperties();
-
+        List<String> keys = Collections.list(originalProperties.keys());
         Hashtable<String, Object> newProps = new Hashtable<>();
+        keys.stream().forEach(k -> newProps.put(k, originalProperties.get(k)));
         newProps.put("providers.event.api.key", "42267ebc-f8d0-4f4d-ac98-21fb8eeda653");
         configuration.update(newProps);
     }
