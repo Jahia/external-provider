@@ -60,6 +60,7 @@
                 <module>core</module>
                 <module>modules-provider</module>
                 <module>vfs</module>
+                <module>test</module>
             </modules>
         </profile>
         <profile>
