@@ -367,7 +367,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
             }
             return Constants.EDIT_WORKSPACE.equals(property.getSession().getWorkspace().getName())
                     && ("jcr:primaryType".equals(property.getName()) || "jcr:mixinTypes".equals(property.getName())
-                        || (property instanceof ExtensionProperty && !ignorePropertiesForExport.contains(property.getName())));
+                        || ((property instanceof ExternalPropertyImpl || property instanceof ExtensionProperty) && !ignorePropertiesForExport.contains(property.getName())));
         } catch (RepositoryException e) {
             logger.error("Error while checking property name", e);
         }
