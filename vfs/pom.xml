@@ -41,7 +41,7 @@
             org.jahia.modules.external.vfs.factory
         </export-package>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
-        <jahia-module-signature>MC0CFQCSDK9VsjvbE/0zu34sSP/Qa3383AIUYd7CH+gLxa4TaXY8NE1JEKUCrj0=</jahia-module-signature>
+        <jahia-module-signature>MCwCFEacXl1nO15Wfv7RdqjCGX5JAMlvAhRPzWm6grlPGaRD7SlUB1mmUuc8rA==</jahia-module-signature>
         <import-package>
             org.jahia.modules.external;version="[4.2,5)",
             org.jahia.defaults.config.spring,
