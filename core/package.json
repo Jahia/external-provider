@@ -19,7 +19,8 @@
     "clean": "rimraf *.log src/main/resources/javascript/apps",
     "clean:all": "yarn clean && rimraf node_modules node",
     "lint": "./node_modules/.bin/eslint --ext js,jsx .",
-    "lint:fix": "./node_modules/.bin/eslint --ext js,jsx --fix ."
+    "lint:fix": "./node_modules/.bin/eslint --ext js,jsx --fix .",
+    "sync-pom": "sync-pom-version --use-yarn"
   },
   "main": "index.js",
   "license": "MIT",
