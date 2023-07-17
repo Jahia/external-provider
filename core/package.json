@@ -1,6 +1,6 @@
 {
   "name": "@jahia/external-provider",
-  "version": "0.0.1",
+  "version": "4.7.0-SNAPSHOT",
   "husky": {
     "hooks": {
       "pre-push": "yarn lint:fix"
@@ -47,6 +47,7 @@
     "@babel/preset-react": "^7.0.0",
     "@babel/preset-typescript": "^7.3.3",
     "@babel/runtime": "^7.5.4",
+    "@cyclonedx/webpack-plugin": "^3.6.1",
     "@jahia/eslint-config": "^1.1.0",
     "babel-jest": "^24.9.0",
     "babel-loader": "^8.0.6",
