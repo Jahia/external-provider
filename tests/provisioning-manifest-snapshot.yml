@@ -1,6 +1,5 @@
 - installBundle:
   - 'mvn:org.jahia.modules/jcontent'
-  - 'mvn:org.jahia.modules/content-editor'
   - 'mvn:org.jahia.modules/external-provider'
   - 'mvn:org.jahia.modules/external-provider-vfs'
   autoStart: true
