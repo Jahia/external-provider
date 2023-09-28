@@ -1,44 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <content xmlns:j="http://www.jahia.org/jahia/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0">
     <modules jcr:primaryType="jnt:modules">
-        <external-provider j:modulePriority="0"
-                           j:dependencies="siteSettings assets jquery"
-                         j:moduleType="system"
-                         j:title="Jahia External Provider"
-                         jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                         jcr:primaryType="jnt:module">
+        <external-provider-ui j:modulePriority="0"
+                              j:dependencies="external-provider siteSettings assets jquery"
+                              j:moduleType="system"
+                              j:title="Jahia External Provider UI"
+                              jcr:mixinTypes="jmix:hasExternalProviderExtension"
+                              jcr:primaryType="jnt:module">
 
                 <portlets jcr:primaryType="jnt:portletFolder"/>
                 <files jcr:primaryType="jnt:folder"/>
                 <contents jcr:primaryType="jnt:contentFolder"/>
                 <templates jcr:primaryType="jnt:templatesFolder">
                     <files jcr:primaryType="jnt:folder">
-                        <data_connection.png j:height="16"
-                                    j:width="16"
-                                    jcr:mixinTypes="jmix:image"
-                                    jcr:primaryType="jnt:file">
+                        <mountPoints.png j:height="16"
+                                j:width="16"
+                                jcr:mixinTypes="jmix:image"
+                                jcr:primaryType="jnt:file">
                             <jcr:content jcr:mimeType="image/png" jcr:primaryType="jnt:resource"/>
                             <thumbnail jcr:mimeType="image/png" jcr:primaryType="jnt:resource"/>
                             <thumbnail2 jcr:mimeType="image/png" jcr:primaryType="jnt:resource"/>
-                        </data_connection.png>
+                        </mountPoints.png>
                     </files>
                     <contents jcr:primaryType="jnt:contentFolder"/>
                     <server-settings-base j:view="serverSettings"
                                   jcr:mixinTypes="jmix:useUILocale"
                                   jcr:primaryType="jnt:template">
                         <system-components jcr:primaryType="jnt:template">
-                            <external-provider j:applyOn="jnt:globalSettings"
+                            <manageMountPoints j:applyOn="jnt:globalSettings"
                                      j:defaultTemplate="false"
                                      j:hiddenTemplate="false"
-                                     j:icon="/modules/external-provider/templates/files/data_connection.png"
-                                     j:requiredPermissionNames="adminRoles"
-                                     j:titleKey="label.externalProviderAdmin"
+                                     j:icon="/modules/external-provider/templates/files/mountPoints.png"
+                                     j:requiredPermissionNames="adminMountPoints"
+                                     j:titleKey="serverSettings.manageMountPoints"
                                      jcr:mixinTypes="jmix:rbTitle"
                                      jcr:primaryType="jnt:contentTemplate">
                                 <pagecontent jcr:primaryType="jnt:contentList">
-                                    <serversettingsexternalproviders jcr:primaryType="jnt:serverSettingsExternalProviders"/>
+                                    <serversettingsmanagemountpoints jcr:primaryType="jnt:serverSettingsManageMountPoints"/>
                                 </pagecontent>
-                            </external-provider>
+                            </manageMountPoints>
                         </system-components>
                     </server-settings-base>
                     <server-settings-base-jahia-anthracite j:view="settingsBootstrap3GoogleMaterialStyle"
@@ -46,25 +46,25 @@
                                                    jcr:primaryType="jnt:template">
                         <system-components-jahia-anthracite j:view="settingsBootstrap3GoogleMaterialStyle"
                                   jcr:primaryType="jnt:template">
-                            <external-provider-jahia-anthracite j:applyOn="jnt:globalSettings"
+                            <manageMountPoints-jahia-anthracite j:applyOn="jnt:globalSettings"
                                      j:defaultTemplate="false"
                                      j:hiddenTemplate="false"
-                                     j:icon="/modules/external-provider/templates/files/data_connection.png"
-                                     j:requiredPermissionNames="adminRoles"
-                                     j:titleKey="label.externalProviderAdmin"
+                                     j:icon="/modules/external-provider/templates/files/mountPoints.png"
+                                     j:requiredPermissionNames="adminMountPoints"
+                                     j:titleKey="serverSettings.manageMountPoints"
                                      j:view="settingsBootstrap3GoogleMaterialStyle"
                                      jcr:mixinTypes="jmix:rbTitle"
                                      jcr:primaryType="jnt:contentTemplate">
                                 <pagecontent jcr:primaryType="jnt:contentList">
-                                    <serversettingsexternalproviders j:view="settingsBootstrap3GoogleMaterialStyle"
+                                    <serversettingsmanagemountpoints j:view="settingsBootstrap3GoogleMaterialStyle"
                                                          jcr:mixinTypes="jmix:renderable"
-                                                         jcr:primaryType="jnt:serverSettingsExternalProviders"/>
+                                                         jcr:primaryType="jnt:serverSettingsManageMountPoints"/>
                                 </pagecontent>
-                            </external-provider-jahia-anthracite>
+                            </manageMountPoints-jahia-anthracite>
                         </system-components-jahia-anthracite>
                     </server-settings-base-jahia-anthracite>
                 </templates>
 
-            </external-provider>
+            </external-provider-ui>
     </modules>
 </content>

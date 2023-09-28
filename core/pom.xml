@@ -45,9 +45,7 @@
             org.jahia.modules.external.query,
             org.jahia.modules.external.acl,
             org.jahia.modules.external.events,
-            org.jahia.modules.external.events.rest,
-            org.jahia.modules.external.admin.mount,
-            org.jahia.modules.external.admin.mount.validator
+            org.jahia.modules.external.events.rest
         </export-package>
         <jahia.modules.importPackage>
             org.jahia.defaults.config.spring,
@@ -105,6 +103,14 @@
     </dependencies>
 
     <profiles>
+        <profile>
+            <id>dev</id>
+            <properties>
+                <yarn.arguments>build</yarn.arguments>
+                <cyclonedx.skip>true</cyclonedx.skip>
+            </properties>
+        </profile>
+
         <profile>
             <id>generate-ddl</id>
             <activation>
@@ -296,8 +302,8 @@
                             <goal>install-node-and-yarn</goal>
                         </goals>
                         <configuration>
-                            <nodeVersion>v14.21.3</nodeVersion>
-                            <yarnVersion>v1.22.11</yarnVersion>
+                            <nodeVersion>v18.16.0</nodeVersion>
+                            <yarnVersion>v1.22.19</yarnVersion>
                         </configuration>
                     </execution>
                     <execution>
@@ -326,7 +332,7 @@
                         <configuration>
                             <arguments>sync-pom</arguments>
                         </configuration>
-                    </execution> 
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -352,7 +358,7 @@
                     <preparationGoals>clean verify frontend:yarn@sync-pom scm:checkin@package-json</preparationGoals>
                     <completionGoals>frontend:yarn@sync-pom scm:checkin@package-json</completionGoals>
                 </configuration>
-            </plugin> 
+            </plugin>
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>

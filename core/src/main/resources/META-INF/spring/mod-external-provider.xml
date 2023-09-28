@@ -54,13 +54,6 @@
 
     <osgi:service id="EventServiceOsgi" ref="eventService" interface="org.jahia.modules.external.events.EventService"/>
 
-    <bean id="mountPointConfigFactory" class="org.jahia.modules.external.admin.mount.config.MountPointConfigFactory"/>
-    <osgi:service interface="org.osgi.service.cm.ManagedServiceFactory" ref="mountPointConfigFactory">
-        <osgi:service-properties>
-            <entry key="service.pid" value="org.jahia.modules.external.mount"/>
-        </osgi:service-properties>
-    </osgi:service>
-
     <bean id="externalContentStoreProviderFactory" class="org.jahia.modules.external.ExternalContentStoreProviderFactoryImpl">
         <property name="userManagerService" ref="JahiaUserManagerService"/>
         <property name="groupManagerService" ref="JahiaGroupManagerService"/>
@@ -70,5 +63,4 @@
         <property name="externalProviderInitializerService" ref="ProviderInitializerService" />
     </bean>
     <osgi:service id="externalContentStoreProviderFactoryOsgi" ref="externalContentStoreProviderFactory" interface="org.jahia.modules.external.ExternalContentStoreProviderFactory"/>
-
 </beans>

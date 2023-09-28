@@ -35,6 +35,9 @@
         <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
+    <properties>
+        <jahia.plugin.version>6.9</jahia.plugin.version>
+    </properties>
     <repositories>
         <repository>
             <id>jahia-public</id>
@@ -50,27 +53,11 @@
         </repository>
     </repositories>
 
-    <profiles>
-        <profile>
-            <id>default</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <modules>
-                <module>core</module>
-                <module>modules-provider</module>
-                <module>vfs</module>
-                <module>test</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>tests</id>
-            <modules>
-                <module>core</module>
-                <module>modules-provider</module>
-                <module>vfs</module>
-                <module>test</module>
-            </modules>
-        </profile>
-    </profiles>
+    <modules>
+        <module>core</module>
+        <module>external-provider-ui</module>
+        <module>vfs</module>
+        <module>modules-provider</module>
+        <module>test</module>
+    </modules>
 </project>

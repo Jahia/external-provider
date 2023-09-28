@@ -1,5 +1,5 @@
 {
-  "name": "@jahia/external-provider",
+  "name": "@jahia/external-provider-ui",
   "version": "4.7.0-SNAPSHOT",
   "husky": {
     "hooks": {

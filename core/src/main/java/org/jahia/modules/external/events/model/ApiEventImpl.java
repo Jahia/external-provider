@@ -17,7 +17,7 @@ package org.jahia.modules.external.events.model;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.ISO8601;
-import org.hibernate.validator.constraints.NotEmpty;
+//import org.hibernate.validator.constraints.NotEmpty;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.events.validation.ValidExternalData;
 import org.jahia.modules.external.events.validation.ValidISO8601;
@@ -56,7 +56,7 @@ public class ApiEventImpl implements ApiEvent {
     @Pattern(regexp = "NODE_ADDED|NODE_REMOVED|PROPERTY_ADDED|PROPERTY_REMOVED|PROPERTY_CHANGED|NODE_MOVED")
     private String type = "NODE_ADDED";
 
-    @NotEmpty
+//    @NotEmpty
     private String path;
     private String userID = StringUtils.EMPTY;
     private String identifier;

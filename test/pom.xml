@@ -105,6 +105,12 @@
         </dependency>
         <dependency>
             <groupId>org.jahia.modules</groupId>
+            <artifactId>external-provider-ui</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
             <artifactId>external-provider-vfs</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
