@@ -17,9 +17,9 @@
 <%--@elvariable id="mailSettings" type="org.jahia.services.mail.MailSettings"--%>
 <%--@elvariable id="flowRequestContext" type="org.springframework.webflow.execution.RequestContext"--%>
 <%--@elvariable id="vfsFactory" type="org.jahia.modules.external.vfs.factory.VFSMountPointFactory"--%>
-<template:addResources type="javascript" resources="admin/angular.min.js"/>
-<template:addResources type="javascript" resources="admin/app/folderPicker.js"/>
-<template:addResources type="css" resources="admin/app/folderPicker.css"/>
+<script src="/modules/external-provider-ui/javascript/admin/angular.min.js"></script>
+<script src="/modules/external-provider-ui/javascript/admin/app/folderPicker.js"></script>
+<link rel="stylesheet" href="/modules/external-provider-ui/css/admin/app/folderPicker.css" media="screen" type="text/css"/>
 
 <div class="page-header">
     <h2><fmt:message key="vfsFactory"/></h2>
@@ -48,7 +48,7 @@
                                 <form:input path="root" cssClass="form-control"/>
                             </div>
                             <div class="form-group">
-                                <jsp:include page="/modules/external-provider/angular/folderPicker.settingsBootstrap3GoogleMaterialStyle.jsp"/>
+                                <jsp:include page="/modules/external-provider-ui/angular/folderPicker.settingsBootstrap3GoogleMaterialStyle.jsp"/>
                             </div>
                         </div>
                     </fieldset>

@@ -44,6 +44,12 @@
             org.jahia.modules.external.admin.mount,
             org.jahia.modules.external.admin.mount.validator
         </export-package>
+        <jahia.modules.importPackage>
+            org.jahia.defaults.config.spring,
+            org.jahia.exceptions,
+            org.jahia.services,
+            javassist.util.proxy
+        </jahia.modules.importPackage>
         <jahia-module-signature>MCwCFAHYzvmVTgMoukrVhA5vwr8bsBdNAhQVZCHXRuTiNbKZHtiWluhP5LpsZQ==</jahia-module-signature>        <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <yarn.arguments>build:production</yarn.arguments>
         <sonar.sources>src/javascript,src/main/resources/javascript</sonar.sources>

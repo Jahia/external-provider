@@ -45,7 +45,8 @@
         <import-package>
             org.jahia.modules.external;version="[4.2,5)",
             org.jahia.defaults.config.spring,
-            org.apache.naming.java
+            org.apache.naming.java,
+            org.springframework.web.servlet.tags.form
         </import-package>
     </properties>
     <dependencies>
