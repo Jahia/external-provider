@@ -17,8 +17,8 @@ package org.jahia.modules.external.id;
 
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.hibernate.*;
 import org.jahia.modules.external.ExternalProviderInitializerService;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
 import org.jahia.services.content.JCRStoreProvider;
@@ -26,21 +26,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
+import javax.sql.DataSource;
+import java.io.IOException;
+import java.io.StringReader;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * {@inheritDoc}
- */
 public class ExternalProviderInitializerServiceImpl implements ExternalProviderInitializerService {
 
-    private static final String ID_CACHE_NAME = "ExternalIdentifierMapping";
+    private static String ID_CACHE_NAME = "ExternalIdentifierMapping";
 
-    private static final Logger logger = LoggerFactory.getLogger(ExternalProviderInitializerServiceImpl.class);
+    private static Logger logger = LoggerFactory.getLogger(ExternalProviderInitializerServiceImpl.class);
 
-    private SessionFactory hibernateSessionFactory;
+    private DataSource datasource;
 
     // The ID mapping cache, where a key is a <providerKey>-<externalId> and a value is
     // the corresponding internalId
@@ -59,55 +60,74 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         if (externalIds.isEmpty()) {
             return;
         }
-        StatelessSession session = null;
-        try {
-            session = hibernateSessionFactory.openStatelessSession();
-            session.beginTransaction();
-
-            // delete all
-            // First select mapping objects by external ID hashcodes, then only delete desired ones among them.
-            List<Integer> hashes = new LinkedList<Integer>();
-            for (String externalId : externalIds) {
-                hashes.add(externalId.hashCode());
-            }
-            List<?> results = session.createQuery("from UuidMapping where providerKey=:providerKey and externalIdHash in (:idHashes)")
-                    .setString("providerKey", providerKey).setParameterList("idHashes", hashes).setReadOnly(true).list();
-            for (Object result : results) {
-                UuidMapping uuidMapping = (UuidMapping) result;
-                if (externalIds.contains(uuidMapping.getExternalId())) {
-                    session.delete(uuidMapping);
-                }
-            }
-
-            if (includeDescendants) {
-                // delete descendants
-                Query selectStmt = session.createQuery("from UuidMapping where providerKey=:providerKey and externalId like :externalId").setString("providerKey", providerKey);
-                for (String externalId : externalIds) {
-                    selectStmt.setString("externalId", externalId + "/%");
-                    List<?> descendants = selectStmt.list();
-
-                    for (Object mapping : descendants) {
-                        UuidMapping m = (UuidMapping) mapping;
-                        session.delete(m);
-                        invalidateCache(m.getExternalId(), providerKey);
+// delete all
+        // First select mapping objects by external ID hashcodes, then only delete desired ones among them.
+        List<Integer> hashes = new LinkedList<Integer>();
+        for (String externalId : externalIds) {
+            hashes.add(externalId.hashCode());
+        }
+        List<String> invalidate = new ArrayList<String>();
+        String selectMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? AND externalIdHash in (?)";
+        String deleteMapping = "DELETE FROM jahia_external_mapping WHERE internalUuid=?";
+        try (Connection connection = datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(selectMapping)) {
+            connection.setAutoCommit(false);
+            statement.setString(1, providerKey);
+            Array sqlArray = connection.createArrayOf("INTEGER", hashes.toArray());
+            statement.setArray(2, sqlArray);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    String externalId = getExternalId(resultSet, 2);
+                    if (externalIds.contains(externalId)) {
+                        invalidate.add(externalId);
+                        String internalId = resultSet.getString(1);
+                        try (PreparedStatement updateExternalId = connection.prepareStatement(deleteMapping)) {
+                            updateExternalId.setString(1, internalId);
+                            updateExternalId.executeUpdate();
+                        }
                     }
                 }
+                connection.commit();
+            } catch (SQLException | IOException e) {
+                connection.rollback();
+                throw new RepositoryException(
+                        "Issue when updating mapping for external provider " + providerKey, e);
             }
+        } catch (SQLException e) {
+            throw new RepositoryException(
+                    "Issue when updating mapping for external provider " + providerKey, e);
+        }
+        if (includeDescendants) {
+            String selectDescendantMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? and externalId like ?";
+            try (Connection connection = datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(selectDescendantMapping)) {
+                connection.setAutoCommit(false);
+                for (String externalId : externalIds) {
+                    statement.setString(1, providerKey);
+                    statement.setString(2, externalId + "/%");
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        while (resultSet.next()) {
+                            String toBeDeletedExternalId = getExternalId(resultSet, 2);
+                            invalidate.add(externalId);
+                            String internalId = resultSet.getString(1);
+                            try (PreparedStatement updateExternalId = connection.prepareStatement(deleteMapping)) {
+                                updateExternalId.setString(1, internalId);
+                                updateExternalId.executeUpdate();
+                            }
 
-            session.getTransaction().commit();
-
-            for (String externalId : externalIds) {
-                invalidateCache(externalId, providerKey);
+                        }
+                        connection.commit();
+                    } catch (SQLException | IOException e) {
+                        connection.rollback();
+                        throw new RepositoryException(
+                                "Issue when updating mapping for external provider " + providerKey, e);
+                    }
+                }
+            } catch (SQLException e) {
+                throw new RepositoryException(
+                        "Issue when updating mapping for external provider " + providerKey, e);
             }
-        } catch (Exception e) {
-            if (session != null) {
-                session.getTransaction().rollback();
-            }
-            throw new RepositoryException(e);
-        } finally {
-            if (session != null) {
-                session.close();
-            }
+        }
+        for (String id : invalidate) {
+            this.invalidateCache(id, providerKey);
         }
     }
 
@@ -118,73 +138,54 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
     @Override
     public String getExternalIdentifier(String internalId) throws RepositoryException {
         String externalId = null;
-        StatelessSession session = null;
-        try {
-            session = getHibernateSessionFactory().openStatelessSession();
-            session.beginTransaction();
-            UuidMapping mapping = (UuidMapping) session.get(UuidMapping.class, internalId);
-            if (mapping != null) {
-                externalId = mapping.getExternalId();
+        String query = "SELECT externalId FROM jahia_external_mapping WHERE internalUuid=?";
+        try (Connection connection = this.datasource.getConnection(); PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setString(1, internalId);
+            try (ResultSet resultSet = pstmt.executeQuery()) {
+                while (resultSet.next()) {
+                    externalId = ExternalProviderInitializerServiceImpl.getExternalId(resultSet, 1);
+                }
+            } catch (SQLException | IOException e) {
+                throw new RepositoryException("Issue when obtaining external provider ID for internal identfier " + internalId, e);
             }
-            session.getTransaction().commit();
-        } catch (Exception e) {
-            if (session != null) {
-                session.getTransaction().rollback();
-            }
-            throw new RepositoryException(e);
-        } finally {
-            if (session != null) {
-                session.close();
-            }
+
+        } catch (SQLException e) {
+            throw new RepositoryException("Issue when obtaining external provider ID for internal identfier " + internalId, e);
         }
 
         return externalId;
     }
 
-    public SessionFactory getHibernateSessionFactory() {
-        return hibernateSessionFactory;
-    }
-
-    public Cache getIdentifierCache() {
-        return idCache;
+    private static String getExternalId(ResultSet resultSet, int columnIndex) throws IOException, SQLException {
+        return IOUtils.toString(resultSet.getClob(columnIndex).getCharacterStream());
     }
 
     @Override
     public String getInternalIdentifier(String externalId, String providerKey) throws RepositoryException {
 
-        String cacheKey = getCacheKey(externalId, providerKey);
-        Cache idCache = getIdentifierCache();
+        String cacheKey = this.getCacheKey(externalId, providerKey);
+        Cache idCache = this.idCache;
         Element cacheElement = idCache.get(cacheKey);
-        String uuid = cacheElement != null ? (String) cacheElement.getObjectValue() : null;
+        String uuid = null != cacheElement ? (String) cacheElement.getObjectValue() : null;
 
-        if (uuid == null) {
-            StatelessSession session = null;
-            try {
-
-                session = getHibernateSessionFactory().openStatelessSession();
-                session.beginTransaction();
-
-                // First select potentially multiple mapping objects by external ID hashcode, then find the desired one among the results.
-                List<?> results = session.createQuery("from UuidMapping where providerKey=:providerKey and externalIdHash=:idHash")
-                        .setString("providerKey", providerKey).setLong("idHash", externalId.hashCode()).setReadOnly(true).list();
-                for (Object result : results) {
-                    UuidMapping uuidMapping = (UuidMapping) result;
-                    if (uuidMapping.getExternalId().equals(externalId)) {
-                        uuid = uuidMapping.getInternalUuid();
+        if (null == uuid) {
+            String query = "SELECT externalId, internalUuid FROM jahia_external_mapping WHERE providerKey=? and externalIdHash=?";
+            try (Connection connection = this.datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
+                statement.setString(1, providerKey);
+                statement.setLong(2, externalId.hashCode());
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        String rowExternalId = ExternalProviderInitializerServiceImpl.getExternalId(resultSet, 1);
+                        if (rowExternalId.equals(externalId)) {
+                            uuid = resultSet.getString(2);
+                        }
                         idCache.put(new Element(cacheKey, uuid, true));
                     }
+                } catch (SQLException | IOException e) {
+                    throw new RepositoryException("Issue when obtaining internal identifier for provider" + providerKey, e);
                 }
-
-                session.getTransaction().commit();
-            } catch (Exception e) {
-                if (session != null) {
-                    session.getTransaction().rollback();
-                }
-                throw new RepositoryException(e);
-            } finally {
-                if (session != null) {
-                    session.close();
-                }
+            } catch (SQLException e) {
+                throw new RepositoryException("Issue when obtaining internal identifier for provider" + providerKey, e);
             }
         }
 
@@ -193,42 +194,39 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
     @Override
     public Integer getProviderId(String providerKey) throws RepositoryException {
-        ExternalProviderID providerId = null;
-        SessionFactory hibernateSession = getHibernateSessionFactory();
-        Session session = null;
-        try {
-            session = hibernateSession.openSession();
-            List<?> list = session.createQuery("from ExternalProviderID where providerKey=:providerKey").setString("providerKey", providerKey)
-                    .setReadOnly(true).setFlushMode(FlushMode.MANUAL).list();
-            if (list.size() > 0) {
-                providerId = (ExternalProviderID) list.get(0);
-            } else {
-                // not registered yet -> generate ID and store it
-                providerId = new ExternalProviderID();
-                providerId.setProviderKey(providerKey);
-                try {
-                    session.beginTransaction();
-                    session.save(providerId);
-                    session.getTransaction().commit();
-                } catch (Exception e) {
-                    session.getTransaction().rollback();
-                    throw new RepositoryException("Issue when storing external provider ID for provider " + providerId,
-                            e);
+        try (Connection connection = this.datasource.getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT id FROM jahia_external_provider_id WHERE providerKey=?")) {
+            statement.setString(1, providerKey);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    return Integer.valueOf(resultSet.getInt(1));
                 }
             }
-        } catch (HibernateException e) {
-            throw new RepositoryException("Issue when obtaining external provider ID for provider " + providerId, e);
-        } finally {
-            if (session != null) {
-                session.close();
-            }
+        } catch (SQLException e) {
+            throw new RepositoryException("Issue when obtaining provider id identifier for provider" + providerKey, e);
         }
 
-        return providerId.getId();
+        // We did not find the provider key in the DB so we will create it
+        String insertNewProvider = "INSERT INTO jahia_external_provider_id(providerKey) VALUES (?)";
+        try (Connection connection = this.datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(insertNewProvider, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, providerKey);
+            int rowAffected = statement.executeUpdate();
+            if (1 == rowAffected) {
+                try (ResultSet resultSet = statement.getGeneratedKeys()) {
+                    if (resultSet.next()) {
+                        return Integer.valueOf(resultSet.getInt(1));
+                    }
+                } catch (SQLException e) {
+                    throw new RepositoryException("Issue when reading provider id identifier for provider" + providerKey, e);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RepositoryException("Issue when creating provider id identifier for provider" + providerKey, e);
+        }
+        throw new RepositoryException("Could not read or create provider id for provider " + providerKey);
     }
 
     private void invalidateCache(String externalId, String providerKey) {
-        getIdentifierCache().remove(getCacheKey(externalId, providerKey));
+        idCache.remove(this.getCacheKey(externalId, providerKey));
     }
 
     @Override
@@ -238,122 +236,127 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         uuidMapping.setExternalId(externalId);
         uuidMapping.setProviderKey(providerKey);
         uuidMapping.setInternalUuid(providerId + "-" + StringUtils.substringAfter(UUID.randomUUID().toString(), "-"));
-        org.hibernate.Session session = null;
-        Thread currentThread = Thread.currentThread();
-        ClassLoader previousClassLoader = currentThread.getContextClassLoader();
-        currentThread.setContextClassLoader(this.getClass().getClassLoader());
-        try {
-            session = getHibernateSessionFactory().openSession();
-            session.beginTransaction();
-            session.save(uuidMapping);
-            session.getTransaction().commit();
 
-            // cache it
-            getIdentifierCache().put(new Element(getCacheKey(externalId, providerKey), uuidMapping.getInternalUuid(), true));
-        } catch (Exception e) {
-            if (session != null) {
-                session.getTransaction().rollback();
+        String insertNewMapping = "INSERT INTO jahia_external_mapping(providerKey, externalId, externalIdHash, internalUuid) values (?,?,?,?)";
+        try (Connection connection = datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(insertNewMapping)) {
+            statement.setString(1, uuidMapping.getProviderKey());
+            statement.setClob(2, new StringReader(externalId));
+            statement.setLong(3, uuidMapping.getExternalIdHash());
+            statement.setString(4, uuidMapping.getInternalUuid());
+            int rowAffected = statement.executeUpdate();
+            if (rowAffected == 1) {
+                return uuidMapping.getInternalUuid();
             }
+        } catch (SQLException e) {
             throw new RepositoryException("Error storing mapping for external node " + externalId + " [provider: "
                     + providerKey + "]", e);
-        } finally {
-            if (session != null) {
-                session.close();
-            }
-            currentThread.setContextClassLoader(previousClassLoader);
         }
-
-        return uuidMapping.getInternalUuid();
+        throw new RepositoryException("Error storing mapping for external node " + externalId + " [provider: "
+                + providerKey + "]");
     }
 
     @Override
     public void removeProvider(String providerKey) throws RepositoryException {
-        SessionFactory hibernateSession = getHibernateSessionFactory();
-        StatelessSession session = null;
-        try {
-            session = hibernateSession.openStatelessSession();
-            session.beginTransaction();
-            int deletedCount = session.createQuery("delete from ExternalProviderID where providerKey=:providerKey")
-                    .setString("providerKey", providerKey).executeUpdate();
+        String deleteExternalProvider = "DELETE FROM jahia_external_provider_id where providerKey=?";
+        String deleteMappings = "DELETE FROM jahia_external_mapping where providerKey=?";
+        try (Connection connection = datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(deleteExternalProvider)) {
+            statement.setString(1, providerKey);
+            int deletedCount = statement.executeUpdate();
             if (deletedCount > 0) {
-                logger.info("Deleted external provider entry for key {}", providerKey);
-                deletedCount = session.createQuery("delete from UuidMapping where providerKey=:providerKey")
-                        .setString("providerKey", providerKey).executeUpdate();
+                logger.info("Deleted {} external provider entry for key {}", deletedCount, providerKey);
+                PreparedStatement statement1 = connection.prepareStatement(deleteMappings);
+                statement1.setString(1, providerKey);
+                deletedCount = statement1.executeUpdate();
                 logger.info("Deleted {} identifier mapping entries for external provider with key {}", deletedCount,
                         providerKey);
             } else {
                 logger.info("No external provider entry found for key {}", providerKey);
             }
-            session.getTransaction().commit();
-        } catch (Exception e) {
-            if (session != null) {
-                session.getTransaction().rollback();
-            }
+        } catch (SQLException e) {
             throw new RepositoryException(
-                    "Issue when removing external provider entry and identifier mappings for provider key "
-                            + providerKey, e);
-        } finally {
-            if (session != null) {
-                session.close();
-            }
+                    "Issue when removing external provider entry and identifier mappings for provider key " + providerKey, e);
         }
     }
 
-    public void setHibernateSessionFactory(SessionFactory hibernateSession) {
-        this.hibernateSessionFactory = hibernateSession;
+    public void setDatasource(DataSource datasource) {
+        this.datasource = datasource;
     }
 
     public void setCacheProvider(EhCacheProvider cacheProvider) {
-        idCache = cacheProvider.getCacheManager().getCache(ID_CACHE_NAME);
-        if (idCache == null) {
-            cacheProvider.getCacheManager().addCache(ID_CACHE_NAME);
-            idCache = cacheProvider.getCacheManager().getCache(ID_CACHE_NAME);
+        idCache = cacheProvider.getCacheManager().getCache(ExternalProviderInitializerServiceImpl.ID_CACHE_NAME);
+        if (null == idCache) {
+            cacheProvider.getCacheManager().addCache(ExternalProviderInitializerServiceImpl.ID_CACHE_NAME);
+            idCache = cacheProvider.getCacheManager().getCache(ExternalProviderInitializerServiceImpl.ID_CACHE_NAME);
         }
     }
 
     @Override
     public void updateExternalIdentifier(String oldExternalId, String newExternalId, String providerKey,
                                          boolean includeDescendants) throws RepositoryException {
-        Session session = null;
-        try {
-            List<String> invalidate = new ArrayList<String>();
-            session = getHibernateSessionFactory().openSession();
-            session.beginTransaction();
-
-            // First select potentially multiple mapping objects by external ID hashcode, then update only the desired one within the results.
-            List<?> results = session.createQuery("from UuidMapping where providerKey=:providerKey and externalIdHash=:idHash")
-                    .setString("providerKey", providerKey).setLong("idHash", oldExternalId.hashCode()).list();
-            for (Object result : results) {
-                UuidMapping uuidMapping = (UuidMapping) result;
-                if (uuidMapping.getExternalId().equals(oldExternalId)) {
-                    uuidMapping.setExternalId(newExternalId);
-                    invalidate.add(oldExternalId);
+        List<String> invalidate = new ArrayList<String>();
+        String selectMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? AND externalIdHash=?";
+        String updateMapping = "UPDATE jahia_external_mapping SET externalId=?, externalIdHash=? WHERE internalUuid=?";
+        try (Connection connection = datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(selectMapping)) {
+            connection.setAutoCommit(false);
+            statement.setString(1, providerKey);
+            statement.setInt(2, oldExternalId.hashCode());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    String externalId = getExternalId(resultSet, 2);
+                    if (externalId.equals(oldExternalId)) {
+                        invalidate.add(oldExternalId);
+                        String internalId = resultSet.getString(1);
+                        try (PreparedStatement updateExternalId = connection.prepareStatement(updateMapping)) {
+                            updateExternalId.setClob(1, new StringReader(newExternalId));
+                            updateExternalId.setLong(2, newExternalId.hashCode());
+                            updateExternalId.setString(3, internalId);
+                            updateExternalId.executeUpdate();
+                        }
+                    }
                 }
+                connection.commit();
+            } catch (SQLException | IOException e) {
+                connection.rollback();
+                throw new RepositoryException(
+                        "Issue when updating mapping for external provider " + providerKey, e);
             }
+        } catch (SQLException e) {
+            throw new RepositoryException(
+                    "Issue when updating mapping for external provider " + providerKey, e);
+        }
+        if (includeDescendants) {
+            String selectDescendantMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? and externalId like ?";
+            try (Connection connection = datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(selectDescendantMapping)) {
+                connection.setAutoCommit(false);
+                statement.setString(1, providerKey);
+                statement.setString(2, oldExternalId + "/%");
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        String externalId = getExternalId(resultSet, 2);
+                        invalidate.add(externalId);
+                        String internalId = resultSet.getString(1);
+                        try (PreparedStatement updateExternalId = connection.prepareStatement(updateMapping)) {
+                            String updatedExternalId = newExternalId + StringUtils.substringAfter(externalId, oldExternalId);
+                            updateExternalId.setClob(1, new StringReader(updatedExternalId));
+                            updateExternalId.setLong(2, updatedExternalId.hashCode());
+                            updateExternalId.setString(3, internalId);
+                            updateExternalId.executeUpdate();
+                        }
 
-            if (includeDescendants) {
-                // update descendants
-                List<?> descendants = session.createQuery("from UuidMapping where providerKey=:providerKey and externalId like :externalId")
-                        .setString("providerKey", providerKey).setString("externalId", oldExternalId + "/%").list();
-                for (Object mapping : descendants) {
-                    UuidMapping m = (UuidMapping) mapping;
-                    m.setExternalId(newExternalId + StringUtils.substringAfter(m.getExternalId(), oldExternalId));
-                    invalidate.add(m.getExternalId());
+                    }
+                    connection.commit();
+                } catch (SQLException | IOException e) {
+                    connection.rollback();
+                    throw new RepositoryException(
+                            "Issue when updating mapping for external provider " + providerKey, e);
                 }
+            } catch (SQLException e) {
+                throw new RepositoryException(
+                        "Issue when updating mapping for external provider " + providerKey, e);
             }
-            session.getTransaction().commit();
-            for (String id : invalidate) {
-                invalidateCache(id, providerKey);
-            }
-        } catch (Exception e) {
-            if (session != null) {
-                session.getTransaction().rollback();
-            }
-            throw new RepositoryException(e);
-        } finally {
-            if (session != null) {
-                session.close();
-            }
+        }
+        for (String id : invalidate) {
+            this.invalidateCache(id, providerKey);
         }
     }
 
@@ -371,16 +374,16 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
     @Override
     public List<String> getOverridableItemsForLocks() {
-        return overridableItemsForLocks;
+        return this.overridableItemsForLocks;
     }
 
     @Override
     public List<String> getOverridableItemsForACLs() {
-        return overridableItemsForACLs;
+        return this.overridableItemsForACLs;
     }
 
     @Override
     public JCRStoreProvider getExtensionProvider() {
-        return extensionProvider;
+        return this.extensionProvider;
     }
 }

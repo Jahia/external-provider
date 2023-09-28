@@ -17,7 +17,6 @@ package org.jahia.modules.external.id;
 
 import javax.persistence.*;
 
-import org.hibernate.annotations.Index;
 
 /**
  * Map that link valid uuid and (@link org.jahia.services.content.impl.external.ExternalData} id
@@ -44,7 +43,6 @@ public class UuidMapping {
     }
 
     @Column(nullable = false)
-    @Index(name = "jahia_external_mapping_index1")
     public String getProviderKey() {
         return providerKey;
     }
@@ -60,7 +58,6 @@ public class UuidMapping {
     }
 
     @Column()
-    @Index(name = "jahia_external_mapping_index1")
     public int getExternalIdHash() {
         return externalId != null ? externalId.hashCode() : 0;
     }

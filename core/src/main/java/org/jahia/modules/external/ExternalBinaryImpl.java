@@ -15,7 +15,7 @@
  */
 package org.jahia.modules.external;
 
-import org.apache.tika.io.IOUtils;
+import org.apache.commons.io.IOUtils;
 
 import javax.jcr.Binary;
 import javax.jcr.RepositoryException;

@@ -15,8 +15,6 @@
  */
 package org.jahia.modules.external.id;
 
-import org.hibernate.annotations.Index;
-
 import javax.persistence.*;
 
 /**
@@ -44,7 +42,6 @@ public class ExternalProviderID {
     }
 
     @Column(nullable = false)
-    @Index(name = "jahia_external_provider_id_ix1")
     public String getProviderKey() {
         return providerKey;
     }
