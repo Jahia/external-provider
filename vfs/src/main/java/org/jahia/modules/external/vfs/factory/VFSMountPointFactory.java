@@ -15,7 +15,6 @@
  */
 package org.jahia.modules.external.vfs.factory;
 
-import org.hibernate.validator.constraints.NotEmpty;
 import org.jahia.modules.external.admin.mount.AbstractMountPointFactory;
 import org.jahia.modules.external.admin.mount.validator.LocalJCRFolder;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -30,11 +29,9 @@ import java.io.Serializable;
 public class VFSMountPointFactory extends AbstractMountPointFactory implements Serializable {
     private static final long serialVersionUID = -7193843633565652369L;
 
-    @NotEmpty
     private String name;
     @LocalJCRFolder
     private String localPath;
-    @NotEmpty
     private String root;
 
     public VFSMountPointFactory() {
