@@ -20,7 +20,6 @@ import org.jahia.services.content.JCRStoreService;
 import org.jahia.services.sites.JahiaSitesService;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUserManagerService;
-import org.osgi.service.component.annotations.Reference;
 
 public class ExternalContentStoreProviderFactoryImpl implements ExternalContentStoreProviderFactory {
 
@@ -32,32 +31,26 @@ public class ExternalContentStoreProviderFactoryImpl implements ExternalContentS
 
     private ExternalProviderInitializerService externalProviderInitializerService;
 
-    @Reference
     public void setUserManagerService(JahiaUserManagerService userManagerService) {
         this.userManagerService = userManagerService;
     }
 
-    @Reference
     public void setGroupManagerService(JahiaGroupManagerService groupManagerService) {
         this.groupManagerService = groupManagerService;
     }
 
-    @Reference
     public void setSitesService(JahiaSitesService sitesService) {
         this.sitesService = sitesService;
     }
 
-    @Reference
     public void setJcrStoreService(JCRStoreService jcrStoreService) {
         this.jcrStoreService = jcrStoreService;
     }
 
-    @Reference
     public void setSessionFactory(JCRSessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
     }
 
-    @Reference
     public void setExternalProviderInitializerService(ExternalProviderInitializerService externalProviderInitializerService) {
         this.externalProviderInitializerService = externalProviderInitializerService;
     }
