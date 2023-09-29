@@ -21,6 +21,7 @@ import org.jahia.services.content.JCRNodeWrapper;
 
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
+import javax.validation.constraints.NotEmpty;
 import java.io.Serializable;
 
 /**
@@ -29,9 +30,11 @@ import java.io.Serializable;
 public class VFSMountPointFactory extends AbstractMountPointFactory implements Serializable {
     private static final long serialVersionUID = -7193843633565652369L;
 
+    @NotEmpty
     private String name;
     @LocalJCRFolder
     private String localPath;
+    @NotEmpty
     private String root;
 
     public VFSMountPointFactory() {
