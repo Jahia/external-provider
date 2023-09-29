@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class ExternalProviderInitializerServiceImpl implements ExternalProviderInitializerService {
 
@@ -60,20 +61,26 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         if (externalIds.isEmpty()) {
             return;
         }
-// delete all
+        if(externalIds.size() > 1000 ) {
+            throw new RepositoryException("External provider can delete only 1000 items at a time");
+        }
+        // delete all
         // First select mapping objects by external ID hashcodes, then only delete desired ones among them.
-        List<Integer> hashes = new LinkedList<Integer>();
+        List<Integer> hashes = new LinkedList<>();
         for (String externalId : externalIds) {
             hashes.add(externalId.hashCode());
         }
         List<String> invalidate = new ArrayList<String>();
-        String selectMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? AND externalIdHash in (?)";
+        String selectMappingTemplate = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? AND externalIdHash in (:listPlaceHolder)";
         String deleteMapping = "DELETE FROM jahia_external_mapping WHERE internalUuid=?";
+        String selectMapping = selectMappingTemplate.replace(":listPlaceHolder", hashes.stream().map(integer -> "?").collect(Collectors.joining(",")));
         try (Connection connection = datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(selectMapping)) {
             connection.setAutoCommit(false);
             statement.setString(1, providerKey);
-            Array sqlArray = connection.createArrayOf("INTEGER", hashes.toArray());
-            statement.setArray(2, sqlArray);
+            int columnIndex = 2;
+            for (Integer hash : hashes) {
+                statement.setInt(columnIndex++,hash);
+            }
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     String externalId = getExternalId(resultSet, 2);
@@ -88,13 +95,15 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                 }
                 connection.commit();
             } catch (SQLException | IOException e) {
+                logger.error("Issue when deleting mapping for external provider {}", providerKey, e);
                 connection.rollback();
                 throw new RepositoryException(
-                        "Issue when updating mapping for external provider " + providerKey, e);
+                        "Issue when deleting mapping for external provider " + providerKey, e);
             }
         } catch (SQLException e) {
+            logger.error("Issue when deleting mapping for external provider {}", providerKey, e);
             throw new RepositoryException(
-                    "Issue when updating mapping for external provider " + providerKey, e);
+                    "Issue when deleting mapping for external provider " + providerKey, e);
         }
         if (includeDescendants) {
             String selectDescendantMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? and externalId like ?";
@@ -116,14 +125,16 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                         }
                         connection.commit();
                     } catch (SQLException | IOException e) {
+                        logger.error("Issue when deleting mapping for external provider {}", providerKey, e);
                         connection.rollback();
                         throw new RepositoryException(
-                                "Issue when updating mapping for external provider " + providerKey, e);
+                                "Issue when deleting mapping for external provider " + providerKey, e);
                     }
                 }
             } catch (SQLException e) {
+                logger.error("Issue when deleting mapping for external provider {}", providerKey, e);
                 throw new RepositoryException(
-                        "Issue when updating mapping for external provider " + providerKey, e);
+                        "Issue when deleting mapping for external provider " + providerKey, e);
             }
         }
         for (String id : invalidate) {
@@ -315,11 +326,13 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                 }
                 connection.commit();
             } catch (SQLException | IOException e) {
+                logger.error("Issue when updating mapping for external provider {}", providerKey, e);
                 connection.rollback();
                 throw new RepositoryException(
                         "Issue when updating mapping for external provider " + providerKey, e);
             }
         } catch (SQLException e) {
+            logger.error("Issue when updating mapping for external provider {}", providerKey, e);
             throw new RepositoryException(
                     "Issue when updating mapping for external provider " + providerKey, e);
         }
@@ -346,10 +359,12 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                     connection.commit();
                 } catch (SQLException | IOException e) {
                     connection.rollback();
+                    logger.error("Issue when updating mapping for external provider {}", providerKey, e);
                     throw new RepositoryException(
                             "Issue when updating mapping for external provider " + providerKey, e);
                 }
             } catch (SQLException e) {
+                logger.error("Issue when updating mapping for external provider {}", providerKey, e);
                 throw new RepositoryException(
                         "Issue when updating mapping for external provider " + providerKey, e);
             }
