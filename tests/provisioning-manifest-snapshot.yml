@@ -1,6 +1,7 @@
 - installBundle:
   - 'mvn:org.jahia.modules/jcontent'
   - 'mvn:org.jahia.modules/external-provider'
+  - 'mvn:org.jahia.modules/external-provider-ui'
   - 'mvn:org.jahia.modules/external-provider-vfs'
   autoStart: true
   uninstallPreviousVersion: true
