@@ -1,5 +1,5 @@
 {
-  "name": "@jahia/external-provider",
+  "name": "@jahia/external-provider-ui",
   "version": "4.7.0-SNAPSHOT",
   "husky": {
     "hooks": {
@@ -35,7 +35,8 @@
     "prop-types": "^15.7.2",
     "react": "^16.10.2",
     "react-dom": "^16.10.2",
-    "react-i18next": "^11.2.2"
+    "react-i18next": "^11.2.2",
+    "sass": "^1.68.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.6.2",
@@ -49,20 +50,17 @@
     "@babel/runtime": "^7.5.4",
     "@cyclonedx/webpack-plugin": "^3.6.1",
     "@jahia/eslint-config": "^1.1.0",
+    "@jahia/webpack-config": "^1.1.0",
     "babel-jest": "^24.9.0",
     "babel-loader": "^8.0.6",
     "clean-webpack-plugin": "^4.0.0",
     "copy-webpack-plugin": "^9.0.1",
-    "css-loader": "^3.2.0",
     "eslint": "^6.8.0",
     "eslint-loader": "^3.0.2",
     "eslint-plugin-json": "^2.0.1",
     "husky": "^3.0.9",
-    "node-sass": "^6.0.1",
     "path": "^0.12.7",
     "rimraf": "^3.0.0",
-    "sass-loader": "^12.1.0",
-    "style-loader": "^1.0.0",
     "sync-pom-version-to-package": "^1.6.1",
     "webpack": "^5.88.2",
     "webpack-bundle-analyzer": "^4.4.2",

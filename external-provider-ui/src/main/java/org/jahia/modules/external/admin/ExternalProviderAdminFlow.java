@@ -19,6 +19,7 @@ import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.jahia.modules.external.ExternalDataSource;
 import org.jahia.modules.external.ExternalProviderInitializerService;
 import org.jahia.modules.external.ExternalQuery;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.content.JCRStoreService;
 import org.jahia.services.content.ProviderFactory;
@@ -40,12 +41,6 @@ public class ExternalProviderAdminFlow implements Serializable {
     private static final Logger logger = LoggerFactory.getLogger(ExternalProviderAdminFlow.class);
 
     private transient JCRStoreService jcrStoreService;
-    private transient ExternalProviderInitializerService initializationService;
-
-    @Autowired
-    public void setInitializationService(ExternalProviderInitializerService initializationService) {
-        this.initializationService = initializationService;
-    }
 
     @Autowired
     public void setJcrStoreService(JCRStoreService jcrStoreService) {
@@ -62,6 +57,7 @@ public class ExternalProviderAdminFlow implements Serializable {
                 ExternalContentStoreProvider jcrStoreProvider = (ExternalContentStoreProvider) entry.getValue();
                 MountInfo m = new MountInfo();
                 m.setKey(jcrStoreProvider.getKey());
+                ExternalProviderInitializerService initializationService = BundleUtils.getOsgiService(ExternalProviderInitializerService.class.getName());
                 m.setId(initializationService.getProviderId(jcrStoreProvider.getKey()));
                 m.setMountPoint(entry.getKey());
                 final ExternalDataSource dataSource = jcrStoreProvider.getDataSource();

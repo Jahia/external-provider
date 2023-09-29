@@ -47,7 +47,7 @@ import java.util.*;
 public class MountPointsManagementFlowHandler implements Serializable {
     private static final long serialVersionUID = 1436197019769187454L;
     private static Logger logger = LoggerFactory.getLogger(MountPointsManagementFlowHandler.class);
-    private static final String BUNDLE = "resources.JahiaExternalProvider";
+    private static final String BUNDLE = "resources.JahiaExternalProviderUI";
 
     public enum Actions {
         MOUNT, UNMOUNT, DELETE

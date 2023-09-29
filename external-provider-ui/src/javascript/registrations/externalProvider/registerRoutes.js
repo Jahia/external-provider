@@ -5,7 +5,7 @@ export const registerRoutes = function () {
         targets: ['administration-server-systemComponents:30'],
         requiredPermission: 'adminRoles',
         icon: null,
-        label: 'external-provider:externalProvider.label',
+        label: 'external-provider-ui:externalProvider.label',
         isSelectable: true,
         iframeUrl: window.contextJsParameters.contextPath + '/cms/adminframe/default/en/settings.external-provider.html?redirect=false'
     });
