@@ -5,14 +5,7 @@
 <jnt = 'http://www.jahia.org/jahia/nt/1.0'>
 <jmix = 'http://www.jahia.org/jahia/mix/1.0'>
 
-
-
-// extension nodes.
-
-// These types are defined in Jahia
-// [jmix:hasExternalProviderExtension] mixin
-//  + * (jnt:externalProviderExtension)
-// [jnt:externalProviderExtension] > nt:unstructured, jmix:lockable
+[jnt:serverSettingsExternalProviders] > jnt:content, jmix:siteComponent, mix:title, jmix:studioOnly
 
 [jnt:serverSettingsManageMountPoints] > jnt:content, jmix:siteComponent, mix:title, jmix:studioOnly
 

@@ -1,4 +1,7 @@
 {
+  "externalProvider": {
+    "label": "Gestion des EDP"
+  },
   "mountpoints": {
     "label": "Points de montage"
   }

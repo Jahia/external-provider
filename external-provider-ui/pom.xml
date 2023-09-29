@@ -45,6 +45,7 @@
             org.jahia.modules.external.admin.mount.validator
         </export-package>
         <jahia.modules.importPackage>
+            org.jahia.modules.external,
             org.jahia.defaults.config.spring,
             org.jahia.exceptions,
             org.jahia.services,
@@ -78,6 +79,15 @@
             </properties>
         </profile>
     </profiles>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>external-provider</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <resources>
