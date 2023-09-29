@@ -4,7 +4,8 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ModuleFederationPlugin = require("webpack/lib/container/ModuleFederationPlugin");
-const shared = require("./webpack.shared")
+const getModuleFederationConfig = require('@jahia/webpack-config/getModuleFederationConfig');
+const packageJson = require('./package.json');
 const {CycloneDxWebpackPlugin} = require('@cyclonedx/webpack-plugin');
 
 /** @type {import('@cyclonedx/webpack-plugin').CycloneDxWebpackPluginOptions} */
@@ -21,12 +22,12 @@ module.exports = (env, argv) => {
         },
         output: {
             path: path.resolve(__dirname, 'src/main/resources/javascript/apps/'),
-            filename: 'edp.bundle.js',
-            chunkFilename: '[name].edp.[chunkhash:6].js'
+            filename: 'edpui.bundle.js',
+            chunkFilename: '[name].edpui.[chunkhash:6].js'
         },
         resolve: {
             mainFields: ['module', 'main'],
-            extensions: ['.mjs', '.js', '.jsx', 'json']
+            extensions: ['.mjs', '.js', '.jsx', '.json']
         },
         module: {
             rules: [
@@ -49,59 +50,15 @@ module.exports = (env, argv) => {
                             ]
                         }
                     }
-                },
-                  {
-                    test: /\.css$/,
-                    sideEffects: true,
-                    use: ['style-loader', 'css-loader']
-                },
-                {
-                    test: /\.scss$/i,
-                    sideEffects: true,
-                    use: [
-                        'style-loader',
-                        // Translates CSS into CommonJS
-                        {
-                            loader: 'css-loader',
-                            options: {
-                                modules: {
-                                    mode: 'local'
-                                }
-                            }
-                        },
-                        // Compiles Sass to CSS
-                        'sass-loader'
-                    ]
-                },
-                {
-                    test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
-                    use: [{
-                        loader: 'file-loader',
-                        options: {
-                            name: '[name].[ext]',
-                            outputPath: 'fonts/'
-                        }
-                    }]
                 }
             ]
         },
         plugins: [
-            new ModuleFederationPlugin({
-                name: "edp",
-                library: { type: "assign", name: "appShell.remotes.edp" },
-                filename: "remoteEntry.js",
-                exposes: {
-                    './init': './src/javascript/init',
-                },
-                remotes: {
-                    '@jahia/app-shell': 'appShellRemote',
-                },
-                shared
-            }),
+            new ModuleFederationPlugin(getModuleFederationConfig(packageJson)),
             new CleanWebpackPlugin({verbose: false}),
-            new CopyWebpackPlugin({patterns: [{from: './package.json', to: ''}]}),
+            new CopyWebpackPlugin({patterns: [{from: './package.json', to: ''}]})
         ],
-        mode: argv.mode
+        mode: 'development'
     };
 
     config.devtool = (argv.mode === 'production') ? 'source-map' : 'eval-source-map';
