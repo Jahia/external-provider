@@ -56,6 +56,7 @@ public class ApiEventImpl implements ApiEvent {
     @Pattern(regexp = "NODE_ADDED|NODE_REMOVED|PROPERTY_ADDED|PROPERTY_REMOVED|PROPERTY_CHANGED|NODE_MOVED")
     private String type = "NODE_ADDED";
 
+    @NotEmpty
     private String path;
     private String userID = StringUtils.EMPTY;
     private String identifier;

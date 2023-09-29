@@ -39,7 +39,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
     private static String ID_CACHE_NAME = "ExternalIdentifierMapping";
 
-    private static Logger logger = LoggerFactory.getLogger(ExternalProviderInitializerServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExternalProviderInitializerServiceImpl.class);
 
     private DataSource datasource;
 
@@ -80,9 +80,9 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                     if (externalIds.contains(externalId)) {
                         invalidate.add(externalId);
                         String internalId = resultSet.getString(1);
-                        try (PreparedStatement updateExternalId = connection.prepareStatement(deleteMapping)) {
-                            updateExternalId.setString(1, internalId);
-                            updateExternalId.executeUpdate();
+                        try (PreparedStatement deleteExternalId = connection.prepareStatement(deleteMapping)) {
+                            deleteExternalId.setString(1, internalId);
+                            deleteExternalId.executeUpdate();
                         }
                     }
                 }
@@ -106,11 +106,11 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                     try (ResultSet resultSet = statement.executeQuery()) {
                         while (resultSet.next()) {
                             String toBeDeletedExternalId = getExternalId(resultSet, 2);
-                            invalidate.add(externalId);
+                            invalidate.add(toBeDeletedExternalId);
                             String internalId = resultSet.getString(1);
-                            try (PreparedStatement updateExternalId = connection.prepareStatement(deleteMapping)) {
-                                updateExternalId.setString(1, internalId);
-                                updateExternalId.executeUpdate();
+                            try (PreparedStatement deleteExternalId = connection.prepareStatement(deleteMapping)) {
+                                deleteExternalId.setString(1, internalId);
+                                deleteExternalId.executeUpdate();
                             }
 
                         }
@@ -163,8 +163,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
     @Override
     public String getInternalIdentifier(String externalId, String providerKey) throws RepositoryException {
 
-        String cacheKey = this.getCacheKey(externalId, providerKey);
-        Cache idCache = this.idCache;
+        String cacheKey = getCacheKey(externalId, providerKey);
         Element cacheElement = idCache.get(cacheKey);
         String uuid = null != cacheElement ? (String) cacheElement.getObjectValue() : null;
 
@@ -226,7 +225,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
     }
 
     private void invalidateCache(String externalId, String providerKey) {
-        idCache.remove(this.getCacheKey(externalId, providerKey));
+        idCache.remove(getCacheKey(externalId, providerKey));
     }
 
     @Override
