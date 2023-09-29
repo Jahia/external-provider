@@ -15,13 +15,13 @@
  */
 package org.jahia.modules.external.vfs.factory;
 
-import org.hibernate.validator.constraints.NotEmpty;
 import org.jahia.modules.external.admin.mount.AbstractMountPointFactory;
 import org.jahia.modules.external.admin.mount.validator.LocalJCRFolder;
 import org.jahia.services.content.JCRNodeWrapper;
 
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
+import javax.validation.constraints.NotEmpty;
 import java.io.Serializable;
 
 /**

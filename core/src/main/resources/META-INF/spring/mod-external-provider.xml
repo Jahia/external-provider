@@ -6,8 +6,10 @@
     xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
                         http://www.eclipse.org/gemini/blueprint/schema/blueprint http://www.eclipse.org/gemini/blueprint/schema/blueprint/gemini-blueprint.xsd">
 
+    <osgi:reference id="osgiDS" interface="javax.sql.DataSource" filter="(osgi.jndi.service.name=jdbc/jahia)"/>
+
     <bean id="ProviderInitializerService" class="org.jahia.modules.external.id.ExternalProviderInitializerServiceImpl">
-        <property name="hibernateSessionFactory" ref="moduleSessionFactory"/>
+        <property name="datasource" ref="osgiDS"/>
         <property name="cacheProvider" ref="ehCacheProvider"/>
         <property name="extensionProvider" ref="DefaulJCRStoreProvider"/>
         <property name="overridableItemsForLocks">
@@ -63,4 +65,5 @@
         <property name="externalProviderInitializerService" ref="ProviderInitializerService" />
     </bean>
     <osgi:service id="externalContentStoreProviderFactoryOsgi" ref="externalContentStoreProviderFactory" interface="org.jahia.modules.external.ExternalContentStoreProviderFactory"/>
+
 </beans>
