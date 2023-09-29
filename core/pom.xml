@@ -57,7 +57,6 @@
         <jersey.version>2.6</jersey.version>
         <jahia-module-signature>MCwCFGosEegORmwhlgilo81/UkykjfQ/AhQ7KoOof501CFZyfzZoJhfPbWXPUg==</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
-        <sonar.sources>src/javascript,src/main/resources/javascript</sonar.sources>
     </properties>
     <repositories>
         <repository>
