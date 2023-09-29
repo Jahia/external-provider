@@ -22,8 +22,8 @@ module.exports = (env, argv) => {
         },
         output: {
             path: path.resolve(__dirname, 'src/main/resources/javascript/apps/'),
-            filename: 'edp.bundle.js',
-            chunkFilename: '[name].edp.[chunkhash:6].js'
+            filename: 'edpui.bundle.js',
+            chunkFilename: '[name].edpui.[chunkhash:6].js'
         },
         resolve: {
             mainFields: ['module', 'main'],
