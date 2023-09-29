@@ -27,7 +27,7 @@ jobs:
     needs: update-signature
     runs-on: ubuntu-latest
     container:
-      image: jahia/cimg-mvn-cache:ga_cimg_openjdk_8.0.312-node
+      image: jahia/cimg-mvn-cache:ga_cimg_openjdk_11.0.20-node
       credentials:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -38,13 +38,13 @@ jobs:
           nexus_username: ${{ secrets.NEXUS_USERNAME }}
           nexus_password: ${{ secrets.NEXUS_PASSWORD }}
           module_id: external-provider
-          
+
   sbom:
     name: SBOM processing
     needs: build
     runs-on: ubuntu-latest
     container:
-      image: cyclonedx/cyclonedx-cli:0.24.2   
+      image: cyclonedx/cyclonedx-cli:0.24.2
     steps:
       - uses: jahia/jahia-modules-action/sbom-processing@v2
         with:
@@ -105,7 +105,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     container:
-      image: jahia/cimg-mvn-cache:ga_cimg_openjdk_8.0.312-node
+      image: jahia/cimg-mvn-cache:ga_cimg_openjdk_11.0.20-node
       credentials:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
