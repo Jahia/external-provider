@@ -113,3 +113,9 @@ jobs:
           path: tests/artifacts/results/xml_reports/*.xml
           reporter: java-junit
           fail-on-error: 'false'
+      - name: Upload to Datadog
+        uses: datadog/junit-upload-github-action@v1
+        with:
+          api-key: 6283b4923a8e3100716c9e98eb361b34
+          service: Datadog - Jahia Guild day
+          files: tests/artifacts/results/xml_reports/
