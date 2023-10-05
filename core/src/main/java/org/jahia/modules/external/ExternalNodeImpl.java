@@ -1108,9 +1108,10 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
 
         Node extensionNode = getExtensionNode(false);
         if (extensionNode != null) {
-            extensionNode.removeMixin(mixinName);
 
-            // remove child node and properties brought by the mixin
+            // First remove child node and properties brought by the mixin,
+            // doing it first because if we remove the mixin first,
+            // then the properties won't be returned anymore even if they still exist, making the cleanup difficult.
             PropertyIterator pi = getProperties();
             while (pi.hasNext()) {
                 Property extensionProperty = pi.nextProperty();
@@ -1118,12 +1119,16 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                 nodeTypes.addAll(Arrays.asList(getMixinNodeTypes(true)));
                 nodeTypes.add(NodeTypeRegistry.getInstance().getNodeType("jmix:externalProviderExtension"));
                 boolean canSetProperty = extensionProperty.isMultiple() ? getPrimaryNodeType().canSetProperty(extensionProperty.getName(), extensionProperty.getValues()) : getPrimaryNodeType().canSetProperty(extensionProperty.getName(), extensionProperty.getValue());
+
+                // check prop on primary node type first
                 for (PropertyDefinition propertyDefinition : getPrimaryNodeType().getPropertyDefinitions()) {
                     if (propertyDefinition.getName().equals(extensionProperty.getName()) && propertyDefinition.getRequiredType() == extensionProperty.getType()) {
                         canSetProperty = true;
                         break;
                     }
                 }
+
+                // check prop on mixins
                 if (!canSetProperty) {
                     for (NodeType mixinType : nodeTypes) {
                         if (!StringUtils.equals(mixinType.getName(), mixinName)) {
@@ -1145,6 +1150,8 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                     }
                 }
             }
+
+            // Check children
             NodeIterator ni = extensionNode.getNodes();
             while (ni.hasNext()) {
                 Node extensionChildNode = ni.nextNode();
@@ -1163,6 +1170,9 @@ public class ExternalNodeImpl extends ExternalItemImpl implements Node {
                     }
                 }
             }
+
+            // Finally remove the mixin, after cleanup of properties and children.
+            extensionNode.removeMixin(mixinName);
             return;
         }
         if (!isNodeType(mixinName)) {
