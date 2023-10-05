@@ -218,7 +218,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         }
         boolean isUsingSequence = Stream.of(DatabaseUtils.DatabaseType.oracle, DatabaseUtils.DatabaseType.postgresql).anyMatch(databaseType -> databaseType == DatabaseUtils.getDatabaseType());
         // We did not find the provider key in the DB so we will create it
-        String insertNewProvider = isUsingSequence ? "INSERT INTO jahia_external_provider_id(id, providerKey) VALUES (nextval('jahia_external_provider_id_seq'), ?)" : "INSERT INTO jahia_external_provider_id(providerKey) VALUES (?)";
+        String insertNewProvider = isUsingSequence ? "INSERT INTO jahia_external_provider_ids(id, providerKey) VALUES (nextval('jahia_external_provider_id_seq'), ?)" : "INSERT INTO jahia_external_provider_ids(providerKey) VALUES (?)";
         try (Connection connection = this.datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(insertNewProvider, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, providerKey);
             int rowAffected = statement.executeUpdate();
