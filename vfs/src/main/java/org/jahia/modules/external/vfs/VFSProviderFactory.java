@@ -16,16 +16,28 @@
 package org.jahia.modules.external.vfs;
 
 import org.jahia.exceptions.JahiaInitializationException;
+import org.jahia.modules.external.ExternalContentStoreProviderFactory;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.modules.external.ExternalContentStoreProvider;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 import javax.jcr.RepositoryException;
 
 /**
  * Mount external VFS Data store
  */
+@Component(service = ProviderFactory.class, immediate = true)
 public class VFSProviderFactory implements ProviderFactory {
+
+    @Reference
+    private ExternalContentStoreProviderFactory externalContentStoreProviderFactory;
+
+    public void setExternalContentStoreProviderFactory(ExternalContentStoreProviderFactory externalContentStoreProviderFactory) {
+        this.externalContentStoreProviderFactory = externalContentStoreProviderFactory;
+    }
+
     /**
      * The node type which is supported by this factory
      * @return The node type name
@@ -45,7 +57,7 @@ public class VFSProviderFactory implements ProviderFactory {
      */
     @Override
     public JCRStoreProvider mountProvider(JCRNodeWrapper mountPoint) throws RepositoryException {
-        ExternalContentStoreProvider provider = (ExternalContentStoreProvider) SpringContextSingleton.getBean("ExternalStoreProviderPrototype");
+        ExternalContentStoreProvider provider = externalContentStoreProviderFactory.newProvider();
         provider.setKey(mountPoint.getIdentifier());
         provider.setMountPoint(mountPoint.getPath());
 

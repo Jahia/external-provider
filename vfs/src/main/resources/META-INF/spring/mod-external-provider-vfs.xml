@@ -12,8 +12,6 @@
 
     <bean id="messageSource" class="org.jahia.utils.i18n.ModuleMessageSource"/>
 
-    <bean id="vfsProviderFactory" class="org.jahia.modules.external.vfs.VFSProviderFactory"/>
-
     <bean
         class="org.jahia.services.content.decorator.validation.JCRNodeValidatorDefinition">
         <property name="validators">

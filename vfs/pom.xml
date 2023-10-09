@@ -34,6 +34,7 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
+        <_dsannotations>*</_dsannotations>
         <jahia-depends>external-provider,assets,jquery</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <export-package>
