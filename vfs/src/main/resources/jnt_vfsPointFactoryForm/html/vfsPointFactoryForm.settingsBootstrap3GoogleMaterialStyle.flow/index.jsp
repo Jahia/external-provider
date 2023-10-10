@@ -17,9 +17,9 @@
 <%--@elvariable id="mailSettings" type="org.jahia.services.mail.MailSettings"--%>
 <%--@elvariable id="flowRequestContext" type="org.springframework.webflow.execution.RequestContext"--%>
 <%--@elvariable id="vfsFactory" type="org.jahia.modules.external.vfs.factory.VFSMountPointFactory"--%>
-<script src="/modules/external-provider-ui/javascript/admin/angular.min.js"></script>
-<script src="/modules/external-provider-ui/javascript/admin/app/folderPicker.js"></script>
-<link rel="stylesheet" href="/modules/external-provider-ui/css/admin/app/folderPicker.css" media="screen" type="text/css"/>
+<script src="${pageContext.request.contextPath}/modules/external-provider-ui/javascript/admin/angular.min.js"></script>
+<script src="${pageContext.request.contextPath}/modules/external-provider-ui/javascript/admin/app/folderPicker.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/modules/external-provider-ui/css/admin/app/folderPicker.css" media="screen" type="text/css"/>
 
 <div class="page-header">
     <h2><fmt:message key="vfsFactory"/></h2>
