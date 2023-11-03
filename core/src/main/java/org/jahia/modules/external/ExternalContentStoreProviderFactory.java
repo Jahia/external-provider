@@ -21,6 +21,20 @@ package org.jahia.modules.external;
  */
 public interface ExternalContentStoreProviderFactory {
 
+    /**
+     * Provides a partially configured instance of an ExternalContentStoreProvider. This instance already contains
+     * all the references to the required services
+     * @return an uninitialized (not started) provider instance
+     */
     ExternalContentStoreProvider newProvider();
+
+    /**
+     * Provides a builder for an ExternalContentStoreProvider. This builder is already configured with the default
+     * values and the instances of the required services. The builder also provides a copy() method to make it easy to
+     * reuse builder configurations
+     * @return a builder object to be able to build instance of a
+     * provider.
+     */
+    ExternalContentStoreProvider.Builder newProviderBuilder();
 
 }

@@ -23,6 +23,9 @@ import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.services.content.*;
 import org.jahia.services.content.nodetypes.Name;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.jahia.services.sites.JahiaSitesService;
+import org.jahia.services.usermanager.JahiaGroupManagerService;
+import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -75,6 +78,10 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     public static void removeCurrentSession() {
         currentSession.remove();
+    }
+
+    protected ExternalContentStoreProvider() {
+        super();
     }
 
     @Override
@@ -386,5 +393,203 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
 
     public void setCacheKeyOnReferenceSupport(boolean cacheKeyOnReferenceSupport) {
         this.cacheKeyOnReferenceSupport = cacheKeyOnReferenceSupport;
+    }
+
+    public static final class Builder {
+        private ExternalDataSource dataSource;
+        private ExternalProviderInitializerService externalProviderInitializerService;
+        private List<String> extendableTypes;
+        private List<String> nonExtendableMixins;
+        private List<String> overridableItems;
+        private List<String> nonOverridableItems;
+        private List<String> reservedNodes = Arrays.asList("j:acl", "j:workflowRules", "j:conditionalVisibility", "thumbnail");
+        private boolean slowConnection = true;
+        private boolean lockSupport = false;
+        private boolean cacheKeyOnReferenceSupport = false;
+        private boolean aclSupport = true;
+        private String key;
+        private String mountPoint;
+        private String webdavPath;
+        private String repositoryName;
+        private JahiaUserManagerService userManagerService;
+        private JahiaGroupManagerService groupManagerService;
+        private JahiaSitesService sitesService;
+        private JCRStoreService service;
+        private JCRSessionFactory sessionFactory;
+        private boolean providesDynamicMountPoints;
+
+        private Builder() {
+        }
+
+        public static Builder anExternalContentStoreProvider() {
+            return new Builder();
+        }
+
+        public Builder withDataSource(ExternalDataSource dataSource) {
+            this.dataSource = dataSource;
+            return this;
+        }
+
+        public Builder withExternalProviderInitializerService(ExternalProviderInitializerService externalProviderInitializerService) {
+            this.externalProviderInitializerService = externalProviderInitializerService;
+            return this;
+        }
+
+        public Builder withExtendableTypes(List<String> extendableTypes) {
+            this.extendableTypes = extendableTypes;
+            return this;
+        }
+
+        public Builder withNonExtendableMixins(List<String> nonExtendableMixins) {
+            this.nonExtendableMixins = nonExtendableMixins;
+            return this;
+        }
+
+        public Builder withOverridableItems(List<String> overridableItems) {
+            this.overridableItems = overridableItems;
+            return this;
+        }
+
+        public Builder withNonOverridableItems(List<String> nonOverridableItems) {
+            this.nonOverridableItems = nonOverridableItems;
+            return this;
+        }
+
+        public Builder withReservedNodes(List<String> reservedNodes) {
+            this.reservedNodes = reservedNodes;
+            return this;
+        }
+
+        public Builder withSlowConnection(boolean slowConnection) {
+            this.slowConnection = slowConnection;
+            return this;
+        }
+
+        public Builder withLockSupport(boolean lockSupport) {
+            this.lockSupport = lockSupport;
+            return this;
+        }
+
+        public Builder withCacheKeyOnReferenceSupport(boolean cacheKeyOnReferenceSupport) {
+            this.cacheKeyOnReferenceSupport = cacheKeyOnReferenceSupport;
+            return this;
+        }
+
+        public Builder withAclSupport(boolean aclSupport) {
+            this.aclSupport = aclSupport;
+            return this;
+        }
+
+        public Builder withKey(String key) {
+            this.key = key;
+            return this;
+        }
+
+        public Builder withMountPoint(String mountPoint) {
+            this.mountPoint = mountPoint;
+            return this;
+        }
+
+        public Builder withWebdavPath(String webdavPath) {
+            this.webdavPath = webdavPath;
+            return this;
+        }
+
+        public Builder withRepositoryName(String repositoryName) {
+            this.repositoryName = repositoryName;
+            return this;
+        }
+
+        public Builder withUserManagerService(JahiaUserManagerService userManagerService) {
+            this.userManagerService = userManagerService;
+            return this;
+        }
+
+        public Builder withGroupManagerService(JahiaGroupManagerService groupManagerService) {
+            this.groupManagerService = groupManagerService;
+            return this;
+        }
+
+        public Builder withSitesService(JahiaSitesService sitesService) {
+            this.sitesService = sitesService;
+            return this;
+        }
+
+        public Builder withService(JCRStoreService service) {
+            this.service = service;
+            return this;
+        }
+
+        public Builder withSessionFactory(JCRSessionFactory sessionFactory) {
+            this.sessionFactory = sessionFactory;
+            return this;
+        }
+
+        public Builder withProvidesDynamicMountPoints(boolean providesDynamicMountPoints) {
+            this.providesDynamicMountPoints = providesDynamicMountPoints;
+            return this;
+        }
+
+        public Builder copy() {
+            Builder builderCopy = new Builder();
+            builderCopy.aclSupport = aclSupport;
+            builderCopy.externalProviderInitializerService = externalProviderInitializerService;
+            builderCopy.cacheKeyOnReferenceSupport = cacheKeyOnReferenceSupport;
+            builderCopy.dataSource = dataSource;
+            if (extendableTypes != null) {
+                builderCopy.extendableTypes = new ArrayList<>(extendableTypes);
+            }
+            builderCopy.groupManagerService = groupManagerService;
+            builderCopy.key = key;
+            builderCopy.lockSupport = lockSupport;
+            builderCopy.mountPoint = mountPoint;
+            if (nonExtendableMixins != null) {
+                builderCopy.nonExtendableMixins = new ArrayList<>(nonExtendableMixins);
+            }
+            if (nonOverridableItems != null) {
+                builderCopy.nonOverridableItems = new ArrayList<>(nonOverridableItems);
+            }
+            if (overridableItems != null) {
+                builderCopy.overridableItems = new ArrayList<>(overridableItems);
+            }
+            builderCopy.providesDynamicMountPoints = providesDynamicMountPoints;
+            builderCopy.repositoryName = repositoryName;
+            if (reservedNodes != null) {
+                builderCopy.reservedNodes = new ArrayList<>(reservedNodes);
+            }
+            builderCopy.service = service;
+            builderCopy.sessionFactory = sessionFactory;
+            builderCopy.sitesService = sitesService;
+            builderCopy.slowConnection = slowConnection;
+            builderCopy.userManagerService = userManagerService;
+            builderCopy.webdavPath = webdavPath;
+            return builderCopy;
+        }
+
+        public ExternalContentStoreProvider build() {
+            ExternalContentStoreProvider externalContentStoreProvider = new ExternalContentStoreProvider();
+            externalContentStoreProvider.setDataSource(dataSource);
+            externalContentStoreProvider.setExternalProviderInitializerService(externalProviderInitializerService);
+            externalContentStoreProvider.setExtendableTypes(extendableTypes);
+            externalContentStoreProvider.setNonExtendableMixins(nonExtendableMixins);
+            externalContentStoreProvider.setOverridableItems(overridableItems);
+            externalContentStoreProvider.setNonOverridableItems(nonOverridableItems);
+            externalContentStoreProvider.setReservedNodes(reservedNodes);
+            externalContentStoreProvider.setSlowConnection(slowConnection);
+            externalContentStoreProvider.setLockSupport(lockSupport);
+            externalContentStoreProvider.setCacheKeyOnReferenceSupport(cacheKeyOnReferenceSupport);
+            externalContentStoreProvider.setAclSupport(aclSupport);
+            externalContentStoreProvider.setKey(key);
+            externalContentStoreProvider.setMountPoint(mountPoint);
+            externalContentStoreProvider.setWebdavPath(webdavPath);
+            externalContentStoreProvider.setRepositoryName(repositoryName);
+            externalContentStoreProvider.setUserManagerService(userManagerService);
+            externalContentStoreProvider.setGroupManagerService(groupManagerService);
+            externalContentStoreProvider.setSitesService(sitesService);
+            externalContentStoreProvider.setService(service);
+            externalContentStoreProvider.setSessionFactory(sessionFactory);
+            externalContentStoreProvider.setProvidesDynamicMountPoints(providesDynamicMountPoints);
+            return externalContentStoreProvider;
+        }
     }
 }

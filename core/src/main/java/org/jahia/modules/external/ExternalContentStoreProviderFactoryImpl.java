@@ -57,14 +57,17 @@ public class ExternalContentStoreProviderFactoryImpl implements ExternalContentS
 
     @Override
     public ExternalContentStoreProvider newProvider() {
-        ExternalContentStoreProvider newProvider = new ExternalContentStoreProvider();
-        newProvider.setUserManagerService(userManagerService);
-        newProvider.setGroupManagerService(groupManagerService);
-        newProvider.setSitesService(sitesService);
-        newProvider.setService(jcrStoreService);
-        newProvider.setSessionFactory(sessionFactory);
-        newProvider.setExternalProviderInitializerService(externalProviderInitializerService);
-        return newProvider;
+        return newProviderBuilder().build();
+    }
+
+    public ExternalContentStoreProvider.Builder newProviderBuilder() {
+        return ExternalContentStoreProvider.Builder.anExternalContentStoreProvider()
+                .withUserManagerService(userManagerService)
+                .withGroupManagerService(groupManagerService)
+                .withSitesService(sitesService)
+                .withService(jcrStoreService)
+                .withSessionFactory(sessionFactory)
+                .withExternalProviderInitializerService(externalProviderInitializerService);
     }
 
 }
