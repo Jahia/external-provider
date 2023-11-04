@@ -80,7 +80,7 @@ public class ExternalContentStoreProvider extends JCRStoreProvider implements In
         currentSession.remove();
     }
 
-    protected ExternalContentStoreProvider() {
+    public ExternalContentStoreProvider() {
         super();
     }
 
