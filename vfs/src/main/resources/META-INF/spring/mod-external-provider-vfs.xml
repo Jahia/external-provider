@@ -11,14 +11,4 @@
     <mvc:annotation-driven conversion-service="springTypeConversionService"/>
 
     <bean id="messageSource" class="org.jahia.utils.i18n.ModuleMessageSource"/>
-
-    <bean
-        class="org.jahia.services.content.decorator.validation.JCRNodeValidatorDefinition">
-        <property name="validators">
-            <map>
-                <entry key="jnt:vfsMountPoint"
-                    value="org.jahia.modules.external.vfs.MountPointAvailabilityValidator" />
-            </map>
-        </property>
-    </bean>
 </beans>
