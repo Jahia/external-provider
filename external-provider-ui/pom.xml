@@ -53,7 +53,8 @@
             org.jahia.services,
             javassist.util.proxy
         </jahia.modules.importPackage>
-        <jahia-module-signature>MCwCFAHYzvmVTgMoukrVhA5vwr8bsBdNAhQVZCHXRuTiNbKZHtiWluhP5LpsZQ==</jahia-module-signature>        <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
+        <jahia-module-signature>MCwCFAHYzvmVTgMoukrVhA5vwr8bsBdNAhQVZCHXRuTiNbKZHtiWluhP5LpsZQ==</jahia-module-signature>
+        <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <yarn.arguments>build:production</yarn.arguments>
         <sonar.sources>src/javascript,src/main/resources/javascript</sonar.sources>
     </properties>
@@ -179,6 +180,16 @@
                 <configuration>
                     <preparationGoals>clean verify frontend:yarn@sync-pom scm:checkin@package-json</preparationGoals>
                     <completionGoals>frontend:yarn@sync-pom scm:checkin@package-json</completionGoals>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <_dsannotations>*</_dsannotations>
+                    </instructions>
                 </configuration>
             </plugin>
             <plugin>
