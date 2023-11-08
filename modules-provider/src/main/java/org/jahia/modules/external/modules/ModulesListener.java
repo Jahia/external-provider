@@ -16,9 +16,11 @@
 package org.jahia.modules.external.modules;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.api.Constants;
 import org.jahia.services.content.DefaultEventListener;
 import org.jahia.services.content.JCREventIterator;
 import org.jahia.settings.SettingsBean;
+import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,26 +33,19 @@ import java.util.Set;
 /**
  * JCR event listener to detect changes in modules content.
  */
+@Component(service = {DefaultEventListener.class, ModulesListener.class}, immediate = true)
 public class ModulesListener extends DefaultEventListener {
     private static final Logger logger = LoggerFactory.getLogger(ModulesListener.class);
 
     private final Set<String> modules = new HashSet<String>();
 
-    private ModulesListener() {
-        setWorkspace("default");
-    }
-
-    // Initialization on demand holder idiom: thread-safe singleton initialization
-    private static class Holder {
-        static final ModulesListener INSTANCE = new ModulesListener();
-    }
-
-    public static ModulesListener getInstance() {
-        return Holder.INSTANCE;
-    }
-
     public Set<String> getModules() {
         return modules;
+    }
+
+    @Override
+    public String getWorkspace() {
+        return Constants.EDIT_WORKSPACE;
     }
 
     @Override

@@ -19,6 +19,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
+import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.*;
 import org.jahia.services.templates.JahiaTemplateManagerService;
 import org.jahia.utils.Patterns;
@@ -39,8 +40,16 @@ public class ModulesImportExportHelper {
 
     private final Object syncObject = new Object();
 
-    public void setTemplateService(JahiaTemplateManagerService templateService) {
-        this.templateService = templateService;
+    private static class InstanceHolder {
+        public static ModulesImportExportHelper INSTANCE = new ModulesImportExportHelper();
+    }
+
+    public static ModulesImportExportHelper getInstance() {
+        return InstanceHolder.INSTANCE;
+    }
+
+    public ModulesImportExportHelper() {
+        this.templateService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
     }
 
     public void regenerateImportFiles(final Set<String> modules) throws RepositoryException {

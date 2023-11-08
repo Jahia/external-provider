@@ -37,7 +37,6 @@ import org.jahia.modules.external.modules.osgi.ModulesSourceHttpServiceTracker;
 import org.jahia.modules.external.modules.osgi.ModulesSourceMonitor;
 import org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer;
 import org.jahia.modules.external.vfs.VFSDataSource;
-import org.jahia.osgi.BundleUtils;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
@@ -58,9 +57,6 @@ import org.jahia.settings.SettingsBean;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.ScriptEngineUtils;
 import org.jahia.utils.i18n.Messages;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
@@ -93,9 +89,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private static final Predicate FILTER_OUT_FILES_WITH_STARTING_DOT = new Predicate() {
         @Override
         public boolean evaluate(Object object) {
-            if(object instanceof String) {
+            if (object instanceof String) {
                 return !object.toString().startsWith(".");
-            } else if(object instanceof ExternalData) {
+            } else if (object instanceof ExternalData) {
                 return !((ExternalData) object).getName().startsWith(".");
             }
             return true;
@@ -164,6 +160,35 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private static final String SRC_MAIN_RESOURCES = "/src/main/resources/";
     private static final String JNT_TEMPLATE_JSP_RELATIVE_PATH = "src/main/resources/jnt_template/html";
 
+    public static final String[] SUPPORTED_NODE_TYPES = {"jnt:file",
+            "jnt:folder",
+            "jnt:javaSourceFile",
+            "jnt:javaPackageFolder",
+            "jnt:editableFile",
+            "jnt:nodeTypeFolder",
+            "jnt:templateTypeFolder",
+            "jnt:cssFolder",
+            "jnt:cssFile",
+            "jnt:lessFile",
+            "jnt:javascriptFolder",
+            "jnt:propertiesFile",
+            "jnt:xmlFile",
+            "jnt:javascriptFile",
+            "jnt:viewFile",
+            "jnt:templateFile",
+            "jnt:definitionFile",
+            "jnt:metaInfFolder",
+            "nt:nodeType",
+            "jnt:resourceBundleFolder",
+            "jnt:resourceBundleFile",
+            "jnt:namespaceDefinition"};
+
+    public static final String[][] FOLDER_TYPE_MAPPING = {{"css", "jnt:cssFolder"}, {"java","jnt:javaPackageFolder"}, {"javascript","jnt:javascriptFolder"}, {
+            "resources","jnt:resourceBundleFolder"}, {"META-INF", "jnt:metaInfFolder"}};
+
+    public static final String[][] FILE_TYPE_MAPPING = {{"xml","jnt:xmlFile"}, {"properties","jnt:propertiesFile"}, {"java","jnt:javaSourceFile"},
+            {"cnd","jnt:definitionFile"}, {"css","jnt:cssFile"}, {"less","jnt:lessFile"}, {"js","jnt:javascriptFile"}, {"jsp","jnt:viewFile"}, {"groovy","jnt:viewFile"}};
+
     private JahiaTemplatesPackage module;
 
     private Map<String, String> fileTypeMapping;
@@ -173,7 +198,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private Set<String> supportedNodeTypes;
 
     private Map<String, NodeTypeRegistry> nodeTypeRegistryMap = new HashMap<>();
-    private Map<NodeTypeRegistry, Map<String,String>> namespaceDefinitions = new HashMap<>();
+    private Map<NodeTypeRegistry, Map<String, String>> namespaceDefinitions = new HashMap<>();
 
     private String fileMonitorJobName;
 
@@ -183,7 +208,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
     private ModulesSourceSpringInitializer modulesSourceSpringInitializer;
 
-    private ModulesImportExportHelper modulesImportExportHelper;
+    private ModulesImportExportHelper modulesImportExportHelper = ModulesImportExportHelper.getInstance();
 
     private SourceControlFactory sourceControlFactory;
 
@@ -217,7 +242,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     FileObject fileObject = null;
                     try {
                         fileObject = getFile(file.getPath());
-                        if(fileObject!= null && !CollectionUtils.isEmpty(sourceMonitors)) {
+                        if (fileObject != null && !CollectionUtils.isEmpty(sourceMonitors)) {
                             for (ModulesSourceMonitor sourceMonitor : sourceMonitors) {
                                 if (sourceMonitor.canHandleFileType(fileObject)) {
                                     sourceMonitor.handleFile(file);
@@ -284,7 +309,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                         } catch (IOException | ParseException | RepositoryException e) {
                             logger.error(e.getMessage(), e);
                         }
-                    } else if (StringUtils.equals(type,Constants.JAHIANT_VIEWFILE)) {
+                    } else if (StringUtils.equals(type, Constants.JAHIANT_VIEWFILE)) {
                         ModulesSourceHttpServiceTracker httpServiceTracker = modulesSourceSpringInitializer.getHttpServiceTracker(module.getId());
                         if (result.getCreated().contains(file)) {
                             httpServiceTracker.registerResource(file);
@@ -492,7 +517,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
                     type = fileTypeMapping.get(extension);
                     if (type == null) {
                         try {
-                            if(ScriptEngineUtils.canFactoryForExtensionProcessViews(extension, module.getBundle().getHeaders())) {
+                            if (ScriptEngineUtils.canFactoryForExtensionProcessViews(extension, module.getBundle().getHeaders())) {
                                 type = Constants.JAHIANT_VIEWFILE;
                             }
                         } catch (IllegalArgumentException e) {
@@ -935,7 +960,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     }
 
     private void renameNodeTypePropertyOrChildNode(String cndPath, String nodeTypeName, String oldName,
-            String newName) throws RepositoryException {
+                                                   String newName) throws RepositoryException {
         try {
             NodeTypeRegistry ntRegistry = loadRegistry(cndPath);
             ExtendedNodeType nodeType = ntRegistry.getNodeType(nodeTypeName);
@@ -1095,19 +1120,19 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             for (ExtendedNodeType nt : type.getSupertypes()) {
                 if (nt.getName().equals(thisNodeTypeName)) {
                     throw new ConstraintViolationException(getMessage("modulesDataSource.errors.rename.supertype",
-                            new Object[] { thisNodeTypeName, type.getName(), type.getSystemId() }));
+                            new Object[]{thisNodeTypeName, type.getName(), type.getSystemId()}));
                 }
             }
             for (ExtendedNodeDefinition ntd : type.getChildNodeDefinitions()) {
                 if (ArrayUtils.contains(ntd.getRequiredPrimaryTypeNames(), thisNodeTypeName)) {
                     throw new ConstraintViolationException(getMessage("modulesDataSource.errors.rename.childtype",
-                            new Object[] { thisNodeTypeName, type.getName(), type.getSystemId() }));
+                            new Object[]{thisNodeTypeName, type.getName(), type.getSystemId()}));
                 }
             }
             for (ExtendedNodeDefinition ntd : type.getUnstructuredChildNodeDefinitions().values()) {
                 if (ArrayUtils.contains(ntd.getRequiredPrimaryTypeNames(), thisNodeTypeName)) {
                     throw new ConstraintViolationException(getMessage("modulesDataSource.errors.rename.childtype",
-                            new Object[] { thisNodeTypeName, type.getName(), type.getSystemId() }));
+                            new Object[]{thisNodeTypeName, type.getName(), type.getSystemId()}));
                 }
             }
         }
@@ -1303,7 +1328,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             }
             FileObject file = getFile(StringUtils.substringBeforeLast(data.getPath(), ".") + PROPERTIES_EXTENSION);
             Properties original = new Properties();
-            if(file.exists()) {
+            if (file.exists()) {
                 original.load(file.getContent().getInputStream());
                 for (String s : propertyDefinitionMap.keySet()) {
                     original.remove(s);
