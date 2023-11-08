@@ -15,29 +15,37 @@
  */
 package org.jahia.modules.external;
 
+import org.jahia.api.Constants;
+import org.jahia.services.content.DefaultEventListener;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.jcr.RepositoryException;
 import javax.jcr.observation.Event;
 import javax.jcr.observation.EventIterator;
-
-import org.jahia.api.Constants;
-import org.jahia.services.content.DefaultEventListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Listener for the deletion of a mount point nodes to be able to clean up external provider ID mappings.
  *
  * @author Sergiy Shyrkov
  */
+@Component(service = DefaultEventListener.class, immediate = true)
 public class MountPointListener extends DefaultEventListener {
 
     private static final Logger logger = LoggerFactory.getLogger(MountPointListener.class);
 
     private ExternalProviderInitializerService externalProviderInitializerService;
 
-    public MountPointListener() {
-        super();
-        setWorkspace(Constants.EDIT_WORKSPACE);
+    @Reference
+    public void setExternalProviderInitializerService(ExternalProviderInitializerService mappingService) {
+        this.externalProviderInitializerService = mappingService;
+    }
+
+    @Override
+    public String getWorkspace() {
+        return Constants.EDIT_WORKSPACE;
     }
 
     @Override
@@ -61,9 +69,4 @@ public class MountPointListener extends DefaultEventListener {
             }
         }
     }
-
-    public void setExternalProviderInitializerService(ExternalProviderInitializerService mappingService) {
-        this.externalProviderInitializerService = mappingService;
-    }
-
 }

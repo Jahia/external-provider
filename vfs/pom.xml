@@ -34,12 +34,14 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
+        <_dsannotations>*</_dsannotations>
         <jahia-depends>external-provider,assets,jquery</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <export-package>
             org.jahia.modules.external.vfs,
             org.jahia.modules.external.vfs.factory
         </export-package>
+        <!-- Required for webflow UI, deprecated -->
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <jahia-module-signature>MCwCFEacXl1nO15Wfv7RdqjCGX5JAMlvAhRPzWm6grlPGaRD7SlUB1mmUuc8rA==</jahia-module-signature>
         <import-package>

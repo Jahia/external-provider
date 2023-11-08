@@ -16,63 +16,105 @@
 package org.jahia.modules.external.modules.osgi;
 
 import org.apache.commons.beanutils.BeanUtils;
-import org.eclipse.gemini.blueprint.context.BundleContextAware;
+import org.jahia.bin.listeners.JahiaContextLoaderListener;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.modules.external.ExternalContentStoreProvider;
+import org.jahia.modules.external.modules.ModulesDataSource;
 import org.jahia.modules.external.modules.ModulesUtils;
 import org.jahia.osgi.BundleUtils;
-import org.jahia.services.JahiaAfterInitializationService;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.content.JCRStoreService;
+import org.jahia.services.templates.SourceControlFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.SynchronousBundleListener;
+import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service to mount/unmount module sources
  */
-public class ModulesSourceSpringInitializer implements JahiaAfterInitializationService, BundleContextAware {
+@Component(immediate = true)
+public class ModulesSourceSpringInitializer implements SynchronousBundleListener {
     private static final Logger logger = LoggerFactory.getLogger(ModulesSourceSpringInitializer.class);
     private BundleContext context;
-    private static ModulesSourceSpringInitializer instance;
     private JCRStoreService jcrStoreService;
     private Map<String, ModulesSourceHttpServiceTracker> httpServiceTrackers = new HashMap<String, ModulesSourceHttpServiceTracker>();
+    private final List<ModulesSourceMonitor> sourceMonitors = new ArrayList<>();
 
-    public static synchronized ModulesSourceSpringInitializer getInstance() {
-        if (instance == null) {
-            instance = new ModulesSourceSpringInitializer();
-        }
-        return instance;
+    @Reference
+    public void setJcrStoreService(JCRStoreService jcrStoreService) {
+        this.jcrStoreService = jcrStoreService;
     }
 
-    @Override
-    public void initAfterAllServicesAreStarted() throws JahiaInitializationException {
-        try {
-            logger.info("All services are started. Started mounting modules sources.");
-            Bundle[] bundles = context.getBundles();
-            for (Bundle bundle : bundles) {
-                if (bundle.getState() == Bundle.ACTIVE) {
-                    mountBundle(bundle);
-                }
+    @Reference(cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC, policyOption = ReferencePolicyOption.GREEDY)
+    public void bindSourceMonitors(ModulesSourceMonitor sourceMonitor) {
+        this.sourceMonitors.add(sourceMonitor);
+    }
+
+    public void unbindSourceMonitors(ModulesSourceMonitor sourceMonitor) {
+        this.sourceMonitors.remove(sourceMonitor);
+    }
+
+    @Activate
+    public void start(BundleContext context) {
+        if (this.context == null) {
+            this.context = context;
+        }
+        logger.info("Starting external provider bundle.");
+
+        context.addBundleListener(this);
+        Bundle[] bundles = context.getBundles();
+        for (Bundle bundle : bundles) {
+            if (bundle.getState() == Bundle.ACTIVE) {
+                mountBundle(bundle);
             }
-            logger.info("Done mounting modules sources.");
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+        }
+
+    }
+
+    /**
+     * Called when this bundle is stopped so the Framework can perform the
+     * bundle-specific activities necessary to stop the bundle. In general, this
+     * method should undo the work that the <code>BundleActivator.start</code>
+     * method started. There should be no active threads that were started by
+     * this bundle when this bundle returns. A stopped bundle must not call any
+     * Framework objects.
+     * <br>
+     * <br>
+     * This method must complete and return to its caller in a timely manner.
+     *
+     * @param context The execution context of the bundle being stopped.
+     */
+    @Deactivate
+    public void stop(BundleContext context) {
+        if (!JahiaContextLoaderListener.isRunning()) {
+            return;
+        }
+        context.removeBundleListener(this);
+        Bundle[] bundles = context.getBundles();
+        for (Bundle bundle : bundles) {
+            if (bundle.getState() == Bundle.ACTIVE || context.getBundle().getBundleId() == bundle.getBundleId()) {
+                unmountBundle(bundle);
+            }
         }
     }
 
-    @Override
-    public void setBundleContext(BundleContext bundleContext) {
-        this.context = bundleContext;
+    public void bundleChanged(BundleEvent event) {
+        if (event.getType() == BundleEvent.STARTED) {
+            mountBundle(event.getBundle());
+        } else if (event.getType() == BundleEvent.STOPPING) {
+            unmountBundle(event.getBundle());
+        }
     }
 
     /**
@@ -87,7 +129,15 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
             JCRStoreProvider provider = jcrStoreService.getSessionFactory().getProviders().get(providerKey);
             if (provider == null) {
                 try {
-                    Object dataSource = SpringContextSingleton.getBeanInModulesContext("ModulesDataSourcePrototype");
+                    ModulesDataSource dataSource = new ModulesDataSource();
+                    dataSource.setSourceControlFactory((SourceControlFactory) SpringContextSingleton.getBean("SourceControlFactory"));
+                    dataSource.setSupportedNodeTypes(new HashSet<>(Arrays.asList(ModulesDataSource.SUPPORTED_NODE_TYPES)));
+                    dataSource.setFolderTypeMapping(Arrays.stream(ModulesDataSource.FOLDER_TYPE_MAPPING).collect(Collectors.toMap(s -> s[0], s -> s[1])));
+                    dataSource.setFileTypeMapping(Arrays.stream(ModulesDataSource.FILE_TYPE_MAPPING).collect(Collectors.toMap(s -> s[0], s -> s[1])));
+                    dataSource.setJcrStoreService(jcrStoreService);
+                    dataSource.setModulesSourceSpringInitializer(this);
+                    dataSource.setSourceMonitors(sourceMonitors);
+
                     logger.info("Mounting source for bundle {}", templatePackage.getName());
                     Map<String, Object> properties = new LinkedHashMap<String, Object>();
                     properties.put("root", templatePackage.getSourcesFolder().toURI().toString());
@@ -170,7 +220,4 @@ public class ModulesSourceSpringInitializer implements JahiaAfterInitializationS
         return httpServiceTrackers.get(bundleSymbolicName);
     }
 
-    public void setJcrStoreService(JCRStoreService jcrStoreService) {
-        this.jcrStoreService = jcrStoreService;
-    }
 }
