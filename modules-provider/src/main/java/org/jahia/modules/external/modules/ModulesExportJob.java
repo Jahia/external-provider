@@ -48,12 +48,14 @@ public class ModulesExportJob extends BackgroundJob {
 
     @Activate
     public void start() throws Exception {
-        jobDetail = BackgroundJob.createJahiaJob("ModulesAutoExport", ModulesExportJob.class);
-        jobDetail.setGroup("Studio");
-        jobDetail.setJobDataMap(new JobDataMap());
-        if (schedulerService.getAllJobs(jobDetail.getGroup()).isEmpty() && SettingsBean.getInstance().isProcessingServer()) {
-            Trigger trigger = new CronTrigger("StudioExportJobTrigger", jobDetail.getGroup(), "0/5 * * * * ?");
-            schedulerService.getScheduler().scheduleJob(jobDetail, trigger);
+        if (SettingsBean.getInstance().getOperatingMode().equals("development")) {
+            jobDetail = BackgroundJob.createJahiaJob("ModulesAutoExport", ModulesExportJob.class);
+            jobDetail.setGroup("Studio");
+            jobDetail.setJobDataMap(new JobDataMap());
+            if (schedulerService.getAllJobs(jobDetail.getGroup()).isEmpty() && SettingsBean.getInstance().isProcessingServer()) {
+                Trigger trigger = new CronTrigger("StudioExportJobTrigger", jobDetail.getGroup(), "0/5 * * * * ?");
+                schedulerService.getRAMScheduler().scheduleJob(jobDetail, trigger);
+            }
         }
     }
 
