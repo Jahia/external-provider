@@ -47,15 +47,14 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.util.db.DbUtility;
-import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.ExternalDataSource;
-import org.jahia.osgi.BundleResource;
-import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,14 +66,22 @@ import javax.jcr.nodetype.NoSuchNodeTypeException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.sql.*;
+import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class WriteableMappedDatabaseProvider extends MappedDatabaseDataSource implements ExternalDataSource.Writable {
 
-    private static final Logger logger = LoggerFactory.getLogger(MappedDatabaseDataSource.class);
+    private static final Logger logger = LoggerFactory.getLogger(WriteableMappedDatabaseProvider.class);
+    private File databasePath;
+    private BundleContext bundleContext;
+
+    public WriteableMappedDatabaseProvider(BundleContext bundleContext) {
+        this.bundleContext = bundleContext;
+    }
 
     @Override
     public void move(String oldPath, String newPath) throws RepositoryException {
@@ -261,8 +268,6 @@ public class WriteableMappedDatabaseProvider extends MappedDatabaseDataSource im
         }
     }
 
-    private File databasePath;
-
     @Override
     public void start() {
         try {
@@ -270,8 +275,7 @@ public class WriteableMappedDatabaseProvider extends MappedDatabaseDataSource im
 
             databasePath = File.createTempFile("derby","");
             databasePath.delete();
-            final JahiaTemplatesPackage templatePackageById = ServicesRegistry.getInstance().getJahiaTemplateManagerService().getTemplatePackageById("external-provider-test");
-            extract(templatePackageById, templatePackageById.getResource("/toursdb"), databasePath);
+            extractDBFiles(bundleContext.getBundle(), databasePath);
 
             Connection connection = null;
             try {
@@ -313,20 +317,22 @@ public class WriteableMappedDatabaseProvider extends MappedDatabaseDataSource im
         }
     }
 
-    private static void extract(JahiaTemplatesPackage p, org.springframework.core.io.Resource r, File f) throws Exception {
-        if ((r instanceof BundleResource && r.contentLength() == 0) || (!(r instanceof BundleResource) && r.getFile().isDirectory())) {
-            f.mkdirs();
-            String path = r.getURI().getPath();
-            for (org.springframework.core.io.Resource resource : p.getResources(path.substring(path.indexOf("/toursdb")))) {
-                extract(p, resource, new File(f, resource.getFilename()));
-            }
-        } else {
+    private static void extractDBFiles(Bundle bundle, File destinationDir) throws Exception {
+        Enumeration<URL> toursdbURLs = bundle.findEntries("/toursdb", null, true);
+        while (toursdbURLs.hasMoreElements()) {
+            URL toursdbURL = toursdbURLs.nextElement();
             FileOutputStream output = null;
-            try {
-                output = new FileOutputStream(f);
-                IOUtils.copy(r.getInputStream(), output);
-            } finally {
-                IOUtils.closeQuietly(output);
+            if (toursdbURL.getPath().endsWith("/")) {
+                File directory = new File(destinationDir, toursdbURL.getPath().substring("/toursdb".length()));
+                directory.mkdirs();
+            } else {
+                File destinationFile = new File(destinationDir, toursdbURL.getPath().substring("/toursdb".length()));
+                try {
+                    output = new FileOutputStream(destinationFile);
+                    IOUtils.copy(toursdbURL.openStream(), output);
+                } finally {
+                    IOUtils.closeQuietly(output);
+                }
             }
         }
     }

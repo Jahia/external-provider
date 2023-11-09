@@ -46,13 +46,14 @@ package org.jahia.modules.external.test.listener;
 import com.google.common.collect.Sets;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.ExternalDataSource;
-import org.jahia.services.SpringContextSingleton;
+import org.osgi.service.component.annotations.Component;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import java.util.*;
 
+@Component(service=ApiDataSource.class, immediate=true)
 public class ApiDataSource implements ExternalDataSource {
 
     private static final Map<String, ExternalData> nodes;

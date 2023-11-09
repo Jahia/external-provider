@@ -1,26 +1,23 @@
 <%@ page import="org.apache.commons.lang.StringUtils" %>
-<%@ page import="org.jahia.registries.ServicesRegistry" %>
 <%@ page import="org.jahia.modules.external.ExternalContentStoreProvider" %>
-<%@ page import="org.springframework.beans.BeansException" %>
-<%@ page import="org.springframework.core.NestedRuntimeException" %>
+<%@ page import="org.jahia.osgi.BundleUtils" %>
+<%@ page import="org.jahia.modules.external.test.activators.ExternalContentStoreProviderActivator" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="jcr" uri="http://www.jahia.org/tags/jcr" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
 <%
-    BeansException e;
-    NestedRuntimeException e1;
-    ExternalContentStoreProvider tatatititoto = (ExternalContentStoreProvider) ServicesRegistry.getInstance().getJahiaTemplateManagerService().getTemplatePackageById("external-provider-test").getContext().getBean("tatatititoto");
+    ExternalContentStoreProvider tatatititotoProvider = BundleUtils.getOsgiService(ExternalContentStoreProviderActivator.class, null).getExternalContentStoreProvider("tatatititoto");
 
     if (StringUtils.equals(request.getParameter("action"), "start") && StringUtils.isNotBlank(request.getParameter("path"))) {
-        tatatititoto.setMountPoint(request.getParameter("path") + "/tatatititoto");
-        tatatititoto.start();
+        tatatititotoProvider.setMountPoint(request.getParameter("path") + "/tatatititoto");
+        tatatititotoProvider.start();
     } else if (StringUtils.equals(request.getParameter("action"), "stop")) {
-        tatatititoto.stop();
+        tatatititotoProvider.stop();
     }
 
-    pageContext.setAttribute("provider", tatatititoto.isInitialized());
+    pageContext.setAttribute("provider", tatatititotoProvider.isInitialized());
 %>
 
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -61,7 +58,7 @@
         <input type="hidden" name="action" value="stop"/>
     </c:when>
     <c:otherwise>
-        path: <input type="text" name="path"/>
+        path: <input type="text" name="path" placeholder="/tools"/>
         <button type="submit">Mount</button>
         <input type="hidden" name="action" value="start"/>
     </c:otherwise>

@@ -153,9 +153,9 @@ public class ApiEventTest  extends JahiaTestCase {
     public void setUp() {
         eventService = BundleUtils.getOsgiService(EventService.class, null);
         AbstractApplicationContext context = ServicesRegistry.getInstance().getJahiaTemplateManagerService().getTemplatePackageById("external-provider-test").getContext();
-        apiListener = (TestApiEventListener) context.getBean("apiTestListener");
-        listener = (TestEventListener) context.getBean("testListener");
-        dataSource = (ApiDataSource) context.getBean("apiDataSource");
+        apiListener = new TestApiEventListener();
+        listener = new TestEventListener();
+        dataSource = new ApiDataSource();
         JCRSessionFactory.getInstance().closeAllSessions();
         dataSource.getLog().clear();
     }
