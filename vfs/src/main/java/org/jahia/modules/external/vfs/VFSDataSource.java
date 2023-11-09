@@ -22,6 +22,8 @@ import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
 import org.jahia.modules.external.ExternalData;
 import org.jahia.modules.external.ExternalDataSource;
+import org.jahia.modules.external.ExternalQuery;
+import org.jahia.modules.external.query.QueryHelper;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
@@ -33,6 +35,7 @@ import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
+import javax.jcr.query.qom.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -41,7 +44,7 @@ import java.util.*;
 /**
  * VFS Implementation of ExternalDataSource
  */
-public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Writable, ExternalDataSource.CanLoadChildrenInBatch {
+public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Writable, ExternalDataSource.CanLoadChildrenInBatch, ExternalDataSource.Searchable {
     private static final List<String> JCR_CONTENT_LIST = Arrays.asList(Constants.JCR_CONTENT);
     private static final Set<String> SUPPORTED_NODE_TYPES = new HashSet<String>(Arrays.asList(Constants.JAHIANT_FILE, Constants.JAHIANT_FOLDER, Constants.JCR_CONTENT));
     private static final Logger logger = LoggerFactory.getLogger(VFSDataSource.class);
@@ -363,8 +366,52 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         if (unescapePath) {
             path = Escaping.unescapeIllegalJcrChars(path);
         }
-        return (path == null || path.length() == 0 || path.equals("/")) ? root : root
+        return (path == null || path.isEmpty() || path.equals("/")) ? root : root
                 .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
     }
 
+    @Override
+    public List<String> search(ExternalQuery query) throws RepositoryException {
+        String selectorType = QueryHelper.getNodeType(query.getSource());
+        if (selectorType.equals("jmix:searchable") || getSupportedNodeTypes().contains(selectorType)) {
+            Constraint constraint = query.getConstraint();
+            String searchValue = getSearchValue(constraint);
+            if (searchValue != null) {
+                try {
+                    FileSelector fileSelector = new PatternFileSelector(".*" + searchValue + ".*");
+                    FileObject[] files = root.findFiles(fileSelector);
+                    List<String> filePath = new ArrayList<>(files.length);
+                    for (FileObject file : files) {
+                        if (getSupportedNodeTypes().contains(getDataType(file))) {
+                            filePath.add(Escaping.escapeIllegalJcrChars(StringUtils.substringAfter(file.getName().getPath(), rootPath)));
+                        }
+                    }
+                    return filePath;
+                } catch (FileSystemException e) {
+                    throw new RepositoryException("error while searching for " + searchValue, e);
+                }
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    private static String getSearchValue(Constraint constraint) throws RepositoryException {
+        if (constraint instanceof And) {
+            String constraint1 = getSearchValue(((And) constraint).getConstraint1());
+            String constraint2 = getSearchValue(((And) constraint).getConstraint2());
+            return constraint1 != null ? constraint1 : constraint2;
+        } else if (constraint instanceof Or) {
+            String constraint1 = getSearchValue(((Or) constraint).getConstraint1());
+            String constraint2 = getSearchValue(((Or) constraint).getConstraint2());
+            return constraint1 != null ? constraint1 : constraint2;
+        } else if (constraint instanceof FullTextSearch) {
+            return ((Literal) ((FullTextSearch) constraint).getFullTextSearchExpression()).getLiteralValue().getString();
+        } else if (constraint instanceof Comparison) {
+            StaticOperand operand2 = ((Comparison) constraint).getOperand2();
+            if (operand2 instanceof Literal) {
+                return ((Literal) operand2).getLiteralValue().getString().replace("%","");
+            }
+        }
+        return null;
+    }
 }
