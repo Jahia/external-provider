@@ -52,7 +52,7 @@ public class ModulesExportJob extends BackgroundJob {
             jobDetail = BackgroundJob.createJahiaJob("ModulesAutoExport", ModulesExportJob.class);
             jobDetail.setGroup("Studio");
             jobDetail.setJobDataMap(new JobDataMap());
-            if (schedulerService.getAllJobs(jobDetail.getGroup()).isEmpty() && SettingsBean.getInstance().isProcessingServer()) {
+            if (schedulerService.getAllJobs(jobDetail.getGroup(), true).isEmpty() && SettingsBean.getInstance().isProcessingServer()) {
                 Trigger trigger = new CronTrigger("StudioExportJobTrigger", jobDetail.getGroup(), "0/5 * * * * ?");
                 schedulerService.getRAMScheduler().scheduleJob(jobDetail, trigger);
             }
@@ -61,8 +61,8 @@ public class ModulesExportJob extends BackgroundJob {
 
     @Deactivate
     public void stop() throws Exception {
-        if (!schedulerService.getAllJobs(jobDetail.getGroup()).isEmpty() && SettingsBean.getInstance().isProcessingServer()) {
-            schedulerService.getScheduler().deleteJob(jobDetail.getName(), jobDetail.getGroup());
+        if (!schedulerService.getAllJobs(jobDetail.getGroup(), true).isEmpty() && SettingsBean.getInstance().isProcessingServer()) {
+            schedulerService.getRAMScheduler().deleteJob(jobDetail.getName(), jobDetail.getGroup());
         }
     }
 
