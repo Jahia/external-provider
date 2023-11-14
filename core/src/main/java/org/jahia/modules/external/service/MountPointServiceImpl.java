@@ -99,7 +99,7 @@ public class MountPointServiceImpl implements MountPointService {
      */
     protected void setMountPointRefPath(MountPoint mountPoint, JCRSessionWrapper session,
             JCRMountPointNode jcrMountPointNode) throws RepositoryException {
-        
+
         String mountPointRefPath = mountPoint.getMountPointRefPath();
         if (StringUtils.isNotBlank(mountPointRefPath)) {
             String mountPointRefId = session.getNode(mountPointRefPath).getIdentifier();

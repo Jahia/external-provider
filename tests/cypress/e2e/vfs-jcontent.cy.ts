@@ -7,7 +7,7 @@ describe('VFS local mount tests', () => {
         cy.executeGroovy('createDir.groovy');
         cy.apollo({
             queryFile: 'mountVfs.graphql',
-            variables: {mountPointRefPath: "/sites/digitall/files"}
+            variables: {mountPointRefPath: '/sites/digitall/files'}
         });
     });
 
