@@ -1,5 +1,4 @@
 describe('GraphQL endpoint tests', () => {
-
     before(function () {
         cy.executeGroovy('cleanup.groovy');
         cy.executeGroovy('createDir.groovy');
@@ -9,7 +8,7 @@ describe('GraphQL endpoint tests', () => {
         cy.executeGroovy('cleanup.groovy');
     });
 
-    const mountInfo = {name: 'my-vfs-mount', rootPath:'/tmp/mount-test'}
+    const mountInfo = {name: 'my-vfs-mount', rootPath: '/tmp/mount-test'};
 
     it('create VFS mount point', () => {
         cy.apollo({
@@ -34,8 +33,8 @@ describe('GraphQL endpoint tests', () => {
             queryFile: 'mountInfos.graphql'
         }).then(resp => {
             expect(resp.data.admin.mountPoint.mountPoints).to.not.be.empty;
-            expect(resp.data.admin.mountPoint.mountPoints.length).to.equal(2, "Duplicate mount point n  odes");
-        })
+            expect(resp.data.admin.mountPoint.mountPoints.length).to.equal(2, 'Duplicate mount point n  odes');
+        });
     });
 
     it('get mount point information', () => {
@@ -63,11 +62,11 @@ describe('GraphQL endpoint tests', () => {
                 mutationFile: 'modifyVfs.graphql',
                 variables: {
                     pathOrId: nodeId,
-                    name: 'new-mount-name',
+                    name: 'new-mount-name'
                 }
             }).then(resp => {
                 expect(resp.data.admin.mountPoint.modifyVfs).to.be.true;
-            })
+            });
         });
     });
 
@@ -90,7 +89,7 @@ describe('GraphQL endpoint tests', () => {
             queryFile: 'unmount.graphql',
             variables: {pathOrId: '/mounts/new-mount-name-mount'}
         }).then(resp => {
-            expect(resp.data.admin.mountPoint.unmount).to.be.true
+            expect(resp.data.admin.mountPoint.unmount).to.be.true;
         });
 
         cy.apollo({
@@ -108,7 +107,7 @@ describe('GraphQL endpoint tests', () => {
             queryFile: 'mounted.graphql',
             variables: {pathOrId: '/mounts/new-mount-name-mount'}
         }).then(resp => {
-            expect(resp.data.admin.mountPoint.mount).to.be.true
+            expect(resp.data.admin.mountPoint.mount).to.be.true;
         });
 
         cy.apollo({
@@ -120,5 +119,4 @@ describe('GraphQL endpoint tests', () => {
             expect(mountPoint.mountStatus).to.equal('mounted');
         });
     });
-
 });
