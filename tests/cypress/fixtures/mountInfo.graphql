@@ -1,0 +1,14 @@
+query mountInfo($name: String! = "mount-test") {
+    admin {
+        mountPoint {
+            mountPoint(name: $name) {
+                uuid
+                mountName
+                mountStatus
+                mountPointRefPath
+                properties {key value}
+            }
+        }
+    }
+}
+

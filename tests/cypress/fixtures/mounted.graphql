@@ -1,0 +1,7 @@
+mutation unmount($pathOrId: String!) {
+    admin {
+        mountPoint {
+            mount(pathOrId: $pathOrId)
+        }
+    }
+}
