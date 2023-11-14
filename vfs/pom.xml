@@ -77,6 +77,24 @@
             <version>${log4j.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>graphql-dxm-provider</artifactId>
+            <version>2.20.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.graphql-java</groupId>
+            <artifactId>graphql-java-annotations</artifactId>
+            <version>${graphql-java-annotations.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.graphql-java-kickstart</groupId>
+            <artifactId>graphql-java-servlet</artifactId>
+            <version>${graphql-java-servlet.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
     <repositories>
         <repository>
@@ -94,6 +112,16 @@
     </repositories>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <_dsannotations>*</_dsannotations>
+                    </instructions>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.cyclonedx</groupId>
                 <artifactId>cyclonedx-maven-plugin</artifactId>
