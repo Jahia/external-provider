@@ -42,10 +42,12 @@
         <jahia-static-resources>/css,/javascript</jahia-static-resources>
         <export-package>
             org.jahia.modules.external,
-            org.jahia.modules.external.query,
             org.jahia.modules.external.acl,
             org.jahia.modules.external.events,
-            org.jahia.modules.external.events.rest
+            org.jahia.modules.external.events.rest,
+            org.jahia.modules.external.graphql,
+            org.jahia.modules.external.query,
+            org.jahia.modules.external.service
         </export-package>
         <jahia.modules.importPackage>
             org.jahia.defaults.config.spring,
@@ -96,6 +98,24 @@
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
             <artifactId>jackson-jaxrs-json-provider</artifactId>
             <version>${jackson.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>graphql-dxm-provider</artifactId>
+            <version>2.20.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.graphql-java</groupId>
+            <artifactId>graphql-java-annotations</artifactId>
+            <version>${graphql-java-annotations.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.graphql-java-kickstart</groupId>
+            <artifactId>graphql-java-servlet</artifactId>
+            <version>${graphql-java-servlet.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -274,6 +294,7 @@
                     <instructions>
                         <JAX-RS-Alias>/external-provider/events</JAX-RS-Alias>
                         <JAX-RS-Application>org.jahia.modules.external.events.rest.EventResourceConfig</JAX-RS-Application>
+                        <_dsannotations>*</_dsannotations>
                     </instructions>
                 </configuration>
             </plugin>
