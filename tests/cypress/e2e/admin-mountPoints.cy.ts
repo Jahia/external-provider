@@ -38,7 +38,7 @@ describe('VFS admin panel mount tests', () => {
 
     describe('with an existing mount point', () => {
         beforeEach(function () {
-            cy.apollo({queryFile: 'mount.graphql'});
+            cy.apollo({queryFile: 'mountVfs.graphql'});
             cy.visit('/cms/adminframe/default/en/settings.manageMountPoints.html?redirect=false');
         });
 

@@ -113,7 +113,7 @@ describe('VFS mount operations tests', () => {
 
     describe('on a global mount point', () => {
         beforeEach(function () {
-            cy.apollo({queryFile: 'mount.graphql'});
+            cy.apollo({mutationFile: 'mountVfs.graphql'});
         });
 
         commonTests('/mounts/mount-test-mountPoint');
@@ -164,7 +164,10 @@ describe('VFS mount operations tests', () => {
 
     describe('on a local mount point', () => {
         beforeEach(function () {
-            cy.apollo({queryFile: 'mountLocal.graphql'});
+            cy.apollo({
+                queryFile: 'mountVfs.graphql',
+                variables: {mountPointRefPath: '/sites/digitall/files'}
+            });
         });
 
         commonTests('/sites/digitall/files/mount-test');

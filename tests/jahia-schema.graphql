@@ -421,6 +421,40 @@ type AdminQuery {
     userGroup: UserGroupQuery
     "Version of the running Jahia instance"
     version: String! @deprecated(reason: "Deprecated")
+    "Mount point mutation extension API"
+    mountPoint: GqlMountPointQuery
+}
+
+type GqlMountPointQuery {
+    "Create a mounted mount point node in /mounts"
+    mountPoint(name: String!): GqlMountPoint
+
+    "Create a mounted mount point node in /mounts"
+    mountPoints: [GqlMountPoint]
+}
+
+type GqlMountPoint {
+    "Mount point node uuid"
+    uuid: String
+    "Mount point name"
+    mountName: String!
+    "Mount point local reference path"
+    mountPointRefPath: String
+    "Mount status"
+    mountStatus: String
+    "Mount node type"
+    nodeType: String
+    "Mount point additional properties"
+    properties: [GqlMountPointProperty]
+    "Mount point property value for a given property name"
+    property(name: String!): String
+}
+
+type GqlMountPointProperty {
+    "The property key"
+    key: String
+    "The property value"
+    value: String
 }
 
 "Asset type for files"
@@ -2575,6 +2609,49 @@ type JahiaAdminMutation {
         force: Boolean,
         "In seconds, maximum time to wait for server to be ready to shutdown"
         timeout: Int
+    ): Boolean
+
+    admin: AdminMutation!
+}
+
+type AdminMutation {
+    "Mount point mutation extension API"
+    mountPoint: GqlMountPointMutation
+}
+
+type GqlMountPointMutation {
+    "Create a mounted mount point node in /mounts"
+    add(
+        name: String!
+        mountPointRefPath: String
+    ): String
+
+    "Modify an existing mount point node"
+    modify(
+    pathOrId: String!
+    name: String
+    mountPointRefPath: String
+    ): Boolean
+
+    "Mount an existing mount point"
+    mount(pathOrId: String!): Boolean
+
+    "Unmount an existing mount point"
+    unmount(pathOrId: String!): Boolean
+
+    "Create a mounted VFS mount point node in /mounts"
+    addVfs(
+    name: String!
+    mountPointRefPath: String
+    rootPath: String
+    ): String
+
+    "Modify an existing mount point node"
+    modifyVfs(
+    pathOrId: String!
+    name: String
+    mountPointRefPath: String
+    rootPath: String
     ): Boolean
 }
 

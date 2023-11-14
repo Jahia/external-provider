@@ -1,0 +1,14 @@
+query mountInfo {
+    admin {
+        mountPoint {
+            mountPoints {
+                uuid
+                mountName
+                mountStatus
+                mountPointRefPath
+                properties {key value}
+            }
+        }
+    }
+}
+
