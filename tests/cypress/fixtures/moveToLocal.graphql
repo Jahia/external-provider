@@ -1,4 +1,4 @@
-mutation moveToLocal($pathOrId: String! = "/mounts/mount-test", $localPath: String! = "/sites/digitall/files") {
+mutation moveToLocal($pathOrId: String! = "/mounts/mount-test-mount", $localPath: String! = "/sites/digitall/files") {
     admin {
         mountPoint {
             modifyVfs(pathOrId: $pathOrId, mountPointRefPath: $localPath)

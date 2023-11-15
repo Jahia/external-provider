@@ -1,4 +1,4 @@
-mutation ($referencePath: String = "/mounts/mount-test-mountPoint/images/tomcat.gif"){
+mutation ($referencePath: String){
     jcr {
         mutateNode(pathOrId: "/sites/digitall/contents") {
             addChild(name: "testReference", primaryNodeType: "jnt:fileReference") {
