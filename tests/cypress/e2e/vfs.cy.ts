@@ -113,15 +113,15 @@ describe('VFS mount operations tests', () => {
 
     describe('on a global mount point', () => {
         beforeEach(function () {
-            cy.apollo({queryFile: 'mount.graphql'});
+            cy.apollo({mutationFile: 'mountVfs.graphql'});
         });
 
-        commonTests('/mounts/mount-test-mountPoint');
+        commonTests('/mounts/mount-test');
 
         it('should not be able to create folder with an editor', function () {
             cy.apolloClient({username: 'mathias', password: 'password'}).apollo({
                 mutationFile: 'createFolder.graphql',
-                variables: {path: '/mounts/mount-test-mountPoint'},
+                variables: {path: '/mounts/mount-test'},
                 errorPolicy: 'all'
             }).should(({errors}) => {
                 expect('javax.jcr.AccessDeniedException: /').to.be.oneOf(errors.map(e => e.message));
@@ -137,18 +137,21 @@ describe('VFS mount operations tests', () => {
         });
 
         it('should keep references after switching from global to local', function () {
-            cy.apollo({mutationFile: 'createReference.graphql'});
+            cy.apollo({
+                mutationFile: 'createReference.graphql',
+                variables: {referencePath: '/mounts/mount-test/images/tomcat.gif'}
+            });
             cy.apollo({
                 mutationFile: 'publishNode.graphql',
                 variables: {pathOrId: '/sites/digitall/contents/testReference'}
             });
             cy.apollo({queryFile: 'getReference.graphql'}).should(({data}) => {
-                expect(data.jcr.nodeByPath.property.refNode?.path).eq('/mounts/mount-test-mountPoint/images/tomcat.gif');
-                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/default/mounts/mount-test-mountPoint/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.property.refNode?.path).eq('/mounts/mount-test/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/default/mounts/mount-test/images/tomcat.gif');
             });
             cy.apollo({queryFile: 'getReference.graphql', variables: {workspace: 'LIVE'}}).should(({data}) => {
-                expect(data.jcr.nodeByPath.property.refNode?.path).eq('/mounts/mount-test-mountPoint/images/tomcat.gif');
-                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/live/mounts/mount-test-mountPoint/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.property.refNode?.path).eq('/mounts/mount-test/images/tomcat.gif');
+                expect(data.jcr.nodeByPath.renderedContent.output).contains('/files/live/mounts/mount-test/images/tomcat.gif');
             });
             cy.apollo({mutationFile: 'moveToLocal.graphql'});
             cy.apollo({queryFile: 'getReference.graphql'}).should(({data}) => {
@@ -164,7 +167,10 @@ describe('VFS mount operations tests', () => {
 
     describe('on a local mount point', () => {
         beforeEach(function () {
-            cy.apollo({queryFile: 'mountLocal.graphql'});
+            cy.apollo({
+                queryFile: 'mountVfs.graphql',
+                variables: {mountPointRefPath: '/sites/digitall/files'}
+            });
         });
 
         commonTests('/sites/digitall/files/mount-test');
@@ -191,9 +197,8 @@ describe('VFS mount operations tests', () => {
 
         it('should keep references after renaming a file', function () {
             cy.apollo({
-                mutationFile: 'createReference.graphql', variables: {
-                    referencePath: '/sites/digitall/files/mount-test/images/tomcat.gif'
-                }
+                mutationFile: 'createReference.graphql',
+                variables: {referencePath: '/sites/digitall/files/mount-test/images/tomcat.gif'}
             });
             cy.apollo({
                 mutationFile: 'publishNode.graphql',
@@ -228,9 +233,8 @@ describe('VFS mount operations tests', () => {
 
         it('should keep references after moving a file', function () {
             cy.apollo({
-                mutationFile: 'createReference.graphql', variables: {
-                    referencePath: '/sites/digitall/files/mount-test/images/tomcat.gif'
-                }
+                mutationFile: 'createReference.graphql',
+                variables: {referencePath: '/sites/digitall/files/mount-test/images/tomcat.gif'}
             });
             cy.apollo({
                 mutationFile: 'publishNode.graphql',

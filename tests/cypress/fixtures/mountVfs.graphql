@@ -1,0 +1,7 @@
+mutation mountLocal($name: String! = "mount-test", $rootPath: String! = "/tmp/mount-test", $mountPointRefPath: String) {
+    admin {
+        mountPoint {
+            addVfs(name: $name, rootPath: $rootPath, mountPointRefPath: $mountPointRefPath)
+        }
+    }
+}

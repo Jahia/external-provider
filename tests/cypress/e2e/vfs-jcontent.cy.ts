@@ -5,7 +5,10 @@ describe('VFS local mount tests', () => {
     beforeEach(function () {
         cy.executeGroovy('cleanup.groovy');
         cy.executeGroovy('createDir.groovy');
-        cy.apollo({queryFile: 'mountLocal.graphql'});
+        cy.apollo({
+            queryFile: 'mountVfs.graphql',
+            variables: {mountPointRefPath: '/sites/digitall/files'}
+        });
     });
 
     afterEach(function () {
