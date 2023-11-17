@@ -21,6 +21,8 @@ public class Activator {
                 .filter(b -> b.getHeaders().get("Import-Package") != null && b.getHeaders().get("Import-Package").contains("org.jahia.modules.external.admin"))
                 .filter(b -> !wiredBundles.contains(b))
                 .collect(Collectors.toSet());
-        BundleLifecycleUtils.refreshBundles(toRefresh);
+        if (!toRefresh.isEmpty()) {
+            BundleLifecycleUtils.refreshBundles(toRefresh);
+        }
     }
 }
