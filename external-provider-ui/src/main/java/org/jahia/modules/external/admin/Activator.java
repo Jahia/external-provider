@@ -24,7 +24,7 @@ public class Activator {
         Set<Bundle> toRefresh = Arrays.stream(context.getBundles())
                 .filter(b -> b.getHeaders().get("Import-Package") != null && b.getHeaders().get("Import-Package").contains("org.jahia.modules.external.admin"))
                 .filter(b -> !wiredBundles.contains(b))
-                .filter(b -> b.getState() == Bundle.ACTIVE)
+                .filter(b -> b.getState() == Bundle.RESOLVED || b.getState() == Bundle.ACTIVE)
                 .collect(Collectors.toSet());
         logger.info("Refreshing {} bundles in external-provider-ui:", toRefresh.size());
         toRefresh.forEach(b -> logger.info("Refreshing bundle - {}:{}", b.getSymbolicName(), b.getBundleId()));
