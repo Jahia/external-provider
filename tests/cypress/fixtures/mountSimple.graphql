@@ -1,0 +1,7 @@
+mutation mountSimple($name: String!, $mountPointRefPath: String) {
+    admin {
+        mountPoint {
+            add(name: $name, mountPointRefPath: $mountPointRefPath)
+        }
+    }
+}
