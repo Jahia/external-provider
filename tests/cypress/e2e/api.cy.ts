@@ -1,5 +1,4 @@
 describe('GraphQL endpoint tests', () => {
-
     before(function () {
         cy.executeGroovy('cleanup.groovy');
         cy.executeGroovy('createDir.groovy');
@@ -169,5 +168,4 @@ describe('GraphQL endpoint tests', () => {
             });
         });
     });
-
 });
