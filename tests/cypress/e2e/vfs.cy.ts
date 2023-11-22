@@ -124,6 +124,7 @@ describe('VFS mount operations tests', () => {
                 variables: {path: '/mounts/mount-test'},
                 errorPolicy: 'all'
             }).should(({errors}) => {
+                // eslint-disable-next-line max-nested-callbacks
                 expect('javax.jcr.AccessDeniedException: /').to.be.oneOf(errors.map(e => e.message));
             });
             cy.executeGroovy('checkFile.groovy', {'#path#': '/tmp/mount-test/toto'}).should(r => {

@@ -95,7 +95,9 @@ describe('GraphQL endpoint tests', () => {
                 expect(mountPoint.mountName).to.equal('my-vfs-mount');
                 expect(mountPoint.mountStatus).to.equal('mounted');
                 expect(mountPoint.mountPointRefPath).to.equal('/sites/digitall/files/my-vfs-mount');
-                expect(mountPoint.properties.find(p => p.key === 'j:rootPath').value).to.equal('/tmp/mount-test');
+                // eslint-disable-next-line max-nested-callbacks
+                const rootPath = mountPoint.properties.find(p => p.key === 'j:rootPath').value;
+                expect(rootPath).to.equal('/tmp/mount-test');
             });
         });
 
@@ -112,7 +114,7 @@ describe('GraphQL endpoint tests', () => {
                         pathOrId: nodeId,
                         name: 'new-mount-name'
                     }
-                }).then(resp => {
+                }).then(resp => { // eslint-disable-line max-nested-callbacks
                     expect(resp.data.admin.mountPoint.modifyVfs).to.be.true;
                 });
             });
@@ -128,6 +130,7 @@ describe('GraphQL endpoint tests', () => {
                 expect(mountPoint.mountName).to.equal('new-mount-name');
                 expect(mountPoint.mountStatus).to.equal('mounted');
                 expect(mountPoint.mountPointRefPath).to.equal('/mounts/new-mount-name');
+                // eslint-disable-next-line max-nested-callbacks
                 expect(mountPoint.properties.find(p => p.key === 'j:rootPath').value).to.equal('/tmp/mount-test');
             });
         });
