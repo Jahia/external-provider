@@ -76,12 +76,12 @@ describe('GraphQL endpoint tests', () => {
             });
         });
 
-        it('get all mount points', () => {
+        it('get all mount points including simple', () => {
             cy.apollo({
                 queryFile: 'mountInfos.graphql'
             }).then(resp => {
                 expect(resp.data.admin.mountPoint.mountPoints).to.not.be.empty;
-                expect(resp.data.admin.mountPoint.mountPoints.length).to.equal(2, 'Duplicate mount point nodes');
+                expect(resp.data.admin.mountPoint.mountPoints.length).to.equal(3);
             });
         });
 
