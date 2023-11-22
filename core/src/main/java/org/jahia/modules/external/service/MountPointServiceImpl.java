@@ -83,6 +83,7 @@ public class MountPointServiceImpl implements MountPointService {
                 jcrMountPointNode.rename(jcrMountName);
             }
 
+            jcrMountPointNode.setMountStatus(JCRMountPointNode.MountStatus.mounted);
             setMountPointRefPath(mountPoint, session, jcrMountPointNode);
 
             // set additional mount point node properties
@@ -135,8 +136,11 @@ public class MountPointServiceImpl implements MountPointService {
 
     public boolean isMounted(JCRMountPointNode mountPointNode) {
         try {
+            // make an exception for jnt:mountPoint as it does not return a mount provider
+            boolean baseMounted = mountPointNode.getPrimaryNodeType().isNodeType(Constants.JAHIANT_MOUNTPOINT)
+                    && mountPointNode.getMountStatus() == MountStatus.mounted;
             JCRStoreProvider mountProvider = mountPointNode.getMountProvider();
-            return mountProvider != null && mountProvider.isAvailable();
+            return baseMounted || (mountProvider != null && mountProvider.isAvailable());
         } catch (RepositoryException ignored) {}
 
         return false;

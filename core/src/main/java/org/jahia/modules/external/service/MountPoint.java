@@ -57,7 +57,7 @@ public class MountPoint {
 
     private MountStatus mountStatus;
 
-    private String primaryNodeType = Constants.JAHIANT_MOUNTPOINT;;
+    private String primaryNodeType = Constants.JAHIANT_MOUNTPOINT;
 
     private Map<String, String> mountProperties;
 
