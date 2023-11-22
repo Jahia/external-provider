@@ -83,6 +83,7 @@ public class MountPointServiceImpl implements MountPointService {
                 jcrMountPointNode.rename(jcrMountName);
             }
 
+            jcrMountPointNode.setMountStatus(JCRMountPointNode.MountStatus.mounted);
             setMountPointRefPath(mountPoint, session, jcrMountPointNode);
 
             // set additional mount point node properties
