@@ -61,7 +61,7 @@ public class ModulesExportJob extends BackgroundJob {
 
     @Deactivate
     public void stop() throws Exception {
-        if (!schedulerService.getAllJobs(jobDetail.getGroup(), true).isEmpty() && SettingsBean.getInstance().isProcessingServer()) {
+        if (schedulerService.getRAMScheduler() != null && !schedulerService.getAllJobs(jobDetail.getGroup(), true).isEmpty() && SettingsBean.getInstance().isProcessingServer()) {
             schedulerService.getRAMScheduler().deleteJob(jobDetail.getName(), jobDetail.getGroup());
         }
     }
