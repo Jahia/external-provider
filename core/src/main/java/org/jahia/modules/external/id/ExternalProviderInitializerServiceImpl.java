@@ -55,6 +55,9 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
     private JCRStoreProvider extensionProvider;
 
 
+    private final DatabaseUtils.DatabaseType databaseType = DatabaseUtils.getDatabaseType();
+
+
     @Override
     public void delete(List<String> externalIds, String providerKey, boolean includeDescendants)
             throws RepositoryException {
@@ -106,8 +109,12 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                     "Issue when deleting mapping for external provider " + providerKey, e);
         }
         if (includeDescendants) {
-            String selectDescendantMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? and externalId like ?";
-            try (Connection connection = datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(selectDescendantMapping)) {
+            String selectDescendantMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=?";
+            selectDescendantMapping += isPostgreSQL() ?
+                    " AND convert_from(lo_get(cast(externalId as bigint)), 'UTF8') like ?" :
+                    " AND externalId like ?";
+            try (Connection connection = datasource.getConnection();
+                    PreparedStatement statement = connection.prepareStatement(selectDescendantMapping)) {
                 connection.setAutoCommit(false);
                 for (String externalId : externalIds) {
                     statement.setString(1, providerKey);
@@ -249,11 +256,13 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         uuidMapping.setProviderKey(providerKey);
         uuidMapping.setInternalUuid(providerId + "-" + StringUtils.substringAfter(UUID.randomUUID().toString(), "-"));
 
-        boolean isPostgreSQL = DatabaseUtils.getDatabaseType() == DatabaseUtils.DatabaseType.postgresql;
-        String insertNewMapping = isPostgreSQL ? "INSERT INTO jahia_external_mapping(providerKey, externalId, externalIdHash, internalUuid) values (?,lo_from_bytea(0, ?),?,?)" : "INSERT INTO jahia_external_mapping(providerKey, externalId, externalIdHash, internalUuid) values (?,?,?,?)";
-        try (Connection connection = datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(insertNewMapping)) {
+        String insertNewMapping = isPostgreSQL() ?
+                "INSERT INTO jahia_external_mapping(providerKey, externalId, externalIdHash, internalUuid) values (?,lo_from_bytea(0, ?),?,?)" :
+                "INSERT INTO jahia_external_mapping(providerKey, externalId, externalIdHash, internalUuid) values (?,?,?,?)";
+        try (Connection connection = datasource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(insertNewMapping)) {
             statement.setString(1, uuidMapping.getProviderKey());
-            if (isPostgreSQL) {
+            if (isPostgreSQL()) {
                 statement.setBytes(2, externalId.getBytes(StandardCharsets.UTF_8));
             } else {
                 statement.setClob(2, new StringReader(externalId));
@@ -312,8 +321,11 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                                          boolean includeDescendants) throws RepositoryException {
         List<String> invalidate = new ArrayList<>();
         String selectMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? AND externalIdHash=?";
-        String updateMapping = "UPDATE jahia_external_mapping SET externalId=?, externalIdHash=? WHERE internalUuid=?";
-        try (Connection connection = datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(selectMapping)) {
+        String updateMapping = (isPostgreSQL()) ?
+                "UPDATE jahia_external_mapping SET externalId=lo_from_bytea(0, ?), externalIdHash=? WHERE internalUuid=?" :
+                "UPDATE jahia_external_mapping SET externalId=?, externalIdHash=? WHERE internalUuid=?";
+        try (Connection connection = datasource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(selectMapping)) {
             connection.setAutoCommit(false);
             statement.setString(1, providerKey);
             statement.setInt(2, oldExternalId.hashCode());
@@ -323,11 +335,15 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                     if (externalId.equals(oldExternalId)) {
                         invalidate.add(oldExternalId);
                         String internalId = resultSet.getString(1);
-                        try (PreparedStatement updateExternalId = connection.prepareStatement(updateMapping)) {
-                            updateExternalId.setClob(1, new StringReader(newExternalId));
-                            updateExternalId.setLong(2, newExternalId.hashCode());
-                            updateExternalId.setString(3, internalId);
-                            updateExternalId.executeUpdate();
+                        try (PreparedStatement updateExternalIdStmt = connection.prepareStatement(updateMapping)) {
+                            if (isPostgreSQL()) {
+                                updateExternalIdStmt.setBytes(1, externalId.getBytes(StandardCharsets.UTF_8));
+                            } else {
+                                updateExternalIdStmt.setClob(1, new StringReader(externalId));
+                            }
+                            updateExternalIdStmt.setLong(2, newExternalId.hashCode());
+                            updateExternalIdStmt.setString(3, internalId);
+                            updateExternalIdStmt.executeUpdate();
                         }
                     }
                 }
@@ -344,8 +360,12 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                     "Issue when updating mapping for external provider " + providerKey, e);
         }
         if (includeDescendants) {
-            String selectDescendantMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? and externalId like ?";
-            try (Connection connection = datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(selectDescendantMapping)) {
+            String selectDescendantMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=?";
+            selectDescendantMapping += isPostgreSQL() ?
+                    " AND convert_from(lo_get(cast(externalId as bigint)), 'UTF8') like ?" :
+                    " AND externalId like ?";
+            try (Connection connection = datasource.getConnection();
+                    PreparedStatement statement = connection.prepareStatement(selectDescendantMapping)) {
                 connection.setAutoCommit(false);
                 statement.setString(1, providerKey);
                 statement.setString(2, oldExternalId + "/%");
@@ -354,12 +374,16 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                         String externalId = getExternalId(resultSet, 2);
                         invalidate.add(externalId);
                         String internalId = resultSet.getString(1);
-                        try (PreparedStatement updateExternalId = connection.prepareStatement(updateMapping)) {
+                        try (PreparedStatement updateExternalIdStmt = connection.prepareStatement(updateMapping)) {
                             String updatedExternalId = newExternalId + StringUtils.substringAfter(externalId, oldExternalId);
-                            updateExternalId.setClob(1, new StringReader(updatedExternalId));
-                            updateExternalId.setLong(2, updatedExternalId.hashCode());
-                            updateExternalId.setString(3, internalId);
-                            updateExternalId.executeUpdate();
+                            if (isPostgreSQL()) {
+                                updateExternalIdStmt.setBytes(1, externalId.getBytes(StandardCharsets.UTF_8));
+                            } else {
+                                updateExternalIdStmt.setClob(1, new StringReader(externalId));
+                            }
+                            updateExternalIdStmt.setLong(2, updatedExternalId.hashCode());
+                            updateExternalIdStmt.setString(3, internalId);
+                            updateExternalIdStmt.executeUpdate();
                         }
 
                     }
@@ -406,5 +430,9 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
     @Override
     public JCRStoreProvider getExtensionProvider() {
         return this.extensionProvider;
+    }
+
+    private boolean isPostgreSQL() {
+        return databaseType == DatabaseUtils.DatabaseType.postgresql;
     }
 }
