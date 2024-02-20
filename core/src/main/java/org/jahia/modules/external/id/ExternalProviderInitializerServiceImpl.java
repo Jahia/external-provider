@@ -107,10 +107,10 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         }
         if (includeDescendants) {
             boolean isPostgreSQL = DatabaseUtils.getDatabaseType() == DatabaseUtils.DatabaseType.postgresql;
-            String selectDescendantMapping = isPostgreSQL ?
-                    "SELECT internalUuid, convert_from(lo_get(cast(externalId as bigint)), 'UTF8') as externalId FROM "
-                            + "jahia_external_mapping WHERE providerKey=? and convert_from(lo_get(cast(externalid as bigint)), 'UTF8') like ?" : 
-                    "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? and externalId like ?";
+            String selectDescendantMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=?";
+            selectDescendantMapping += isPostgreSQL ?
+                    " AND convert_from(lo_get(cast(externalId as bigint)), 'UTF8') like ?" :
+                    " AND externalId like ?";
             try (Connection connection = datasource.getConnection();
                     PreparedStatement statement = connection.prepareStatement(selectDescendantMapping)) {
                 connection.setAutoCommit(false);
@@ -174,12 +174,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
     }
 
     private String getExternalId(ResultSet resultSet, int columnIndex) throws IOException, SQLException {
-        boolean isPostgreSQL = DatabaseUtils.getDatabaseType() == DatabaseUtils.DatabaseType.postgresql;
-        if (isPostgreSQL) {
-            return IOUtils.toString(resultSet.getCharacterStream(columnIndex));
-        } else {
-            return IOUtils.toString(resultSet.getClob(columnIndex).getCharacterStream());
-        }
+        return IOUtils.toString(resultSet.getClob(columnIndex).getCharacterStream());
     }
 
     @Override
@@ -366,8 +361,8 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         }
         if (includeDescendants) {
             String selectDescendantMapping = isPostgreSQL ?
-                    "SELECT internalUuid, convert_from(lo_get(cast(externalid as bigint)), 'UTF8') as externalid FROM jahia_external_mapping"
-                            + " WHERE providerKey=? and convert_from(lo_get(cast(externalid as bigint)), 'UTF8') like ?" :
+                    "SELECT internalUuid, externalId FROM jahia_external_mapping"
+                            + " WHERE providerKey=? and convert_from(lo_get(cast(externalId as bigint)), 'UTF8') like ?" :
                     "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? and externalId like ?";
             try (Connection connection = datasource.getConnection();
                     PreparedStatement statement = connection.prepareStatement(selectDescendantMapping)) {
