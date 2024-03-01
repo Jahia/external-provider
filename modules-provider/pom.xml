@@ -85,11 +85,6 @@
             <version>7.0.0</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
     <repositories>
         <repository>
