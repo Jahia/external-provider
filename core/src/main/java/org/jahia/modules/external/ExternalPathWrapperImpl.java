@@ -15,7 +15,6 @@
  */
 package org.jahia.modules.external;
 
-import com.google.common.base.Objects;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.utils.security.PathWrapper;
 
@@ -23,6 +22,7 @@ import javax.jcr.Item;
 import javax.jcr.NamespaceException;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+import java.util.Objects;
 
 /**
  * PathWrapper implementation for External provider access control API
@@ -93,7 +93,7 @@ public class ExternalPathWrapperImpl implements PathWrapper{
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ExternalPathWrapperImpl that = (ExternalPathWrapperImpl) o;
-        return Objects.equal(jcrPath, that.jcrPath);
+        return Objects.equals(jcrPath, that.jcrPath);
     }
 
     @Override

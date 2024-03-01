@@ -15,7 +15,6 @@
  */
 package org.jahia.modules.external;
 
-import com.google.common.collect.Lists;
 import org.apache.commons.collections.map.LRUMap;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -288,7 +287,7 @@ public class ExternalAccessControlManager implements AccessControlManager {
         // all write permissions in case of the data source not writable and not extendable
         if (!writable && node instanceof ExternalNodeImpl && (session.getOverridableProperties() == null || session.getOverridableProperties().size() == 0)) {
             privilegeToFilterOut.add(writePrivilege);
-            privilegeToFilterOut.addAll(Lists.newArrayList(writePrivilege.getAggregatePrivileges()));
+            privilegeToFilterOut.addAll(List.of(writePrivilege.getAggregatePrivileges()));
         }
 
         return privilegeToFilterOut;

@@ -15,11 +15,11 @@
  */
 package org.jahia.modules.external.acl;
 
-import com.google.common.base.Objects;
 import org.jahia.services.content.JCRContentUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -27,10 +27,10 @@ import java.util.Set;
  * This is the representation of an Access Control Entry
  * The constructor is protected, only created by ExternalDataAcl
  * it contains,
- *  - the type : Type.Grant or Type.DENY
- *  - principal : the user
- *  - roles : a Set of String containing the roles names defined by the ACE
- *  - ace protected : not used
+ * - the type : Type.Grant or Type.DENY
+ * - principal : the user
+ * - roles : a Set of String containing the roles names defined by the ACE
+ * - ace protected : not used
  */
 public class ExternalDataAce {
     public static final String ACE_TYPE_PROP = "j:aceType";
@@ -43,8 +43,8 @@ public class ExternalDataAce {
      * Ace types
      */
     public enum Type {
-        GRANT ("GRANT"),
-        DENY ("DENY");
+        GRANT("GRANT"),
+        DENY("DENY");
 
         private final String name;
 
@@ -104,16 +104,16 @@ public class ExternalDataAce {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof ExternalDataAce)) return false;
         ExternalDataAce that = (ExternalDataAce) o;
-        return Objects.equal(aceType, that.aceType) &&
-                Objects.equal(principal, that.principal) &&
-                Objects.equal(roles, that.roles);
+        return Objects.equals(aceType, that.aceType) &&
+                Objects.equals(principal, that.principal) &&
+                Objects.equals(roles, that.roles);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(aceType, principal, roles);
+        return Objects.hash(getAceType(), getPrincipal(), getRoles());
     }
 
     @Override
