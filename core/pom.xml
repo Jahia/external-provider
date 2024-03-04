@@ -53,10 +53,7 @@
             org.jahia.defaults.config.spring,
             org.jahia.exceptions,
             org.jahia.services,
-            javassist.util.proxy,
-            org.jahia.modules.graphql.provider.dxm;version="[2.20,4)",
-            org.jahia.modules.graphql.provider.dxm.admin;version="[2.20,4)",
-            org.jahia.modules.graphql.provider.dxm.osgi.annotations;version="[2.20,4)"
+            javassist.util.proxy
         </jahia.modules.importPackage>
         <jackson.version>2.9.0</jackson.version>
         <jersey.version>2.6</jersey.version>
