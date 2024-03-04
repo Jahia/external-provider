@@ -15,10 +15,6 @@
  */
 package org.jahia.modules.external.modules;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.commons.collections.Closure;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
@@ -77,6 +73,7 @@ import javax.jcr.version.OnParentVersionAction;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Data source provider that is mapped to the /modules filesystem folder with deployed Jahia modules.
@@ -147,7 +144,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     public static final String JNT_MIXIN_NODE_TYPE = "jnt:mixinNodeType";
     public static final String JNT_PRIMARY_NODE_TYPE = "jnt:primaryNodeType";
     public static final String JNT_DEFINITION_FILE = "jnt:definitionFile";
-    public static final HashSet<String> NODETYPES_TYPES = Sets.newHashSet(JNT_NODE_TYPE, JNT_MIXIN_NODE_TYPE, JNT_PRIMARY_NODE_TYPE);
+    public static final Set<String> NODETYPES_TYPES = new HashSet<>(Arrays.asList(JNT_NODE_TYPE, JNT_MIXIN_NODE_TYPE, JNT_PRIMARY_NODE_TYPE));
     public static final String LEGACY_DEFS_FILE_PREFIX = "legacy_";
     public static final String LEGACY_DEFS_FOLDER_NAME = "legacyMappings";
 
@@ -999,7 +996,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
 
             // remove the node type from the super type
             for (ExtendedNodeType sub : declaredSubtypes) {
-                List<String> s = Lists.newArrayList(sub.getDeclaredSupertypeNames());
+                List<String> s = Arrays.asList(sub.getDeclaredSupertypeNames());
                 s.remove(oldNodeTypeName);
                 sub.setDeclaredSupertypes(s.toArray(new String[s.size()]));
                 sub.validate();
@@ -1011,7 +1008,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             // remove the node type from the super type of child nodes
             for (Set<ExtendedNodeDefinition> children : containingNodeTypes.values()) {
                 for (ExtendedNodeDefinition child : children) {
-                    List<String> pts = Lists.newArrayList(child.getRequiredPrimaryTypeNames());
+                    List<String> pts = Arrays.asList(child.getRequiredPrimaryTypeNames());
                     pts.remove(oldNodeTypeName);
                     if (pts.isEmpty()) {
                         pts.add("nt:base");
@@ -1031,9 +1028,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             newNodeTypeRegistry.addNodeType(name, nodeType);
             nodeType.validate();
 
-            // adjust the super type of the sub-types
+            // adjust the super type of the subtypes
             for (ExtendedNodeType sub : declaredSubtypes) {
-                List<String> s = Lists.newArrayList(sub.getDeclaredSupertypeNames());
+                List<String> s = new ArrayList(List.of(sub.getDeclaredSupertypeNames()));
                 s.add(newNodeTypeName);
                 sub.setDeclaredSupertypes(s.toArray(new String[s.size()]));
                 sub.validate();
@@ -1043,7 +1040,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
             for (Set<ExtendedNodeDefinition> children : containingNodeTypes.values()) {
                 for (ExtendedNodeDefinition child : children) {
                     child.remove();
-                    List<String> pts = Lists.newArrayList(child.getRequiredPrimaryTypeNames());
+                    List<String> pts = Arrays.asList(child.getRequiredPrimaryTypeNames());
                     pts.remove("nt:base");
                     pts.add(newNodeTypeName);
                     child.setRequiredPrimaryTypes(pts.toArray(new String[pts.size()]));
@@ -1376,7 +1373,8 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         Map<String, String[]> properties = data.getProperties();
         List<String> declaredSupertypes = new ArrayList<String>();
         String[] values = properties.get("j:supertype");
-        final HashSet<String> supertypes = Sets.newHashSet(nodeType.getDeclaredSupertypeNames());
+        final Set<String> supertypes = new HashSet<>(nodeType.getDeclaredSupertypes().length);
+        supertypes.addAll(Arrays.stream(nodeType.getDeclaredSupertypes()).map(Object::toString).collect(Collectors.toList()));
         if (values != null && values.length > 0) {
             if (!supertypes.contains(values[0])) {
                 checkCndItemUsage(path, "modulesDataSource.errors.changeSuperType");
@@ -1385,11 +1383,9 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
         values = properties.get("j:mixins");
         if (values != null) {
-            for (String mixin : values) {
-                declaredSupertypes.add(mixin);
-            }
+            Collections.addAll(declaredSupertypes, values);
         }
-        nodeType.setDeclaredSupertypes(declaredSupertypes.toArray(new String[declaredSupertypes.size()]));
+        nodeType.setDeclaredSupertypes(declaredSupertypes.toArray(new String[0]));
         values = properties.get("j:isAbstract");
         if (values != null && values.length > 0) {
             nodeType.setAbstract(Boolean.parseBoolean(values[0]));
@@ -1416,7 +1412,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
         values = properties.get("j:mixinExtends");
         if (values != null) {
-            nodeType.setMixinExtendNames(Lists.newArrayList(values));
+            nodeType.setMixinExtendNames(Arrays.asList(values));
         } else {
             nodeType.setMixinExtendNames(new ArrayList<String>());
         }
@@ -1921,12 +1917,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
         }
         List<ExtendedNodeType> mixinExtends = nodeType.getMixinExtends();
         if (mixinExtends != null && !mixinExtends.isEmpty()) {
-            Function<ExtendedNodeType, String> transformName = new Function<ExtendedNodeType, String>() {
-                public String apply(@Nullable ExtendedNodeType from) {
-                    return from != null ? from.getName() : null;
-                }
-            };
-            properties.put("j:mixinExtends", Collections2.<ExtendedNodeType, String>transform(mixinExtends, transformName).toArray(new String[mixinExtends.size()]));
+            properties.put("j:mixinExtends", mixinExtends.stream().map(ExtendedNodeType::getName).collect(Collectors.toList()).toArray(new String[mixinExtends.size()]));
         }
         String primaryItemName = nodeType.getPrimaryItemName();
         if (primaryItemName != null) {
