@@ -68,7 +68,11 @@
         <embed-dependency>derby;scope=runtime;inline=false</embed-dependency>
         <jahia-module-signature>MCwCFDRwcTVpZRkv5DVKS93pX8vl1IbXAhQ6brQ/jfgv7php600Fe8C2KxCrKA==</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
-        <jahia.modules.importPackage>org.jahia.defaults.config.spring,org.springframework.core</jahia.modules.importPackage>
+        <jahia.modules.importPackage>
+            com.google.common.collect,
+            org.jahia.defaults.config.spring,
+            org.springframework.core
+        </jahia.modules.importPackage>
     </properties>
     <repositories>
         <repository>
@@ -120,6 +124,12 @@
             <artifactId>derby</artifactId>
             <version>${driver.derby.version}</version>
             <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.osgi.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

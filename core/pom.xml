@@ -50,6 +50,8 @@
             org.jahia.modules.external.service
         </export-package>
         <jahia.modules.importPackage>
+            com.google.common.base,
+            com.google.common.collect,
             org.jahia.defaults.config.spring,
             org.jahia.exceptions,
             org.jahia.services,
@@ -119,6 +121,12 @@
             <groupId>com.graphql-java-kickstart</groupId>
             <artifactId>graphql-java-servlet</artifactId>
             <version>${graphql-java-servlet.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.osgi.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
