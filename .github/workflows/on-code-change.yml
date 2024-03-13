@@ -17,7 +17,6 @@ jobs:
         with:
           nexus_username: ${{ secrets.NEXUS_USERNAME }}
           nexus_password: ${{ secrets.NEXUS_PASSWORD }}
-          nexus_enterprise_releases_url: ${{ secrets.NEXUS_ENTERPRISE_RELEASES_URL }}
 
   static-analysis:
     name: Static Analysis (linting, vulns)
@@ -44,7 +43,6 @@ jobs:
         with:
           nexus_username: ${{ secrets.NEXUS_USERNAME }}
           nexus_password: ${{ secrets.NEXUS_PASSWORD }}
-          module_id: external-provider
 
   sonar-analysis:
     name: Sonar Analysis
