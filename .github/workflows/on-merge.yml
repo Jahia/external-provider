@@ -20,7 +20,6 @@ jobs:
         with:
           nexus_username: ${{ secrets.NEXUS_USERNAME }}
           nexus_password: ${{ secrets.NEXUS_PASSWORD }}
-          nexus_enterprise_releases_url: ${{ secrets.NEXUS_ENTERPRISE_RELEASES_URL }}
 
   build:
     name: Build Module
@@ -37,7 +36,6 @@ jobs:
         with:
           nexus_username: ${{ secrets.NEXUS_USERNAME }}
           nexus_password: ${{ secrets.NEXUS_PASSWORD }}
-          module_id: external-provider
 
   sbom:
     name: SBOM processing
@@ -71,7 +69,7 @@ jobs:
           module_id: external-provider
           testrail_project: External Provider
           tests_manifest: provisioning-manifest-build.yml
-          jahia_image: jahia/jahia-discovery-dev:8-SNAPSHOT
+          jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
           should_use_build_artifacts: true
           github_artifact_name: external-provider-artifacts-${{ github.run_number }}
           bastion_ssh_private_key: ${{ secrets.BASTION_SSH_PRIVATE_KEY_JAHIACI }}
