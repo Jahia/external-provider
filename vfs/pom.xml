@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.jahia.modules</groupId>
         <artifactId>external-provider-parent</artifactId>
-        <version>4.7.0-SNAPSHOT</version>
+        <version>4.7.0</version>
     </parent>
     <artifactId>external-provider-vfs</artifactId>
     <packaging>bundle</packaging>
@@ -31,7 +31,7 @@
         <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
         <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
         <url>scm:git:git@github.com:Jahia/external-provider.git</url>
-        <tag>HEAD</tag>
+        <tag>4_7_0</tag>
     </scm>
     <properties>
         <_dsannotations>*</_dsannotations>
@@ -80,7 +80,7 @@
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>graphql-dxm-provider</artifactId>
-            <version>3.0.0-SNAPSHOT</version>
+            <version>3.0.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
