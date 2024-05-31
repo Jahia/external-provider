@@ -8,7 +8,7 @@
   - 'mvn:org.jahia.modules/person'
   - 'mvn:org.jahia.modules/news'
   - 'mvn:org.jahia.modules/channels'
-  - 'mvn:org.jahia.modules/font-awesome'
+  - 'mvn:org.jahia.modules/font-awesome/6.1.5'
   - 'mvn:org.jahia.modules/calendar'
   - 'mvn:org.jahia.modules/bootstrap3-core'
   - 'mvn:org.jahia.modules/bootstrap3-components'
