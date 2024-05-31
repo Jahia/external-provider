@@ -1,5 +1,5 @@
 - addMavenRepository: 'https://store.jahia.com/nexus/content/repositories/jahia-public-app-store@id=JahiaStore'
-- addMavenRepository: 'https://devtools.jahia.com/nexus/content/groups/public/@snapshots@noreleases@id=JahiaSnapshot'
+- addMavenRepository: 'https://devtools.jahia.com/nexus/content/groups/public/@snapshots@id=JahiaSnapshot'
 
 # This modules were added during the switch from using jahia-discovery to jahia-ee
 - installBundle:
@@ -33,7 +33,7 @@
 
 - installBundle:
   - 'mvn:org.jahia.modules/jcontent'
-  - 'mvn:org.jahia.tests/jahia-test-module'
+  - 'mvn:org.jahia.test/jahia-test-module'
   - 'mvn:org.jahia.modules/external-provider'
   - 'mvn:org.jahia.modules/external-provider-ui'
   - 'mvn:org.jahia.modules/external-provider-vfs'

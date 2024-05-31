@@ -33,6 +33,6 @@
 
 - installBundle:
   - 'mvn:org.jahia.modules/jcontent'
-  - 'mvn:org.jahia.tests/jahia-test-module'
+  - 'mvn:org.jahia.test/jahia-test-module'
   autoStart: true
   uninstallPreviousVersion: true
