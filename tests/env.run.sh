@@ -59,6 +59,7 @@ if [[ -d artifacts/ && $MANIFEST == *"build"* ]]; then
     curl -u root:${SUPER_USER_PASSWORD} -X POST ${JAHIA_URL}/modules/api/provisioning --form script='[{"installAndStartBundle":"'"$file"'", "forceUpdate":true}]' --form file=@$file
     echo
     echo "$(date +'%d %B %Y - %k:%M') [MODULE_INSTALL] == Module submitted =="
+    sleep 30
   done
   cd ..
 fi
