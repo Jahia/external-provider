@@ -3,23 +3,24 @@
 
 # This modules were added during the switch from using jahia-discovery to jahia-ee
 - installBundle:
-  - 'mvn:org.jahia.modules/legacy-default-components/1.0.0-SNAPSHOT'
-  - 'mvn:org.jahia.modules/press/3.1.0'
-  - 'mvn:org.jahia.modules/person/3.2.0'
-  - 'mvn:org.jahia.modules/news/3.4.0'
+  - 'mvn:org.jahia.modules/legacy-default-components'
+  - 'mvn:org.jahia.modules/press'
+  - 'mvn:org.jahia.modules/person'
+  - 'mvn:org.jahia.modules/news'
+  - 'mvn:org.jahia.modules/channels'
   - 'mvn:org.jahia.modules/font-awesome/6.1.5'
-  - 'mvn:org.jahia.modules/calendar/3.2.0'
-  - 'mvn:org.jahia.modules/bootstrap3-core/4.3.0'
-  - 'mvn:org.jahia.modules/bootstrap3-components/4.3.0'
-  - 'mvn:org.jahia.modules/location/3.2.0'
-  - 'mvn:org.jahia.modules/topstories/3.0.0'
-  - 'mvn:org.jahia.modules/rating/3.2.0'
-  - 'mvn:org.jahia.modules/event/4.0.0-SNAPSHOT'
-  - 'mvn:org.jahia.modules/bookmarks/3.1.0'
-  - 'mvn:org.jahia.modules/dx-base-demo-core/2.4.0'
-  - 'mvn:org.jahia.modules/dx-base-demo-templates/4.0.0-SNAPSHOT'
-  - 'mvn:org.jahia.modules/dx-base-demo-components/3.0.0-SNAPSHOT'
-  - 'mvn:org.jahia.modules/digitall/3.0.0-SNAPSHOT' 
+  - 'mvn:org.jahia.modules/calendar'
+  - 'mvn:org.jahia.modules/bootstrap3-core'
+  - 'mvn:org.jahia.modules/bootstrap3-components'
+  - 'mvn:org.jahia.modules/location'
+  - 'mvn:org.jahia.modules/topstories'
+  - 'mvn:org.jahia.modules/rating'
+  - 'mvn:org.jahia.modules/event'
+  - 'mvn:org.jahia.modules/bookmarks'
+  - 'mvn:org.jahia.modules/dx-base-demo-core'
+  - 'mvn:org.jahia.modules/dx-base-demo-templates'
+  - 'mvn:org.jahia.modules/dx-base-demo-components'
+  - 'mvn:org.jahia.modules/digitall/3.0.0' 
   - 'mvn:org.jahia.modules/skins'
   - 'mvn:org.jahia.modules/default-skins'
   - 'mvn:org.jahia.modules/grid'
@@ -27,11 +28,11 @@
   autoStart: true
   uninstallPreviousVersion: true
 
-- import: "jar:mvn:org.jahia.modules/digitall/3.0.0-SNAPSHOT/zip/import!/users.zip"
-- importSite: "jar:mvn:org.jahia.modules/digitall/3.0.0-SNAPSHOT/zip/import!/Digitall.zip"
+- import: "jar:mvn:org.jahia.modules/digitall/3.0.0/zip/import!/users.zip"
+- importSite: "jar:mvn:org.jahia.modules/digitall/3.0.0/zip/import!/Digitall.zip"
 
 - installBundle:
   - 'mvn:org.jahia.modules/jcontent'
-  - 'mvn:org.jahia.tests/jahia-test-module'
+  - 'mvn:org.jahia.test/jahia-test-module'
   autoStart: true
   uninstallPreviousVersion: true
