@@ -49,14 +49,14 @@
             org.jahia.modules.external.query,
             org.jahia.modules.external.service
         </export-package>
-        <jahia.modules.importPackage>
+        <import-package>
             com.google.common.base,
             com.google.common.collect,
             org.jahia.defaults.config.spring,
             org.jahia.exceptions,
             org.jahia.services,
             javassist.util.proxy
-        </jahia.modules.importPackage>
+        </import-package>
         <jackson.version>2.9.0</jackson.version>
         <jersey.version>2.6</jersey.version>
         <jahia-module-signature>MCwCFDFdmFUQXE+wCOIheRuJoaC7qXixAhQ5qUczQ11igPyTeuGlKKR8vVvRcQ==</jahia-module-signature>
