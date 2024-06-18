@@ -35,7 +35,7 @@
     </scm>
     <properties>
         <_dsannotations>*</_dsannotations>
-        <jahia-depends>external-provider,assets,jquery</jahia-depends>
+        <jahia-depends>external-provider,external-provider-ui=optional,assets,jquery</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <export-package>
             org.jahia.modules.external.vfs,
@@ -47,6 +47,7 @@
         <import-package>
             org.jahia.modules.external;version="[4.2,5)",
             org.jahia.modules.external.service;version="[4.2,5)",
+            org.jahia.modules.external.graphql;version="[4.7,5)",
             org.jahia.defaults.config.spring,
             org.apache.naming.java,
             org.springframework.web.servlet.tags.form
