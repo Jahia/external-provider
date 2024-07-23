@@ -39,4 +39,5 @@ jobs:
           github_pr_id: ${{github.event.number}}
           sonar_url: ${{ secrets.SONAR_URL }}
           sonar_token: ${{ secrets.SONAR_TOKEN }}
+          nvd_apikey: ${{ secrets.NVD_APIKEY }}
           mvn_settings_filepath: '.github/maven.settings.xml'
