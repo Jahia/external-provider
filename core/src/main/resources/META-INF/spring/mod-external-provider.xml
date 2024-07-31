@@ -31,6 +31,7 @@
 
     <osgi:service id="ExternalProviderInitializerService" ref="ProviderInitializerService" interface="org.jahia.modules.external.ExternalProviderInitializerService"/>
 
+    <!-- Also exposed through ExternalContentStoreProviderFactory OSGI service -->
     <bean id="ExternalStoreProviderPrototype" class="org.jahia.modules.external.ExternalContentStoreProvider"
           parent="AbstractJCRStoreProviderPrototype" scope="prototype">
         <property name="externalProviderInitializerService" ref="ProviderInitializerService"/>
