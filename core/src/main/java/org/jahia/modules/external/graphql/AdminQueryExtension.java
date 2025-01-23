@@ -38,7 +38,7 @@ public class AdminQueryExtension {
     @GraphQLField
     @GraphQLName("mountPoint")
     @GraphQLDescription("Mount point query extension API")
-    @GraphQLRequiresPermission(value = "graphqlAdminMutation")
+    @GraphQLRequiresPermission(value = "graphqlAdminQuery")
     public static GqlMountPointQuery mountPoint() {
         return new GqlMountPointQuery();
     }
