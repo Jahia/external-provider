@@ -27,19 +27,16 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
-import org.jahia.modules.graphql.provider.dxm.admin.GqlAdminQuery;
-import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
+import org.jahia.modules.graphql.provider.dxm.admin.GqlJahiaAdminMutation;
 
-@Deprecated(since = "4.8.0", forRemoval = true)
-@GraphQLTypeExtension(GqlAdminQuery.class)
-@GraphQLDescription("Query extensions for mount point")
-public class AdminQueryExtension {
+@GraphQLTypeExtension(GqlJahiaAdminMutation.class)
+@GraphQLDescription("Mutation extensions for mount point")
+public class JahiaAdminMutationExtension {
 
     @GraphQLField
     @GraphQLName("mountPoint")
-    @GraphQLDescription("Mount point query extension API")
-    @GraphQLRequiresPermission(value = "graphqlAdminMutation")
-    public static GqlMountPointQuery mountPoint() {
-        return new GqlMountPointQuery();
+    @GraphQLDescription("Mount point mutation extension API")
+    public static GqlMountPointMutation mountPoint() {
+        return new GqlMountPointMutation();
     }
 }
