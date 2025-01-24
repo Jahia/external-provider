@@ -37,6 +37,6 @@ public class GqlMountPointExtensionsProvider implements DXGraphQLExtensionsProvi
 
     @Override
     public Collection<Class<?>> getExtensions() {
-        return Arrays.<Class<?>>asList(AdminMutationExtension.class, AdminQueryExtension.class);
+        return Arrays.<Class<?>>asList(AdminMutationExtension.class, AdminQueryExtension.class, JahiaAdminMutationExtension.class, JahiaAdminQueryExtension.class);
     }
 }
