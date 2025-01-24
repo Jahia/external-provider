@@ -10,7 +10,8 @@
     create table jahia_external_provider_id (
         id number(10,0) not null,
         providerKey varchar2(255 char) not null,
-        primary key (id)
+        primary key (id),
+        unique (providerKey)
     );
 
     create index jahia_external_mapping_index1 on jahia_external_mapping (externalIdHash, providerKey);
