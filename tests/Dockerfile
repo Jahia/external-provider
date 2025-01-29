@@ -3,7 +3,7 @@ FROM cypress/browsers:node-22.13.1-chrome-132.0.6834.159-1-ff-134.0.2-edge-132.0
 ARG MAVEN_VER="3.8.1"
 ARG MAVEN_BASE_URL="https://archive.apache.org/dist/maven/maven-3"
 
-RUN apt-get update && apt-get install -y jq
+RUN apt-get update && apt-get install -y jq curl
 
 RUN adduser --disabled-password jahians
 
