@@ -42,7 +42,7 @@
             org.jahia.modules.external.modules,
             org.jahia.modules.external.modules.osgi
         </export-package>
-        <jahia-module-signature>MCwCFGhbFJbIJXSyimYBkUkvlbESgc8WAhRLH4ZNIuP+usuzU80qbzWYlcfx3Q==</jahia-module-signature>
+        <jahia-module-signature>MC0CFBQMLx1LLa5s1a/YJU4oSJLqH6ZnAhUAi4nlYTLTfGCD94bWybraC5FC+3k=</jahia-module-signature>
         <import-package>
             com.google.common.base,
             com.google.common.collect,
