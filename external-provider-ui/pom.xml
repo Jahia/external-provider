@@ -54,7 +54,7 @@
             org.jahia.services,
             javassist.util.proxy
         </import-package>
-        <jahia-module-signature>MC0CFDMGZgQ7mD1ASVC2zvvy1KOao6BFAhUAjNuAlk7TAwUcEiut2t/xUzMLitQ=</jahia-module-signature>
+        <jahia-module-signature>MCwCFCwJryO184giS+wCJJ4t3dIhSmblAhRr7RW7vEiBqGSnSxdr6nWEA6AelQ==</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <yarn.arguments>build:production</yarn.arguments>
         <sonar.sources>src/javascript,src/main/resources/javascript</sonar.sources>
