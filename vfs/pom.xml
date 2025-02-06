@@ -43,7 +43,7 @@
         </export-package>
         <!-- Required for webflow UI, deprecated -->
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
-        <jahia-module-signature>MCwCFCX/bCE0QH2LL3APB/vBRK82u2LSAhQBwbnb0yR9CEG7YnHPqsyrHvqJ7w==</jahia-module-signature>
+        <jahia-module-signature>MC4CFQCKsZpDTwE6YMzGE3KCGn47vbx4BwIVAJYl4cHO822bm9Fyym4XNqWGtoFE</jahia-module-signature>
         <import-package>
             org.jahia.modules.external;version="[4.2,5)",
             org.jahia.modules.external.service;version="[4.2,5)",
