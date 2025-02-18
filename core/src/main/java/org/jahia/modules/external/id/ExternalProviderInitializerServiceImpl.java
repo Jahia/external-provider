@@ -58,8 +58,6 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
     private JCRStoreProvider extensionProvider;
 
-    private final ConcurrentHashMap<String, Object> providerIdDBInsertLocks = new ConcurrentHashMap<>();
-
 
     @Override
     public void delete(List<String> externalIds, String providerKey, boolean includeDescendants)
@@ -223,23 +221,8 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
             return existingId;
         }
 
-        // Synchronize on a per-providerKey basis to avoid duplicate inserts
-        Object lock = providerIdDBInsertLocks.computeIfAbsent(providerKey, key -> new Object());
-        synchronized (lock) {
-            try {
-                // Double-check if the key was inserted while we were waiting
-                existingId = findProviderId(providerKey);
-                if (existingId != null) {
-                    return existingId;
-                }
-
-                // Insert the new providerKey
-                return insertProviderKey(providerKey);
-            } finally {
-                // Clean up the lock to prevent memory leaks
-                providerIdDBInsertLocks.remove(providerKey);
-            }
-        }
+        // Insert the new providerKey
+        return insertProviderKey(providerKey);
     }
 
     private Integer findProviderId(String providerKey) throws RepositoryException {
