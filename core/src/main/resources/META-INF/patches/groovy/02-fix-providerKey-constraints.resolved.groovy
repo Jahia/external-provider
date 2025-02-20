@@ -33,17 +33,16 @@ static def findDuplicateProviders(DataSource dataSource) {
         ORDER BY id
     """
 
-    try (def connection = dataSource.connection
-         def statement = connection.prepareStatement(query)
-         def resultSet = statement.executeQuery()) {
-
-        while (resultSet.next()) {
-            def id = resultSet.getString("id")
-            def providerKey = resultSet.getString("providerKey")
-            duplicates[providerKey] << id
+    dataSource.connection.withCloseable { conn ->
+        conn.prepareStatement(query).withCloseable { stat ->
+            stat.executeQuery().withCloseable { rs ->
+                while (rs.next()) {
+                    def id = rs.getString("id")
+                    def providerKey = rs.getString("providerKey")
+                    duplicates[providerKey] << id
+                }
+            }
         }
-    } catch (SQLException e) {
-        e.printStackTrace()
     }
 
     return duplicates
@@ -117,11 +116,11 @@ static def countMatchingInternalUuid(DataSource dataSource, String providerId) {
  * @param providerId The primary key value to match for deletion.
  */
 static def deleteProviderById(DataSource dataSource, int providerId) {
-    def queryProvider = "DELETE FROM jahia_external_provider_id WHERE id = ?"
+    def deleteProvider = "DELETE FROM jahia_external_provider_id WHERE id = ?"
     def deleteMappings = "DELETE FROM jahia_external_mapping WHERE internalUuid LIKE ?"
 
     try (def connection = dataSource.connection;
-         def statement = connection.prepareStatement(queryProvider)) {
+         def statement = connection.prepareStatement(deleteProvider)) {
         statement.setInt(1, providerId)
         statement.executeUpdate()
     }
