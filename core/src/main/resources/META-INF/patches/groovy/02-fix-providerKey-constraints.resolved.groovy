@@ -30,6 +30,7 @@ static def findDuplicateProviders(DataSource dataSource) {
             SELECT providerKey FROM jahia_external_provider_id 
             GROUP BY providerKey HAVING COUNT(*) > 1
         )
+        ORDER BY id
     """
 
     try (def connection = dataSource.connection
