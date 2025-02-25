@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -214,7 +215,20 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
     @Override
     public Integer getProviderId(String providerKey) throws RepositoryException {
-        try (Connection connection = this.datasource.getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT id FROM jahia_external_provider_id WHERE providerKey=?")) {
+        // First, check if the providerKey exists in the DB
+        Integer existingId = findProviderId(providerKey);
+        if (existingId != null) {
+            return existingId;
+        }
+
+        // Insert the new providerKey
+        return insertProviderKey(providerKey);
+    }
+
+    private Integer findProviderId(String providerKey) throws RepositoryException {
+        try (Connection connection = this.datasource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT id FROM jahia_external_provider_id WHERE providerKey=?")) {
             statement.setString(1, providerKey);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
@@ -222,29 +236,41 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                 }
             }
         } catch (SQLException e) {
-            throw new RepositoryException("Issue when obtaining provider id identifier for provider" + providerKey, e);
+            throw new RepositoryException("Error querying provider id for key: " + providerKey, e);
         }
-        // We did not find the provider key in the DB so we will create it
+        return null;
+    }
+
+
+    private Integer insertProviderKey(String providerKey) throws RepositoryException {
         boolean isOracle = DatabaseUtils.getDatabaseType().equals(DatabaseUtils.DatabaseType.oracle);
-        try (Connection connection = this.datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(getInsertNewProviderStatement(), Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection connection = this.datasource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     getInsertNewProviderStatement(), Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, providerKey);
             int rowAffected = statement.executeUpdate();
-            if (1 == rowAffected && !isOracle) {
+            if (rowAffected == 1 && !isOracle) {
                 try (ResultSet resultSet = statement.getGeneratedKeys()) {
                     if (resultSet.next()) {
                         return resultSet.getInt(1);
                     }
-                } catch (SQLException e) {
-                    throw new RepositoryException("Issue when reading provider id identifier for provider" + providerKey, e);
                 }
             }
         } catch (SQLException e) {
-            throw new RepositoryException("Issue when creating provider id identifier for provider" + providerKey, e);
+            // Retry with a select, could have been rejected due to a previous concurrent insert
+            // (In cluster mode multiple jahia instances trying to insert the same providerKey for example)
+            Integer concurrentlyInsertedId = findProviderId(providerKey);
+            if (concurrentlyInsertedId != null) {
+                return concurrentlyInsertedId;
+            }
+            throw new RepositoryException("Error inserting provider id for key: " + providerKey, e);
         }
+
         if (isOracle) {
-            return getProviderId(providerKey);
+            // For Oracle, retry finding the key as it doesn't support RETURN_GENERATED_KEYS reliably
+            return findProviderId(providerKey);
         }
-        throw new RepositoryException("Could not read or create provider id for provider " + providerKey);
+        throw new RepositoryException("Failed to insert provider id for key: " + providerKey);
     }
 
     private static String getInsertNewProviderStatement() throws RepositoryException {
