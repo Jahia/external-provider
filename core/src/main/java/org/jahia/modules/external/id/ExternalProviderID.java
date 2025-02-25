@@ -23,7 +23,7 @@ import javax.persistence.*;
  * Map that link valid uuid and (@link org.jahia.services.content.impl.external.ExternalData} id
  */
 @Entity
-@Table(name = "jahia_external_provider_id")
+@Table(name = "jahia_external_provider_id", uniqueConstraints = @UniqueConstraint(columnNames = {"providerKey"}))
 public class ExternalProviderID {
 
     private Integer id;
