@@ -1,6 +1,6 @@
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.lang.StringUtils
-import org.jahia.osgi.BundleUtils
+import org.jahia.services.SpringContextSingleton
 import org.jahia.services.content.JCRCallback
 import org.jahia.services.content.JCRNodeWrapper
 import org.jahia.services.content.JCRObservationManager
@@ -398,7 +398,7 @@ static def buildQueryForIndexedPropertyNames(String id, indexedPropertyNames) {
  */
 static def applyPatch(def log) {
     log.info("External provider patching jahia_external_provider_id for unique providerKey, started...")
-    def jahiaDs = BundleUtils.getOsgiService(DataSource, '(osgi.jndi.service.name=jdbc/jahia)')
+    def jahiaDs = SpringContextSingleton.getBean("dataSource") as DataSource
     def jsonMapper = new ObjectMapper()
 
     log.info("Check if schema needs to be updated")
