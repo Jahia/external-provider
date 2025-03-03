@@ -40,7 +40,8 @@ jobs:
           module_id: external-provider
 
   publish:
-    name: Publish module=
+    name: Publish module
+    needs: [build]
     if: github.ref == 'refs/heads/4_6_x'
     runs-on: ubuntu-latest
     container:
