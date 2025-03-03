@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.jahia.modules</groupId>
         <artifactId>external-provider-parent</artifactId>
-        <version>4.6.0</version>
+        <version>4.6.1-SNAPSHOT</version>
     </parent>
     <artifactId>external-provider</artifactId>
     <packaging>bundle</packaging>
@@ -33,7 +33,7 @@
         <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
         <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
         <url>scm:git:git@github.com:Jahia/external-provider.git</url>
-        <tag>4_6_0</tag>
+        <tag>4_6_x</tag>
     </scm>
     <properties>
         <jahia-depends>siteSettings,assets,jquery</jahia-depends>
@@ -295,8 +295,8 @@
                             <goal>install-node-and-yarn</goal>
                         </goals>
                         <configuration>
-                            <nodeVersion>v14.16.0</nodeVersion>
-                            <yarnVersion>v1.22.11</yarnVersion>
+                            <nodeVersion>v18.16.0</nodeVersion>
+                            <yarnVersion>v1.22.19</yarnVersion>
                         </configuration>
                     </execution>
                     <execution>
@@ -314,6 +314,16 @@
                         </goals>
                         <configuration>
                             <arguments>${yarn.arguments}</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>sync-pom</id>
+                        <phase>none</phase>
+                        <goals>
+                            <goal>yarn</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>sync-pom</arguments>
                         </configuration>
                     </execution>
                 </executions>

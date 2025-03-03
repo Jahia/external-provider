@@ -24,16 +24,19 @@
         <version>8.1.1.0</version>
         <relativePath />
     </parent>
-    <version>4.6.0</version>
+    <version>4.6.1-SNAPSHOT</version>
     <artifactId>external-provider-parent</artifactId>
     <name>Jahia External Provider Parent</name>
     <packaging>pom</packaging>
     <description>External provider parent project.</description>
+    <properties>
+        <jahia.plugin.version>6.9</jahia.plugin.version>
+    </properties>
     <scm>
         <connection>scm:git:git@github.com:Jahia/external-provider.git</connection>
         <url>scm:git:git@github.com:Jahia/external-provider.git</url>
         <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
-        <tag>4_6_0</tag>
+        <tag>4_6_x</tag>
     </scm>
     <repositories>
         <repository>
