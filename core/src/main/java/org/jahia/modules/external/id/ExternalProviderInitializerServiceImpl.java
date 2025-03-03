@@ -212,8 +212,16 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                     session.getTransaction().commit();
                 } catch (Exception e) {
                     session.getTransaction().rollback();
-                    throw new RepositoryException("Issue when storing external provider ID for provider " + providerId,
-                            e);
+
+                    // Retry with a select, could have been rejected due to a previous concurrent insert
+                    // (In cluster mode multiple jahia instances trying to insert the same providerKey for example)
+                    list = session.createQuery("from ExternalProviderID where providerKey=:providerKey").setString("providerKey", providerKey)
+                            .setReadOnly(true).setFlushMode(FlushMode.MANUAL).list();
+                    if (list.size() > 0) {
+                        providerId = (ExternalProviderID) list.get(0);
+                    } else {
+                        throw new RepositoryException("Issue when storing external provider ID for provider " + providerId, e);
+                    }
                 }
             }
         } catch (HibernateException e) {
