@@ -66,7 +66,7 @@
         <jahia-depends>default,external-provider,external-provider-vfs,rating</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <embed-dependency>derby;scope=runtime;inline=false</embed-dependency>
-        <jahia-module-signature>MC0CFFTHt2yMn7jqva63lpU+NRFN/wGmAhUAlrHDWmR0ojeULOYF/ilRjAtOlzg=</jahia-module-signature>
+        <jahia-module-signature>MCwCFCszIE6MYMuBLjKzgKjsgOooF3GoAhQxPyGuwSpe5YBzM+AMTrCvNRSACQ==</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <jahia.modules.importPackage>
             com.google.common.collect,
