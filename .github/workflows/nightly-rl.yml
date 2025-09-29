@@ -38,8 +38,18 @@ jobs:
           jahia_artifact_name: ep-rl-${{ github.run_number }}
           bastion_ssh_private_key: ${{ secrets.BASTION_SSH_PRIVATE_KEY_JAHIACI }}
           jahia_license: ${{ secrets.JAHIA_LICENSE_8X_FULL }}
-          docker_username: ${{ secrets.GH_PACKAGES_USERNAME }}
-          docker_password: ${{ secrets.GH_PACKAGES_TOKEN }}
+          docker_registries: |
+            [
+              {
+                "registry": "ghcr.io",
+                "username": "${{ secrets.GH_PACKAGES_USERNAME }}",
+                "password": "${{ secrets.GH_PACKAGES_TOKEN }}"
+              },
+              {
+                "username": "${{ secrets.DOCKERHUB_USERNAME }}",
+                "password": "${{ secrets.DOCKERHUB_PASSWORD }}"
+              }
+            ]
           nexus_username: ${{ secrets.NEXUS_USERNAME }}
           nexus_password: ${{ secrets.NEXUS_PASSWORD }}
           testrail_username: ${{ secrets.TESTRAIL_USERNAME }}

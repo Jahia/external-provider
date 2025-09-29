@@ -33,7 +33,7 @@ jobs:
     needs: update-signature
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/jahia/cimg-mvn-cache:ga_cimg_openjdk_11.0.20-node
+      image: ghcr.io/jahia/jahia-docker-mvn-cache:11-jdk-noble-node-base
       credentials:
         username: ${{ secrets.GH_PACKAGES_USERNAME }}
         password: ${{ secrets.GH_PACKAGES_TOKEN }}
@@ -49,7 +49,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/jahia/cimg-mvn-cache:ga_cimg_openjdk_11.0.20-node
+      image: ghcr.io/jahia/jahia-docker-mvn-cache:11-jdk-noble-node-base
       credentials:
         username: ${{ secrets.GH_PACKAGES_USERNAME }}
         password: ${{ secrets.GH_PACKAGES_TOKEN }}
@@ -91,8 +91,18 @@ jobs:
           jahia_artifact_name: external-provider-${{ github.run_number }}
           bastion_ssh_private_key: ${{ secrets.BASTION_SSH_PRIVATE_KEY_JAHIACI }}
           jahia_license: ${{ secrets.JAHIA_LICENSE_8X_FULL }}
-          docker_username: ${{ secrets.GH_PACKAGES_USERNAME }}
-          docker_password: ${{ secrets.GH_PACKAGES_TOKEN }}
+          docker_registries: |
+            [
+              {
+                "registry": "ghcr.io",
+                "username": "${{ secrets.GH_PACKAGES_USERNAME }}",
+                "password": "${{ secrets.GH_PACKAGES_TOKEN }}"
+              },
+              {
+                "username": "${{ secrets.DOCKERHUB_USERNAME }}",
+                "password": "${{ secrets.DOCKERHUB_PASSWORD }}"
+              }
+            ]
           nexus_username: ${{ secrets.NEXUS_USERNAME }}
           nexus_password: ${{ secrets.NEXUS_PASSWORD }}
           tests_report_name: Test report (Standalone)
