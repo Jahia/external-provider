@@ -15,12 +15,9 @@
  */
 package org.jahia.modules.external.id;
 
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.Element;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.external.ExternalProviderInitializerService;
-import org.jahia.services.cache.ehcache.EhCacheProvider;
 import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.utils.DatabaseUtils;
 import org.slf4j.Logger;
@@ -36,21 +33,19 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ExternalProviderInitializerServiceImpl implements ExternalProviderInitializerService {
 
-    private static final String ID_CACHE_NAME = "ExternalIdentifierMapping";
-
     private static final Logger logger = LoggerFactory.getLogger(ExternalProviderInitializerServiceImpl.class);
 
     private DataSource datasource;
 
-    // The ID mapping cache, where a key is a <providerKey>-<externalId> and a value is
-    // the corresponding internalId
-    private Cache idCache;
+    // Bidirectional cache for external/internal identifier mappings
+    // Injected as a service - shared with ExternalProviderConfiguration
+    private IdentifierCacheService identifierCache;
+
 
     private List<String> overridableItemsForLocks;
 
@@ -151,27 +146,40 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         }
     }
 
-    private String getCacheKey(String externalId, String providerKey) {
-        return providerKey + "-" + externalId;
-    }
+//    private String getCacheKey(String externalId, String providerKey) {
+//        return providerKey + "-" + externalId;
+//    }
 
     @Override
     public String getExternalIdentifier(String internalId) throws RepositoryException {
+        // Check in cache first
+        String cachedExternalId = identifierCache.getExternalId(internalId);
+        if (cachedExternalId != null) {
+            return cachedExternalId;
+        }
+
+        // Cache miss - query database
         String externalId = null;
-        String query = "SELECT externalId FROM jahia_external_mapping WHERE internalUuid=?";
+        String providerKey = null;
+        String query = "SELECT externalId, providerKey FROM jahia_external_mapping WHERE internalUuid=?";
         try (Connection connection = this.datasource.getConnection(); PreparedStatement pstmt = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
             pstmt.setString(1, internalId);
             try (ResultSet resultSet = pstmt.executeQuery()) {
                 while (resultSet.next()) {
                     externalId = getExternalId(resultSet, 1);
+                    providerKey = resultSet.getString(2);
                 }
             } catch (SQLException | IOException e) {
-                throw new RepositoryException("Issue when obtaining external provider ID for internal identfier " + internalId, e);
+                throw new RepositoryException("Issue when obtaining external provider ID for internal identifier " + internalId, e);
             }
 
         } catch (SQLException e) {
-            throw new RepositoryException("Issue when obtaining external provider ID for internal identfier " + internalId, e);
+            throw new RepositoryException("Issue when obtaining external provider ID for internal identifier " + internalId, e);
+        }
+        // Populate cache for future lookups
+        if (externalId != null && providerKey != null) {
+            identifierCache.put(externalId, providerKey, internalId);
         }
 
         return externalId;
@@ -183,31 +191,31 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
     @Override
     public String getInternalIdentifier(String externalId, String providerKey) throws RepositoryException {
+        // Check cache first
+        String uuid = identifierCache.getInternalId(externalId, providerKey);
+        if (uuid != null) {
+            return uuid;
+        }
 
-        String cacheKey = getCacheKey(externalId, providerKey);
-        Element cacheElement = idCache.get(cacheKey);
-        String uuid = null != cacheElement ? (String) cacheElement.getObjectValue() : null;
-
-        if (null == uuid) {
-            String query = "SELECT externalId, internalUuid FROM jahia_external_mapping WHERE providerKey=? and externalIdHash=?";
-            try (Connection connection = this.datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
-                connection.setAutoCommit(false);
-                statement.setString(1, providerKey);
-                statement.setLong(2, externalId.hashCode());
-                try (ResultSet resultSet = statement.executeQuery()) {
-                    while (resultSet.next()) {
-                        String rowExternalId = getExternalId(resultSet, 1);
-                        if (rowExternalId.equals(externalId)) {
-                            uuid = resultSet.getString(2);
-                        }
-                        idCache.put(new Element(cacheKey, uuid, true));
+        // Cache miss - query database
+        String query = "SELECT externalId, internalUuid FROM jahia_external_mapping WHERE providerKey=? and externalIdHash=?";
+        try (Connection connection = this.datasource.getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
+            connection.setAutoCommit(false);
+            statement.setString(1, providerKey);
+            statement.setLong(2, externalId.hashCode());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    String rowExternalId = getExternalId(resultSet, 1);
+                    if (rowExternalId.equals(externalId)) {
+                        uuid = resultSet.getString(2);
                     }
-                } catch (SQLException | IOException e) {
-                    throw new RepositoryException("Issue when obtaining internal identifier for provider" + providerKey, e);
+                    identifierCache.put(externalId, providerKey, uuid);
                 }
-            } catch (SQLException e) {
+            } catch (SQLException | IOException e) {
                 throw new RepositoryException("Issue when obtaining internal identifier for provider" + providerKey, e);
             }
+        } catch (SQLException e) {
+            throw new RepositoryException("Issue when obtaining internal identifier for provider" + providerKey, e);
         }
 
         return uuid;
@@ -292,7 +300,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
     }
 
     private void invalidateCache(String externalId, String providerKey) {
-        idCache.remove(getCacheKey(externalId, providerKey));
+        identifierCache.invalidate(externalId, providerKey);
     }
 
     @Override
@@ -356,12 +364,12 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         this.datasource = datasource;
     }
 
-    public void setCacheProvider(EhCacheProvider cacheProvider) {
-        idCache = cacheProvider.getCacheManager().getCache(ExternalProviderInitializerServiceImpl.ID_CACHE_NAME);
-        if (null == idCache) {
-            cacheProvider.getCacheManager().addCache(ExternalProviderInitializerServiceImpl.ID_CACHE_NAME);
-            idCache = cacheProvider.getCacheManager().getCache(ExternalProviderInitializerServiceImpl.ID_CACHE_NAME);
-        }
+    /**
+     * Setter for dependency injection - receives the cache service.
+     * The cache is shared with ExternalProviderConfiguration which handles reconfiguration.
+     */
+    public void setIdentifierCache(IdentifierCacheService identifierCache) {
+        this.identifierCache = identifierCache;
     }
 
     @Override
