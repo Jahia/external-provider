@@ -8,9 +8,29 @@
 
     <osgi:reference id="osgiDS" interface="javax.sql.DataSource" filter="(osgi.jndi.service.name=jdbc/jahia)"/>
 
+    <!-- Bidirectional Identifier Cache Service -->
+    <bean id="identifierCache" class="org.jahia.modules.external.id.IdentifierCacheService">
+        <!-- Default constructor with default values (10000 entries, 1 hour TTL) -->
+    </bean>
+
+    <!-- Export IdentifierCacheService as OSGi service for GraphQL and other modules -->
+    <osgi:service id="identifierCacheService" ref="identifierCache" interface="org.jahia.modules.external.id.IdentifierCacheService"/>
+
+    <!-- External Provider Configuration (OSGi ManagedService) -->
+    <bean id="externalProviderConfiguration" class="org.jahia.modules.external.config.ExternalProviderConfiguration">
+        <property name="identifierCacheService" ref="identifierCache"/>
+    </bean>
+    <osgi:service interface="org.osgi.service.cm.ManagedService" ref="externalProviderConfiguration">
+        <osgi:service-properties>
+            <entry key="service.pid" value="org.jahia.modules.external"/>
+            <entry key="service.description" value="External Provider Configuration"/>
+            <entry key="service.vendor" value="Jahia Solutions Group SA"/>
+        </osgi:service-properties>
+    </osgi:service>
+
     <bean id="ProviderInitializerService" class="org.jahia.modules.external.id.ExternalProviderInitializerServiceImpl">
         <property name="datasource" ref="osgiDS"/>
-        <property name="cacheProvider" ref="ehCacheProvider"/>
+        <property name="identifierCache" ref="identifierCache"/>
         <property name="extensionProvider" ref="DefaulJCRStoreProvider"/>
         <property name="overridableItemsForLocks">
             <list>

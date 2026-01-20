@@ -59,6 +59,7 @@
         </import-package>
         <jackson.version>2.9.0</jackson.version>
         <jersey.version>2.6</jersey.version>
+        <caffeine.version>3.2.3</caffeine.version>
         <jahia-module-signature>MCwCFGWqETQqC43ab4w/RANk6Cwaql88AhQV8ZQMgztze3rH/wMJoQeAAWyIEA==</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
     </properties>
@@ -125,6 +126,11 @@
             <artifactId>guava</artifactId>
             <version>${guava.osgi.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>${caffeine.version}</version>
         </dependency>
     </dependencies>
 
