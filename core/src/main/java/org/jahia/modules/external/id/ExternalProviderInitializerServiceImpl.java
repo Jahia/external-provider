@@ -94,7 +94,9 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                 }
 
                 // PHASE 3: Perform single batch deletion for all collected items
-                performDelete(internalIdsToDelete, connection, providerKey);
+                if (!internalIdsToDelete.isEmpty()) {
+                    performDelete(internalIdsToDelete, connection, providerKey);
+                }
 
                 connection.commit();
             } catch (SQLException | IOException e) {
@@ -446,30 +448,22 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
     }
 
     private void performDelete(Set<String> internalIdsToDelete, Connection connection, String providerKey) throws SQLException {
-        if (!internalIdsToDelete.isEmpty()) {
-            String deleteMapping = "DELETE FROM jahia_external_mapping WHERE internalUuid=?";
-            try (PreparedStatement deleteStatement = connection.prepareStatement(deleteMapping)) {
-                if (internalIdsToDelete.size() == 1) {
-                    // Single item - no need for batch operations
-                    deleteStatement.setString(1, internalIdsToDelete.iterator().next());
+        boolean supportsBatch = connection.getMetaData().supportsBatchUpdates();
+        String deleteMapping = "DELETE FROM jahia_external_mapping WHERE internalUuid=?";
+        try (PreparedStatement deleteStatement = connection.prepareStatement(deleteMapping)) {
+            for (String internalId : internalIdsToDelete) {
+                deleteStatement.setString(1, internalId);
+                if (supportsBatch) {
+                    deleteStatement.addBatch();
+                } else   {
                     deleteStatement.executeUpdate();
-                    logger.debug("Deleted 1 mapping for provider {}", providerKey);
-                } else if (connection.getMetaData().supportsBatchUpdates()) {
-                    // Multiple items - use batch operations for better performance
-                    for (String internalId : internalIdsToDelete) {
-                        deleteStatement.setString(1, internalId);
-                        deleteStatement.addBatch();
-                    }
-                    deleteStatement.executeBatch();
-                    logger.debug("Batch deleted {} mappings for provider {}", internalIdsToDelete.size(), providerKey);
-                } else {
-                    // Multiple items but batch not supported - fallback to individual executions
-                    logger.warn("Batch updates not supported by JDBC driver, falling back to individual deletes");
-                    for (String internalId : internalIdsToDelete) {
-                        deleteStatement.setString(1, internalId);
-                        deleteStatement.executeUpdate();
-                    }
                 }
+            }
+            if (supportsBatch) {
+                logger.debug("Batch deleted {} mappings for provider {}", internalIdsToDelete.size(), providerKey);
+                deleteStatement.executeBatch();
+            } else {
+                logger.warn("Batch updates not supported by JDBC driver, falling back to {} individual deletes for mappings for provider {}", internalIdsToDelete.size(), providerKey);
             }
         }
     }
