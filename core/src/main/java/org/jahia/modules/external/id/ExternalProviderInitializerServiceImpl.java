@@ -469,13 +469,9 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
     }
 
     private void collectMappings(Set<String> externalIdsSet, Connection connection, String providerKey, BiConsumer<String, String> processMapping) throws SQLException, IOException {
-        List<Integer> hashes = new LinkedList<>();
-        for (String externalId : externalIdsSet) {
-            int hash = externalId.hashCode();
-            if (!hashes.contains(hash)) {
-                hashes.add(hash);
-            }
-        }
+        Set<Integer> hashes = externalIdsSet.stream()
+                .map(String::hashCode)
+                .collect(Collectors.toSet());
 
         String selectMappingTemplate = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? AND externalIdHash in (:listPlaceHolder)";
         String selectMapping = selectMappingTemplate.replace(":listPlaceHolder", hashes.stream().map(integer -> "?").collect(Collectors.joining(",")));
