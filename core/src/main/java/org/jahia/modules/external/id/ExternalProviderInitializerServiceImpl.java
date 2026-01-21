@@ -32,17 +32,12 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@SuppressWarnings({"java:S1141"}) // Suppress "nested try-catch" due to connection management it's necessary here
 public class ExternalProviderInitializerServiceImpl implements ExternalProviderInitializerService {
 
     private static final String ID_CACHE_NAME = "ExternalIdentifierMapping";
@@ -63,6 +58,7 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
 
     @Override
+    @SuppressWarnings("java:S6912") // Suppress the "Use batch processing" warning, it's used properly
     public void delete(List<String> externalIds, String providerKey, boolean includeDescendants)
             throws RepositoryException {
         if (externalIds.isEmpty()) {
@@ -80,109 +76,34 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
             connection.setAutoCommit(false);
 
             try {
-                // PHASE 1: Collect exact matches for the provided external IDs
-                List<Integer> hashes = new LinkedList<>();
                 Set<String> externalIdsSet = new HashSet<>(externalIds); // Deduplicate input
-                for (String externalId : externalIdsSet) {
-                    int hash = externalId.hashCode();
-                    if (!hashes.contains(hash)) {
-                        hashes.add(hash);
-                    }
-                }
-
-                String selectMappingTemplate = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? AND externalIdHash in (:listPlaceHolder)";
-                String selectMapping = selectMappingTemplate.replace(":listPlaceHolder",
-                    hashes.stream().map(integer -> "?").collect(Collectors.joining(",")));
-
-                try (PreparedStatement statement = connection.prepareStatement(selectMapping)) {
-                    statement.setString(1, providerKey);
-                    int columnIndex = 2;
-                    for (Integer hash : hashes) {
-                        statement.setInt(columnIndex++, hash);
-                    }
-
-                    try (ResultSet resultSet = statement.executeQuery()) {
-                        while (resultSet.next()) {
-                            String externalId = getExternalId(resultSet, 2);
-                            if (externalIdsSet.contains(externalId)) {
-                                invalidate.add(externalId);
-                                String internalId = resultSet.getString(1);
-                                internalIdsToDelete.add(internalId);
-                            }
-                        }
-                    }
-                }
+                // PHASE 1: Collect exact matches for the provided external IDs
+                collectMappings(externalIdsSet, connection, providerKey, (internalId, externalId) -> {
+                    invalidate.add(externalId);
+                    internalIdsToDelete.add(internalId);
+                });
 
                 // PHASE 2: Collect descendants if requested
                 // This happens when the external data source is using path like external IDs
                 if (includeDescendants) {
-                    String selectDescendantMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=?";
-                    selectDescendantMapping += isPostgreSQL ?
-                            " AND convert_from(lo_get(cast(externalId as bigint)), 'UTF8') like ?" :
-                            " AND externalId like ?";
-
-                    // Reuse PreparedStatement for all external IDs
-                    try (PreparedStatement statement = connection.prepareStatement(selectDescendantMapping)) {
-                        for (String externalId : externalIdsSet) {
-                            statement.setString(1, providerKey);
-                            statement.setString(2, externalId + "/%");
-
-                            try (ResultSet resultSet = statement.executeQuery()) {
-                                while (resultSet.next()) {
-                                    String descendantExternalId = getExternalId(resultSet, 2);
-                                    invalidate.add(descendantExternalId);
-                                    String internalId = resultSet.getString(1);
-                                    internalIdsToDelete.add(internalId);
-                                }
-                            }
-                        }
-                    }
+                    collectDescendants(externalIdsSet, isPostgreSQL, connection, providerKey,
+                            (internalId, externalId) -> {
+                                invalidate.add(externalId);
+                                internalIdsToDelete.add(internalId);
+                            });
                 }
 
                 // PHASE 3: Perform single batch deletion for all collected items
-                if (!internalIdsToDelete.isEmpty()) {
-                    String deleteMapping = "DELETE FROM jahia_external_mapping WHERE internalUuid=?";
-                    try (PreparedStatement deleteStatement = connection.prepareStatement(deleteMapping)) {
-                        if (internalIdsToDelete.size() == 1) {
-                            // Single item - no need for batch operations
-                            deleteStatement.setString(1, internalIdsToDelete.iterator().next());
-                            deleteStatement.executeUpdate();
-                            logger.debug("Deleted 1 mapping for provider {}", providerKey);
-                        } else if (connection.getMetaData().supportsBatchUpdates()) {
-                            // Multiple items - use batch operations for better performance
-                            for (String internalId : internalIdsToDelete) {
-                                deleteStatement.setString(1, internalId);
-                                deleteStatement.addBatch();
-                            }
-                            deleteStatement.executeBatch();
-                            logger.debug("Batch deleted {} mappings for provider {}", internalIdsToDelete.size(), providerKey);
-                        } else {
-                            // Multiple items but batch not supported - fallback to individual executions
-                            logger.warn("Batch updates not supported by JDBC driver, falling back to individual deletes");
-                            for (String internalId : internalIdsToDelete) {
-                                deleteStatement.setString(1, internalId);
-                                deleteStatement.executeUpdate();
-                            }
-                        }
-                    }
-                }
+                performDelete(internalIdsToDelete, connection, providerKey);
 
                 connection.commit();
-
             } catch (SQLException | IOException e) {
-                logger.error("Issue when deleting mapping for external provider {}", providerKey, e);
-                try {
-                    connection.rollback();
-                } catch (SQLException rollbackException) {
-                    logger.error("Failed to rollback transaction for provider {}", providerKey, rollbackException);
-                    e.addSuppressed(rollbackException);
-                }
+                tryRollBack(connection, providerKey, e);
                 throw new RepositoryException(
                         "Issue when deleting mapping for external provider " + providerKey, e);
             }
         } catch (SQLException e) {
             // Connection acquisition failed - no rollback possible
-            logger.error("Failed to acquire database connection for provider {}", providerKey, e);
             throw new RepositoryException(
                     "Failed to acquire database connection for external provider " + providerKey, e);
         }
@@ -414,19 +335,12 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                 }
 
             } catch (SQLException e) {
-                logger.error("Issue when removing external provider for key {}", providerKey, e);
-                try {
-                    connection.rollback();
-                } catch (SQLException rollbackException) {
-                    logger.error("Failed to rollback transaction for provider {}", providerKey, rollbackException);
-                    e.addSuppressed(rollbackException);
-                }
+                tryRollBack(connection, providerKey, e);
                 throw new RepositoryException(
                         "Issue when removing external provider entry and identifier mappings for provider key " + providerKey, e);
             }
         } catch (SQLException e) {
             // Connection acquisition failed - no rollback possible
-            logger.error("Failed to acquire database connection for provider {}", providerKey, e);
             throw new RepositoryException(
                     "Failed to acquire database connection for external provider " + providerKey, e);
         }
@@ -457,124 +371,35 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
             try {
                 // PHASE 1: Collect exact match for the old external ID
-                String selectMapping = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? AND externalIdHash=?";
-                try (PreparedStatement statement = connection.prepareStatement(selectMapping)) {
-                    statement.setString(1, providerKey);
-                    statement.setInt(2, oldExternalId.hashCode());
-
-                    try (ResultSet resultSet = statement.executeQuery()) {
-                        while (resultSet.next()) {
-                            String externalId = getExternalId(resultSet, 2);
-                            if (externalId.equals(oldExternalId)) {
-                                invalidate.add(oldExternalId);
-                                String internalId = resultSet.getString(1);
-                                updatesToApply.put(internalId, newExternalId);
-                            }
-                        }
-                    }
-                }
+                collectMappings(Collections.singleton(oldExternalId), connection, providerKey, (internalId, externalId) -> {
+                    invalidate.add(externalId);
+                    updatesToApply.put(internalId, newExternalId);
+                });
 
                 // PHASE 2: Collect descendants if requested
                 if (includeDescendants) {
-                    String selectDescendantMapping = isPostgreSQL ?
-                            "SELECT internalUuid, externalId FROM jahia_external_mapping" +
-                            " WHERE providerKey=? AND convert_from(lo_get(cast(externalId as bigint)), 'UTF8') like ?" :
-                            "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? AND externalId like ?";
-
-                    try (PreparedStatement statement = connection.prepareStatement(selectDescendantMapping)) {
-                        statement.setString(1, providerKey);
-                        statement.setString(2, oldExternalId + "/%");
-
-                        try (ResultSet resultSet = statement.executeQuery()) {
-                            while (resultSet.next()) {
-                                String externalId = getExternalId(resultSet, 2);
+                    collectDescendants(Collections.singleton(oldExternalId), isPostgreSQL, connection, providerKey,
+                            (internalId, externalId) -> {
                                 invalidate.add(externalId);
-                                String internalId = resultSet.getString(1);
                                 // Replace old prefix with new prefix
                                 String updatedExternalId = newExternalId + StringUtils.substringAfter(externalId, oldExternalId);
                                 updatesToApply.put(internalId, updatedExternalId);
-                            }
-                        }
-                    }
+                            });
                 }
 
                 // PHASE 3: Perform batch update for all collected items
                 if (!updatesToApply.isEmpty()) {
-                    String updateMapping = isPostgreSQL ?
-                            "UPDATE jahia_external_mapping SET externalId=lo_from_bytea(0, ?), externalIdHash=? WHERE internalUuid=?" :
-                            "UPDATE jahia_external_mapping SET externalId=?, externalIdHash=? WHERE internalUuid=?";
-
-                    try (PreparedStatement updateStatement = connection.prepareStatement(updateMapping)) {
-                        if (updatesToApply.size() == 1) {
-                            // Single item - no need for batch operations
-                            Map.Entry<String, String> entry = updatesToApply.entrySet().iterator().next();
-                            String internalId = entry.getKey();
-                            String updatedExternalId = entry.getValue();
-
-                            if (isPostgreSQL) {
-                                updateStatement.setBytes(1, updatedExternalId.getBytes(StandardCharsets.UTF_8));
-                            } else {
-                                updateStatement.setClob(1, new StringReader(updatedExternalId));
-                            }
-                            updateStatement.setLong(2, updatedExternalId.hashCode());
-                            updateStatement.setString(3, internalId);
-                            updateStatement.executeUpdate();
-                            logger.debug("Updated 1 mapping for provider {}", providerKey);
-
-                        } else if (connection.getMetaData().supportsBatchUpdates()) {
-                            // Multiple items - use batch operations for better performance
-                            for (Map.Entry<String, String> entry : updatesToApply.entrySet()) {
-                                String internalId = entry.getKey();
-                                String updatedExternalId = entry.getValue();
-
-                                if (isPostgreSQL) {
-                                    updateStatement.setBytes(1, updatedExternalId.getBytes(StandardCharsets.UTF_8));
-                                } else {
-                                    updateStatement.setClob(1, new StringReader(updatedExternalId));
-                                }
-                                updateStatement.setLong(2, updatedExternalId.hashCode());
-                                updateStatement.setString(3, internalId);
-                                updateStatement.addBatch();
-                            }
-                            updateStatement.executeBatch();
-                            logger.debug("Batch updated {} mappings for provider {}", updatesToApply.size(), providerKey);
-
-                        } else {
-                            // Multiple items but batch not supported - fallback to individual executions
-                            logger.warn("Batch updates not supported by JDBC driver, falling back to individual updates");
-                            for (Map.Entry<String, String> entry : updatesToApply.entrySet()) {
-                                String internalId = entry.getKey();
-                                String updatedExternalId = entry.getValue();
-
-                                if (isPostgreSQL) {
-                                    updateStatement.setBytes(1, updatedExternalId.getBytes(StandardCharsets.UTF_8));
-                                } else {
-                                    updateStatement.setClob(1, new StringReader(updatedExternalId));
-                                }
-                                updateStatement.setLong(2, updatedExternalId.hashCode());
-                                updateStatement.setString(3, internalId);
-                                updateStatement.executeUpdate();
-                            }
-                        }
-                    }
+                    performUpdateExternalIdentifier(updatesToApply, isPostgreSQL, connection, providerKey);
                 }
 
                 connection.commit();
-
             } catch (SQLException | IOException e) {
-                logger.error("Issue when updating mapping for external provider {}", providerKey, e);
-                try {
-                    connection.rollback();
-                } catch (SQLException rollbackException) {
-                    logger.error("Failed to rollback transaction for provider {}", providerKey, rollbackException);
-                    e.addSuppressed(rollbackException);
-                }
+                tryRollBack(connection, providerKey, e);
                 throw new RepositoryException(
                         "Issue when updating mapping for external provider " + providerKey, e);
             }
         } catch (SQLException e) {
             // Connection acquisition failed - no rollback possible
-            logger.error("Failed to acquire database connection for provider {}", providerKey, e);
             throw new RepositoryException(
                     "Failed to acquire database connection for external provider " + providerKey, e);
         }
@@ -582,6 +407,131 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
         // Invalidate cache for all updated items
         for (String id : invalidate) {
             this.invalidateCache(id, providerKey);
+        }
+    }
+
+    private void performUpdateExternalIdentifier(Map<String, String> updatesToApply, boolean isPostgreSQL, Connection connection, String providerKey) throws SQLException {
+        String updateMapping = isPostgreSQL ?
+                "UPDATE jahia_external_mapping SET externalId=lo_from_bytea(0, ?), externalIdHash=? WHERE internalUuid=?" :
+                "UPDATE jahia_external_mapping SET externalId=?, externalIdHash=? WHERE internalUuid=?";
+        boolean supportsBatch = connection.getMetaData().supportsBatchUpdates();
+
+        try (PreparedStatement updateStatement = connection.prepareStatement(updateMapping)) {
+            if (connection.getMetaData().supportsBatchUpdates()) {
+                for (Map.Entry<String, String> entry : updatesToApply.entrySet()) {
+                    String internalId = entry.getKey();
+                    String updatedExternalId = entry.getValue();
+
+                    if (isPostgreSQL) {
+                        updateStatement.setBytes(1, updatedExternalId.getBytes(StandardCharsets.UTF_8));
+                    } else {
+                        updateStatement.setClob(1, new StringReader(updatedExternalId));
+                    }
+                    updateStatement.setLong(2, updatedExternalId.hashCode());
+                    updateStatement.setString(3, internalId);
+                    if (supportsBatch) {
+                        updateStatement.addBatch();
+                    } else  {
+                        updateStatement.executeUpdate();
+                    }
+                }
+                if (supportsBatch) {
+                    updateStatement.executeBatch();
+                    logger.debug("Batch updated {} mappings for provider {}", updatesToApply.size(), providerKey);
+                } else  {
+                    logger.warn("Batch updates not supported by JDBC driver, falling back to individual updates");
+                }
+            }
+        }
+    }
+
+    private void performDelete(Set<String> internalIdsToDelete, Connection connection, String providerKey) throws SQLException {
+        if (!internalIdsToDelete.isEmpty()) {
+            String deleteMapping = "DELETE FROM jahia_external_mapping WHERE internalUuid=?";
+            try (PreparedStatement deleteStatement = connection.prepareStatement(deleteMapping)) {
+                if (internalIdsToDelete.size() == 1) {
+                    // Single item - no need for batch operations
+                    deleteStatement.setString(1, internalIdsToDelete.iterator().next());
+                    deleteStatement.executeUpdate();
+                    logger.debug("Deleted 1 mapping for provider {}", providerKey);
+                } else if (connection.getMetaData().supportsBatchUpdates()) {
+                    // Multiple items - use batch operations for better performance
+                    for (String internalId : internalIdsToDelete) {
+                        deleteStatement.setString(1, internalId);
+                        deleteStatement.addBatch();
+                    }
+                    deleteStatement.executeBatch();
+                    logger.debug("Batch deleted {} mappings for provider {}", internalIdsToDelete.size(), providerKey);
+                } else {
+                    // Multiple items but batch not supported - fallback to individual executions
+                    logger.warn("Batch updates not supported by JDBC driver, falling back to individual deletes");
+                    for (String internalId : internalIdsToDelete) {
+                        deleteStatement.setString(1, internalId);
+                        deleteStatement.executeUpdate();
+                    }
+                }
+            }
+        }
+    }
+
+    private void collectMappings(Set<String> externalIdsSet, Connection connection, String providerKey, BiConsumer<String, String> processMapping) throws SQLException, IOException {
+        List<Integer> hashes = new LinkedList<>();
+        for (String externalId : externalIdsSet) {
+            int hash = externalId.hashCode();
+            if (!hashes.contains(hash)) {
+                hashes.add(hash);
+            }
+        }
+
+        String selectMappingTemplate = "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey=? AND externalIdHash in (:listPlaceHolder)";
+        String selectMapping = selectMappingTemplate.replace(":listPlaceHolder", hashes.stream().map(integer -> "?").collect(Collectors.joining(",")));
+
+        try (PreparedStatement statement = connection.prepareStatement(selectMapping)) {
+            statement.setString(1, providerKey);
+            int columnIndex = 2;
+            for (Integer hash : hashes) {
+                statement.setInt(columnIndex++, hash);
+            }
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    String externalId = getExternalId(resultSet, 2);
+                    if (externalIdsSet.contains(externalId)) {
+                        processMapping.accept(resultSet.getString(1), externalId);
+                    }
+                }
+            }
+        }
+    }
+
+    private void collectDescendants(Set<String> externalIdsSet, boolean isPostgreSQL, Connection connection, String providerKey, BiConsumer<String, String> processDescendant) throws SQLException, IOException {
+        String selectDescendantMapping = isPostgreSQL
+                ? "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey = ? AND convert_from(lo_get(cast(externalId as bigint)), 'UTF8') LIKE ?"
+                : "SELECT internalUuid, externalId FROM jahia_external_mapping WHERE providerKey = ? AND externalId LIKE ?";
+
+        // Reuse PreparedStatement for all external IDs
+        try (PreparedStatement statement = connection.prepareStatement(selectDescendantMapping)) {
+            statement.setString(1, providerKey); // Set once - same for all iterations
+
+            for (String externalId : externalIdsSet) {
+                statement.setString(2, externalId + "/%"); // Only varies per iteration
+
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        // internalId/externalId
+                        processDescendant.accept(resultSet.getString(1), getExternalId(resultSet, 2));
+                    }
+                }
+            }
+        }
+    }
+
+    private void tryRollBack(Connection connection, String providerKey, Throwable originalException) {
+        try {
+            connection.rollback();
+        } catch (SQLException rollbackException) {
+            logger.error("Failed to rollback transaction for provider {}", providerKey, rollbackException);
+            originalException.addSuppressed(rollbackException);
         }
     }
 
