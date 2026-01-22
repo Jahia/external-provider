@@ -71,16 +71,14 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
             try {
                 Set<String> externalIdsSet = new HashSet<>(externalIds); // Deduplicate input
                 // PHASE 1: Collect exact matches for the provided external IDs
-                collectMappings(externalIdsSet, connection, providerKey, (internalId, externalId) -> {
-                    idsToDelete.add(Pair.of(internalId, externalId));
-                });
+                collectMappings(externalIdsSet, connection, providerKey,
+                        (internalId, externalId) -> idsToDelete.add(Pair.of(internalId, externalId)));
 
                 // PHASE 2: Collect descendants if requested
                 // This happens when the external data source is using path like external IDs
                 if (includeDescendants) {
-                    collectDescendants(externalIdsSet, isPostgreSQL, connection, providerKey, (internalId, externalId) -> {
-                        idsToDelete.add(Pair.of(internalId, externalId));
-                    });
+                    collectDescendants(externalIdsSet, isPostgreSQL, connection, providerKey,
+                            (internalId, externalId) -> idsToDelete.add(Pair.of(internalId, externalId)));
                 }
 
                 // PHASE 3: Perform single batch deletion for all collected items
@@ -360,9 +358,8 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
 
             try {
                 // PHASE 1: Collect exact match for the old external ID
-                collectMappings(Collections.singleton(oldExternalId), connection, providerKey, (internalId, externalId) -> {
-                    updatesToApply.put(internalId, Pair.of(oldExternalId, newExternalId));
-                });
+                collectMappings(Collections.singleton(oldExternalId), connection, providerKey,
+                        (internalId, externalId) -> updatesToApply.put(internalId, Pair.of(oldExternalId, newExternalId)));
 
                 // PHASE 2: Collect descendants if requested
                 if (includeDescendants) {
