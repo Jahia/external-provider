@@ -20,9 +20,9 @@ import java.util.concurrent.TimeUnit;
 public class IdentifierCacheService {
 
     private static final Logger logger = LoggerFactory.getLogger(IdentifierCacheService.class);
-    public static final long DEFAULT_MAX_ENTRIES = 10_000L;
-    public static final long DEFAULT_TIME_TO_IDLE_MINUTES = 60L;
-    public static final long DEFAULT_TIME_TO_LIVE_MINUTES = 120L;
+    public static final long DEFAULT_MAX_ENTRIES = -1L; // no limit
+    public static final long DEFAULT_TIME_TO_IDLE_MINUTES = 240L; // 4 hours
+    public static final long DEFAULT_TIME_TO_LIVE_MINUTES = 480L; // 8 hours
 
     // Forward cache: IdentifierMapping(providerKey, externalId) → internalUuid
     // Not final to allow reconfiguration
@@ -59,6 +59,11 @@ public class IdentifierCacheService {
         public int hashCode() {
             return java.util.Objects.hash(externalId, providerKey);
         }
+
+        @Override
+        public String toString() {
+            return "ProviderExternalId{" + "externalId='" + externalId + '\'' + ", providerKey='" + providerKey + '\'' + '}';
+        }
     }
 
     /**
@@ -71,7 +76,7 @@ public class IdentifierCacheService {
     /**
      * Creates a new bidirectional cache with full custom configuration.
      *
-     * @param maximumSize       maximum number of entries in each cache
+     * @param maximumSize       maximum number of entries in each cache, or negative number for no limit
      * @param timeToIdleMinutes time-to-idle duration
      * @param timeToLiveMinutes time-to-live duration
      */
@@ -84,13 +89,15 @@ public class IdentifierCacheService {
     }
 
     private <K, V> Cache<K, V> buildCache(long maximumSize, long timeToIdleMinutes, long timeToLiveMinutes) {
-        return Caffeine.newBuilder().maximumSize(maximumSize)
+        Caffeine<Object, Object> builder = Caffeine.newBuilder()
                 // TTI
                 .expireAfterAccess(timeToIdleMinutes, TimeUnit.MINUTES)
                 // TTL
-                .expireAfterWrite(timeToLiveMinutes, TimeUnit.MINUTES)
-                // build it
-                .build();
+                .expireAfterWrite(timeToLiveMinutes, TimeUnit.MINUTES);
+        if (maximumSize >= 0) {
+            builder.maximumSize(maximumSize);
+        }
+        return builder.build();
     }
 
     /**
@@ -137,23 +144,19 @@ public class IdentifierCacheService {
     /**
      * Invalidate a mapping from both caches.
      * Synchronized to prevent race conditions during cache reconfiguration.
+     * <p>
+     * This method requires all three parameters to avoid dependency between the two caches
+     * during invalidation, as they may be out of sync due to different eviction patterns.
      *
      * @param externalId  the external identifier
      * @param providerKey the provider key
+     * @param internalId  the internal identifier
      */
-    public synchronized void invalidate(String externalId, String providerKey) {
+    public synchronized void invalidate(String externalId, String providerKey, String internalId) {
         ProviderExternalId mapping = new ProviderExternalId(externalId, providerKey);
-
-        // First get the internal UUID so we can remove from reverse cache
-        String internalUuid = externalToInternalCache.getIfPresent(mapping);
-
-        // Remove from both caches
         externalToInternalCache.invalidate(mapping);
-        if (internalUuid != null) {
-            internalToExternalCache.invalidate(internalUuid);
-
-            logger.debug("Invalidated mapping: {} <-> {}", mapping, internalUuid);
-        }
+        internalToExternalCache.invalidate(internalId);
+        logger.debug("Invalidated bidirectional mapping: {} <-> {}", mapping, internalId);
     }
 
     /**

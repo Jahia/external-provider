@@ -129,9 +129,6 @@ public class ExternalProviderConfiguration implements ManagedService {
             }
 
             private void validate() throws ConfigurationException {
-                if (maxEntries <= 0) {
-                    throw new ConfigurationException(KEY_MAX_ENTRIES, "maxEntries must be positive, got: " + maxEntries);
-                }
                 if (timeToIdleMinutes < 0) {
                     throw new ConfigurationException(KEY_TIME_TO_IDLE, "timeToIdleMinutes cannot be negative, got: " + timeToIdleMinutes);
                 }
