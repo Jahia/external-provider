@@ -15,6 +15,7 @@
 
 // Import commands.js using ES2015 syntax:
 import 'cypress-iframe';
+import 'cypress-wait-until';
 
 require('cypress-terminal-report/src/installLogsCollector')({
     xhr: {
