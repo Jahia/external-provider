@@ -67,6 +67,7 @@ jobs:
   integration-tests-standalone:
     name: Integration Tests (Standalone)
     needs: build
+    secrets: inherit
     uses: Jahia/jahia-modules-action/.github/workflows/reusable-integration-tests.yml@v2
     with:
       module_id: external-provider

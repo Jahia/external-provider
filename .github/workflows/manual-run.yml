@@ -17,6 +17,7 @@ on:
 jobs:
   integration-tests:
     name: Integration Tests
+    secrets: inherit
     uses: Jahia/jahia-modules-action/.github/workflows/reusable-integration-tests.yml@v2
     with:
       module_id: external-provider

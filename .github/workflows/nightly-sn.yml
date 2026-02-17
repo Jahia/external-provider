@@ -8,6 +8,7 @@ on:
 jobs:
   integration-tests-sn:
     name: Integration Tests (Jahia-SN)
+    secrets: inherit
     uses: Jahia/jahia-modules-action/.github/workflows/reusable-integration-tests.yml@v2
     with:
       module_id: external-provider
