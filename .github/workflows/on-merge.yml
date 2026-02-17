@@ -62,3 +62,20 @@ jobs:
       provisioning_manifest: provisioning-manifest-build.yml
       artifact_prefix: external-provider
       testrail_project: External Provider
+
+  publish:
+    name: Publish module
+    needs: [build]
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/jahia/jahia-docker-mvn-cache:11-jdk-noble-node-base
+      credentials:
+        username: ${{ secrets.GH_PACKAGES_USERNAME }}
+        password: ${{ secrets.GH_PACKAGES_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jahia/jahia-modules-action/publish@v2
+        with:
+          nexus_username: ${{ secrets.NEXUS_USERNAME }}
+          nexus_password: ${{ secrets.NEXUS_PASSWORD }}
