@@ -75,3 +75,6 @@ jobs:
       provisioning_manifest: provisioning-manifest-build.yml
       artifact_prefix: external-provider
       testrail_project: External Provider
+      should_skip_testrail: true
+      should_use_build_artifacts: true
+      timeout_job: 45

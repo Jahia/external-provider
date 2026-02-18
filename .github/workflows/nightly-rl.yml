@@ -14,5 +14,7 @@ jobs:
       module_id: external-provider
       jahia_image: ghcr.io/jahia/jahia-ee:8
       provisioning_manifest: provisioning-manifest-build.yml
-      artifact_prefix: external-provider
+      artifact_prefix: ep-rl
       testrail_project: External Provider
+      timeout_job: 45
+      timeout_step: 20

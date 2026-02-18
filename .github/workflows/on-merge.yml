@@ -62,6 +62,9 @@ jobs:
       provisioning_manifest: provisioning-manifest-build.yml
       artifact_prefix: external-provider
       testrail_project: External Provider
+      timeout_job: 45
+      should_use_build_artifacts: true
+
 
   publish:
     name: Publish module
