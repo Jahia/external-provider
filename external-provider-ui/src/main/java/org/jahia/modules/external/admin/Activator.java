@@ -20,16 +20,27 @@ public class Activator {
 
     @Activate
     public void start(BundleContext context) {
-        Set<Bundle> wiredBundles = context.getBundle().adapt(BundleWiring.class).getProvidedWires("osgi.wiring.package").stream().map(x -> x.getRequirer().getBundle()).collect(Collectors.toSet());
-        Set<Bundle> toRefresh = Arrays.stream(context.getBundles())
-                .filter(b -> b.getHeaders().get("Import-Package") != null && b.getHeaders().get("Import-Package").contains("org.jahia.modules.external.admin"))
-                .filter(b -> !wiredBundles.contains(b))
-                .filter(b -> b.getState() == Bundle.RESOLVED || b.getState() == Bundle.ACTIVE)
-                .collect(Collectors.toSet());
-        logger.info("Refreshing {} bundles in external-provider-ui:", toRefresh.size());
-        toRefresh.forEach(b -> logger.info("Refreshing bundle - {}:{}", b.getSymbolicName(), b.getBundleId()));
-        if (!toRefresh.isEmpty()) {
-            BundleLifecycleUtils.refreshBundles(toRefresh);
+
+        int currentLevel = BundleLifecycleUtils.getFrameworkStartLevel() ;
+        // 100 is the "fully booted" state, as defined in  org.jahia.osgi.FrameWorkservice.finalFrameworkStartLevel
+        boolean isSystemStarting = BundleLifecycleUtils.getFrameworkStartLevel() < 100;
+
+        if (isSystemStarting) {
+            logger.info("System is still booting (Level {}). Skipping synchronous refresh", currentLevel);
+            // Option: Schedule a background task or register a listener instead
+        } else {
+            logger.info("Bundle started manually/individually. Proceeding with refresh logic.");
+            Set<Bundle> wiredBundles = context.getBundle().adapt(BundleWiring.class).getProvidedWires("osgi.wiring.package").stream().map(x -> x.getRequirer().getBundle()).collect(Collectors.toSet());
+            Set<Bundle> toRefresh = Arrays.stream(context.getBundles())
+                    .filter(b -> b.getHeaders().get("Import-Package") != null && b.getHeaders().get("Import-Package").contains("org.jahia.modules.external.admin"))
+                    .filter(b -> !wiredBundles.contains(b))
+                    .filter(b -> b.getState() == Bundle.RESOLVED || b.getState() == Bundle.ACTIVE)
+                    .collect(Collectors.toSet());
+            logger.info("Refreshing {} bundles in external-provider-ui:", toRefresh.size());
+            toRefresh.forEach(b -> logger.info("Refreshing bundle - {}:{}", b.getSymbolicName(), b.getBundleId()));
+            if (!toRefresh.isEmpty()) {
+                BundleLifecycleUtils.refreshBundles(toRefresh);
+            }
         }
     }
 }
