@@ -60,7 +60,7 @@
         <jackson.version>2.9.0</jackson.version>
         <jersey.version>2.6</jersey.version>
         <caffeine.version>3.2.3</caffeine.version>
-        <jahia-module-signature>MCwCFGWqETQqC43ab4w/RANk6Cwaql88AhQV8ZQMgztze3rH/wMJoQeAAWyIEA==</jahia-module-signature>
+        <jahia-module-signature>MC0CFBN9790pYAIjuOOXgVNL5aZicItUAhUAgnt2uuz1hrCG9eMM+db6HLmnwOc=</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
     </properties>
     <repositories>
