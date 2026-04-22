@@ -17,6 +17,13 @@
 import 'cypress-iframe';
 import 'cypress-wait-until';
 
+// Ensure fetch is always bound to window
+if (typeof window !== 'undefined' && window.fetch) {
+    // eslint-disable-next-line no-undef
+    globalThis.fetch = window.fetch.bind(window);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 require('cypress-terminal-report/src/installLogsCollector')({
     xhr: {
         printHeaderData: true,
@@ -25,7 +32,11 @@ require('cypress-terminal-report/src/installLogsCollector')({
     enableExtendedCollector: true,
     collectTypes: ['cons:log', 'cons:info', 'cons:warn', 'cons:error', 'cy:log', 'cy:xhr', 'cy:request', 'cy:intercept', 'cy:command']
 });
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 require('@jahia/cypress/dist/support/registerSupport').registerSupport();
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 Cypress.on('uncaught:exception', (err, runnable) => {
     // Returning false here prevents Cypress from
     // failing the test

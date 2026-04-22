@@ -26,3 +26,4 @@ jobs:
       artifact_prefix: external-provider-artifacts
       testrail_project: External Provider
       should_skip_testrail: true
+      module_branch: ${{ github.ref }}

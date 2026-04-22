@@ -1,7 +1,7 @@
 name: Nightly Test run (Jahia SN)
 
 on:
-  workflow_dispatch:  
+  workflow_dispatch:
   schedule:
     - cron:  '0 1 * * *'
 
@@ -12,8 +12,9 @@ jobs:
     uses: Jahia/jahia-modules-action/.github/workflows/reusable-integration-tests.yml@v2
     with:
       module_id: external-provider
+      module_branch: ${{ github.ref }}
       jahia_image: ghcr.io/jahia/jahia-ee-dev:8-SNAPSHOT
-      provisioning_manifest: provisioning-manifest-build.yml
+      provisioning_manifest: provisioning-manifest-snapshot.yml
       incident_service: external-provider-JahiaSN
       artifact_prefix: ep-sn
       testrail_project: External Provider

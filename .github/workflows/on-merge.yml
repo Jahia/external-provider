@@ -4,7 +4,7 @@ name: On merge to master
 
 # The workflow could also be triggered on PRs
 on:
-  workflow_dispatch:  
+  workflow_dispatch:
   push:
     branches:
       - 'master'
@@ -58,8 +58,9 @@ jobs:
     uses: Jahia/jahia-modules-action/.github/workflows/reusable-integration-tests.yml@v2
     with:
       module_id: external-provider
+      module_branch: ${{ github.ref }}
       jahia_image: ghcr.io/jahia/jahia-ee-dev:8-SNAPSHOT
-      provisioning_manifest: provisioning-manifest-build.yml
+      provisioning_manifest: provisioning-manifest-snapshot.yml
       incident_service: external-provider-JahiaSN
       artifact_prefix: external-provider
       testrail_project: External Provider
