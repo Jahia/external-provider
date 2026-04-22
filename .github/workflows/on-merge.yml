@@ -1,13 +1,13 @@
 # This workflow is triggered every time a change is pushed to any branches
 # Github actions command reference: https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions
-name: On merge to master
+name: On merge to main
 
 # The workflow could also be triggered on PRs
 on:
   workflow_dispatch:  
   push:
     branches:
-      - 'master'
+      - 'main'
     tags-ignore:
       - '**'
 
@@ -58,6 +58,7 @@ jobs:
     uses: Jahia/jahia-modules-action/.github/workflows/reusable-integration-tests.yml@v2
     with:
       module_id: external-provider
+      module_branch: main
       jahia_image: ghcr.io/jahia/jahia-ee-dev:8-SNAPSHOT
       provisioning_manifest: provisioning-manifest-build.yml
       incident_service: external-provider-JahiaSN
@@ -70,7 +71,7 @@ jobs:
   publish:
     name: Publish module
     needs: [build]
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/jahia/jahia-docker-mvn-cache:11-jdk-noble-node-base
