@@ -1,7 +1,7 @@
 name: Nightly Test run (Jahia SN)
 
 on:
-  workflow_dispatch:  
+  workflow_dispatch:
   schedule:
     - cron:  '0 1 * * *'
 
@@ -13,7 +13,7 @@ jobs:
     with:
       module_id: external-provider
       jahia_image: ghcr.io/jahia/jahia-ee-dev:8-SNAPSHOT
-      provisioning_manifest: provisioning-manifest-build.yml
+      provisioning_manifest: provisioning-manifest-snapshot.yml
       incident_service: external-provider-JahiaSN
       artifact_prefix: ep-sn
       testrail_project: External Provider
