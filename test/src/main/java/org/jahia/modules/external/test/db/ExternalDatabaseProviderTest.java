@@ -43,22 +43,6 @@
  */
 package org.jahia.modules.external.test.db;
 
-import java.io.File;
-import java.util.*;
-
-import javax.jcr.Node;
-import javax.jcr.NodeIterator;
-import javax.jcr.PathNotFoundException;
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
-import javax.jcr.UnsupportedRepositoryOperationException;
-import javax.jcr.ValueFormatException;
-import javax.jcr.lock.Lock;
-import javax.jcr.lock.LockException;
-import javax.jcr.query.InvalidQueryException;
-import javax.jcr.query.Query;
-import javax.jcr.query.QueryResult;
-
 import com.google.common.collect.Sets;
 import org.jahia.api.Constants;
 import org.jahia.services.content.*;
@@ -67,11 +51,16 @@ import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.jahia.test.JahiaTestCase;
 import org.jahia.test.TestHelper;
 import org.jahia.test.services.importexport.ImportExportTest;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+
+import javax.jcr.*;
+import javax.jcr.lock.Lock;
+import javax.jcr.lock.LockException;
+import javax.jcr.query.InvalidQueryException;
+import javax.jcr.query.Query;
+import javax.jcr.query.QueryResult;
+import java.io.File;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -659,6 +648,10 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
 
     @Test
     public void testI18nAndLazyPropertiesForGuest() throws RepositoryException {
+        // Set guest read permission on the node before reading it
+        session.getNode(MAPPED_PROVIDER_MOUNTPOINT).grantRoles("u:" +JahiaUserManagerService.GUEST_USERNAME, Collections.singleton("reader"));
+        session.save();
+
         JCRTemplate.getInstance().doExecute(JahiaUserManagerService.GUEST_USERNAME, null, Constants.LIVE_WORKSPACE, Locale.ENGLISH, new JCRCallback<Object>() {
             public Object doInJCR(JCRSessionWrapper guestSession) throws RepositoryException {
 
@@ -687,6 +680,9 @@ public class ExternalDatabaseProviderTest extends JahiaTestCase {
                 return null;
             }
         });
+        // Clean up guest read access
+        session.getNode(MAPPED_PROVIDER_MOUNTPOINT).revokeRolesForPrincipal("u:" +JahiaUserManagerService.GUEST_USERNAME);
+        session.save();
     }
 
     @Test
