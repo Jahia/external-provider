@@ -1,7 +1,7 @@
 <%@ page import="org.apache.commons.lang.StringUtils" %>
 <%@ page import="org.jahia.modules.external.ExternalContentStoreProvider" %>
-<%@ page import="org.jahia.osgi.BundleUtils" %>
 <%@ page import="org.jahia.modules.external.test.activators.ExternalContentStoreProviderActivator" %>
+<%@ page import="org.jahia.osgi.BundleUtils" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="jcr" uri="http://www.jahia.org/tags/jcr" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
@@ -28,15 +28,6 @@
 <head>
 
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-    <style type="text/css" title="currentStyle">
-        @import "<c:url value="/modules/tools/css/demo_page.css"/>";
-        @import "<c:url value="/modules/tools/css/demo_table_jui.css"/>";
-    </style>
-    <script type="text/javascript" src="<c:url value="/modules/jquery/javascript/jquery.js"/>"></script>
-    <script type="text/javascript"
-            src="<c:url value="/modules/assets/javascript/datatables/jquery.dataTables.js"/>"></script>
-    <script type="text/javascript" src="<c:url value="/modules/assets/javascript/jquery.cuteTime.js"/>"></script>
-
     <title>External data provider - test provider</title>
 </head>
 
