@@ -25,7 +25,7 @@
         <relativePath />
     </parent>
     <artifactId>external-provider-ui</artifactId>
-    <version>4.10.0-SNAPSHOT</version>
+    <version>4.11.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <name>Jahia External Provider UI</name>
     <description>This module provide an API that allows mounting of external content provider (as is it comes with vfs
@@ -54,7 +54,7 @@
             org.jahia.services,
             javassist.util.proxy
         </import-package>
-        <jahia-module-signature>MC0CFQCFDWuHZ7k/t0/mGx9Q/IQDkshRYAIUG3xPa3FRc8AhEETexoP0mu4y5fI=</jahia-module-signature>
+        <jahia-module-signature>MC0CFC6efRZE9pzJMWkWdnrCJdELMZJ9AhUAkCG6jKoYCgRxSb3JgvmavfaDXvc=</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <yarn.arguments>build:production</yarn.arguments>
         <sonar.sources>src/javascript,src/main/resources/javascript</sonar.sources>
@@ -88,7 +88,7 @@
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>external-provider</artifactId>
-            <version>4.10.0-SNAPSHOT</version>
+            <version>4.11.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
