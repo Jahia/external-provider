@@ -15,7 +15,7 @@ jobs:
       module_branch: ${{ github.ref }}
       jahia_image: jahia/jahia-ee:8
       provisioning_manifest: provisioning-manifest-snapshot.yml
-      incident_service: external-provider-JahiaRL
+      incident_service: external-provider-JahiaRL 
       artifact_prefix: ep-rl
       testrail_project: External Provider
       timeout_job: 45
