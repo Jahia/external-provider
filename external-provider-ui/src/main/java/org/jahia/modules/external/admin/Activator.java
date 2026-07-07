@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component(immediate = true)
 public class Activator {
@@ -36,28 +37,30 @@ public class Activator {
      * external-provider bundle into this one. Consumers (e.g. external-provider-vfs) must end up
      * wired to this bundle for those packages.
      *
-     * <p>This must behave as a <em>migration step</em>, not a lifecycle step. Two things make it safe:</p>
+     * <p>This must behave as a <em>migration step</em>, not a lifecycle step. The decision is taken
+     * per consumer, from the live wiring graph, so it is self-correcting and re-evaluated on every
+     * activation (no persistent flag). For each bundle that depends on the moved packages:</p>
      * <ul>
-     *   <li><b>Guard against transitions.</b> While another revision of this bundle is still
-     *       {@code RESOLVED}/{@code ACTIVE}, an upgrade is in flight and the module manager owns the
-     *       re-wire (its own refresh cascade re-resolves consumers). Refreshing here would race that
-     *       in-flight refresh and deadlock — see Jahia/jahia-private#5156. We step aside and let it
-     *       settle; the migration is re-evaluated, safely, on the next activation.</li>
-     *   <li><b>No spurious work.</b> A consumer already wired to <em>this</em> bundle is left alone,
-     *       so plain stop/start, redeploy and cold boot are no-ops. Only consumers that depend on the
-     *       moved packages but are <em>not</em> wired to us are refreshed.</li>
+     *   <li>wired to <b>this</b> bundle → nothing to do;</li>
+     *   <li>wired to <b>another revision of this module</b> (same symbolic name, different bundle id)
+     *       → nothing to do: an upgrade is in flight and the module manager owns the re-wire (its own
+     *       refresh cascade re-resolves consumers). Refreshing here would race that in-flight refresh
+     *       and deadlock — see Jahia/jahia-private#5156. Leaving it alone is what keeps this safe;</li>
+     *   <li>wired to a <b>foreign</b> bundle (the old external-provider exporter) → refresh, so the
+     *       framework re-resolves it against this bundle;</li>
+     *   <li>not wired at all but its manifest <b>declares</b> the import → refresh: this catches an
+     *       optional import that did not resolve because this bundle was installed after the consumer
+     *       (there is no wire to inspect in that case).</li>
      * </ul>
      *
-     * <p>A consumer needs a refresh when it depends on the moved packages yet is not wired to this
-     * bundle — detected two complementary ways: a live wire pointing at a foreign (stale) revision,
-     * or a declared {@code Import-Package} that is currently unwired (e.g. an optional import that
-     * did not resolve because this bundle was installed after the consumer). No persistent flag is
-     * needed: the live wiring graph is the source of truth, re-evaluated on every activation.</p>
+     * <p>Because a consumer wired to any revision of this module (this one or an older sibling still
+     * present during an upgrade) is left untouched, plain stop/start, redeploy and cold boot are
+     * no-ops, and version transitions are deferred to the module manager without a separate guard.</p>
      */
     @Activate
     public void start(BundleContext context) {
 
-        // Guard 1 — cold boot. The resolver wires everything from scratch; no manual refresh needed.
+        // Cold boot: the resolver wires everything from scratch; no manual refresh needed.
         int currentLevel = BundleLifecycleUtils.getFrameworkStartLevel();
         if (currentLevel < FULLY_BOOTED_START_LEVEL) {
             logger.info("System is still booting (start level {}). Skipping migration refresh.", currentLevel);
@@ -67,24 +70,10 @@ public class Activator {
         Bundle bundle = context.getBundle();
         String symbolicName = bundle.getSymbolicName();
 
-        // Guard 2 — a version transition is still in flight. If another revision of this bundle is
-        // RESOLVED or ACTIVE, the module manager has not finished the upgrade; refreshing now would
-        // race its in-flight refresh and deadlock. Step aside — re-evaluated on the next activation.
-        boolean otherRevisionPresent = Arrays.stream(context.getBundles())
-                .filter(b -> symbolicName.equals(b.getSymbolicName()))
-                .filter(b -> b.getBundleId() != bundle.getBundleId())
-                .anyMatch(b -> b.getState() == Bundle.RESOLVED || b.getState() == Bundle.ACTIVE);
-        if (otherRevisionPresent) {
-            logger.info("Another revision of {} is still present; deferring migration until the upgrade settles.", symbolicName);
-            return;
-        }
-
-        // Sole revision, fully booted: refresh the consumers that depend on the moved packages but
-        // are not wired to this bundle (foreign/stale wire, or a declared-but-unwired import).
         Set<Bundle> toRefresh = Arrays.stream(context.getBundles())
                 .filter(b -> b.getBundleId() != bundle.getBundleId())
                 .filter(b -> b.getState() == Bundle.RESOLVED || b.getState() == Bundle.ACTIVE)
-                .filter(b -> needsRewireToThisBundle(b, bundle))
+                .filter(b -> needsRewireToThisBundle(b, symbolicName))
                 .collect(Collectors.toSet());
 
         if (toRefresh.isEmpty()) {
@@ -98,48 +87,47 @@ public class Activator {
     }
 
     /**
-     * A consumer needs re-wiring when it depends on the moved packages but is not (yet) wired to
-     * {@code currentBundle}. Already-correctly-wired consumers are skipped so redeploy/stop-start
-     * stay no-ops.
+     * Decides, from {@code candidate}'s live wiring for the moved packages, whether it must be
+     * refreshed to (re-)wire onto this module. See {@link #start(BundleContext)} for the rules.
+     *
+     * @param ourSymbolicName the symbolic name of this module — any revision of it (this bundle or an
+     *                        older sibling still present during an upgrade) counts as "the family".
      */
-    private static boolean needsRewireToThisBundle(Bundle candidate, Bundle currentBundle) {
-        if (isWiredToThisBundle(candidate, currentBundle)) {
+    private static boolean needsRewireToThisBundle(Bundle candidate, String ourSymbolicName) {
+        boolean wiredToFamily = false;
+        boolean wiredToForeign = false;
+
+        List<BundleWire> wires = movedPackageWires(candidate).collect(Collectors.toList());
+        for (BundleWire wire : wires) {
+            BundleWiring providerWiring = wire.getProviderWiring();
+            if (providerWiring == null) {
+                continue;
+            }
+            if (ourSymbolicName.equals(providerWiring.getBundle().getSymbolicName())) {
+                wiredToFamily = true;
+            } else {
+                wiredToForeign = true;
+            }
+        }
+
+        // Wired to us or to an older revision of us → leave it: the module manager owns the re-wire
+        // during a version transition. This subsumes a "defer while another revision is present" guard.
+        if (wiredToFamily) {
             return false;
         }
-        // Not wired to us: refresh if it has a live wire to a foreign revision, or if it declares
-        // an import of the moved packages that is currently unwired (covers optional imports that
-        // did not resolve because this bundle was installed after the consumer).
-        return isWiredToForeignRevision(candidate, currentBundle) || declaresMovedPackageImport(candidate);
-    }
-
-    /**
-     * {@code true} if {@code candidate} has a resolved package wire rooted at
-     * {@link #MOVED_PACKAGE_ROOT} whose provider is {@code target}.
-     */
-    private static boolean isWiredToThisBundle(Bundle candidate, Bundle target) {
-        return movedPackageWires(candidate).anyMatch(wire -> {
-            BundleWiring providerWiring = wire.getProviderWiring();
-            return providerWiring != null && target.equals(providerWiring.getBundle());
-        });
-    }
-
-    /**
-     * {@code true} if {@code candidate} has a resolved package wire rooted at
-     * {@link #MOVED_PACKAGE_ROOT} whose provider is a bundle other than {@code currentBundle}
-     * (i.e. a stale revision). Uses the resolver's live view rather than manifest strings.
-     */
-    private static boolean isWiredToForeignRevision(Bundle candidate, Bundle currentBundle) {
-        return movedPackageWires(candidate).anyMatch(wire -> {
-            BundleWiring providerWiring = wire.getProviderWiring();
-            return providerWiring != null && !currentBundle.equals(providerWiring.getBundle());
-        });
+        // Wired to a foreign (stale) revision → refresh so it re-resolves against this bundle.
+        if (wiredToForeign) {
+            return true;
+        }
+        // No wire at all: refresh only if it declares the import (e.g. an optional import that did not
+        // resolve because this bundle was installed after the consumer).
+        return declaresMovedPackageImport(candidate);
     }
 
     /**
      * {@code true} if {@code candidate} declares an {@code Import-Package} of the moved packages in
-     * its manifest — regardless of whether that import is currently wired. This complements the wire
-     * inspection: it catches consumers whose (optional) import is unresolved and therefore has no
-     * wire to inspect.
+     * its manifest — regardless of whether that import is currently wired. Complements the wire
+     * inspection: it catches consumers whose (optional) import is unresolved and has no wire.
      */
     private static boolean declaresMovedPackageImport(Bundle candidate) {
         Object importPackage = candidate.getHeaders().get(IMPORT_PACKAGE_HEADER);
@@ -149,16 +137,17 @@ public class Activator {
     /**
      * Resolved package wires of {@code candidate} whose exported package is rooted at
      * {@link #MOVED_PACKAGE_ROOT} (the exact root or any sub-package, e.g. {@code .mount}).
+     * Uses {@link BundleWiring#getRequiredWires(String)} — the resolver's live, authoritative view.
      */
-    private static java.util.stream.Stream<BundleWire> movedPackageWires(Bundle candidate) {
+    private static Stream<BundleWire> movedPackageWires(Bundle candidate) {
         BundleWiring wiring = candidate.adapt(BundleWiring.class);
         // adapt() returns null when the bundle is INSTALLED/UNRESOLVED (no wiring yet).
         if (wiring == null) {
-            return java.util.stream.Stream.empty();
+            return Stream.empty();
         }
         List<BundleWire> requiredWires = wiring.getRequiredWires(PACKAGE_NAMESPACE);
         if (requiredWires == null) {
-            return java.util.stream.Stream.empty();
+            return Stream.empty();
         }
         return requiredWires.stream().filter(wire -> {
             Object pkgAttr = wire.getCapability().getAttributes().get(PACKAGE_NAMESPACE);
