@@ -28,7 +28,7 @@ describe('VFS admin panel mount tests', () => {
             // in it must be handled safely (no query-structure error), so creation still succeeds.
             cy.visit('/cms/adminframe/default/en/settings.manageMountPoints.html?redirect=false');
             cy.get('button[data-sel-role="addMountPoint"]').click();
-            cy.get('input[name="name"]').type(`mount'test`);
+            cy.get('input[name="name"]').type('mount\'test');
             cy.get('input[name="root"]').type('/tmp/mount-test');
             cy.get('button[name="_eventId_save"]').click();
             cy.contains('Mounted');
