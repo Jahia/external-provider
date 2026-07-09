@@ -23,6 +23,16 @@ describe('VFS admin panel mount tests', () => {
             cy.contains('Mounted');
             cy.contains('/mounts/mount-test');
         });
+        it('handles a mount point name containing special characters (quote) without a query error', function () {
+            // The name is used to look the mount point up via a JCR-SQL2 query; special characters
+            // in it must be handled safely (no query-structure error), so creation still succeeds.
+            cy.visit('/cms/adminframe/default/en/settings.manageMountPoints.html?redirect=false');
+            cy.get('button[data-sel-role="addMountPoint"]').click();
+            cy.get('input[name="name"]').type('mount\'test');
+            cy.get('input[name="root"]').type('/tmp/mount-test');
+            cy.get('button[name="_eventId_save"]').click();
+            cy.contains('Mounted');
+        });
         it('can create a local mountpoint', function () {
             cy.visit('/cms/adminframe/default/en/settings.manageMountPoints.html?redirect=false');
             cy.get('button[data-sel-role="addMountPoint"]').click();
