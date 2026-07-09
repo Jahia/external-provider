@@ -185,7 +185,7 @@ public class MountPointServiceImpl implements MountPointService {
     private String getMountPointQuery(String name) {
         String query = "select * from [" + Constants.JAHIANT_MOUNTPOINT + "] as mount where ischildnode('/mounts')";
         if (StringUtils.isNotEmpty(name)) {
-            query += " and ['j:nodename'] = '" + name + "'";
+            query += " and ['j:nodename'] = '" + JCRContentUtils.sqlEncode(name) + "'";
         }
         logger.debug("Query: {}", query);
         return query;
