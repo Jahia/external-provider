@@ -35,6 +35,9 @@
         <developerConnection>scm:git:git@github.com:Jahia/external-provider.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
+    <properties>
+        <sonar.sources>core,external-provider-ui,modules-provider,vfs,pom.xml</sonar.sources>
+    </properties>
 
     <repositories>
         <repository>
