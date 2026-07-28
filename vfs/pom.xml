@@ -52,6 +52,7 @@
             org.apache.naming.java,
             org.springframework.web.servlet.tags.form
         </import-package>
+        <sonar.sources>src,pom.xml</sonar.sources>
     </properties>
     <dependencies>
         <dependency>
