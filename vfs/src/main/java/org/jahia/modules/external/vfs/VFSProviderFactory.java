@@ -69,12 +69,10 @@ public class VFSProviderFactory implements ProviderFactory {
             provider.setSessionFactory(JCRSessionFactory.getInstance());
             provider.start();
             return provider;
-        } catch (JahiaInitializationException e) {
-            throw new RepositoryException(e);
-        } catch (RuntimeException e) {
-            // The repository calls this for each mount point in turn and handles a RepositoryException; an unchecked
-            // one would travel further and leave the mount points after this one unmounted. It logs what it catches,
-            // so the cause travels with it rather than being logged again here.
+        } catch (JahiaInitializationException | RuntimeException e) {
+            // RuntimeException is in there because the repository calls this for each mount point in turn and handles
+            // a RepositoryException, while an unchecked one would travel further and leave the mount points after
+            // this one unmounted. The repository logs what it catches, so the cause travels with it.
             throw new RepositoryException(e);
         }
     }
