@@ -22,8 +22,6 @@ import org.jahia.services.content.*;
 import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 
@@ -32,8 +30,6 @@ import javax.jcr.RepositoryException;
  */
 @Component(service = ProviderFactory.class, immediate = true)
 public class VFSProviderFactory implements ProviderFactory {
-
-    private static final Logger logger = LoggerFactory.getLogger(VFSProviderFactory.class);
 
     @Reference
     private ExternalContentStoreProviderFactory externalContentStoreProviderFactory;
@@ -77,8 +73,8 @@ public class VFSProviderFactory implements ProviderFactory {
             throw new RepositoryException(e);
         } catch (RuntimeException e) {
             // The repository calls this for each mount point in turn and handles a RepositoryException; an unchecked
-            // one would travel further and leave the mount points after this one unmounted.
-            logger.error("Cannot mount the VFS provider declared at {}", mountPoint.getPath(), e);
+            // one would travel further and leave the mount points after this one unmounted. It logs what it catches,
+            // so the cause travels with it rather than being logged again here.
             throw new RepositoryException(e);
         }
     }
