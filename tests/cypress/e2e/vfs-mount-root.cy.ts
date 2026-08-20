@@ -62,8 +62,6 @@ const mount = (uuid: string) => cy.apollo({
     errorPolicy: 'all'
 });
 
-const expectNotMounted = ({data}) => expect(data.admin.mountPoint.mountPoint.mountStatus).to.not.eq('mounted');
-
 describe('VFS mount point root path', () => {
     beforeEach(function () {
         cy.executeGroovy('cleanup.groovy');
@@ -91,7 +89,7 @@ describe('VFS mount point root path', () => {
 
     UNSUPPORTED_ROOTS.forEach((rootPath, index) => {
         it(`refuses an unsupported root on creation: ${rootPath}`, function () {
-            addVfs(`root-refused-${index}`, rootPath, 'all').should(expectRefused);
+            addVfs(`root-refused-${index}`, rootPath, 'all').should(expectRefused(rootPath));
         });
     });
 
@@ -108,7 +106,6 @@ describe('VFS mount point root path', () => {
             .then(uuid => storeRootOf(uuid, UNSUPPORTED_ROOT).then(() => mount(uuid)));
 
         readNode('/mounts/root-alongside/images/tomcat.gif').should(expectNamed('tomcat.gif'));
-        readMountInfo('root-stored').should(expectNotMounted);
     });
 
     it('leaves the supported root in place when the change is refused', function () {

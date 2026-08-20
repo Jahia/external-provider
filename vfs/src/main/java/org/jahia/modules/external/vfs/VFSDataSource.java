@@ -52,9 +52,10 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     private String rootUnavailableReason;
 
     /**
-     * Defines the root point of the DataSource
+     * Defines the root point of the DataSource. A root that cannot be used leaves the DataSource without one, and
+     * every lookup on it then reports that root as unusable rather than the DataSource reporting it here.
      *
-     * @param rootUri
+     * @param rootUri the root to use
      */
     public void setRoot(String rootUri) {
         rootUnavailableReason = null;
@@ -63,13 +64,15 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             manager = root.getFileSystem().getFileSystemManager();
             rootPath = root.getName().getPath();
         } catch (Exception e) {
-            // The mount point is still mounted, and reports itself unavailable through the accessors below. That is
-            // the state the repository puts on hold and retries, and it leaves the other mount points alone; throwing
-            // here would travel out of ProviderFactory.mountProvider, which the repository calls for each of them.
+            // Every lookup then reports the root as unusable, which is what the repository reads as "this mount point
+            // is not available": it records the reason, puts the mount point on hold and retries it, and leaves the
+            // other mount points alone. Reporting it here instead would travel out of the call the repository makes
+            // for each of them in turn.
             root = null;
             rootPath = null;
-            rootUnavailableReason = "Cannot set root to " + rootUri;
-            logger.warn("{}: {}", rootUnavailableReason, e.getMessage());
+            manager = null;
+            rootUnavailableReason = "Cannot set root to " + rootUri + ": " + e.getMessage();
+            logger.warn(rootUnavailableReason);
         }
     }
 

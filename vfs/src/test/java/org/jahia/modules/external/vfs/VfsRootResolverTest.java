@@ -107,6 +107,15 @@ public final class VfsRootResolverTest {
     }
 
     @Test
+    public void aPathWithoutASchemeIsRefusedWhenTheLocalFilesystemIsNotAllowed() {
+        VfsRootResolver.setAllowedSchemes(Collections.singletonList("sftp"));
+
+        // a plain path and a file: URI name the same place, so the allowed set answers for both alike
+        assertSchemeRefused("/data/files", VfsRootResolver.LOCAL_SCHEME);
+        assertSchemeRefused("file:///data/files", VfsRootResolver.LOCAL_SCHEME);
+    }
+
+    @Test
     public void aReadableSchemeSurvivesAlongsideAnUnreadableOne() {
         VfsRootResolver.setAllowedSchemes(Arrays.asList("sftp", "not a scheme"));
 

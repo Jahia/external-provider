@@ -70,9 +70,9 @@ public class VFSProviderFactory implements ProviderFactory {
             provider.start();
             return provider;
         } catch (JahiaInitializationException | RuntimeException e) {
-            // RuntimeException is in there because the repository calls this for each mount point in turn and handles
-            // a RepositoryException, while an unchecked one would travel further and leave the mount points after
-            // this one unmounted. The repository logs what it catches, so the cause travels with it.
+            // RuntimeException is in there because this is called from a declarative-services bind method, which an
+            // unchecked exception fails outright; a RepositoryException is what the repository declares and logs. It
+            // logs the cause with it, so it is not logged again here.
             throw new RepositoryException(e);
         }
     }
