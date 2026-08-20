@@ -2,6 +2,7 @@ package org.jahia.modules.external.vfs;
 
 import org.osgi.service.cm.ManagedService;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,11 @@ public class VfsRootConfiguration implements ManagedService {
             return;
         }
         VfsRootResolver.setAllowedSchemes(getSchemesProperty(properties, KEY_ALLOWED_SCHEMES));
+    }
+
+    @Deactivate
+    public void deactivate() {
+        VfsRootResolver.close();
     }
 
     /**

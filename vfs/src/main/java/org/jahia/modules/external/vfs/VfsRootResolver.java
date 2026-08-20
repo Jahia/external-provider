@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,9 +45,10 @@ public final class VfsRootResolver {
     /** The shape of a scheme name, applied to a configured value before it joins the allowed set. */
     private static final Pattern SCHEME_NAME = Pattern.compile("[a-z][a-z0-9+.-]+");
 
-    private static volatile Set<String> allowedSchemes = LOCAL_ONLY;
+    private static final AtomicReference<Set<String>> allowedSchemes = new AtomicReference<>(LOCAL_ONLY);
 
-    private static volatile FileSystemManager localOnlyManager;
+    /** Only ever touched from the synchronized methods below, so it needs no memory barrier of its own. */
+    private static DefaultFileSystemManager localOnlyManager;
 
     private VfsRootResolver() {
         throw new IllegalStateException("Utility class is not meant to be instantiated");
@@ -61,14 +63,14 @@ public final class VfsRootResolver {
      */
     public static FileObject resolveRoot(String rootPath) throws FileSystemException {
         checkSchemeAllowed(rootPath);
-        return managerFor(allowedSchemes).resolveFile(rootPath);
+        return managerFor(allowedSchemes.get()).resolveFile(rootPath);
     }
 
     /**
      * @return the schemes a mount point root may currently use
      */
     static Set<String> getAllowedSchemes() {
-        return allowedSchemes;
+        return allowedSchemes.get();
     }
 
     /**
@@ -89,11 +91,12 @@ public final class VfsRootResolver {
                 }
             }
         }
-        allowedSchemes = normalized.isEmpty() ? LOCAL_ONLY : Collections.unmodifiableSet(normalized);
-        if (LOCAL_ONLY.equals(allowedSchemes)) {
+        Set<String> applied = normalized.isEmpty() ? LOCAL_ONLY : Collections.unmodifiableSet(normalized);
+        allowedSchemes.set(applied);
+        if (LOCAL_ONLY.equals(applied)) {
             logger.info("A VFS mount point root may name the local file system");
         } else {
-            logger.info("A VFS mount point root may name any of {}", allowedSchemes);
+            logger.info("A VFS mount point root may name any of {}", applied);
         }
     }
 
@@ -102,7 +105,7 @@ public final class VfsRootResolver {
             throw new VfsRootNotAllowedException("The root path of a VFS mount point must not be blank");
         }
         String scheme = schemeOf(rootPath);
-        Set<String> allowed = allowedSchemes;
+        Set<String> allowed = allowedSchemes.get();
         if (scheme != null && !allowed.contains(scheme)) {
             throw new VfsRootNotAllowedException(String.format(
                     "The URI scheme \"%s\" is not among the schemes a VFS mount point root may use: %s",
@@ -126,14 +129,29 @@ public final class VfsRootResolver {
     private static synchronized FileSystemManager localOnlyManager() throws FileSystemException {
         if (localOnlyManager == null) {
             DefaultFileSystemManager manager = new DefaultFileSystemManager();
-            manager.setFilesCache(new SoftRefFilesCache());
-            manager.setCacheStrategy(CacheStrategy.ON_RESOLVE);
-            manager.addProvider(LOCAL_SCHEME, new DefaultLocalFileProvider());
-            // Neither a default provider nor a base file is set, so a root resolves only when the local provider
-            // claims it.
-            manager.init();
+            try {
+                manager.setFilesCache(new SoftRefFilesCache());
+                manager.setCacheStrategy(CacheStrategy.ON_RESOLVE);
+                manager.addProvider(LOCAL_SCHEME, new DefaultLocalFileProvider());
+                // Neither a default provider nor a base file is set, so a root resolves only when the local provider
+                // claims it.
+                manager.init();
+            } catch (FileSystemException e) {
+                manager.close();
+                throw e;
+            }
             localOnlyManager = manager;
         }
         return localOnlyManager;
+    }
+
+    /**
+     * Releases the manager this resolver holds. Called when the bundle stops, so a redeployment starts from a new one.
+     */
+    static synchronized void close() {
+        if (localOnlyManager != null) {
+            localOnlyManager.close();
+            localOnlyManager = null;
+        }
     }
 }
