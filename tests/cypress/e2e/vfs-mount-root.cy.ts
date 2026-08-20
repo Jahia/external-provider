@@ -29,12 +29,16 @@ const uuidOf = (response): string => response.data.admin.jahia.mountPoint.addVfs
 
 const expectAccepted = ({data}) => expect(data.admin.jahia.mountPoint.addVfs).to.not.be.empty;
 
-const expectRefused = ({errors, data}) => {
-    expect(errors).to.not.be.empty;
+const expectRefused = (rootPath: string) => ({errors, data}) => {
+    expect(errors, `expected ${rootPath} to be refused`).to.not.be.empty;
+    expect(errors.map(e => e.message).join(' '), 'the reported error should name the root').to.contain(rootPath);
     expect(data?.admin?.jahia?.mountPoint?.addVfs).to.be.oneOf([null, undefined]);
 };
 
-const expectErrors = ({errors}) => expect(errors).to.not.be.empty;
+const expectRefusedChange = (rootPath: string) => ({errors}) => {
+    expect(errors, `expected ${rootPath} to be refused`).to.not.be.empty;
+    expect(errors.map(e => e.message).join(' '), 'the reported error should name the root').to.contain(rootPath);
+};
 
 const expectNamed = (name: string) => ({data}) => expect(data.jcr.nodeByPath.name).to.eq(name);
 
@@ -46,6 +50,19 @@ const expectRootPath = (rootPath: string) => ({data}) => {
 const readNode = (path: string) => cy.apollo({queryFile: 'getVfsNode.graphql', variables: {path}});
 
 const readMountInfo = (name: string) => cy.apollo({queryFile: 'mountInfo.graphql', variables: {name}});
+
+const storeRootOf = (uuid: string, rootPath: string) => cy.executeGroovy('setVfsRootPath.groovy', {
+    '#uuid#': uuid,
+    '#rootPath#': rootPath
+});
+
+const mount = (uuid: string) => cy.apollo({
+    mutationFile: 'mountVfsJahiaPath.graphql',
+    variables: {pathOrId: uuid},
+    errorPolicy: 'all'
+});
+
+const expectNotMounted = ({data}) => expect(data.admin.mountPoint.mountPoint.mountStatus).to.not.eq('mounted');
 
 describe('VFS mount point root path', () => {
     beforeEach(function () {
@@ -81,7 +98,17 @@ describe('VFS mount point root path', () => {
     it('refuses an unsupported root replacing a supported one', function () {
         addVfs('root-modified', LOCAL_ROOT)
             .then(uuidOf)
-            .then(uuid => setRootOf(uuid, UNSUPPORTED_ROOT).should(expectErrors));
+            .then(uuid => setRootOf(uuid, UNSUPPORTED_ROOT).should(expectRefusedChange(UNSUPPORTED_ROOT)));
+    });
+
+    it('leaves the other mount points serving when a stored root is not supported', function () {
+        addVfs('root-alongside', LOCAL_ROOT);
+        addVfs('root-stored', LOCAL_ROOT)
+            .then(uuidOf)
+            .then(uuid => storeRootOf(uuid, UNSUPPORTED_ROOT).then(() => mount(uuid)));
+
+        readNode('/mounts/root-alongside/images/tomcat.gif').should(expectNamed('tomcat.gif'));
+        readMountInfo('root-stored').should(expectNotMounted);
     });
 
     it('leaves the supported root in place when the change is refused', function () {

@@ -49,6 +49,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     private FileObject root;
     private String rootPath;
     private FileSystemManager manager;
+    private String rootUnavailableReason;
 
     /**
      * Defines the root point of the DataSource
@@ -56,12 +57,19 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
      * @param rootUri
      */
     public void setRoot(String rootUri) {
+        rootUnavailableReason = null;
         try {
             root = VfsRootResolver.resolveRoot(rootUri);
             manager = root.getFileSystem().getFileSystemManager();
             rootPath = root.getName().getPath();
         } catch (Exception e) {
-            throw new RuntimeException("Cannot set root to " + rootUri, e);
+            // The mount point is still mounted, and reports itself unavailable through the accessors below. That is
+            // the state the repository puts on hold and retries, and it leaves the other mount points alone; throwing
+            // here would travel out of ProviderFactory.mountProvider, which the repository calls for each of them.
+            root = null;
+            rootPath = null;
+            rootUnavailableReason = "Cannot set root to " + rootUri;
+            logger.warn("{}: {}", rootUnavailableReason, e.getMessage());
         }
     }
 
@@ -360,6 +368,10 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     private FileObject getFile(String path, boolean unescapePath) throws FileSystemException {
+        if (root == null) {
+            throw new VfsRootNotAllowedException(rootUnavailableReason != null ? rootUnavailableReason
+                    : "The root of this mount point is not set");
+        }
         if (unescapePath) {
             path = Escaping.unescapeIllegalJcrChars(path);
         }

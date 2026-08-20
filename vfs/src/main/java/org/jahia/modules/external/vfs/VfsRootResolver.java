@@ -74,9 +74,9 @@ public final class VfsRootResolver {
     }
 
     /**
-     * Sets the schemes a mount point root may use. A null or empty collection, and any value that is not the name of
-     * a scheme, restores the local filesystem alone: a set this cannot read is the one case where widening must not
-     * happen, since the set also decides which providers the resolving manager carries.
+     * Sets the schemes a mount point root may use. A value that is not the name of a scheme is reported and dropped,
+     * and a set left with nothing readable in it restores the local filesystem alone: the set also decides which
+     * providers the resolving manager carries, so it must not widen on a value it cannot read.
      */
     static void setAllowedSchemes(Collection<String> schemes) {
         Set<String> normalized = new LinkedHashSet<>();
@@ -106,16 +106,20 @@ public final class VfsRootResolver {
         }
         String scheme = schemeOf(rootPath);
         Set<String> allowed = allowedSchemes.get();
-        if (scheme != null && !allowed.contains(scheme)) {
+        if (!allowed.contains(scheme)) {
             throw new VfsRootNotAllowedException(String.format(
                     "The URI scheme \"%s\" is not among the schemes a VFS mount point root may use: %s",
                     scheme, allowed));
         }
     }
 
+    /**
+     * The scheme a root names, which is the local file system when it names none — a plain path and a {@code file:}
+     * URI reach the same place, so the allowed set answers for both alike.
+     */
     private static String schemeOf(String rootPath) {
         Matcher matcher = SCHEME_PREFIX.matcher(rootPath);
-        return matcher.find() ? matcher.group(1).toLowerCase(Locale.ROOT) : null;
+        return matcher.find() ? matcher.group(1).toLowerCase(Locale.ROOT) : LOCAL_SCHEME;
     }
 
     /**
