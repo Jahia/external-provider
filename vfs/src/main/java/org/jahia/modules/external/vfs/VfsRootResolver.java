@@ -9,6 +9,8 @@ import org.apache.commons.vfs2.VFS;
 import org.apache.commons.vfs2.cache.SoftRefFilesCache;
 import org.apache.commons.vfs2.impl.DefaultFileSystemManager;
 import org.apache.commons.vfs2.provider.local.DefaultLocalFileProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -26,6 +28,8 @@ import java.util.regex.Pattern;
  */
 public final class VfsRootResolver {
 
+    private static final Logger logger = LoggerFactory.getLogger(VfsRootResolver.class);
+
     /** The scheme of the local filesystem, and the only one allowed unless a configuration widens the set. */
     public static final String LOCAL_SCHEME = "file";
 
@@ -36,6 +40,9 @@ public final class VfsRootResolver {
      * not matched, so a Windows drive ({@code d:/data}) stays a filesystem path rather than reading as a scheme.
      */
     private static final Pattern SCHEME_PREFIX = Pattern.compile("^([a-zA-Z][a-zA-Z0-9+.-]+):");
+
+    /** The shape of a scheme name, applied to a configured value before it joins the allowed set. */
+    private static final Pattern SCHEME_NAME = Pattern.compile("[a-z][a-z0-9+.-]+");
 
     private static volatile Set<String> allowedSchemes = LOCAL_ONLY;
 
@@ -60,23 +67,34 @@ public final class VfsRootResolver {
     /**
      * @return the schemes a mount point root may currently use
      */
-    public static Set<String> getAllowedSchemes() {
+    static Set<String> getAllowedSchemes() {
         return allowedSchemes;
     }
 
     /**
-     * Sets the schemes a mount point root may use. A null or empty collection restores the local filesystem alone.
+     * Sets the schemes a mount point root may use. A null or empty collection, and any value that is not the name of
+     * a scheme, restores the local filesystem alone: a set this cannot read is the one case where widening must not
+     * happen, since the set also decides which providers the resolving manager carries.
      */
     static void setAllowedSchemes(Collection<String> schemes) {
         Set<String> normalized = new LinkedHashSet<>();
         if (schemes != null) {
             for (String scheme : schemes) {
-                if (StringUtils.isNotBlank(scheme)) {
-                    normalized.add(scheme.trim().toLowerCase(Locale.ROOT));
+                String candidate = StringUtils.trimToEmpty(scheme).toLowerCase(Locale.ROOT);
+                if (SCHEME_NAME.matcher(candidate).matches()) {
+                    normalized.add(candidate);
+                } else if (StringUtils.isNotBlank(candidate)) {
+                    logger.warn("Ignoring \"{}\", which is not the name of a URI scheme, in the schemes a VFS mount"
+                            + " point root may use", candidate);
                 }
             }
         }
         allowedSchemes = normalized.isEmpty() ? LOCAL_ONLY : Collections.unmodifiableSet(normalized);
+        if (LOCAL_ONLY.equals(allowedSchemes)) {
+            logger.info("A VFS mount point root may name the local file system");
+        } else {
+            logger.info("A VFS mount point root may name any of {}", allowedSchemes);
+        }
     }
 
     static void checkSchemeAllowed(String rootPath) throws FileSystemException {

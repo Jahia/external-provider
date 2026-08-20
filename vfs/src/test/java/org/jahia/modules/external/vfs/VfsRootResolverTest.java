@@ -97,6 +97,22 @@ public final class VfsRootResolverTest {
         assertEquals(Collections.singleton(VfsRootResolver.LOCAL_SCHEME), VfsRootResolver.getAllowedSchemes());
     }
 
+    @Test
+    public void aConfiguredValueThatIsNotASchemeNameRestoresTheLocalFilesystem() {
+        // the set also decides which providers the resolving manager carries, so an unreadable set must not widen it
+        VfsRootResolver.setAllowedSchemes(Arrays.asList("[Ljava.lang.String;@1f2a3b", "file,https", "http://x"));
+
+        assertEquals(Collections.singleton(VfsRootResolver.LOCAL_SCHEME), VfsRootResolver.getAllowedSchemes());
+        assertSchemeRefused("https://example.com/", "https");
+    }
+
+    @Test
+    public void aReadableSchemeSurvivesAlongsideAnUnreadableOne() {
+        VfsRootResolver.setAllowedSchemes(Arrays.asList("sftp", "not a scheme"));
+
+        assertEquals(Collections.singleton("sftp"), VfsRootResolver.getAllowedSchemes());
+    }
+
     private static void assertSchemeRefused(String rootPath, String expectedScheme) {
         String message = assertRefused(rootPath);
         assertTrue("Expected the message to name the scheme " + expectedScheme + ", got: " + message,
