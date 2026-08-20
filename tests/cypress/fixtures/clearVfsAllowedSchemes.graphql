@@ -1,0 +1,9 @@
+mutation clearVfsAllowedSchemes {
+    admin {
+        jahia {
+            configuration(pid: "org.jahia.modules.external.vfs") {
+                remove(name: "vfsMountPoint.allowedSchemes")
+            }
+        }
+    }
+}
