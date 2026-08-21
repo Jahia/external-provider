@@ -1,8 +1,17 @@
 const LOCAL_ROOT = '/tmp/mount-test';
+const LOCAL_GZIP = `${LOCAL_ROOT}/archive.gz`;
 
-// A root reaching off the local file system, so it answers only to the configured set
-const CONFIGURED_ROOT = 'https://example.com/';
-const CONFIGURED_SCHEMES = 'file,https';
+// A root that answers only to the configured set: the gzip provider is a scheme of its own, layered over a local
+// file, so the probe reaches nothing off this machine. A root naming a remote scheme would answer the same
+// question and open a real connection from wherever the suite runs. No other suite names this scheme, so
+// widening it here cannot make a case elsewhere read against a set this one configured.
+const CONFIGURED_ROOT = `gz:file://${LOCAL_GZIP}`;
+const CONFIGURED_SCHEMES = 'file,gz';
+
+// The configured set reaches the module asynchronously, so a probe is retried until it answers. Bounded by time
+// rather than by attempts: what is being waited for is a delivery, not a number of round trips.
+const ARRIVAL_TIMEOUT = 10000;
+const ARRIVAL_INTERVAL = 250;
 
 const addVfs = (name: string, rootPath: string, errorPolicy?: 'all') => cy.apollo({
     mutationFile: 'addVfsJahiaPath.graphql',
@@ -25,18 +34,22 @@ const clearAllowedSchemes = () => cy.apollo({
 const wasAccepted = response => !response.errors || response.errors.length === 0;
 
 /**
- * The configured set reaches the module through the configuration service, so read the answer back rather than
- * assume it has arrived. Each attempt is a round trip, which is the wait.
+ * Probes the configured root until it is answered as expected, so the test reads the set back rather than assume
+ * it has arrived. Only the probe that is answered as expected creates a mount point, which the cleanup between
+ * cases removes.
  */
-const expectConfiguredRoot = (accepted: boolean, attempt = 1) =>
-    addVfs(`scheme-probe-${attempt}`, CONFIGURED_ROOT, 'all').then(response => {
-        if (wasAccepted(response) === accepted) {
-            return cy.wrap(response);
+const expectConfiguredRoot = (accepted: boolean) => {
+    let attempt = 0;
+    return cy.waitUntil(
+        () => addVfs(`scheme-probe-${++attempt}`, CONFIGURED_ROOT, 'all')
+            .then(response => wasAccepted(response) === accepted),
+        {
+            timeout: ARRIVAL_TIMEOUT,
+            interval: ARRIVAL_INTERVAL,
+            errorMsg: `${CONFIGURED_ROOT} is still ${accepted ? 'refused' : 'accepted'}`
         }
-
-        expect(attempt, `${CONFIGURED_ROOT} is still ${accepted ? 'refused' : 'accepted'}`).to.be.lessThan(10);
-        return expectConfiguredRoot(accepted, attempt + 1);
-    });
+    );
+};
 
 describe('VFS mount point allowed root schemes', () => {
     before(function () {
@@ -46,6 +59,7 @@ describe('VFS mount point allowed root schemes', () => {
     beforeEach(function () {
         cy.executeGroovy('cleanup.groovy');
         cy.executeGroovy('createDir.groovy');
+        cy.executeGroovy('createVfsGzip.groovy', {'#path#': LOCAL_GZIP});
     });
 
     after(function () {
