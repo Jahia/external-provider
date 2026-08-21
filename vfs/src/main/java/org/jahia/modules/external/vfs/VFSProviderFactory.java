@@ -70,9 +70,9 @@ public class VFSProviderFactory implements ProviderFactory {
             provider.start();
             return provider;
         } catch (JahiaInitializationException | RuntimeException e) {
-            // RuntimeException is in there because this is called from a declarative-services bind method, which an
-            // unchecked exception fails outright; a RepositoryException is what the repository declares and logs. It
-            // logs the cause with it, so it is not logged again here.
+            // RuntimeException is in there because one of the callers of this method is a declarative-services bind
+            // method, which an unchecked exception fails outright; a RepositoryException is what the repository
+            // declares and logs. It logs the cause with it, so it is not logged again here.
             throw new RepositoryException(e);
         }
     }
