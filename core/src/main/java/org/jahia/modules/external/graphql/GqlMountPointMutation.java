@@ -32,6 +32,7 @@ import org.jahia.modules.external.service.MountPoint;
 import org.jahia.modules.external.service.MountPointService;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
+import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 
 import javax.inject.Inject;
 import javax.jcr.RepositoryException;
@@ -46,6 +47,7 @@ public class GqlMountPointMutation {
 
     @GraphQLField
     @GraphQLDescription("Create a mounted mount point node in /mounts")
+    @GraphQLRequiresPermission(value = "graphqlAdminMutation")
     public String add(
             @GraphQLName("name") @GraphQLDescription("Mount point name") @GraphQLNonNull String name,
             @GraphQLName("mountPointRefPath") @GraphQLDescription("Target local mount point") String mountPointRefPath
@@ -56,6 +58,7 @@ public class GqlMountPointMutation {
 
     @GraphQLField
     @GraphQLDescription("Modify an existing mount point node")
+    @GraphQLRequiresPermission(value = "graphqlAdminMutation")
     public boolean modify(
             @GraphQLName("pathOrId") @GraphQLDescription("Mount point path or ID to modify") @GraphQLNonNull String pathOrId,
             @GraphQLName("name") @GraphQLDescription("Rename existing mount point") String name,
@@ -72,6 +75,7 @@ public class GqlMountPointMutation {
 
     @GraphQLField
     @GraphQLDescription("Mount an existing mount point")
+    @GraphQLRequiresPermission(value = "graphqlAdminMutation")
     public boolean mount(
             @GraphQLName("pathOrId") @GraphQLDescription("Mount point path or ID to mount") @GraphQLNonNull String pathOrId
     ) throws RepositoryException {
@@ -80,6 +84,7 @@ public class GqlMountPointMutation {
 
     @GraphQLField
     @GraphQLDescription("Unmount an existing mount point")
+    @GraphQLRequiresPermission(value = "graphqlAdminMutation")
     public boolean unmount(
             @GraphQLName("pathOrId") @GraphQLDescription("Mount point path or ID to unmount") @GraphQLNonNull String pathOrId
     ) throws RepositoryException {

@@ -29,6 +29,7 @@ import org.jahia.modules.external.graphql.GqlMountPointMutation;
 import org.jahia.modules.external.service.MountPointService;
 import org.jahia.modules.external.vfs.service.VfsMountPoint;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 import org.jahia.osgi.BundleUtils;
 
 import javax.jcr.RepositoryException;
@@ -45,6 +46,7 @@ public class GqlVfsMountPointMutation {
 
     @GraphQLField
     @GraphQLDescription("Create a mounted VFS mount point node in /mounts")
+    @GraphQLRequiresPermission(value = "graphqlAdminMutation")
     public String addVfs(
             @GraphQLName("name") @GraphQLDescription("Name for the mount point") @GraphQLNonNull String name,
             @GraphQLName("mountPointRefPath") @GraphQLDescription("Target local mount point") String mountPointRefPath,
@@ -69,6 +71,7 @@ public class GqlVfsMountPointMutation {
 
     @GraphQLField
     @GraphQLDescription("Modify an existing mount point node")
+    @GraphQLRequiresPermission(value = "graphqlAdminMutation")
     public boolean modifyVfs(
             @GraphQLName("pathOrId") @GraphQLDescription("Mount point path or ID to modify") @GraphQLNonNull String pathOrId,
             @GraphQLName("name") @GraphQLDescription("Rename existing mount point") String name,
