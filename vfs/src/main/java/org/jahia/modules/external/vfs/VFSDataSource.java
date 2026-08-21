@@ -53,8 +53,10 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
      * How long a root that could not be taken is left alone before a lookup tries it again. A root that names a
      * location which is not answering costs a connection attempt to find out, and that attempt is made while holding
      * this instance, so a mount point on hold must not make one per lookup.
+     *
+     * <p>Not final: a test shortens the window rather than waiting one out.
      */
-    private static final long RETRY_DELAY_NANOS = TimeUnit.SECONDS.toNanos(10);
+    long retryDelayNanos = TimeUnit.SECONDS.toNanos(10);
     /**
      * The root this DataSource serves, and everything derived from it, published as one value: a reader that sees the
      * root sees the path it starts at and the manager that resolved it. Read without a lock on every lookup.
@@ -64,7 +66,12 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     /** The root this DataSource was given, kept so that it can be taken again. Guarded by this. */
     private String rootUri;
 
-    /** When the root was last taken, which is what the retry window is measured from. Guarded by this. */
+    /**
+     * When the last attempt at taking the root ended, which is what the retry window is measured from. Measured from
+     * the end and not the start: a location that is not answering takes longer to say so than the window itself, so a
+     * window measured from the start of the attempt would already have passed by the time the attempt failed, and the
+     * lookup waiting behind it would make another. Guarded by this.
+     */
     private long lastAttempt;
 
     /**
@@ -77,7 +84,6 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         this.rootUri = rootUri;
         // Read before resolving, so a set that changes while this resolves still reads as a change afterwards.
         Set<String> schemes = VfsRootResolver.getAllowedSchemes();
-        lastAttempt = System.nanoTime();
         try {
             root.set(Root.available(VfsRootResolver.resolveRoot(rootUri), schemes));
         } catch (Exception e) {
@@ -91,6 +97,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             } else {
                 logger.warn(reason);
             }
+        } finally {
+            lastAttempt = System.nanoTime();
         }
     }
 
@@ -111,7 +119,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         Root current = root.get();
         Set<String> allowed = VfsRootResolver.getAllowedSchemes();
         if (rootUri != null && !current.isTakenUnder(allowed)
-                && (!current.wasTakenUnder(allowed) || System.nanoTime() - lastAttempt >= RETRY_DELAY_NANOS)) {
+                && (!current.wasTakenUnder(allowed) || System.nanoTime() - lastAttempt >= retryDelayNanos)) {
             setRoot(rootUri);
             current = root.get();
         }

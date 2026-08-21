@@ -2,13 +2,21 @@ package org.jahia.modules.external.vfs;
 
 import org.apache.commons.vfs2.FileContent;
 import org.apache.commons.vfs2.FileSystemException;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.appender.AbstractAppender;
+import org.apache.logging.log4j.core.config.Property;
 import org.junit.After;
 import org.junit.Test;
 
 import javax.jcr.RepositoryException;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -148,6 +156,91 @@ public final class VFSDataSourceTest {
             fail("Expected the name outside the root to be refused");
         } catch (FileSystemException e) {
             assertNotNull(e.getMessage());
+        }
+    }
+
+    /**
+     * A mount point on hold is asked for its root by every lookup that reaches it, and finding out that a location
+     * does not answer costs a connection attempt made while holding the instance. The attempts are bounded by the
+     * window, whatever the lookups do, and the failure is reported once rather than once per attempt.
+     */
+    @Test
+    public void aRootThatCannotBeTakenIsTakenAgainOncePerWindow() {
+        VfsRootResolver.setAllowedSchemes(Collections.singletonList("sftp"));
+        List<LogEvent> attempts = attemptsWhile(() -> {
+            dataSource.setRoot(LOCAL_DIRECTORY);
+            for (int lookup = 0; lookup < 5; lookup++) {
+                assertFalse(dataSource.itemExists("/"));
+            }
+        });
+
+        assertEquals("the attempts six lookups made: " + levelsOf(attempts), 1, attempts.size());
+        assertEquals(Level.WARN, attempts.get(0).getLevel());
+    }
+
+    /** Once the window has passed the root is taken again, and the failure it answers with is already reported. */
+    @Test
+    public void aRootIsTakenAgainOnceTheWindowHasPassed() {
+        VfsRootResolver.setAllowedSchemes(Collections.singletonList("sftp"));
+        List<LogEvent> attempts = attemptsWhile(() -> {
+            dataSource.setRoot(LOCAL_DIRECTORY);
+            dataSource.retryDelayNanos = 0;
+            assertFalse(dataSource.itemExists("/"));
+        });
+
+        assertEquals("the attempts two lookups made: " + levelsOf(attempts), 2, attempts.size());
+        assertEquals(Level.WARN, attempts.get(0).getLevel());
+        // the same root failing the same way again, which the mount point has already reported
+        assertEquals(Level.DEBUG, attempts.get(1).getLevel());
+    }
+
+    /**
+     * The attempts at taking the root that were made while a body ran. Every attempt that fails reports the root it
+     * could not take, once, so those reports count the attempts; the lines a lookup writes when it finds no root are
+     * not attempts and are left out.
+     */
+    private static List<LogEvent> attemptsWhile(Runnable body) {
+        Logger dataSourceLogger = (Logger) LogManager.getLogger(VFSDataSource.class);
+        Level level = dataSourceLogger.getLevel();
+        CapturingAppender appender = new CapturingAppender();
+        appender.start();
+        dataSourceLogger.addAppender(appender);
+        dataSourceLogger.setLevel(Level.DEBUG);
+        try {
+            body.run();
+        } finally {
+            dataSourceLogger.removeAppender(appender);
+            dataSourceLogger.setLevel(level);
+            appender.stop();
+        }
+        List<LogEvent> attempts = new ArrayList<>();
+        for (LogEvent event : appender.events) {
+            if (event.getMessage().getFormattedMessage().startsWith("Cannot set root to ")) {
+                attempts.add(event);
+            }
+        }
+        return attempts;
+    }
+
+    private static String levelsOf(List<LogEvent> events) {
+        List<String> levels = new ArrayList<>();
+        for (LogEvent event : events) {
+            levels.add(event.getLevel() + " " + event.getMessage().getFormattedMessage());
+        }
+        return levels.toString();
+    }
+
+    private static final class CapturingAppender extends AbstractAppender {
+
+        private final List<LogEvent> events = new ArrayList<>();
+
+        private CapturingAppender() {
+            super("capturing", null, null, true, Property.EMPTY_ARRAY);
+        }
+
+        @Override
+        public void append(LogEvent event) {
+            events.add(event.toImmutable());
         }
     }
 
