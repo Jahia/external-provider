@@ -16,7 +16,6 @@
 package org.jahia.modules.external.vfs.factory;
 
 import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemManager;
 import org.jahia.modules.external.admin.mount.AbstractMountPointFactoryHandler;
 import org.jahia.modules.external.vfs.VfsRootResolver;
 import org.jahia.services.content.JCRCallback;
@@ -132,7 +131,7 @@ public class VFSMountPointFactoryHandler extends AbstractMountPointFactoryHandle
     private boolean validateVFS(VFSMountPointFactory vfsMountPointFactory) {
         try {
             VfsRootResolver.resolveRoot(vfsMountPointFactory.getRoot());
-        } catch (FileSystemException e) {
+        } catch (FileSystemException | RuntimeException e) {
             logger.warn("VFS mount point " +  vfsMountPointFactory.getName() + " has validation problem "  + e.getMessage());
             return false;
         }
