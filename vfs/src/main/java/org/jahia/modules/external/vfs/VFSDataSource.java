@@ -100,15 +100,15 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         }
     }
 
-    protected FileObject getRoot() {
+    protected synchronized FileObject getRoot() {
         return root;
     }
 
-    protected String getRootPath() {
+    protected synchronized String getRootPath() {
         return rootPath;
     }
 
-    protected FileSystemManager getManager() {
+    protected synchronized FileSystemManager getManager() {
         return manager;
     }
 
