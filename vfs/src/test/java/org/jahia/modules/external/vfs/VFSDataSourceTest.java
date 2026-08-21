@@ -1,10 +1,13 @@
 package org.jahia.modules.external.vfs;
 
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
 import org.junit.After;
 import org.junit.Test;
 
 import javax.jcr.RepositoryException;
 import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
@@ -23,9 +26,12 @@ public final class VFSDataSourceTest {
 
     private final VFSDataSource dataSource = new VFSDataSource();
 
+    private final File outside = new File(LOCAL_DIRECTORY, "vfs-data-source-outside.txt");
+
     @After
     public void restoreDefaults() {
         VfsRootResolver.setAllowedSchemes(null);
+        assertTrue("the file the test created should be removed", !outside.exists() || outside.delete());
     }
 
     @Test
@@ -122,6 +128,27 @@ public final class VFSDataSourceTest {
         VfsRootResolver.setAllowedSchemes(Collections.singletonList("file"));
 
         assertTrue(dataSource.itemExists("/"));
+    }
+
+    /**
+     * The root of a mount point can be set again while a lookup is under way, so a name the root does not cover is
+     * answered as a lookup that fails rather than as a path that is shorter than the root it is measured against.
+     */
+    @Test
+    public void aNameTheRootDoesNotCoverIsAnsweredAsAFailedLookup() throws IOException {
+        File inner = new File(LOCAL_DIRECTORY, "vfs-data-source-root/inner");
+        assertTrue("the root the test needs should exist", inner.isDirectory() || inner.mkdirs());
+        assertTrue("the file the test needs should exist", outside.isFile() || outside.createNewFile());
+        dataSource.setRoot(inner.getAbsolutePath());
+
+        FileObject file = VfsRootResolver.resolveRoot(outside.getAbsolutePath());
+
+        try {
+            dataSource.getFileContent(file.getContent());
+            fail("Expected the name outside the root to be refused");
+        } catch (FileSystemException e) {
+            assertNotNull(e.getMessage());
+        }
     }
 
     @Test

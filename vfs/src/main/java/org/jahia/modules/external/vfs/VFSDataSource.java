@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -47,6 +48,13 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     private static final Set<String> SUPPORTED_NODE_TYPES = new HashSet<String>(Arrays.asList(Constants.JAHIANT_FILE, Constants.JAHIANT_FOLDER, Constants.JAHIANT_RESOURCE));
     private static final Logger logger = LoggerFactory.getLogger(VFSDataSource.class);
     private static final String JCR_CONTENT_SUFFIX = "/" + Constants.JCR_CONTENT;
+
+    /**
+     * How long a root that could not be taken is left alone before a lookup tries it again. A root that names a
+     * location which is not answering costs a connection attempt to find out, and that attempt is made while holding
+     * this instance, so a mount point on hold must not make one per lookup.
+     */
+    private static final long RETRY_DELAY_NANOS = TimeUnit.SECONDS.toNanos(10);
     /**
      * The root this DataSource serves, and everything derived from it, published as one value: a reader that sees the
      * root sees the path it starts at and the manager that resolved it. Read without a lock on every lookup.
@@ -55,6 +63,9 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
     /** The root this DataSource was given, kept so that it can be taken again. Guarded by this. */
     private String rootUri;
+
+    /** When the root was last taken, which is what the retry window is measured from. Guarded by this. */
+    private long lastAttempt;
 
     /**
      * Defines the root point of the DataSource. This method does not throw: a root that cannot be used leaves the
@@ -66,6 +77,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         this.rootUri = rootUri;
         // Read before resolving, so a set that changes while this resolves still reads as a change afterwards.
         Set<String> schemes = VfsRootResolver.getAllowedSchemes();
+        lastAttempt = System.nanoTime();
         try {
             root.set(Root.available(VfsRootResolver.resolveRoot(rootUri), schemes));
         } catch (Exception e) {
@@ -73,8 +85,12 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             // records the reason, puts the mount point on hold and asks again later, and leaves the other mount points
             // alone. Throwing here would travel out of the call the repository makes for each of them in turn.
             String reason = "Cannot set root to " + rootUri + ": " + e.getMessage();
-            root.set(Root.unavailable(reason, schemes));
-            logger.warn(reason);
+            boolean reported = root.getAndSet(Root.unavailable(reason, schemes)).reports(reason);
+            if (reported) {
+                logger.debug(reason);
+            } else {
+                logger.warn(reason);
+            }
         }
     }
 
@@ -93,7 +109,9 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
     private synchronized Root takeRootAgain() throws FileSystemException {
         Root current = root.get();
-        if (rootUri != null && !current.isTakenUnder(VfsRootResolver.getAllowedSchemes())) {
+        Set<String> allowed = VfsRootResolver.getAllowedSchemes();
+        if (rootUri != null && !current.isTakenUnder(allowed)
+                && (!current.wasTakenUnder(allowed) || System.nanoTime() - lastAttempt >= RETRY_DELAY_NANOS)) {
             setRoot(rootUri);
             current = root.get();
         }
@@ -104,20 +122,33 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         return current;
     }
 
-    /** The path of an item of this DataSource, which is the part of its root's path the root does not cover. */
+    /**
+     * The path of an item of this DataSource, which is the part of its name the root's own path does not cover. A name
+     * the root does not cover belongs to a root this DataSource no longer serves, and is answered as a lookup that
+     * fails rather than as a string that is too short.
+     */
     private String pathWithin(FileName name) throws FileSystemException {
-        return name.getPath().substring(requireRoot().path.length());
+        String rootPath = requireRoot().path;
+        String path = name.getPath();
+        if (!path.startsWith(rootPath)) {
+            throw new VfsRootNotAllowedException(String.format("\"%s\" is not under the root \"%s\" of this mount"
+                    + " point", path, rootPath));
+        }
+        return path.substring(rootPath.length());
     }
 
-    protected synchronized FileObject getRoot() {
+    /** @return the root this DataSource serves, or {@code null} while it has none */
+    protected FileObject getRoot() {
         return root.get().file;
     }
 
-    protected synchronized String getRootPath() {
+    /** @return the path the root of this DataSource starts at, or {@code null} while it has no root */
+    protected String getRootPath() {
         return root.get().path;
     }
 
-    protected synchronized FileSystemManager getManager() {
+    /** @return the manager that resolved the root of this DataSource, or {@code null} while it has no root */
+    protected FileSystemManager getManager() {
         return root.get().manager;
     }
 
@@ -136,6 +167,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             FileObject file = getFile(path.endsWith(JCR_CONTENT_SUFFIX) ? StringUtils.substringBeforeLast(
                     path, JCR_CONTENT_SUFFIX) : path);
             return file.exists();
+        } catch (VfsRootNotAllowedException e) {
+            logRootUnavailable(path, e);
         } catch (FileSystemException e) {
             logger.warn("Unable to check file existence for path " + path, e);
         }
@@ -217,6 +250,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     }
                 }
             }
+        } catch (VfsRootNotAllowedException e) {
+            logRootUnavailable(path, e);
         } catch (FileSystemException e) {
             logger.error("Cannot get node children", e);
         }
@@ -258,6 +293,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     }
                 }
             }
+        } catch (VfsRootNotAllowedException e) {
+            logRootUnavailable(path, e);
         } catch (FileSystemException e) {
             logger.error("Cannot get node children", e);
         }
@@ -402,6 +439,14 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         return s1;
     }
 
+    /**
+     * A lookup on a mount point that has no root. The root reports itself when it cannot be taken, so a lookup that
+     * finds none says so where a reader looks for it rather than a second time in the log.
+     */
+    private void logRootUnavailable(String path, VfsRootNotAllowedException e) {
+        logger.debug("Cannot reach {} of this mount point: {}", path, e.getMessage());
+    }
+
     private FileObject getFile(String path, boolean unescapePath) throws FileSystemException {
         FileObject current = requireRoot().file;
         if (unescapePath) {
@@ -446,7 +491,17 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
         /** Whether this root is usable and the schemes it was taken under are still the ones a root may name. */
         private boolean isTakenUnder(Set<String> schemes) {
-            return file != null && this.schemes.equals(schemes);
+            return file != null && wasTakenUnder(schemes);
+        }
+
+        /** Whether the schemes this root was taken under are still the ones a root may name, usable or not. */
+        private boolean wasTakenUnder(Set<String> schemes) {
+            return this.schemes.equals(schemes);
+        }
+
+        /** Whether this root already answered for the given failure, so that it is reported once and not per lookup. */
+        private boolean reports(String reason) {
+            return file == null && reason.equals(unavailableReason);
         }
     }
 }
