@@ -51,6 +51,13 @@ const readNode = (path: string) => cy.apollo({queryFile: 'getVfsNode.graphql', v
 
 const readMountInfo = (name: string) => cy.apollo({queryFile: 'mountInfo.graphql', variables: {name}});
 
+// A refused root is reported by the repository, which flips the mount status after the mutation has answered, so
+// the status is read until it changes rather than once.
+const expectNotMounted = (name: string) => cy.waitUntil(
+    () => readMountInfo(name).then(({data}) => data.admin.mountPoint.mountPoint.mountStatus !== 'mounted'),
+    {timeout: 10000, interval: 250, errorMsg: `${name} is still mounted`}
+);
+
 const storeRootOf = (uuid: string, rootPath: string) => cy.executeGroovy('setVfsRootPath.groovy', {
     '#uuid#': uuid,
     '#rootPath#': rootPath
@@ -106,6 +113,7 @@ describe('VFS mount point root path', () => {
             .then(uuid => storeRootOf(uuid, UNSUPPORTED_ROOT).then(() => mount(uuid)));
 
         readNode('/mounts/root-alongside/images/tomcat.gif').should(expectNamed('tomcat.gif'));
+        expectNotMounted('root-stored');
     });
 
     it('leaves the supported root in place when the change is refused', function () {
