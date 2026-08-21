@@ -10,6 +10,7 @@ import java.util.Collections;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -35,11 +36,30 @@ public final class VFSDataSourceTest {
         assertEquals(LOCAL_DIRECTORY, dataSource.getRootPath());
     }
 
+    /**
+     * A lookup reads the root, the path it starts at and the manager that resolved it, so a reader must never see one
+     * of them without the others.
+     */
+    @Test
+    public void aRootAndWhatIsDerivedFromItAreSetAndClearedTogether() {
+        dataSource.setRoot(LOCAL_DIRECTORY);
+
+        assertNotNull(dataSource.getRoot());
+        assertNotNull(dataSource.getRootPath());
+        assertNotNull(dataSource.getManager());
+
+        dataSource.setRoot("https://example.com/");
+
+        assertNull(dataSource.getRoot());
+        assertNull(dataSource.getRootPath());
+        assertNull(dataSource.getManager());
+    }
+
     @Test
     public void anUnsupportedRootLeavesTheDataSourceWithoutOne() {
         dataSource.setRoot("https://example.com/");
 
-        assertEquals(null, dataSource.getRoot());
+        assertNull(dataSource.getRoot());
     }
 
     /**
@@ -76,6 +96,30 @@ public final class VFSDataSourceTest {
         assertFalse(dataSource.itemExists("/"));
 
         VfsRootResolver.setAllowedSchemes(null);
+
+        assertTrue(dataSource.itemExists("/"));
+    }
+
+    /**
+     * The set a root was taken under is the set it goes on being served under, so narrowing the configuration stops a
+     * mount point whose root it no longer allows, the way widening it starts one.
+     */
+    @Test
+    public void aRootIsRefusedOnceTheConfiguredSetStopsAllowingIt() {
+        dataSource.setRoot(LOCAL_DIRECTORY);
+        assertTrue(dataSource.itemExists("/"));
+
+        VfsRootResolver.setAllowedSchemes(Collections.singletonList("sftp"));
+
+        assertFalse(dataSource.itemExists("/"));
+    }
+
+    /** Reading the set again must not cost the mount point its root when the set has not changed. */
+    @Test
+    public void aRootSurvivesTheSameSetBeingConfiguredAgain() {
+        dataSource.setRoot(LOCAL_DIRECTORY);
+
+        VfsRootResolver.setAllowedSchemes(Collections.singletonList("file"));
 
         assertTrue(dataSource.itemExists("/"));
     }

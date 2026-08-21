@@ -1,5 +1,10 @@
 const LOCAL_ROOT = '/tmp/mount-test';
 const LOCAL_GZIP = `${LOCAL_ROOT}/archive.gz`;
+const LOCAL_FILE = 'index.html';
+
+// A scheme that names neither the local file system nor the layer over it, so a set holding it alone answers for
+// no root this suite mounts. Nothing is opened towards it: a root is refused before it is resolved.
+const UNRELATED_SCHEME = 'sftp';
 
 // A root that answers only to the configured set: the gzip provider is a scheme of its own, layered over a local
 // file, so the probe reaches nothing off this machine. A root naming a remote scheme would answer the same
@@ -35,7 +40,15 @@ const clearAllowedSchemes = () => cy.apollo({
     errorPolicy: 'all'
 });
 
+const readNode = (path: string) => cy.apollo({
+    queryFile: 'getVfsNode.graphql',
+    variables: {path},
+    errorPolicy: 'all'
+});
+
 const wasAccepted = response => !response.errors || response.errors.length === 0;
+
+const wasServed = response => Boolean(response.data?.jcr?.nodeByPath);
 
 /**
  * Probes the configured root until it is answered as expected, so the test reads the set back rather than assume
@@ -51,6 +64,22 @@ const expectConfiguredRoot = (accepted: boolean) => {
             timeout: ARRIVAL_TIMEOUT,
             interval: ARRIVAL_INTERVAL,
             errorMsg: `${CONFIGURED_ROOT} is still ${accepted ? 'refused' : 'accepted'}`
+        }
+    );
+};
+
+/**
+ * Reads a file of a mount point until the answer is the expected one, so the test reads whether the mount point
+ * still serves rather than assume the set has arrived.
+ */
+const expectServed = (name: string, served: boolean) => {
+    const path = `/mounts/${name}/${LOCAL_FILE}`;
+    return cy.waitUntil(
+        () => readNode(path).then(response => wasServed(response) === served),
+        {
+            timeout: ARRIVAL_TIMEOUT,
+            interval: ARRIVAL_INTERVAL,
+            errorMsg: `${path} is still ${served ? 'not served' : 'served'}`
         }
     );
 };
@@ -107,5 +136,21 @@ describe('VFS mount point allowed root schemes', () => {
         clearAllowedSchemes();
 
         expectConfiguredRoot(false);
+    });
+
+    /**
+     * A mount point reads the set on every lookup, so the configuration reaches the mount points already mounted:
+     * a set that stops naming the scheme of a root stops the mount point serving it, and naming it again puts the
+     * mount point back to work. Neither needs the instance restarted.
+     */
+    it('stops serving a mount point whose root scheme the configuration stops naming', function () {
+        addVfs('scheme-served', LOCAL_ROOT);
+        expectServed('scheme-served', true);
+
+        setAllowedSchemes(UNRELATED_SCHEME);
+        expectServed('scheme-served', false);
+
+        clearAllowedSchemes();
+        expectServed('scheme-served', true);
     });
 });

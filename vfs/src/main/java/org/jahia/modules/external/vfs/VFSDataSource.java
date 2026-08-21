@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * VFS Implementation of ExternalDataSource
@@ -46,11 +47,14 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     private static final Set<String> SUPPORTED_NODE_TYPES = new HashSet<String>(Arrays.asList(Constants.JAHIANT_FILE, Constants.JAHIANT_FOLDER, Constants.JAHIANT_RESOURCE));
     private static final Logger logger = LoggerFactory.getLogger(VFSDataSource.class);
     private static final String JCR_CONTENT_SUFFIX = "/" + Constants.JCR_CONTENT;
-    private FileObject root;
-    private String rootPath;
-    private FileSystemManager manager;
+    /**
+     * The root this DataSource serves, and everything derived from it, published as one value: a reader that sees the
+     * root sees the path it starts at and the manager that resolved it. Read without a lock on every lookup.
+     */
+    private final AtomicReference<Root> root = new AtomicReference<>(Root.unset());
+
+    /** The root this DataSource was given, kept so that it can be taken again. Guarded by this. */
     private String rootUri;
-    private String rootUnavailableReason;
 
     /**
      * Defines the root point of the DataSource. This method does not throw: a root that cannot be used leaves the
@@ -60,56 +64,61 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
      */
     public synchronized void setRoot(String rootUri) {
         this.rootUri = rootUri;
-        rootUnavailableReason = null;
+        // Read before resolving, so a set that changes while this resolves still reads as a change afterwards.
+        Set<String> schemes = VfsRootResolver.getAllowedSchemes();
         try {
-            root = VfsRootResolver.resolveRoot(rootUri);
-            manager = root.getFileSystem().getFileSystemManager();
-            rootPath = root.getName().getPath();
+            root.set(Root.available(VfsRootResolver.resolveRoot(rootUri), schemes));
         } catch (Exception e) {
             // Every lookup then fails, which is what the repository reads as "this mount point is not available": it
             // records the reason, puts the mount point on hold and asks again later, and leaves the other mount points
             // alone. Throwing here would travel out of the call the repository makes for each of them in turn.
-            root = null;
-            rootPath = null;
-            manager = null;
-            rootUnavailableReason = "Cannot set root to " + rootUri + ": " + e.getMessage();
-            logger.warn(rootUnavailableReason);
+            String reason = "Cannot set root to " + rootUri + ": " + e.getMessage();
+            root.set(Root.unavailable(reason, schemes));
+            logger.warn(reason);
         }
     }
 
     /**
-     * The root of this DataSource, taking the root it was given again when it has none. The repository asks a mount
-     * point it put on hold whether it has become available, on the same instance, so a root that could not be used
-     * when the mount point was mounted — a set of schemes not yet configured, a location not yet answering — is
-     * usable from then on without the instance being restarted.
+     * The root of this DataSource, taken again when it has none or when the schemes a root may name have changed since
+     * it was taken. The repository asks a mount point it put on hold whether it has become available, on the same
+     * instance, so a root that could not be used when the mount point was mounted — a set of schemes not yet
+     * configured, a location not yet answering — is usable from then on without the instance being restarted. A set
+     * that stops naming the scheme of a root already resolved stops that root the same way, rather than serving it
+     * until the instance is restarted.
      */
-    private FileObject requireRoot() throws FileSystemException {
-        FileObject current = root;
-        if (current != null) {
-            return current;
+    private Root requireRoot() throws FileSystemException {
+        Root current = root.get();
+        return current.isTakenUnder(VfsRootResolver.getAllowedSchemes()) ? current : takeRootAgain();
+    }
+
+    private synchronized Root takeRootAgain() throws FileSystemException {
+        Root current = root.get();
+        if (rootUri != null && !current.isTakenUnder(VfsRootResolver.getAllowedSchemes())) {
+            setRoot(rootUri);
+            current = root.get();
         }
-        synchronized (this) {
-            if (root == null && rootUri != null) {
-                setRoot(rootUri);
-            }
-            if (root == null) {
-                throw new VfsRootNotAllowedException(rootUnavailableReason != null ? rootUnavailableReason
-                        : "The root of this mount point is not set");
-            }
-            return root;
+        if (current.file == null) {
+            throw new VfsRootNotAllowedException(current.unavailableReason != null ? current.unavailableReason
+                    : "The root of this mount point is not set");
         }
+        return current;
+    }
+
+    /** The path of an item of this DataSource, which is the part of its root's path the root does not cover. */
+    private String pathWithin(FileName name) throws FileSystemException {
+        return name.getPath().substring(requireRoot().path.length());
     }
 
     protected synchronized FileObject getRoot() {
-        return root;
+        return root.get().file;
     }
 
     protected synchronized String getRootPath() {
-        return rootPath;
+        return root.get().path;
     }
 
     protected synchronized FileSystemManager getManager() {
-        return manager;
+        return root.get().manager;
     }
 
     public boolean isSupportsUuid() {
@@ -351,8 +360,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
         }
 
-        String path = fileObject.getName().getPath().substring(rootPath.length());
-        path = Escaping.escapeIllegalJcrChars(path);
+        String path = Escaping.escapeIllegalJcrChars(pathWithin(fileObject.getName()));
         if (!path.startsWith("/")) {
             path = "/" + path;
         }
@@ -372,7 +380,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
         properties.put(Constants.JCR_MIMETYPE, new String[]{getContentType(content)});
 
-        String path = Escaping.escapeIllegalJcrChars(content.getFile().getName().getPath().substring(rootPath.length()));
+        String path = Escaping.escapeIllegalJcrChars(pathWithin(content.getFile().getName()));
         String jcrContentPath = path + "/" + Constants.JCR_CONTENT;
         ExternalData externalData = new ExternalData(jcrContentPath, jcrContentPath, Constants.JAHIANT_RESOURCE, properties);
 
@@ -395,11 +403,50 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     private FileObject getFile(String path, boolean unescapePath) throws FileSystemException {
-        FileObject current = requireRoot();
+        FileObject current = requireRoot().file;
         if (unescapePath) {
             path = Escaping.unescapeIllegalJcrChars(path);
         }
         return (path == null || path.isEmpty() || path.equals("/")) ? current : current
                 .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
+    }
+
+    /**
+     * A root and what is derived from it: the path it starts at, the manager that resolved it, and the schemes it was
+     * taken under. Immutable, so the whole group is published at once and a reader needs no lock to see all of it.
+     */
+    private static final class Root {
+
+        private final FileObject file;
+        private final String path;
+        private final FileSystemManager manager;
+        private final String unavailableReason;
+        private final Set<String> schemes;
+
+        private Root(FileObject file, String path, FileSystemManager manager, String unavailableReason,
+                Set<String> schemes) {
+            this.file = file;
+            this.path = path;
+            this.manager = manager;
+            this.unavailableReason = unavailableReason;
+            this.schemes = schemes;
+        }
+
+        private static Root available(FileObject file, Set<String> schemes) {
+            return new Root(file, file.getName().getPath(), file.getFileSystem().getFileSystemManager(), null, schemes);
+        }
+
+        private static Root unavailable(String reason, Set<String> schemes) {
+            return new Root(null, null, null, reason, schemes);
+        }
+
+        private static Root unset() {
+            return unavailable(null, Collections.emptySet());
+        }
+
+        /** Whether this root is usable and the schemes it was taken under are still the ones a root may name. */
+        private boolean isTakenUnder(Set<String> schemes) {
+            return file != null && this.schemes.equals(schemes);
+        }
     }
 }
