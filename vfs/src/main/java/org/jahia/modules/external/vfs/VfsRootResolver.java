@@ -108,8 +108,9 @@ public final class VfsRootResolver {
         Set<String> allowed = allowedSchemes.get();
         if (!allowed.contains(scheme)) {
             throw new VfsRootNotAllowedException(String.format(
-                    "The URI scheme \"%s\" is not among the schemes a VFS mount point root may use: %s",
-                    scheme, allowed));
+                    "The root \"%s\" uses the URI scheme \"%s\", which is not among the schemes a VFS mount point"
+                            + " root may use: %s",
+                    rootPath, scheme, allowed));
         }
     }
 
