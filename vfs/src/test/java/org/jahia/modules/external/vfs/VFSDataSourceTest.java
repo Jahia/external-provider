@@ -1,6 +1,6 @@
 package org.jahia.modules.external.vfs;
 
-import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileContent;
 import org.apache.commons.vfs2.FileSystemException;
 import org.junit.After;
 import org.junit.Test;
@@ -141,10 +141,10 @@ public final class VFSDataSourceTest {
         assertTrue("the file the test needs should exist", outside.isFile() || outside.createNewFile());
         dataSource.setRoot(inner.getAbsolutePath());
 
-        FileObject file = VfsRootResolver.resolveRoot(outside.getAbsolutePath());
+        FileContent content = VfsRootResolver.resolveRoot(outside.getAbsolutePath()).getContent();
 
         try {
-            dataSource.getFileContent(file.getContent());
+            dataSource.getFileContent(content);
             fail("Expected the name outside the root to be refused");
         } catch (FileSystemException e) {
             assertNotNull(e.getMessage());

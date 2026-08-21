@@ -137,7 +137,12 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         return path.substring(rootPath.length());
     }
 
-    /** @return the root this DataSource serves, or {@code null} while it has none */
+    /**
+     * @return the root this DataSource serves, or {@code null} while it has none
+     */
+    // Reads one immutable value out of an atomic reference, which is what publishes it; taking the monitor that
+    // setting the root takes would add no guarantee to that read, only a wait behind a resolve.
+    @SuppressWarnings("java:S2886")
     protected FileObject getRoot() {
         return root.get().file;
     }
@@ -250,10 +255,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     }
                 }
             }
-        } catch (VfsRootNotAllowedException e) {
-            logRootUnavailable(path, e);
         } catch (FileSystemException e) {
-            logger.error("Cannot get node children", e);
+            logChildrenFailure(path, e);
         }
 
         return Collections.emptyList();
@@ -293,10 +296,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     }
                 }
             }
-        } catch (VfsRootNotAllowedException e) {
-            logRootUnavailable(path, e);
         } catch (FileSystemException e) {
-            logger.error("Cannot get node children", e);
+            logChildrenFailure(path, e);
         }
 
         return Collections.emptyList();
@@ -445,6 +446,15 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
      */
     private void logRootUnavailable(String path, VfsRootNotAllowedException e) {
         logger.debug("Cannot reach {} of this mount point: {}", path, e.getMessage());
+    }
+
+    /** Where a lookup for the children of a path failed: the root of the mount point, or the lookup itself. */
+    private void logChildrenFailure(String path, FileSystemException e) {
+        if (e instanceof VfsRootNotAllowedException) {
+            logRootUnavailable(path, (VfsRootNotAllowedException) e);
+        } else {
+            logger.error("Cannot get node children", e);
+        }
     }
 
     private FileObject getFile(String path, boolean unescapePath) throws FileSystemException {
