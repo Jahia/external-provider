@@ -49,6 +49,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     private FileObject root;
     private String rootPath;
     private FileSystemManager manager;
+    private String rootUri;
     private String rootUnavailableReason;
 
     /**
@@ -57,7 +58,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
      *
      * @param rootUri the root to use
      */
-    public void setRoot(String rootUri) {
+    public synchronized void setRoot(String rootUri) {
+        this.rootUri = rootUri;
         rootUnavailableReason = null;
         try {
             root = VfsRootResolver.resolveRoot(rootUri);
@@ -65,13 +67,36 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             rootPath = root.getName().getPath();
         } catch (Exception e) {
             // Every lookup then fails, which is what the repository reads as "this mount point is not available": it
-            // records the reason, puts the mount point on hold and retries it, and leaves the other mount points
+            // records the reason, puts the mount point on hold and asks again later, and leaves the other mount points
             // alone. Throwing here would travel out of the call the repository makes for each of them in turn.
             root = null;
             rootPath = null;
             manager = null;
             rootUnavailableReason = "Cannot set root to " + rootUri + ": " + e.getMessage();
             logger.warn(rootUnavailableReason);
+        }
+    }
+
+    /**
+     * The root of this DataSource, taking the root it was given again when it has none. The repository asks a mount
+     * point it put on hold whether it has become available, on the same instance, so a root that could not be used
+     * when the mount point was mounted — a set of schemes not yet configured, a location not yet answering — is
+     * usable from then on without the instance being restarted.
+     */
+    private FileObject requireRoot() throws FileSystemException {
+        FileObject current = root;
+        if (current != null) {
+            return current;
+        }
+        synchronized (this) {
+            if (root == null && rootUri != null) {
+                setRoot(rootUri);
+            }
+            if (root == null) {
+                throw new VfsRootNotAllowedException(rootUnavailableReason != null ? rootUnavailableReason
+                        : "The root of this mount point is not set");
+            }
+            return root;
         }
     }
 
@@ -370,14 +395,11 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     private FileObject getFile(String path, boolean unescapePath) throws FileSystemException {
-        if (root == null) {
-            throw new VfsRootNotAllowedException(rootUnavailableReason != null ? rootUnavailableReason
-                    : "The root of this mount point is not set");
-        }
+        FileObject current = requireRoot();
         if (unescapePath) {
             path = Escaping.unescapeIllegalJcrChars(path);
         }
-        return (path == null || path.isEmpty() || path.equals("/")) ? root : root
+        return (path == null || path.isEmpty() || path.equals("/")) ? current : current
                 .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
     }
 }

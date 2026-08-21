@@ -8,6 +8,10 @@ const LOCAL_GZIP = `${LOCAL_ROOT}/archive.gz`;
 const CONFIGURED_ROOT = `gz:file://${LOCAL_GZIP}`;
 const CONFIGURED_SCHEMES = 'file,gz';
 
+// The same layered scheme over a root that is not on this machine. Naming the layer does not name what the layer
+// reaches, so this stays refused and no connection is opened from wherever the suite runs.
+const LAYERED_REMOTE_ROOT = 'gz:http://localhost:8080/';
+
 // The configured set reaches the module asynchronously, so a probe is retried until it answers. Bounded by time
 // rather than by attempts: what is being waited for is a delivery, not a number of round trips.
 const ARRIVAL_TIMEOUT = 10000;
@@ -83,6 +87,16 @@ describe('VFS mount point allowed root schemes', () => {
 
         addVfs('scheme-local', LOCAL_ROOT).should(response => {
             expect(response.data.admin.jahia.mountPoint.addVfs).to.not.be.empty;
+        });
+    });
+
+    it('refuses a configured layered scheme over a root it does not name', function () {
+        setAllowedSchemes(CONFIGURED_SCHEMES);
+        expectConfiguredRoot(true);
+
+        addVfs('scheme-layered', LAYERED_REMOTE_ROOT, 'all').should(response => {
+            expect(response.errors, `expected ${LAYERED_REMOTE_ROOT} to be refused`).to.not.be.empty;
+            expect(response.errors.map(e => e.message).join(' ')).to.contain(LAYERED_REMOTE_ROOT);
         });
     });
 

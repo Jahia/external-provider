@@ -12,9 +12,11 @@ import org.apache.commons.vfs2.provider.local.DefaultLocalFileProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -104,23 +106,32 @@ public final class VfsRootResolver {
         if (StringUtils.isBlank(rootPath)) {
             throw new VfsRootNotAllowedException("The root path of a VFS mount point must not be blank");
         }
-        String scheme = schemeOf(rootPath);
         Set<String> allowed = allowedSchemes.get();
-        if (!allowed.contains(scheme)) {
-            throw new VfsRootNotAllowedException(String.format(
-                    "The root \"%s\" uses the URI scheme \"%s\", which is not among the schemes a VFS mount point"
-                            + " root may use: %s",
-                    rootPath, scheme, allowed));
+        for (String scheme : schemesOf(rootPath)) {
+            if (!allowed.contains(scheme)) {
+                throw new VfsRootNotAllowedException(String.format(
+                        "The root \"%s\" uses the URI scheme \"%s\", which is not among the schemes a VFS mount"
+                                + " point root may use: %s",
+                        rootPath, scheme, allowed));
+            }
         }
     }
 
     /**
-     * The scheme a root names, which is the local file system when it names none — a plain path and a {@code file:}
-     * URI reach the same place, so the allowed set answers for both alike.
+     * The schemes a root names, outermost first. A layered scheme names one per layer and reaches whatever the layer
+     * below it names, so {@code gz:http://host/} reaches the network as surely as {@code http://host/} does and the
+     * allowed set has to answer for each of them. A root naming no scheme names the local file system: a plain path
+     * and a {@code file:} URI reach the same place, so the set answers for both alike.
      */
-    private static String schemeOf(String rootPath) {
-        Matcher matcher = SCHEME_PREFIX.matcher(rootPath);
-        return matcher.find() ? matcher.group(1).toLowerCase(Locale.ROOT) : LOCAL_SCHEME;
+    private static List<String> schemesOf(String rootPath) {
+        List<String> schemes = new ArrayList<>();
+        String remainder = rootPath;
+        for (Matcher matcher = SCHEME_PREFIX.matcher(remainder); matcher.lookingAt();
+                matcher = SCHEME_PREFIX.matcher(remainder)) {
+            schemes.add(matcher.group(1).toLowerCase(Locale.ROOT));
+            remainder = remainder.substring(matcher.end());
+        }
+        return schemes.isEmpty() ? Collections.singletonList(LOCAL_SCHEME) : schemes;
     }
 
     /**

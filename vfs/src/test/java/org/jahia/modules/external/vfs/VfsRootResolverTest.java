@@ -116,6 +116,25 @@ public final class VfsRootResolverTest {
     }
 
     @Test
+    public void aLayeredRootIsRefusedWhenTheSchemeUnderneathIsNotAllowed() {
+        VfsRootResolver.setAllowedSchemes(Arrays.asList("file", "gz"));
+
+        // a layer reaches whatever the layer below it names, so the set has to answer for each of them
+        assertSchemeRefused("gz:http://localhost/", "http");
+        assertSchemeRefused("gz:https://example.com/", "https");
+        // the outermost layer the set does not name is the one reported
+        assertSchemeRefused("tar:gz:http://localhost/a.tgz", "tar");
+    }
+
+    @Test
+    public void aLayeredRootOverTheLocalFilesystemIsAllowedWhenBothSchemesAre() throws FileSystemException {
+        VfsRootResolver.setAllowedSchemes(Arrays.asList("file", "gz"));
+
+        VfsRootResolver.checkSchemeAllowed("gz:file:///data/archive.gz");
+        VfsRootResolver.checkSchemeAllowed("gz:/data/archive.gz");
+    }
+
+    @Test
     public void aReadableSchemeSurvivesAlongsideAnUnreadableOne() {
         VfsRootResolver.setAllowedSchemes(Arrays.asList("sftp", "not a scheme"));
 
