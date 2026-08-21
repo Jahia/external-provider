@@ -135,6 +135,23 @@ public final class VfsRootResolverTest {
     }
 
     @Test
+    public void aLayeredRootOverAPathIsRefusedWhenTheLocalFilesystemIsNotAllowed() {
+        VfsRootResolver.setAllowedSchemes(Collections.singletonList("gz"));
+
+        // the layer under gz: is a path, which names the same place as file:// and is answered for alike
+        assertSchemeRefused("gz:/data/archive.gz", VfsRootResolver.LOCAL_SCHEME);
+        assertSchemeRefused("gz:file:///data/archive.gz", VfsRootResolver.LOCAL_SCHEME);
+        assertSchemeRefused("/data/archive.gz", VfsRootResolver.LOCAL_SCHEME);
+    }
+
+    @Test
+    public void aLocalRootThatCarriesAnAuthorityIsStillLocal() throws FileSystemException {
+        // file://d:/pdf-files is the form the documentation gives for a Windows drive, and it names file: alone
+        VfsRootResolver.checkSchemeAllowed("file://d:/pdf-files");
+        VfsRootResolver.checkSchemeAllowed("//data/files");
+    }
+
+    @Test
     public void aReadableSchemeSurvivesAlongsideAnUnreadableOne() {
         VfsRootResolver.setAllowedSchemes(Arrays.asList("sftp", "not a scheme"));
 

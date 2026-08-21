@@ -64,11 +64,16 @@ public final class VfsRootResolver {
      * @throws FileSystemException if the root path is blank, uses a scheme that is not allowed, or cannot be resolved
      */
     public static FileObject resolveRoot(String rootPath) throws FileSystemException {
-        checkSchemeAllowed(rootPath);
-        return managerFor(allowedSchemes.get()).resolveFile(rootPath);
+        // One read answers both questions, so the check and the manager carrying the providers cannot disagree.
+        Set<String> allowed = allowedSchemes.get();
+        checkSchemeAllowed(rootPath, allowed);
+        return managerFor(allowed).resolveFile(rootPath);
     }
 
     /**
+     * The set is replaced rather than modified, so the value returned here is also what a mount point records to know
+     * the configuration its root was taken under.
+     *
      * @return the schemes a mount point root may currently use
      */
     static Set<String> getAllowedSchemes() {
@@ -103,10 +108,13 @@ public final class VfsRootResolver {
     }
 
     static void checkSchemeAllowed(String rootPath) throws FileSystemException {
+        checkSchemeAllowed(rootPath, allowedSchemes.get());
+    }
+
+    private static void checkSchemeAllowed(String rootPath, Set<String> allowed) throws FileSystemException {
         if (StringUtils.isBlank(rootPath)) {
             throw new VfsRootNotAllowedException("The root path of a VFS mount point must not be blank");
         }
-        Set<String> allowed = allowedSchemes.get();
         for (String scheme : schemesOf(rootPath)) {
             if (!allowed.contains(scheme)) {
                 throw new VfsRootNotAllowedException(String.format(
@@ -120,8 +128,10 @@ public final class VfsRootResolver {
     /**
      * The schemes a root names, outermost first. A layered scheme names one per layer and reaches whatever the layer
      * below it names, so {@code gz:http://host/} reaches the network as surely as {@code http://host/} does and the
-     * allowed set has to answer for each of them. A root naming no scheme names the local file system: a plain path
-     * and a {@code file:} URI reach the same place, so the set answers for both alike.
+     * allowed set has to answer for each of them. What the innermost layer names is told by what follows it: an
+     * authority ({@code //host/…}) belongs to the scheme above it, anything else is a path, and a path names the local
+     * file system. So {@code gz:/data/archive.gz} names {@code gz} over {@code file}, the same pair as
+     * {@code gz:file:///data/archive.gz}, and a bare {@code /data} names {@code file} as {@code file:///data} does.
      */
     private static List<String> schemesOf(String rootPath) {
         List<String> schemes = new ArrayList<>();
@@ -131,7 +141,10 @@ public final class VfsRootResolver {
             schemes.add(matcher.group(1).toLowerCase(Locale.ROOT));
             remainder = remainder.substring(matcher.end());
         }
-        return schemes.isEmpty() ? Collections.singletonList(LOCAL_SCHEME) : schemes;
+        if (schemes.isEmpty() || !remainder.startsWith("//")) {
+            schemes.add(LOCAL_SCHEME);
+        }
+        return schemes;
     }
 
     /**
