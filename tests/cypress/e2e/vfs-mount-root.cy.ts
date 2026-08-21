@@ -70,6 +70,12 @@ const mount = (uuid: string) => cy.apollo({
 });
 
 describe('VFS mount point root path', () => {
+    // The suite that configures the schemes a root may name sorts before this one and writes instance state, so a
+    // run of it that ends without reaching its own cleanup would leave every case here reading against its set.
+    before(function () {
+        cy.apollo({mutationFile: 'clearVfsAllowedSchemes.graphql', errorPolicy: 'all'});
+    });
+
     beforeEach(function () {
         cy.executeGroovy('cleanup.groovy');
         cy.executeGroovy('createDir.groovy');
