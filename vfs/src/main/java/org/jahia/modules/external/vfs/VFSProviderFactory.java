@@ -57,22 +57,24 @@ public class VFSProviderFactory implements ProviderFactory {
      */
     @Override
     public JCRStoreProvider mountProvider(JCRNodeWrapper mountPoint) throws RepositoryException {
-        ExternalContentStoreProvider provider = externalContentStoreProviderFactory.newProvider();
-        provider.setKey(mountPoint.getIdentifier());
-        provider.setMountPoint(mountPoint.getPath());
-
-        VFSDataSource dataSource = new VFSDataSource();
-        dataSource.setRoot(mountPoint.getProperty("j:rootPath").getString());
-        provider.setDataSource(dataSource);
-        provider.setDynamicallyMounted(true);
-        provider.setSessionFactory(JCRSessionFactory.getInstance());
         try {
+            ExternalContentStoreProvider provider = externalContentStoreProviderFactory.newProvider();
+            provider.setKey(mountPoint.getIdentifier());
+            provider.setMountPoint(mountPoint.getPath());
+
+            VFSDataSource dataSource = new VFSDataSource();
+            dataSource.setRoot(mountPoint.getProperty("j:rootPath").getString());
+            provider.setDataSource(dataSource);
+            provider.setDynamicallyMounted(true);
+            provider.setSessionFactory(JCRSessionFactory.getInstance());
             provider.start();
-        } catch (JahiaInitializationException e) {
+            return provider;
+        } catch (JahiaInitializationException | RuntimeException e) {
+            // RuntimeException is in there because one of the callers of this method is a declarative-services bind
+            // method, which an unchecked exception fails outright; a RepositoryException is what the repository
+            // declares and logs. It logs the cause with it, so it is not logged again here.
             throw new RepositoryException(e);
         }
-        return provider;
-
     }
 
 }
