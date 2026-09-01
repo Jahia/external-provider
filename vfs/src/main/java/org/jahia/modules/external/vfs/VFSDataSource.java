@@ -53,10 +53,9 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
      * How long a root that could not be taken is left alone before a lookup tries it again. A root that names a
      * location which is not answering costs a connection attempt to find out, and that attempt is made while holding
      * this instance, so a mount point on hold must not make one per lookup.
-     *
-     * <p>Not final: a test shortens the window rather than waiting one out.
      */
-    long retryDelayNanos = TimeUnit.SECONDS.toNanos(10);
+    private static final long RETRY_DELAY_NANOS = TimeUnit.SECONDS.toNanos(10);
+
     /**
      * The root this DataSource serves, and everything derived from it, published as one value: a reader that sees the
      * root sees the path it starts at and the manager that resolved it. Read without a lock on every lookup.
@@ -119,7 +118,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         Root current = root.get();
         Set<String> allowed = VfsRootResolver.getAllowedSchemes();
         if (rootUri != null && !current.isTakenUnder(allowed)
-                && (!current.wasTakenUnder(allowed) || System.nanoTime() - lastAttempt >= retryDelayNanos)) {
+                && (!current.wasTakenUnder(allowed) || System.nanoTime() - lastAttempt >= retryDelayNanos())) {
             setRoot(rootUri);
             current = root.get();
         }
@@ -128,6 +127,14 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     : "The root of this mount point is not set");
         }
         return current;
+    }
+
+    /**
+     * The window of {@link #RETRY_DELAY_NANOS}. A method rather than the constant on its own, so that a case can
+     * shorten the window it asserts on instead of waiting one out.
+     */
+    long retryDelayNanos() {
+        return RETRY_DELAY_NANOS;
     }
 
     /**

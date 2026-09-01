@@ -182,10 +182,15 @@ public final class VFSDataSourceTest {
     @Test
     public void aRootIsTakenAgainOnceTheWindowHasPassed() {
         VfsRootResolver.setAllowedSchemes(Collections.singletonList("sftp"));
+        VFSDataSource takenAgainAtOnce = new VFSDataSource() {
+            @Override
+            long retryDelayNanos() {
+                return 0;
+            }
+        };
         List<LogEvent> attempts = attemptsWhile(() -> {
-            dataSource.setRoot(LOCAL_DIRECTORY);
-            dataSource.retryDelayNanos = 0;
-            assertFalse(dataSource.itemExists("/"));
+            takenAgainAtOnce.setRoot(LOCAL_DIRECTORY);
+            assertFalse(takenAgainAtOnce.itemExists("/"));
         });
 
         assertEquals("the attempts two lookups made: " + levelsOf(attempts), 2, attempts.size());
