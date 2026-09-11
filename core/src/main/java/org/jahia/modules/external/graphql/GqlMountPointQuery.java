@@ -30,7 +30,6 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.jahia.modules.external.service.MountPoint;
 import org.jahia.modules.external.service.MountPointService;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
-import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 
 import javax.inject.Inject;
 import javax.jcr.RepositoryException;
@@ -47,7 +46,6 @@ public class GqlMountPointQuery {
 
     @GraphQLField
     @GraphQLDescription("Get list of mount points, or empty list if no mounts exist")
-    @GraphQLRequiresPermission(value = "graphqlAdminQuery")
     public List<GqlMountPoint> getMountPoints() throws RepositoryException {
         return mountPointService.getMountPoints().stream()
                 .map(GqlMountPoint::new)
@@ -56,7 +54,6 @@ public class GqlMountPointQuery {
 
     @GraphQLField
     @GraphQLDescription("Get mount point with given name, or null if it doesn't exists")
-    @GraphQLRequiresPermission(value = "graphqlAdminQuery")
     public GqlMountPoint getMountPoint(
             @GraphQLName("name") @GraphQLDescription("Name for the mount point") @GraphQLNonNull String name
     ) throws RepositoryException {
