@@ -21,6 +21,7 @@ import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 import javax.jcr.RepositoryException;
@@ -36,6 +37,16 @@ public class VFSProviderFactory implements ProviderFactory {
 
     public void setExternalContentStoreProviderFactory(ExternalContentStoreProviderFactory externalContentStoreProviderFactory) {
         this.externalContentStoreProviderFactory = externalContentStoreProviderFactory;
+    }
+
+    /**
+     * Releases the manager the resolver holds, so a redeployment starts from a new one. It hangs off this factory and
+     * not off the configuration, because a mount point already mounted holds the manager its root was resolved with:
+     * a component that goes away when its configuration is deleted would close it under that mount point.
+     */
+    @Deactivate
+    public void deactivate() {
+        VfsRootResolver.close();
     }
 
     /**
