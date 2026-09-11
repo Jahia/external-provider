@@ -1,5 +1,6 @@
 const LOCAL_ROOT = '/tmp/mount-test';
 const LOCAL_ARCHIVE = `${LOCAL_ROOT}/archive.zip`;
+const LOCAL_FILE = `${LOCAL_ROOT}/index.html`;
 const UNSUPPORTED_ROOT = 'https://example.com/';
 
 // Roots naming a scheme a mount point does not support: each names a location off the local file
@@ -104,6 +105,16 @@ describe('VFS mount point root path', () => {
         it(`refuses an unsupported root on creation: ${rootPath}`, function () {
             addVfs(`root-refused-${index}`, rootPath, 'all').should(expectRefused(rootPath));
         });
+    });
+
+    it('refuses a root that names a file rather than a folder', function () {
+        addVfs('root-file', LOCAL_FILE, 'all').should(expectRefused(LOCAL_FILE));
+    });
+
+    it('refuses a root that names a file replacing a supported one', function () {
+        addVfs('root-to-file', LOCAL_ROOT)
+            .then(uuidOf)
+            .then(uuid => setRootOf(uuid, LOCAL_FILE).should(expectRefusedChange(LOCAL_FILE)));
     });
 
     it('refuses an unsupported root replacing a supported one', function () {

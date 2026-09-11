@@ -149,7 +149,9 @@ public final class VFSDataSourceTest {
         assertTrue("the file the test needs should exist", outside.isFile() || outside.createNewFile());
         dataSource.setRoot(inner.getAbsolutePath());
 
-        FileContent content = VfsRootResolver.resolveRoot(outside.getAbsolutePath()).getContent();
+        // resolved through the manager the data source is using, because the resolver answers for a root and this
+        // names a file
+        FileContent content = dataSource.getManager().resolveFile(outside.getAbsolutePath()).getContent();
 
         try {
             dataSource.getFileContent(content);

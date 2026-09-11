@@ -5,6 +5,7 @@ import org.apache.commons.vfs2.CacheStrategy;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileSystemManager;
+import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.VFS;
 import org.apache.commons.vfs2.cache.SoftRefFilesCache;
 import org.apache.commons.vfs2.impl.DefaultFileSystemManager;
@@ -61,13 +62,29 @@ public final class VfsRootResolver {
      *
      * @param rootPath the {@code j:rootPath} value of the mount point
      * @return the resolved root
-     * @throws FileSystemException if the root path is blank, uses a scheme that is not allowed, or cannot be resolved
+     * @throws FileSystemException if the root path is blank, uses a scheme that is not allowed, names a file rather
+     *         than a folder, or cannot be resolved
      */
     public static FileObject resolveRoot(String rootPath) throws FileSystemException {
         // One read answers both questions, so the check and the manager carrying the providers cannot disagree.
         Set<String> allowed = allowedSchemes.get();
         checkSchemeAllowed(rootPath, allowed);
-        return managerFor(allowed).resolveFile(rootPath);
+        FileObject root = managerFor(allowed).resolveFile(rootPath);
+        checkRootIsNotAFile(rootPath, root);
+        return root;
+    }
+
+    /**
+     * A mount point serves the tree under its root, so a root names a folder. A root naming a single file is refused
+     * here rather than mounted as a tree of one. A root that does not exist yet resolves as
+     * {@link FileType#IMAGINARY} and is left alone: a mount point may name a folder that is created after it, and the
+     * repository asks it again, so it starts serving once the folder is there.
+     */
+    private static void checkRootIsNotAFile(String rootPath, FileObject root) throws FileSystemException {
+        if (root.getType() == FileType.FILE) {
+            throw new VfsRootNotAllowedException(String.format(
+                    "The root \"%s\" names a file, and the root of a VFS mount point names a folder", rootPath));
+        }
     }
 
     /**
@@ -107,11 +124,15 @@ public final class VfsRootResolver {
         }
     }
 
-    static void checkSchemeAllowed(String rootPath) throws FileSystemException {
-        checkSchemeAllowed(rootPath, allowedSchemes.get());
-    }
-
-    private static void checkSchemeAllowed(String rootPath, Set<String> allowed) throws FileSystemException {
+    /**
+     * Checks the root path against a set of allowed schemes. The set is passed in rather than read here, so that a
+     * caller which also picks the manager from it checks and resolves against one read of it.
+     *
+     * @param rootPath the {@code j:rootPath} value of the mount point
+     * @param allowed the schemes the root may use, as read by the caller
+     * @throws FileSystemException if the root path is blank or uses a scheme the set does not name
+     */
+    static void checkSchemeAllowed(String rootPath, Set<String> allowed) throws FileSystemException {
         if (StringUtils.isBlank(rootPath)) {
             throw new VfsRootNotAllowedException("The root path of a VFS mount point must not be blank");
         }

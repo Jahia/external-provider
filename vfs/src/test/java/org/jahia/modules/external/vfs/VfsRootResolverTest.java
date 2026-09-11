@@ -6,6 +6,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -64,7 +65,7 @@ public final class VfsRootResolverTest {
     @Test
     public void singleLetterPrefixIsAPathNotAScheme() throws FileSystemException {
         // a Windows drive must not read as a URI scheme; resolving it is the local provider's business
-        VfsRootResolver.checkSchemeAllowed("d:/pdf-files");
+        checkSchemeAllowed("d:/pdf-files");
     }
 
     @Test
@@ -84,8 +85,8 @@ public final class VfsRootResolverTest {
         VfsRootResolver.setAllowedSchemes(Arrays.asList(" FILE ", "sftp"));
 
         assertEquals(new LinkedHashSet<>(Arrays.asList("file", "sftp")), VfsRootResolver.getAllowedSchemes());
-        VfsRootResolver.checkSchemeAllowed("sftp://127.0.0.1/");
-        VfsRootResolver.checkSchemeAllowed("file://" + LOCAL_DIRECTORY);
+        checkSchemeAllowed("sftp://127.0.0.1/");
+        checkSchemeAllowed("file://" + LOCAL_DIRECTORY);
         // widening the set adds only what was configured
         assertSchemeRefused("https://example.com/", "https");
     }
@@ -130,8 +131,8 @@ public final class VfsRootResolverTest {
     public void aLayeredRootOverTheLocalFilesystemIsAllowedWhenBothSchemesAre() throws FileSystemException {
         VfsRootResolver.setAllowedSchemes(Arrays.asList("file", "gz"));
 
-        VfsRootResolver.checkSchemeAllowed("gz:file:///data/archive.gz");
-        VfsRootResolver.checkSchemeAllowed("gz:/data/archive.gz");
+        checkSchemeAllowed("gz:file:///data/archive.gz");
+        checkSchemeAllowed("gz:/data/archive.gz");
     }
 
     @Test
@@ -147,8 +148,30 @@ public final class VfsRootResolverTest {
     @Test
     public void aLocalRootThatCarriesAnAuthorityIsStillLocal() throws FileSystemException {
         // file://d:/pdf-files is the form the documentation gives for a Windows drive, and it names file: alone
-        VfsRootResolver.checkSchemeAllowed("file://d:/pdf-files");
-        VfsRootResolver.checkSchemeAllowed("//data/files");
+        checkSchemeAllowed("file://d:/pdf-files");
+        checkSchemeAllowed("//data/files");
+    }
+
+    @Test
+    public void aRootThatNamesAFileIsRefused() throws IOException {
+        File file = new File(LOCAL_DIRECTORY, "vfs-root-resolver-file.txt");
+        assertTrue("the file the test needs should exist", file.isFile() || file.createNewFile());
+
+        try {
+            VfsRootResolver.resolveRoot(file.getAbsolutePath());
+            fail("Expected a root naming a file to be refused: " + file);
+        } catch (FileSystemException e) {
+            assertTrue("Expected the message to name the root, got: " + e.getMessage(),
+                    e.getMessage().contains(file.getAbsolutePath()));
+        }
+    }
+
+    @Test
+    public void aRootThatDoesNotExistYetIsAccepted() throws FileSystemException {
+        // a mount point may name a folder created after it, and the repository asks it again until it is there
+        FileObject root = VfsRootResolver.resolveRoot(new File(LOCAL_DIRECTORY, "vfs-root-not-yet").getAbsolutePath());
+
+        assertEquals(VfsRootResolver.LOCAL_SCHEME, root.getName().getScheme());
     }
 
     @Test
@@ -156,6 +179,11 @@ public final class VfsRootResolverTest {
         VfsRootResolver.setAllowedSchemes(Arrays.asList("sftp", "not a scheme"));
 
         assertEquals(Collections.singleton("sftp"), VfsRootResolver.getAllowedSchemes());
+    }
+
+    /** The check reads its set from the caller, so each case states the set in force when it calls it. */
+    private static void checkSchemeAllowed(String rootPath) throws FileSystemException {
+        VfsRootResolver.checkSchemeAllowed(rootPath, VfsRootResolver.getAllowedSchemes());
     }
 
     private static void assertSchemeRefused(String rootPath, String expectedScheme) {
@@ -169,7 +197,7 @@ public final class VfsRootResolverTest {
 
     private static String assertRefused(String rootPath) {
         try {
-            VfsRootResolver.checkSchemeAllowed(rootPath);
+            checkSchemeAllowed(rootPath);
         } catch (FileSystemException e) {
             return e.getMessage();
         }
