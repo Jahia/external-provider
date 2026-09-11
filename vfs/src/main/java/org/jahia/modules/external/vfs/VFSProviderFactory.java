@@ -21,6 +21,7 @@ import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.modules.external.ExternalContentStoreProvider;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 import javax.jcr.RepositoryException;
@@ -36,6 +37,16 @@ public class VFSProviderFactory implements ProviderFactory {
 
     public void setExternalContentStoreProviderFactory(ExternalContentStoreProviderFactory externalContentStoreProviderFactory) {
         this.externalContentStoreProviderFactory = externalContentStoreProviderFactory;
+    }
+
+    /**
+     * Releases the manager the resolver holds, so a redeployment starts from a new one. It hangs off this factory and
+     * not off the configuration, because a mount point already mounted holds the manager its root was resolved with:
+     * a component that goes away when its configuration is deleted would close it under that mount point.
+     */
+    @Deactivate
+    public void deactivate() {
+        VfsRootResolver.close();
     }
 
     /**
@@ -57,22 +68,24 @@ public class VFSProviderFactory implements ProviderFactory {
      */
     @Override
     public JCRStoreProvider mountProvider(JCRNodeWrapper mountPoint) throws RepositoryException {
-        ExternalContentStoreProvider provider = externalContentStoreProviderFactory.newProvider();
-        provider.setKey(mountPoint.getIdentifier());
-        provider.setMountPoint(mountPoint.getPath());
-
-        VFSDataSource dataSource = new VFSDataSource();
-        dataSource.setRoot(mountPoint.getProperty("j:rootPath").getString());
-        provider.setDataSource(dataSource);
-        provider.setDynamicallyMounted(true);
-        provider.setSessionFactory(JCRSessionFactory.getInstance());
         try {
+            ExternalContentStoreProvider provider = externalContentStoreProviderFactory.newProvider();
+            provider.setKey(mountPoint.getIdentifier());
+            provider.setMountPoint(mountPoint.getPath());
+
+            VFSDataSource dataSource = new VFSDataSource();
+            dataSource.setRoot(mountPoint.getProperty("j:rootPath").getString());
+            provider.setDataSource(dataSource);
+            provider.setDynamicallyMounted(true);
+            provider.setSessionFactory(JCRSessionFactory.getInstance());
             provider.start();
-        } catch (JahiaInitializationException e) {
+            return provider;
+        } catch (JahiaInitializationException | RuntimeException e) {
+            // RuntimeException is in there because one of the callers of this method is a declarative-services bind
+            // method, which an unchecked exception fails outright; a RepositoryException is what the repository
+            // declares and logs. It logs the cause with it, so it is not logged again here.
             throw new RepositoryException(e);
         }
-        return provider;
-
     }
 
 }

@@ -1,0 +1,7 @@
+
+#### Settings for VFS mount points
+#### This file should be renamed without the .disabled suffix to take effect
+
+### URI schemes the root path of a VFS mount point may use, comma-separated.
+### The local file system is the default. Name a further scheme here when a mount point needs it.
+# vfsMountPoint.allowedSchemes=file

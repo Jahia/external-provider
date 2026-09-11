@@ -1,0 +1,8 @@
+query getVfsNode($path: String!) {
+    jcr {
+        nodeByPath(path: $path) {
+            name
+            path
+        }
+    }
+}

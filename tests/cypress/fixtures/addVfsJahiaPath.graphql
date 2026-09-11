@@ -1,0 +1,9 @@
+mutation addVfsJahiaPath($name: String!, $rootPath: String) {
+    admin {
+        jahia {
+            mountPoint {
+                addVfs(name: $name, rootPath: $rootPath)
+            }
+        }
+    }
+}
