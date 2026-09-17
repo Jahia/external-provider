@@ -3,6 +3,7 @@ package org.jahia.modules.external.vfs;
 import org.apache.commons.vfs2.FileContent;
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemManager;
 import org.apache.commons.vfs2.provider.local.LocalFileName;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -26,6 +27,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -158,6 +160,22 @@ public final class VFSDataSourceTest {
         VfsRootResolver.setAllowedSchemes(Collections.singletonList("file"));
 
         assertTrue(dataSource.itemExists("/"));
+    }
+
+    /**
+     * The package the resolver lives in is exported, so a root may be held by a bundle other than the one that
+     * releases the manager, and a released manager answers nothing. A root taken with one is taken again, against a
+     * manager built afresh, rather than answered through the one that was closed under it.
+     */
+    @Test
+    public void aRootIsTakenAgainOnceTheManagerItWasTakenWithIsReleased() {
+        dataSource.setRoot(localDirectory);
+        FileSystemManager released = dataSource.getManager();
+
+        VfsRootResolver.close();
+
+        assertTrue(dataSource.itemExists("/"));
+        assertNotSame(released, dataSource.getManager());
     }
 
     /**

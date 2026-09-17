@@ -81,16 +81,18 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
      */
     public synchronized void setRoot(String rootUri) {
         this.rootUri = rootUri;
-        // Read before resolving, so a set that changes while this resolves still reads as a change afterwards.
+        // Read before resolving, so a set or a manager that changes while this resolves still reads as a change
+        // afterwards.
         Set<String> schemes = VfsRootResolver.getAllowedSchemes();
+        long generation = VfsRootResolver.getGeneration();
         try {
-            root.set(Root.available(VfsRootResolver.resolveRoot(rootUri), schemes));
+            root.set(Root.available(VfsRootResolver.resolveRoot(rootUri), schemes, generation));
         } catch (Exception e) {
             // Every lookup then fails, which is what the repository reads as "this mount point is not available": it
             // records the reason, puts the mount point on hold and asks again later, and leaves the other mount points
             // alone. Throwing here would travel out of the call the repository makes for each of them in turn.
             String reason = "Cannot set root to " + rootUri + ": " + e.getMessage();
-            boolean reported = root.getAndSet(Root.unavailable(reason, schemes)).reports(reason);
+            boolean reported = root.getAndSet(Root.unavailable(reason, schemes, generation)).reports(reason);
             if (reported) {
                 logger.debug(reason);
             } else {
@@ -111,14 +113,17 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
      */
     private Root requireRoot() throws FileSystemException {
         Root current = root.get();
-        return current.isTakenUnder(VfsRootResolver.getAllowedSchemes()) ? current : takeRootAgain();
+        return current.isTakenUnder(VfsRootResolver.getAllowedSchemes(), VfsRootResolver.getGeneration())
+                ? current : takeRootAgain();
     }
 
     private synchronized Root takeRootAgain() throws FileSystemException {
         Root current = root.get();
         Set<String> allowed = VfsRootResolver.getAllowedSchemes();
-        if (rootUri != null && !current.isTakenUnder(allowed)
-                && (!current.wasTakenUnder(allowed) || System.nanoTime() - lastAttempt >= retryDelayNanos())) {
+        long generation = VfsRootResolver.getGeneration();
+        if (rootUri != null && !current.isTakenUnder(allowed, generation)
+                && (!current.wasTakenUnder(allowed, generation)
+                        || System.nanoTime() - lastAttempt >= retryDelayNanos())) {
             setRoot(rootUri);
             current = root.get();
         }
@@ -482,8 +487,9 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     /**
-     * A root and what is derived from it: the path it starts at, the manager that resolved it, and the schemes it was
-     * taken under. Immutable, so the whole group is published at once and a reader needs no lock to see all of it.
+     * A root and what is derived from it: the path it starts at, the manager that resolved it, and what it was taken
+     * under — the schemes a root may name, and the generation of the manager that answered. Immutable, so the whole
+     * group is published at once and a reader needs no lock to see all of it.
      */
     private static final class Root {
 
@@ -492,36 +498,42 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         private final FileSystemManager manager;
         private final String unavailableReason;
         private final Set<String> schemes;
+        private final long generation;
 
         private Root(FileObject file, String path, FileSystemManager manager, String unavailableReason,
-                Set<String> schemes) {
+                Set<String> schemes, long generation) {
             this.file = file;
             this.path = path;
             this.manager = manager;
             this.unavailableReason = unavailableReason;
             this.schemes = schemes;
+            this.generation = generation;
         }
 
-        private static Root available(FileObject file, Set<String> schemes) {
-            return new Root(file, file.getName().getPath(), file.getFileSystem().getFileSystemManager(), null, schemes);
+        private static Root available(FileObject file, Set<String> schemes, long generation) {
+            return new Root(file, file.getName().getPath(), file.getFileSystem().getFileSystemManager(), null, schemes,
+                    generation);
         }
 
-        private static Root unavailable(String reason, Set<String> schemes) {
-            return new Root(null, null, null, reason, schemes);
+        private static Root unavailable(String reason, Set<String> schemes, long generation) {
+            return new Root(null, null, null, reason, schemes, generation);
         }
 
         private static Root unset() {
-            return unavailable(null, Collections.emptySet());
+            return unavailable(null, Collections.emptySet(), VfsRootResolver.getGeneration());
         }
 
-        /** Whether this root is usable and the schemes it was taken under are still the ones a root may name. */
-        private boolean isTakenUnder(Set<String> schemes) {
-            return file != null && wasTakenUnder(schemes);
+        /** Whether this root is usable and is still taken under what a root is resolved under now. */
+        private boolean isTakenUnder(Set<String> schemes, long generation) {
+            return file != null && wasTakenUnder(schemes, generation);
         }
 
-        /** Whether the schemes this root was taken under are still the ones a root may name, usable or not. */
-        private boolean wasTakenUnder(Set<String> schemes) {
-            return this.schemes.equals(schemes);
+        /**
+         * Whether this root was taken under what a root is resolved under now, usable or not: the same schemes, and a
+         * manager that has not been released since.
+         */
+        private boolean wasTakenUnder(Set<String> schemes, long generation) {
+            return this.generation == generation && this.schemes.equals(schemes);
         }
 
         /** Whether this root already answered for the given failure, so that it is reported once and not per lookup. */

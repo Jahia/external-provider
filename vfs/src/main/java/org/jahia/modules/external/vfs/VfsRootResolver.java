@@ -20,6 +20,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,6 +53,16 @@ public final class VfsRootResolver {
 
     /** Only ever touched from the synchronized methods below, so it needs no memory barrier of its own. */
     private static DefaultFileSystemManager localOnlyManager;
+
+    /**
+     * Which manager a root belongs to, counted rather than named. A root that is resolved holds the manager that
+     * resolved it, and the package this class lives in is exported, so a root outlives neither this class nor the
+     * bundle that releases the manager: {@code external-provider-modules} resolves the source folder of every module
+     * deployed in source-folders mode through here. A caller records the generation it took its root at and reads it
+     * back, which is what tells it that the manager behind that root has been released and the root has to be taken
+     * again.
+     */
+    private static final AtomicLong generation = new AtomicLong();
 
     private VfsRootResolver() {
         throw new IllegalStateException("Utility class is not meant to be instantiated");
@@ -95,6 +106,13 @@ public final class VfsRootResolver {
      */
     static Set<String> getAllowedSchemes() {
         return allowedSchemes.get();
+    }
+
+    /**
+     * @return the generation a root taken now belongs to, which stops matching once the manager behind it is released
+     */
+    static long getGeneration() {
+        return generation.get();
     }
 
     /**
@@ -197,11 +215,15 @@ public final class VfsRootResolver {
 
     /**
      * Releases the manager this resolver holds. Called when the bundle stops, so a redeployment starts from a new one.
+     * A released manager answers nothing: its file cache is dropped, and a root already resolved through it fails on
+     * the next lookup. So the generation moves with it, and a root taken at the one before reads as lost and is taken
+     * again against a manager that is built afresh.
      */
     static synchronized void close() {
         if (localOnlyManager != null) {
             localOnlyManager.close();
             localOnlyManager = null;
+            generation.incrementAndGet();
         }
     }
 }
