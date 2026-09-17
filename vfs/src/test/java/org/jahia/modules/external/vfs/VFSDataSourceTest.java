@@ -17,6 +17,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import java.io.File;
 import java.io.IOException;
@@ -176,6 +177,30 @@ public final class VFSDataSourceTest {
 
         assertTrue(dataSource.itemExists("/"));
         assertNotSame(released, dataSource.getManager());
+    }
+
+    /**
+     * A mount point that has lost its root has no children to answer with, and no empty folder either. A session that
+     * already resolved the node reads the failure, the way a lookup by path answers the same condition, rather than
+     * an existing folder that has nothing in it.
+     */
+    @Test
+    public void aLostRootIsNotAnsweredAsAnEmptyFolder() throws RepositoryException {
+        dataSource.setRoot(localDirectory);
+        VfsRootResolver.setAllowedSchemes(Collections.singletonList("sftp"));
+
+        try {
+            dataSource.getChildren("/");
+            fail("Expected the children lookup to report the root as unusable");
+        } catch (PathNotFoundException e) {
+            assertNotNull(e.getMessage());
+        }
+        try {
+            dataSource.getChildrenNodes("/");
+            fail("Expected the children lookup to report the root as unusable");
+        } catch (PathNotFoundException e) {
+            assertNotNull(e.getMessage());
+        }
     }
 
     /**

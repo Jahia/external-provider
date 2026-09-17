@@ -276,7 +276,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 }
             }
         } catch (FileSystemException e) {
-            logChildrenFailure(path, e);
+            childrenFailure(path, e);
         }
 
         return Collections.emptyList();
@@ -317,7 +317,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 }
             }
         } catch (FileSystemException e) {
-            logChildrenFailure(path, e);
+            childrenFailure(path, e);
         }
 
         return Collections.emptyList();
@@ -468,13 +468,18 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         logger.debug("Cannot reach {} of this mount point: {}", path, e.getMessage());
     }
 
-    /** Where a lookup for the children of a path failed: the root of the mount point, or the lookup itself. */
-    private void logChildrenFailure(String path, FileSystemException e) {
+    /**
+     * Where a lookup for the children of a path failed: the root of the mount point, or the lookup itself. A mount
+     * point that has lost its root has no children to answer with, and no empty folder either, so the lookup fails
+     * the way {@link #getItemByPath(String)} answers the same condition. A lookup that fails under a root the mount
+     * point still has is left as it was, reported and answered with no children.
+     */
+    private void childrenFailure(String path, FileSystemException e) throws PathNotFoundException {
         if (e instanceof VfsRootNotAllowedException) {
             logRootUnavailable(path, (VfsRootNotAllowedException) e);
-        } else {
-            logger.error("Cannot get node children", e);
+            throw new PathNotFoundException("The root of this mount point does not answer for " + path, e);
         }
+        logger.error("Cannot get node children", e);
     }
 
     private FileObject getFile(String path, boolean unescapePath) throws FileSystemException {
