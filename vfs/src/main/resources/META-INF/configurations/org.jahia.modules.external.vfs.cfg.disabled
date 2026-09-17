@@ -4,4 +4,7 @@
 
 ### URI schemes the root path of a VFS mount point may use, comma-separated.
 ### The local file system is the default. Name a further scheme here when a mount point needs it.
+### Keep "file" in the list. This setting also governs the source folder of a module deployed in
+### source-folders mode, which is read from the local file system: a list without "file" stops
+### every such module as well as the mount points.
 # vfsMountPoint.allowedSchemes=file
