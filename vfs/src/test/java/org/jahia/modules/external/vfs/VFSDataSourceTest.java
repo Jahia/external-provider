@@ -1,7 +1,9 @@
 package org.jahia.modules.external.vfs;
 
 import org.apache.commons.vfs2.FileContent;
+import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.provider.local.LocalFileName;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
@@ -9,7 +11,10 @@ import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.Property;
 import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import javax.jcr.RepositoryException;
 import java.io.File;
@@ -30,24 +35,41 @@ import static org.junit.Assert.fail;
  */
 public final class VFSDataSourceTest {
 
-    private static final String LOCAL_DIRECTORY = new File(System.getProperty("java.io.tmpdir")).getAbsolutePath();
+    /** A local directory of its own per case, so that a case which needs a file in it leaves nothing behind. */
+    @Rule
+    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     private final VFSDataSource dataSource = new VFSDataSource();
 
-    private final File outside = new File(LOCAL_DIRECTORY, "vfs-data-source-outside.txt");
+    private String localDirectory;
+
+    @Before
+    public void useATemporaryDirectory() {
+        localDirectory = temporaryFolder.getRoot().getAbsolutePath();
+    }
 
     @After
     public void restoreDefaults() {
         VfsRootResolver.setAllowedSchemes(null);
-        assertTrue("the file the test created should be removed", !outside.exists() || outside.delete());
     }
 
     @Test
     public void aSupportedRootIsSet() {
-        dataSource.setRoot(LOCAL_DIRECTORY);
+        dataSource.setRoot(localDirectory);
 
         assertNotNull(dataSource.getRoot());
-        assertEquals(LOCAL_DIRECTORY, dataSource.getRootPath());
+        assertEquals(new File(localDirectory), folderTheRootNames());
+    }
+
+    /**
+     * The folder the root of the DataSource names. Rebuilt from the name of the root the way
+     * {@code ModulesDataSource.getRealRoot()} does, because a local file name keeps the root of the file system apart
+     * from the path: on a platform that has drives the path alone is not the absolute path of the folder, so reading
+     * it as one would answer for this machine rather than for the code.
+     */
+    private File folderTheRootNames() {
+        FileName name = dataSource.getRoot().getName();
+        return new File(((LocalFileName) name).getRootFile(), dataSource.getRootPath());
     }
 
     /**
@@ -56,7 +78,7 @@ public final class VFSDataSourceTest {
      */
     @Test
     public void aRootAndWhatIsDerivedFromItAreSetAndClearedTogether() {
-        dataSource.setRoot(LOCAL_DIRECTORY);
+        dataSource.setRoot(localDirectory);
 
         assertNotNull(dataSource.getRoot());
         assertNotNull(dataSource.getRootPath());
@@ -106,7 +128,7 @@ public final class VFSDataSourceTest {
     @Test
     public void aRootRefusedByTheConfiguredSetIsTakenAgainOnceItIsAllowed() {
         VfsRootResolver.setAllowedSchemes(Collections.singletonList("sftp"));
-        dataSource.setRoot(LOCAL_DIRECTORY);
+        dataSource.setRoot(localDirectory);
         assertFalse(dataSource.itemExists("/"));
 
         VfsRootResolver.setAllowedSchemes(null);
@@ -120,7 +142,7 @@ public final class VFSDataSourceTest {
      */
     @Test
     public void aRootIsRefusedOnceTheConfiguredSetStopsAllowingIt() {
-        dataSource.setRoot(LOCAL_DIRECTORY);
+        dataSource.setRoot(localDirectory);
         assertTrue(dataSource.itemExists("/"));
 
         VfsRootResolver.setAllowedSchemes(Collections.singletonList("sftp"));
@@ -131,7 +153,7 @@ public final class VFSDataSourceTest {
     /** Reading the set again must not cost the mount point its root when the set has not changed. */
     @Test
     public void aRootSurvivesTheSameSetBeingConfiguredAgain() {
-        dataSource.setRoot(LOCAL_DIRECTORY);
+        dataSource.setRoot(localDirectory);
 
         VfsRootResolver.setAllowedSchemes(Collections.singletonList("file"));
 
@@ -144,9 +166,8 @@ public final class VFSDataSourceTest {
      */
     @Test
     public void aNameTheRootDoesNotCoverIsAnsweredAsAFailedLookup() throws IOException {
-        File inner = new File(LOCAL_DIRECTORY, "vfs-data-source-root/inner");
-        assertTrue("the root the test needs should exist", inner.isDirectory() || inner.mkdirs());
-        assertTrue("the file the test needs should exist", outside.isFile() || outside.createNewFile());
+        File inner = temporaryFolder.newFolder("vfs-data-source-root", "inner");
+        File outside = temporaryFolder.newFile("vfs-data-source-outside.txt");
         dataSource.setRoot(inner.getAbsolutePath());
 
         // resolved through the manager the data source is using, because the resolver answers for a root and this
@@ -170,7 +191,7 @@ public final class VFSDataSourceTest {
     public void aRootThatCannotBeTakenIsTakenAgainOncePerWindow() {
         VfsRootResolver.setAllowedSchemes(Collections.singletonList("sftp"));
         List<LogEvent> attempts = attemptsWhile(() -> {
-            dataSource.setRoot(LOCAL_DIRECTORY);
+            dataSource.setRoot(localDirectory);
             for (int lookup = 0; lookup < 5; lookup++) {
                 assertFalse(dataSource.itemExists("/"));
             }
@@ -191,7 +212,7 @@ public final class VFSDataSourceTest {
             }
         };
         List<LogEvent> attempts = attemptsWhile(() -> {
-            takenAgainAtOnce.setRoot(LOCAL_DIRECTORY);
+            takenAgainAtOnce.setRoot(localDirectory);
             assertFalse(takenAgainAtOnce.itemExists("/"));
         });
 
@@ -254,7 +275,7 @@ public final class VFSDataSourceTest {
     @Test
     public void aRootSetAgainAfterAnUnsupportedOneIsUsable() {
         dataSource.setRoot("https://example.com/");
-        dataSource.setRoot(LOCAL_DIRECTORY);
+        dataSource.setRoot(localDirectory);
 
         assertNotNull(dataSource.getRoot());
     }

@@ -3,7 +3,10 @@ package org.jahia.modules.external.vfs;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +25,16 @@ import static org.junit.Assert.fail;
  */
 public final class VfsRootResolverTest {
 
-    private static final String LOCAL_DIRECTORY = new File(System.getProperty("java.io.tmpdir")).getAbsolutePath();
+    /** A local directory of its own per case, so that a case which needs a file in it leaves nothing behind. */
+    @Rule
+    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+    private String localDirectory;
+
+    @Before
+    public void useATemporaryDirectory() {
+        localDirectory = temporaryFolder.getRoot().getAbsolutePath();
+    }
 
     @After
     public void restoreDefaults() {
@@ -31,7 +43,7 @@ public final class VfsRootResolverTest {
 
     @Test
     public void localSchemeIsResolved() throws FileSystemException {
-        FileObject root = VfsRootResolver.resolveRoot("file://" + LOCAL_DIRECTORY);
+        FileObject root = VfsRootResolver.resolveRoot("file://" + localDirectory);
 
         assertEquals(VfsRootResolver.LOCAL_SCHEME, root.getName().getScheme());
         // the data source reads the manager back off the resolved root
@@ -40,7 +52,7 @@ public final class VfsRootResolverTest {
 
     @Test
     public void pathWithoutSchemeIsResolvedAsLocal() throws FileSystemException {
-        FileObject root = VfsRootResolver.resolveRoot(LOCAL_DIRECTORY);
+        FileObject root = VfsRootResolver.resolveRoot(localDirectory);
         assertEquals(VfsRootResolver.LOCAL_SCHEME, root.getName().getScheme());
     }
 
@@ -86,7 +98,7 @@ public final class VfsRootResolverTest {
 
         assertEquals(new LinkedHashSet<>(Arrays.asList("file", "sftp")), VfsRootResolver.getAllowedSchemes());
         checkSchemeAllowed("sftp://127.0.0.1/");
-        checkSchemeAllowed("file://" + LOCAL_DIRECTORY);
+        checkSchemeAllowed("file://" + localDirectory);
         // widening the set adds only what was configured
         assertSchemeRefused("https://example.com/", "https");
     }
@@ -154,8 +166,7 @@ public final class VfsRootResolverTest {
 
     @Test
     public void aRootThatNamesAFileIsRefused() throws IOException {
-        File file = new File(LOCAL_DIRECTORY, "vfs-root-resolver-file.txt");
-        assertTrue("the file the test needs should exist", file.isFile() || file.createNewFile());
+        File file = temporaryFolder.newFile("vfs-root-resolver-file.txt");
 
         try {
             VfsRootResolver.resolveRoot(file.getAbsolutePath());
@@ -169,7 +180,7 @@ public final class VfsRootResolverTest {
     @Test
     public void aRootThatDoesNotExistYetIsAccepted() throws FileSystemException {
         // a mount point may name a folder created after it, and the repository asks it again until it is there
-        FileObject root = VfsRootResolver.resolveRoot(new File(LOCAL_DIRECTORY, "vfs-root-not-yet").getAbsolutePath());
+        FileObject root = VfsRootResolver.resolveRoot(new File(localDirectory, "vfs-root-not-yet").getAbsolutePath());
 
         assertEquals(VfsRootResolver.LOCAL_SCHEME, root.getName().getScheme());
     }
