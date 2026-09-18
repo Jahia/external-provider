@@ -129,10 +129,14 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     /**
-     * Takes the root again, outside the lock that setting it takes. One lookup makes the attempt and the others read
-     * the root as it stands: a lookup that waited for the attempt would wait for a connection to a location that is
-     * not answering, which is as long as that location takes and not as long as the window, and every request thread
-     * that touched the mount point would wait with it.
+     * Takes the root again, outside the lock that setting it takes.
+     *
+     * <p>One lookup makes the attempt. The others read the root as it stands and report the mount point on that,
+     * which is the answer waiting would have given them.
+     *
+     * <p>They do not wait because the attempt costs a connection to whatever the root names. A location that is not
+     * answering takes as long as it takes to say so, which is not as long as the window, and every request thread
+     * that touched this mount point would wait that out.
      */
     private Root takeRootAgain() throws FileSystemException {
         Root current = root.get();
@@ -309,7 +313,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 }
             }
         } catch (FileSystemException e) {
-            childrenFailure(path, e);
+            reportChildrenFailure(path, e);
         }
 
         return Collections.emptyList();
@@ -350,7 +354,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 }
             }
         } catch (FileSystemException e) {
-            childrenFailure(path, e);
+            reportChildrenFailure(path, e);
         }
 
         return Collections.emptyList();
@@ -502,12 +506,15 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     }
 
     /**
-     * Where a lookup for the children of a path failed: the root of the mount point, or the lookup itself. A mount
-     * point that has lost its root has no children to answer with, and no empty folder either, so the lookup fails
-     * the way {@link #getItemByPath(String)} answers the same condition. A lookup that fails under a root the mount
-     * point still has is left as it was, reported and answered with no children.
+     * Answers a lookup for the children of a path that failed, according to what failed under it.
+     *
+     * <p>A mount point that has lost its root has no children to answer with, and no empty folder either. That lookup
+     * fails, the way {@link #getItemByPath(String)} answers the same condition.
+     *
+     * <p>A lookup that failed under a root the mount point still has is unchanged: it is reported, and the caller
+     * reads no children.
      */
-    private void childrenFailure(String path, FileSystemException e) throws PathNotFoundException {
+    private void reportChildrenFailure(String path, FileSystemException e) throws PathNotFoundException {
         if (e instanceof VfsRootNotAllowedException) {
             logRootUnavailable(path, (VfsRootNotAllowedException) e);
             throw new PathNotFoundException("The root of this mount point does not answer for " + path, e);
