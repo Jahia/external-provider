@@ -212,6 +212,7 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     private List<ModulesSourceMonitor> sourceMonitors;
 
     public void start() {
+        requireSourceFolder();
         final String fullFolderPath = module.getSourcesFolder().getPath() + File.separator;
         final String importFilesRootFolder = fullFolderPath + "src" + File.separator + "main" + File.separator + "import" +
                 File.separator + "content" + File.separator + "modules" + File.separator + module.getId() + File.separator + "files" + File.separator;
@@ -424,6 +425,23 @@ public class ModulesDataSource extends VFSDataSource implements ExternalDataSour
     public void stop() {
         if (fileMonitorJobName != null) {
             FileMonitorJob.unschedule(fileMonitorJobName);
+        }
+    }
+
+    /**
+     * The sources of a module are read through the same resolver as the root of a VFS mount point, so the schemes a
+     * root may name have to include the local file system for this data source to have a root at all. A root that
+     * could not be taken is reported here, before the provider is registered, rather than by each lookup that then
+     * finds none: the sources stay unmounted, which is what the caller reports and what a source folder it could not
+     * read has always done. The module is named too, because the reason a root reports names a mount point root, and
+     * this is not one.
+     */
+    private void requireSourceFolder() {
+        try {
+            getFile("/");
+        } catch (FileSystemException e) {
+            throw new IllegalArgumentException("Cannot mount the sources of the module " + module.getId() + " from "
+                    + module.getSourcesFolder() + ": " + e.getMessage(), e);
         }
     }
 

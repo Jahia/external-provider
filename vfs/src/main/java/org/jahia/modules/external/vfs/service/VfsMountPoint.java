@@ -24,7 +24,8 @@
 package org.jahia.modules.external.vfs.service;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.vfs2.VFS;
+import org.apache.commons.vfs2.FileSystemException;
+import org.jahia.modules.external.vfs.VfsRootResolver;
 import org.jahia.modules.external.service.MountPoint;
 import org.jahia.services.content.decorator.JCRMountPointNode;
 import org.slf4j.Logger;
@@ -66,8 +67,8 @@ public class VfsMountPoint extends MountPoint {
 
     public boolean isValidRoot() {
         try {
-            VFS.getManager().resolveFile(rootPath);
-        } catch (Exception e) {
+            VfsRootResolver.resolveRoot(rootPath);
+        } catch (FileSystemException | RuntimeException e) {
             logger.warn("Unable to resolve VFS root path '{}': {}", rootPath, e.getMessage());
             return false;
         }
