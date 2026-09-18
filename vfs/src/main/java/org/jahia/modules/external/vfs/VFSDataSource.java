@@ -38,6 +38,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -51,8 +52,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
 
     /**
      * How long a root that could not be taken is left alone before a lookup tries it again. A root that names a
-     * location which is not answering costs a connection attempt to find out, and that attempt is made while holding
-     * this instance, so a mount point on hold must not make one per lookup.
+     * location which is not answering costs a connection attempt to find out, so a mount point on hold must not make
+     * one per lookup.
      */
     private static final long RETRY_DELAY_NANOS = TimeUnit.SECONDS.toNanos(10);
 
@@ -62,16 +63,26 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
      */
     private final AtomicReference<Root> root = new AtomicReference<>(Root.unset());
 
-    /** The root this DataSource was given, kept so that it can be taken again. Guarded by this. */
-    private String rootUri;
+    /**
+     * Whether an attempt at taking the root is under way. Taking a root that names a location which is not answering
+     * costs a connection attempt, and a lookup that finds one in flight reports the mount point as it stands rather
+     * than waiting for it: the attempt is what the window bounds, and a lookup is not.
+     */
+    private final AtomicBoolean takingRoot = new AtomicBoolean();
+
+    /**
+     * The root this DataSource was given, kept so that it can be taken again. Written while holding this, read by a
+     * lookup that holds nothing.
+     */
+    private volatile String rootUri;
 
     /**
      * When the last attempt at taking the root ended, which is what the retry window is measured from. Measured from
      * the end and not the start: a location that is not answering takes longer to say so than the window itself, so a
      * window measured from the start of the attempt would already have passed by the time the attempt failed, and the
-     * lookup waiting behind it would make another. Guarded by this.
+     * lookup behind it would make another. Written while holding this, read by a lookup that holds nothing.
      */
-    private long lastAttempt;
+    private volatile long lastAttempt;
 
     /**
      * Defines the root point of the DataSource. This method does not throw: a root that cannot be used leaves the
@@ -117,21 +128,43 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                 ? current : takeRootAgain();
     }
 
-    private synchronized Root takeRootAgain() throws FileSystemException {
+    /**
+     * Takes the root again, outside the lock that setting it takes. One lookup makes the attempt and the others read
+     * the root as it stands: a lookup that waited for the attempt would wait for a connection to a location that is
+     * not answering, which is as long as that location takes and not as long as the window, and every request thread
+     * that touched the mount point would wait with it.
+     */
+    private Root takeRootAgain() throws FileSystemException {
         Root current = root.get();
         Set<String> allowed = VfsRootResolver.getAllowedSchemes();
         long generation = VfsRootResolver.getGeneration();
-        if (rootUri != null && !current.isTakenUnder(allowed, generation)
-                && (!current.wasTakenUnder(allowed, generation)
-                        || System.nanoTime() - lastAttempt >= retryDelayNanos())) {
-            setRoot(rootUri);
-            current = root.get();
+        if (isWorthTaking(current, allowed, generation) && takingRoot.compareAndSet(false, true)) {
+            try {
+                // read again under the flag, because the attempt this one queued behind may have just answered
+                if (isWorthTaking(root.get(), allowed, generation)) {
+                    setRoot(rootUri);
+                }
+            } finally {
+                takingRoot.set(false);
+            }
         }
+        current = root.get();
         if (current.file == null) {
             throw new VfsRootNotAllowedException(current.unavailableReason != null ? current.unavailableReason
                     : "The root of this mount point is not set");
         }
         return current;
+    }
+
+    /**
+     * Whether a root is worth taking again: one this DataSource was given, that is not the root it is already
+     * serving, and that either was taken under something other than what a root is resolved under now — so the
+     * answer can differ — or was last attempted longer ago than the window.
+     */
+    private boolean isWorthTaking(Root current, Set<String> allowed, long generation) {
+        return rootUri != null && !current.isTakenUnder(allowed, generation)
+                && (!current.wasTakenUnder(allowed, generation)
+                        || System.nanoTime() - lastAttempt >= retryDelayNanos());
     }
 
     /**

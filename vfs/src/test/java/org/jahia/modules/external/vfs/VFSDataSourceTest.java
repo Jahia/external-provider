@@ -24,6 +24,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -242,6 +245,63 @@ public final class VFSDataSourceTest {
 
         assertEquals("the attempts six lookups made: " + levelsOf(attempts), 1, attempts.size());
         assertEquals(Level.WARN, attempts.get(0).getLevel());
+    }
+
+    /**
+     * Taking a root costs a connection to whatever it names, and a location that is not answering takes as long as it
+     * takes. A lookup made while an attempt is under way reports the mount point as it stands rather than waiting for
+     * that connection, because every request thread that touches the mount point would otherwise wait with it.
+     */
+    @Test(timeout = 60000)
+    public void aLookupDoesNotWaitBehindAnAttemptAtTakingTheRoot() throws InterruptedException {
+        CountDownLatch taking = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        AtomicBoolean slowly = new AtomicBoolean();
+        VFSDataSource takesItsRootSlowly = new VFSDataSource() {
+            @Override
+            public synchronized void setRoot(String rootUri) {
+                if (slowly.get()) {
+                    taking.countDown();
+                    awaitQuietly(release);
+                }
+                super.setRoot(rootUri);
+            }
+
+            @Override
+            long retryDelayNanos() {
+                return 0;
+            }
+        };
+        VfsRootResolver.setAllowedSchemes(Collections.singletonList("sftp"));
+        takesItsRootSlowly.setRoot(localDirectory);
+        slowly.set(true);
+
+        Thread attempt = new Thread(() -> takesItsRootSlowly.itemExists("/"));
+        attempt.setDaemon(true);
+        attempt.start();
+        assertTrue("the attempt should have started", taking.await(10, TimeUnit.SECONDS));
+
+        // The attempt holds until it is released below, so a lookup that waited for it is a lookup that took the
+        // whole of HELD_SECONDS. Timed rather than merely answered: waiting for the attempt answers too, late.
+        long start = System.nanoTime();
+        assertFalse(takesItsRootSlowly.itemExists("/"));
+        long waited = System.nanoTime() - start;
+
+        release.countDown();
+        attempt.join();
+        assertTrue("a lookup made while the root was being taken waited " + TimeUnit.NANOSECONDS.toMillis(waited)
+                + "ms for it", waited < TimeUnit.SECONDS.toNanos(HELD_SECONDS / 2));
+    }
+
+    /** How long the attempt in the case above is held for, which is what a lookup must not wait. */
+    private static final long HELD_SECONDS = 20;
+
+    private static void awaitQuietly(CountDownLatch latch) {
+        try {
+            latch.await(HELD_SECONDS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /** Once the window has passed the root is taken again, and the failure it answers with is already reported. */
