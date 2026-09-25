@@ -368,7 +368,10 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         if (unescapePath) {
             path = Escaping.unescapeIllegalJcrChars(path);
         }
-        return (path == null || path.isEmpty() || path.equals("/")) ? root : root
-                .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path, NameScope.DESCENDENT_OR_SELF);
+        if (path == null || path.isEmpty() || path.equals("/")) {
+            return root;
+        }
+        String relativePath = path.charAt(0) == '/' ? path.substring(1) : path;
+        return root.resolveFile(relativePath, NameScope.DESCENDENT_OR_SELF);
     }
 }
