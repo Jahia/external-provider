@@ -147,10 +147,18 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         return getFile(path, true);
     }
 
+    private FileObject getFileWithinRoot(String path) throws FileSystemException, PathNotFoundException {
+        try {
+            return getFile(path);
+        } catch (OutsideRootException e) {
+            throw new PathNotFoundException(path, e);
+        }
+    }
+
     public List<String> getChildren(String path) throws RepositoryException {
         try {
             if (!path.endsWith(JCR_CONTENT_SUFFIX)) {
-                FileObject fileObject = getFile(path);
+                FileObject fileObject = getFileWithinRoot(path);
                 if (fileObject.getType() == FileType.FILE) {
                     return JCR_CONTENT_LIST;
                 } else if (fileObject.getType() == FileType.FOLDER) {
@@ -175,8 +183,6 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     }
                 }
             }
-        } catch (OutsideRootException e) {
-            throw new PathNotFoundException(path, e);
         } catch (FileSystemException e) {
             logger.error("Cannot get node children", e);
         }
@@ -188,7 +194,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     public List<ExternalData> getChildrenNodes(String path) throws RepositoryException {
         try {
             if (!path.endsWith(JCR_CONTENT_SUFFIX)) {
-                FileObject fileObject = getFile(path);
+                FileObject fileObject = getFileWithinRoot(path);
                 if (fileObject.getType() == FileType.FILE && fileObject.isReadable()) {
                     final FileContent content = fileObject.getContent();
                     return Collections.singletonList(getFileContent(content));
@@ -218,8 +224,6 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     }
                 }
             }
-        } catch (OutsideRootException e) {
-            throw new PathNotFoundException(path, e);
         } catch (FileSystemException e) {
             logger.error("Cannot get node children", e);
         }
