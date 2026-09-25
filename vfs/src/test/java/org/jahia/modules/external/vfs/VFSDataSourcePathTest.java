@@ -70,6 +70,14 @@ public final class VFSDataSourcePathTest {
         assertNotFound("/" + Text.escapeIllegalJcrChars("a/../../beside.txt"));
     }
 
+    @Test
+    public void aNameThatStepsOutOfTheRootThroughEncodedDotsIsNotFound() {
+        assertNotFound("/" + Text.escapeIllegalJcrChars("a/%2E%2E/%2E%2E/beside.txt"));
+        assertNotFound("/" + Text.escapeIllegalJcrChars("a/%2e%2e/%2e%2e/beside.txt"));
+        assertNotFound("/" + Text.escapeIllegalJcrChars("a%2F%2E%2E%2F%2E%2E%2Fbeside.txt"));
+        assertNotFound("/" + Text.escapeIllegalJcrChars(Text.escapeIllegalJcrChars("a/../../beside.txt")));
+    }
+
     /** The root is a folder, not a prefix: a folder whose name starts with the root's is not under it. */
     @Test
     public void aNameThatStepsIntoANamesakeOfTheRootIsNotFound() {
@@ -89,8 +97,42 @@ public final class VFSDataSourcePathTest {
 
     @Test
     public void aNameThatStepsOutOfTheRootHasNoChildren() throws RepositoryException {
+        String outside = "/" + Text.escapeIllegalJcrChars("a/../..");
         assertEquals("inside.txt", String.join(",", dataSource.getChildren("/")));
-        assertTrue(dataSource.getChildren("/" + Text.escapeIllegalJcrChars("a/../..")).isEmpty());
+        try {
+            dataSource.getChildren(outside);
+            fail("children were listed");
+        } catch (PathNotFoundException expected) {
+            // the path names nothing the data source serves
+        }
+        try {
+            dataSource.getChildrenNodes(outside);
+            fail("children were listed");
+        } catch (PathNotFoundException expected) {
+            // the path names nothing the data source serves
+        }
+    }
+
+    @Test
+    public void aFolderNameThatStepsOutOfTheRootIsNotFound() throws RepositoryException {
+        assertEquals("/", dataSource.getItemByPath("/" + Text.escapeIllegalJcrChars("a/..")).getPath());
+        try {
+            dataSource.getItemByPath("/" + Text.escapeIllegalJcrChars("a/../.."));
+            fail("the folder was found");
+        } catch (PathNotFoundException expected) {
+            // the path names nothing the data source serves
+        }
+    }
+
+    @Test
+    public void aMoveThatStepsOutOfTheRootIsRefused() throws IOException {
+        File moved = new File(temporaryFolder.getRoot(), "moved.txt");
+        assertMoveRefused("/inside.txt", "/" + Text.escapeIllegalJcrChars("a/../../moved.txt"));
+        assertMoveRefused("/" + Text.escapeIllegalJcrChars("a/../../beside.txt"), "/moved.txt");
+        assertFalse(moved.exists());
+        assertTrue(beside.exists());
+        assertEquals("inside", new String(Files.readAllBytes(
+                new File(temporaryFolder.getRoot(), "root/inside.txt").toPath()), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -109,6 +151,15 @@ public final class VFSDataSourcePathTest {
         Binary binary = data.getBinaryProperties().get(Constants.JCR_DATA)[0];
         try (InputStream stream = binary.getStream()) {
             return IOUtils.toString(stream, StandardCharsets.UTF_8);
+        }
+    }
+
+    private void assertMoveRefused(String oldPath, String newPath) {
+        try {
+            dataSource.move(oldPath, newPath);
+            fail("the move from " + oldPath + " to " + newPath + " was applied");
+        } catch (RepositoryException expected) {
+            // one of the paths names nothing the data source serves
         }
     }
 

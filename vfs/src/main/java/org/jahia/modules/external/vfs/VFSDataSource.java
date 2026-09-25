@@ -92,6 +92,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             FileObject file = getFile(path.endsWith(JCR_CONTENT_SUFFIX) ? StringUtils.substringBeforeLast(
                     path, JCR_CONTENT_SUFFIX) : path);
             return file.exists();
+        } catch (OutsideRootException e) {
+            return false;
         } catch (FileSystemException e) {
             logger.warn("Unable to check file existence for path " + path, e);
         }
@@ -173,6 +175,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     }
                 }
             }
+        } catch (OutsideRootException e) {
+            throw new PathNotFoundException(path, e);
         } catch (FileSystemException e) {
             logger.error("Cannot get node children", e);
         }
@@ -214,6 +218,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
                     }
                 }
             }
+        } catch (OutsideRootException e) {
+            throw new PathNotFoundException(path, e);
         } catch (FileSystemException e) {
             logger.error("Cannot get node children", e);
         }
@@ -372,6 +378,31 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             return root;
         }
         String relativePath = path.charAt(0) == '/' ? path.substring(1) : path;
-        return root.resolveFile(relativePath, NameScope.DESCENDENT_OR_SELF);
+        FileObject file;
+        try {
+            file = root.resolveFile(relativePath, NameScope.DESCENDENT_OR_SELF);
+        } catch (FileSystemException e) {
+            if (OutsideRootException.CODE.equals(e.getCode())) {
+                throw new OutsideRootException(path, e);
+            }
+            throw e;
+        }
+        // The provider decodes the name again after the scope check, so the check is repeated on the result.
+        if (!root.getName().isDescendent(file.getName(), NameScope.DESCENDENT_OR_SELF)) {
+            throw new OutsideRootException(path, null);
+        }
+        return file;
+    }
+
+    /**
+     * Thrown when a path does not resolve to the root or to a descendant of it.
+     */
+    private static final class OutsideRootException extends FileSystemException {
+        private static final long serialVersionUID = 1L;
+        private static final String CODE = "vfs.provider/invalid-descendent-name.error";
+
+        private OutsideRootException(String path, Throwable cause) {
+            super(CODE, cause, path);
+        }
     }
 }
