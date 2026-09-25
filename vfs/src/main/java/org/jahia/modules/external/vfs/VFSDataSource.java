@@ -359,11 +359,16 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         return s1;
     }
 
+    /**
+     * Resolves a path against the root: the root itself, or a descendant of it.
+     *
+     * @throws FileSystemException when the path resolves to anything else
+     */
     private FileObject getFile(String path, boolean unescapePath) throws FileSystemException {
         if (unescapePath) {
             path = Escaping.unescapeIllegalJcrChars(path);
         }
         return (path == null || path.isEmpty() || path.equals("/")) ? root : root
-                .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
+                .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path, NameScope.DESCENDENT_OR_SELF);
     }
 }
