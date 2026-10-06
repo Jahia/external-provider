@@ -231,6 +231,8 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
             return file.exists();
         } catch (VfsRootNotAllowedException e) {
             logRootUnavailable(path, e);
+        } catch (OutsideRootException e) {
+            return false;
         } catch (FileSystemException e) {
             logger.warn("Unable to check file existence for path " + path, e);
         }
@@ -284,10 +286,18 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         return getFile(path, true);
     }
 
+    private FileObject getFileWithinRoot(String path) throws FileSystemException, PathNotFoundException {
+        try {
+            return getFile(path);
+        } catch (OutsideRootException e) {
+            throw new PathNotFoundException(path, e);
+        }
+    }
+
     public List<String> getChildren(String path) throws RepositoryException {
         try {
             if (!path.endsWith(JCR_CONTENT_SUFFIX)) {
-                FileObject fileObject = getFile(path);
+                FileObject fileObject = getFileWithinRoot(path);
                 if (fileObject.getType() == FileType.FILE) {
                     return JCR_CONTENT_LIST;
                 } else if (fileObject.getType() == FileType.FOLDER) {
@@ -323,7 +333,7 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     public List<ExternalData> getChildrenNodes(String path) throws RepositoryException {
         try {
             if (!path.endsWith(JCR_CONTENT_SUFFIX)) {
-                FileObject fileObject = getFile(path);
+                FileObject fileObject = getFileWithinRoot(path);
                 if (fileObject.getType() == FileType.FILE && fileObject.isReadable()) {
                     final FileContent content = fileObject.getContent();
                     return Collections.singletonList(getFileContent(content));
@@ -522,13 +532,46 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
         logger.error("Cannot get node children", e);
     }
 
+    /**
+     * Resolves a path against the root: the root itself, or a descendant of it.
+     *
+     * @throws FileSystemException when the path resolves to anything else
+     */
     private FileObject getFile(String path, boolean unescapePath) throws FileSystemException {
         FileObject current = requireRoot().file;
         if (unescapePath) {
             path = Escaping.unescapeIllegalJcrChars(path);
         }
-        return (path == null || path.isEmpty() || path.equals("/")) ? current : current
-                .resolveFile(path.charAt(0) == '/' ? path.substring(1) : path);
+        if (path == null || path.isEmpty() || path.equals("/")) {
+            return current;
+        }
+        String relativePath = path.charAt(0) == '/' ? path.substring(1) : path;
+        FileObject file;
+        try {
+            file = current.resolveFile(relativePath, NameScope.DESCENDENT_OR_SELF);
+        } catch (FileSystemException e) {
+            if (OutsideRootException.CODE.equals(e.getCode())) {
+                throw new OutsideRootException(path, e);
+            }
+            throw e;
+        }
+        // The provider decodes the name again after the scope check, so the check is repeated on the result.
+        if (!current.getName().isDescendent(file.getName(), NameScope.DESCENDENT_OR_SELF)) {
+            throw new OutsideRootException(path, null);
+        }
+        return file;
+    }
+
+    /**
+     * Thrown when a path does not resolve to the root or to a descendant of it.
+     */
+    private static final class OutsideRootException extends FileSystemException {
+        private static final long serialVersionUID = 1L;
+        private static final String CODE = "vfs.provider/invalid-descendent-name.error";
+
+        private OutsideRootException(String path, Throwable cause) {
+            super(CODE, cause, path);
+        }
     }
 
     /**
