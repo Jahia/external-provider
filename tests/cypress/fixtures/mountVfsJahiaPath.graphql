@@ -1,0 +1,9 @@
+mutation mountVfsJahiaPath($pathOrId: String!) {
+    admin {
+        jahia {
+            mountPoint {
+                mount(pathOrId: $pathOrId)
+            }
+        }
+    }
+}

@@ -27,9 +27,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
-import org.jahia.modules.graphql.provider.dxm.admin.GqlAdminQuery;
 import org.jahia.modules.graphql.provider.dxm.admin.GqlJahiaAdminQuery;
-import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 
 @GraphQLTypeExtension(GqlJahiaAdminQuery.class)
 @GraphQLDescription("Query extensions for mount point")

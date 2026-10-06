@@ -1,0 +1,9 @@
+mutation setVfsAllowedSchemes($value: String!) {
+    admin {
+        jahia {
+            configuration(pid: "org.jahia.modules.external.vfs") {
+                value(name: "vfsMountPoint.allowedSchemes", value: $value)
+            }
+        }
+    }
+}
