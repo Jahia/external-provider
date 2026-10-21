@@ -32,7 +32,6 @@ import org.jahia.modules.external.ExternalDataSource;
 import org.jahia.modules.external.modules.osgi.ModulesSourceHttpServiceTracker;
 import org.jahia.modules.external.modules.osgi.ModulesSourceMonitor;
 import org.jahia.modules.external.modules.osgi.ModulesSourceSpringInitializer;
-import org.jahia.modules.external.vfs.VFSDataSource;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
