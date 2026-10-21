@@ -71,9 +71,8 @@ public final class VfsRootResolver {
 
     /**
      * Which manager a root belongs to, counted rather than named. A root that is resolved holds the manager that
-     * resolved it, and the package this class lives in is exported, so a root outlives neither this class nor the
-     * bundle that releases the manager: {@code external-provider-modules} resolves the source folder of every module
-     * deployed in source-folders mode through here. A caller records the generation it took its root at and reads it
+     * resolved it, and the package this class lives in is exported, so another bundle can hold a root after this one
+     * releases the manager. A caller records the generation it took its root at and reads it
      * back, which is what tells it that the manager behind that root has been released and the root has to be taken
      * again.
      */
