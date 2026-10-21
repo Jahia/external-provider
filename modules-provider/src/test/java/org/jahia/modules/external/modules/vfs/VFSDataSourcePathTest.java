@@ -1,4 +1,4 @@
-package org.jahia.modules.external.modules;
+package org.jahia.modules.external.modules.vfs;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.jackrabbit.util.Text;

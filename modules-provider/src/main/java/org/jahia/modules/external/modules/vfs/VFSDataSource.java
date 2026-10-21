@@ -1,4 +1,4 @@
-package org.jahia.modules.external.modules;
+package org.jahia.modules.external.modules.vfs;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -33,7 +33,6 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
     private static final String JCR_CONTENT_SUFFIX = "/" + Constants.JCR_CONTENT;
     private FileObject root;
     private String rootPath;
-    private FileSystemManager manager;
 
     /**
      * Defines the root point of the DataSource
@@ -42,24 +41,11 @@ public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Wri
      */
     public void setRoot(String rootUri) {
         try {
-            manager = VFS.getManager();
-            root = manager.resolveFile(rootUri);
+            root = VFS.getManager().resolveFile(rootUri);
             rootPath = root.getName().getPath();
         } catch (Exception e) {
             throw new RuntimeException("Cannot set root to " + rootUri, e);
         }
-    }
-
-    protected FileObject getRoot() {
-        return root;
-    }
-
-    protected String getRootPath() {
-        return rootPath;
-    }
-
-    protected FileSystemManager getManager() {
-        return manager;
     }
 
     public boolean isSupportsUuid() {

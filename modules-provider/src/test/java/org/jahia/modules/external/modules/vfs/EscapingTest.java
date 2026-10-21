@@ -1,10 +1,10 @@
-package org.jahia.modules.external.modules;
+package org.jahia.modules.external.modules.vfs;
 
 import org.junit.Test;
 
 import java.util.function.UnaryOperator;
 
-import static org.jahia.modules.external.modules.Escaping.*;
+import static org.jahia.modules.external.modules.vfs.Escaping.*;
 import static org.junit.Assert.assertEquals;
 
 /**
