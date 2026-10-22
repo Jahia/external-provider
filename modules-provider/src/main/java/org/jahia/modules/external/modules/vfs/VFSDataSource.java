@@ -1,0 +1,400 @@
+package org.jahia.modules.external.modules.vfs;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.vfs2.*;
+import org.apache.jackrabbit.util.ISO8601;
+import org.jahia.api.Constants;
+import org.jahia.modules.external.ExternalData;
+import org.jahia.modules.external.ExternalDataSource;
+import org.jahia.services.content.JCRContentUtils;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.jcr.Binary;
+import javax.jcr.ItemNotFoundException;
+import javax.jcr.PathNotFoundException;
+import javax.jcr.RepositoryException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.*;
+
+/**
+ * VFS Implementation of ExternalDataSource
+ */
+public class VFSDataSource implements ExternalDataSource, ExternalDataSource.Writable, ExternalDataSource.CanLoadChildrenInBatch {
+    private static final List<String> JCR_CONTENT_LIST = Arrays.asList(Constants.JCR_CONTENT);
+    private static final Set<String> SUPPORTED_NODE_TYPES = new HashSet<>(Arrays.asList(Constants.JAHIANT_FILE, Constants.JAHIANT_FOLDER, Constants.JAHIANT_RESOURCE));
+    private static final Logger logger = LoggerFactory.getLogger(VFSDataSource.class);
+    private static final String PATH_SEPARATOR = "/";
+    private static final String JCR_CONTENT_SUFFIX = PATH_SEPARATOR + Constants.JCR_CONTENT;
+    private FileObject root;
+    private String rootPath;
+
+    /**
+     * Defines the root point of the DataSource
+     *
+     * @param rootUri
+     */
+    public void setRoot(String rootUri) {
+        try {
+            root = VFS.getManager().resolveFile(rootUri);
+            rootPath = root.getName().getPath();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Cannot set root to " + rootUri, e);
+        }
+    }
+
+    public boolean isSupportsUuid() {
+        return false;
+    }
+
+    @Override
+    public boolean isSupportsHierarchicalIdentifiers() {
+        return true;
+    }
+
+    @Override
+    public boolean itemExists(String path) {
+        try {
+            FileObject file = getFile(path.endsWith(JCR_CONTENT_SUFFIX) ? StringUtils.substringBeforeLast(
+                    path, JCR_CONTENT_SUFFIX) : path);
+            return file.exists();
+        } catch (OutsideRootException e) {
+            return false;
+        } catch (FileSystemException e) {
+            logger.warn("Unable to check file existence for path " + path, e);
+        }
+        return false;
+    }
+
+    @Override
+    public void order(String path, List<String> children) throws RepositoryException {
+        // ordering is not supported in VFS
+    }
+
+    public Set<String> getSupportedNodeTypes() {
+        return SUPPORTED_NODE_TYPES;
+    }
+
+    public ExternalData getItemByIdentifier(String identifier) throws ItemNotFoundException {
+        if (identifier.startsWith("/")) {
+            try {
+                return getItemByPath(identifier);
+            } catch (PathNotFoundException e) {
+                throw new ItemNotFoundException(identifier, e);
+            }
+        }
+        throw new ItemNotFoundException(identifier);
+    }
+
+    public ExternalData getItemByPath(String path) throws PathNotFoundException {
+        try {
+            String unescapedPath = Escaping.unescapeIllegalJcrChars(path);
+            if (path.endsWith(JCR_CONTENT_SUFFIX)) {
+                FileObject fileObject = getFile(StringUtils.substringBeforeLast(unescapedPath, JCR_CONTENT_SUFFIX), false);
+                FileContent content = fileObject.getContent();
+                if (!fileObject.exists() || fileObject.isFolder()) {
+                    throw new PathNotFoundException(path);
+                }
+                return getFileContent(content);
+            } else {
+                FileObject fileObject = getFile(unescapedPath, false);
+                if (!fileObject.exists()) {
+                    throw new PathNotFoundException(path);
+                }
+                return getFile(fileObject);
+            }
+
+        } catch (FileSystemException e) {
+            throw new PathNotFoundException("File system exception while trying to retrieve " + path, e);
+        }
+    }
+
+    public FileObject getFile(String path) throws FileSystemException {
+        return getFile(path, true);
+    }
+
+    private FileObject getFileWithinRoot(String path) throws FileSystemException, PathNotFoundException {
+        try {
+            return getFile(path);
+        } catch (OutsideRootException e) {
+            throw new PathNotFoundException(path, e);
+        }
+    }
+
+    public List<String> getChildren(String path) throws RepositoryException {
+        if (path.endsWith(JCR_CONTENT_SUFFIX)) {
+            return Collections.emptyList();
+        }
+        try {
+            FileObject fileObject = getFileWithinRoot(path);
+            if (fileObject.getType() == FileType.FILE) {
+                return JCR_CONTENT_LIST;
+            }
+            if (fileObject.getType() == FileType.FOLDER) {
+                return getChildNames(fileObject.getChildren());
+            }
+            if (!fileObject.exists()) {
+                throw new PathNotFoundException(path);
+            }
+            logger.warn("Found non file or folder entry at path {}, maybe an alias. VFS file type: {}",
+                    fileObject, fileObject.getType());
+        } catch (FileSystemException e) {
+            logger.error("Cannot get node children", e);
+        }
+
+        return Collections.emptyList();
+    }
+
+    private List<String> getChildNames(FileObject[] files) throws FileSystemException {
+        if (files.length == 0) {
+            return Collections.emptyList();
+        }
+        List<String> children = new LinkedList<>();
+        for (FileObject object : files) {
+            if (getSupportedNodeTypes().contains(getDataType(object))) {
+                children.add(Escaping.escapeIllegalJcrChars(object.getName().getBaseName()));
+            }
+        }
+        return children;
+    }
+
+    @Override
+    public List<ExternalData> getChildrenNodes(String path) throws RepositoryException {
+        if (path.endsWith(JCR_CONTENT_SUFFIX)) {
+            return Collections.emptyList();
+        }
+        try {
+            FileObject fileObject = getFileWithinRoot(path);
+            if (fileObject.getType() == FileType.FILE && fileObject.isReadable()) {
+                return Collections.singletonList(getFileContent(fileObject.getContent()));
+            }
+            if (fileObject.getType() == FileType.FOLDER && fileObject.isReadable()) {
+                fileObject.refresh();  //in case of folder, refresh because it could be changed external
+                return getChildNodes(fileObject.getChildren());
+            }
+            if (!fileObject.exists()) {
+                throw new PathNotFoundException(path);
+            }
+            logger.warn("Found non file or folder entry at path {}, maybe an alias or maybe it is unreadable. VFS file type: {}",
+                    fileObject, fileObject.getType());
+        } catch (FileSystemException e) {
+            logger.error("Cannot get node children", e);
+        }
+
+        return Collections.emptyList();
+    }
+
+    private List<ExternalData> getChildNodes(FileObject[] files) throws FileSystemException {
+        if (files.length == 0) {
+            return Collections.emptyList();
+        }
+        List<ExternalData> children = new LinkedList<>();
+        for (FileObject object : files) {
+            if (getSupportedNodeTypes().contains(getDataType(object))) {
+                children.add(getFile(object));
+                if (object.getType() == FileType.FILE) {
+                    children.add(getFileContent(object.getContent()));
+                }
+            }
+        }
+        return children;
+    }
+
+    @Override
+    public void removeItemByPath(String path) throws RepositoryException {
+        try {
+            FileObject file = getFile(path);
+            if (file.getType().hasChildren()) {
+                file.delete(Selectors.SELECT_ALL);
+            } else if (!file.delete()) {
+                logger.warn("Failed to delete FileObject {}", file);
+            }
+        } catch (FileSystemException e) {
+            throw new RepositoryException(e);
+        }
+    }
+
+    public void saveItem(ExternalData data) throws RepositoryException {
+        ExtendedNodeType nodeType;
+        try {
+            nodeType = NodeTypeRegistry.getInstance().getNodeType(data.getType());
+        } catch (NoSuchNodeTypeException e) {
+            throw new PathNotFoundException(e);
+        }
+        if (nodeType.isNodeType(Constants.NT_RESOURCE) && StringUtils.contains(data.getPath(), Constants.JCR_CONTENT)) {
+            writeContent(data);
+        } else if (nodeType.isNodeType("jnt:folder")) {
+            createFolder(data.getPath());
+        }
+    }
+
+    private void writeContent(ExternalData data) throws PathNotFoundException {
+        OutputStream outputStream = null;
+        try {
+            final Binary[] binaries = data.getBinaryProperties().get(Constants.JCR_DATA);
+            if (binaries.length > 0) {
+                outputStream = getFile(data.getPath().substring(0, data.getPath().indexOf(JCR_CONTENT_SUFFIX))).getContent().getOutputStream();
+                for (Binary binary : binaries) {
+                    copy(binary, outputStream);
+                }
+            }
+        } catch (IOException e) {
+            throw new PathNotFoundException("I/O on file : " + data.getPath(), e);
+        } catch (RepositoryException e) {
+            throw new PathNotFoundException("unable to get outputStream of : " + data.getPath(), e);
+        } finally {
+            IOUtils.closeQuietly(outputStream);
+        }
+    }
+
+    private static void copy(Binary binary, OutputStream outputStream) throws IOException, RepositoryException {
+        InputStream stream = null;
+        try {
+            stream = binary.getStream();
+            IOUtils.copy(stream, outputStream);
+        } finally {
+            IOUtils.closeQuietly(stream);
+        }
+    }
+
+    private void createFolder(String path) throws PathNotFoundException {
+        try {
+            getFile(path).createFolder();
+        } catch (FileSystemException e) {
+            throw new PathNotFoundException(path, e);
+        }
+    }
+
+    @Override
+    public void move(String oldPath, String newPath) throws RepositoryException {
+        if (oldPath.equals(newPath)) {
+            return;
+        }
+        try {
+            FileObject origin = getFile(oldPath);
+            if (origin.isContentOpen()) {
+                origin.close();
+            }
+            FileObject destination = getFile(newPath);
+            if (destination.exists() && destination.isContentOpen()) {
+                destination.close();
+            }
+            origin.moveTo(destination);
+        } catch (FileSystemException e) {
+            throw new RepositoryException(oldPath, e);
+        }
+    }
+
+    private ExternalData getFile(FileObject fileObject) throws FileSystemException {
+        String type = getDataType(fileObject);
+
+        Map<String, String[]> properties = new HashMap<>();
+        List<String> addedMixins = new ArrayList<>();
+        final FileContent content = fileObject.getContent();
+        if (content != null) {
+            long lastModifiedTime = fileObject.getContent().getLastModifiedTime();
+            if (lastModifiedTime > 0) {
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(lastModifiedTime);
+                String[] timestamp = new String[]{ISO8601.format(calendar)};
+                properties.put(Constants.JCR_CREATED, timestamp);
+                properties.put(Constants.JCR_LASTMODIFIED, timestamp);
+            }
+            // Add jmix:image mixin in case of the file is a picture.
+            if (content.getContentInfo() != null && content.getContentInfo().getContentType() != null
+                    && fileObject.getContent().getContentInfo().getContentType().matches("image/(.*)")) {
+                addedMixins.add(Constants.JAHIAMIX_IMAGE);
+            }
+
+        }
+
+        String path = fileObject.getName().getPath().substring(rootPath.length());
+        path = Escaping.escapeIllegalJcrChars(path);
+        if (!path.startsWith(PATH_SEPARATOR)) {
+            path = PATH_SEPARATOR + path;
+        }
+
+        ExternalData result = new ExternalData(path, path, type, properties);
+        result.setMixin(addedMixins);
+        return result;
+    }
+
+    public String getDataType(FileObject fileObject) throws FileSystemException {
+        return fileObject.getType() == FileType.FILE ? Constants.JAHIANT_FILE
+                : Constants.JAHIANT_FOLDER;
+    }
+
+    protected ExternalData getFileContent(final FileContent content) throws FileSystemException {
+        Map<String, String[]> properties = new HashMap<>(1);
+
+        properties.put(Constants.JCR_MIMETYPE, new String[]{getContentType(content)});
+
+        String path = Escaping.escapeIllegalJcrChars(content.getFile().getName().getPath().substring(rootPath.length()));
+        String jcrContentPath = path + JCR_CONTENT_SUFFIX;
+        ExternalData externalData = new ExternalData(jcrContentPath, jcrContentPath, Constants.JAHIANT_RESOURCE, properties);
+
+        Map<String, Binary[]> binaryProperties = new HashMap<>(1);
+        binaryProperties.put(Constants.JCR_DATA, new Binary[]{new VFSBinaryImpl(content)});
+        externalData.setBinaryProperties(binaryProperties);
+
+        return externalData;
+    }
+
+    protected String getContentType(FileContent content) throws FileSystemException {
+        String s1 = content.getContentInfo().getContentType();
+        if (s1 == null) {
+            s1 = JCRContentUtils.getMimeType(content.getFile().getName().getBaseName());
+        }
+        if (s1 == null) {
+            s1 = "application/octet-stream";
+        }
+        return s1;
+    }
+
+    /**
+     * Resolves a path against the root: the root itself, or a descendant of it.
+     *
+     * @throws FileSystemException when the path resolves to anything else
+     */
+    private FileObject getFile(String path, boolean unescapePath) throws FileSystemException {
+        if (unescapePath) {
+            path = Escaping.unescapeIllegalJcrChars(path);
+        }
+        if (path == null || path.isEmpty() || path.equals("/")) {
+            return root;
+        }
+        String relativePath = path.charAt(0) == '/' ? path.substring(1) : path;
+        FileObject file;
+        try {
+            file = root.resolveFile(relativePath, NameScope.DESCENDENT_OR_SELF);
+        } catch (FileSystemException e) {
+            if (OutsideRootException.CODE.equals(e.getCode())) {
+                throw new OutsideRootException(path, e);
+            }
+            throw e;
+        }
+        // The provider decodes the name again after the scope check, so the check is repeated on the result.
+        if (!root.getName().isDescendent(file.getName(), NameScope.DESCENDENT_OR_SELF)) {
+            throw new OutsideRootException(path, null);
+        }
+        return file;
+    }
+
+    /**
+     * Thrown when a path does not resolve to the root or to a descendant of it.
+     */
+    private static final class OutsideRootException extends FileSystemException {
+        private static final long serialVersionUID = 1L;
+        private static final String CODE = "vfs.provider/invalid-descendent-name.error";
+
+        private OutsideRootException(String path, Throwable cause) {
+            super(CODE, cause, path);
+        }
+    }
+}
