@@ -45,9 +45,9 @@ public class VFSProviderFactory implements ProviderFactory {
      * a component that goes away when its configuration is deleted would close it under that mount point.
      *
      * <p>The mount points this factory made are stopped with it, but the manager is not private to them: the package
-     * is exported, and {@code external-provider-modules} resolves the source folder of every module deployed in
-     * source-folders mode through the same one. Nothing stops those, so the resolver counts the generation a root was
-     * taken at and a root taken at an earlier one is taken again rather than answered through a released manager.
+     * is exported, so another bundle can hold a root that the same manager resolved. The resolver counts the
+     * generation a root was taken at, and a root taken at an earlier one is taken again rather than answered through
+     * a released manager.
      */
     @Deactivate
     public void deactivate() {

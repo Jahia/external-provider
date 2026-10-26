@@ -35,7 +35,7 @@
     </scm>
     <properties>
         <jahia-module-type>system</jahia-module-type>
-        <jahia-depends>external-provider,external-provider-vfs</jahia-depends>
+        <jahia-depends>external-provider</jahia-depends>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
         <jahia-static-resources>/css,/javascript</jahia-static-resources>
         <export-package>
@@ -46,21 +46,16 @@
         <import-package>
             com.google.common.base,
             com.google.common.collect,
-            org.jahia.modules.external;version="[4.2,5)",
-            org.jahia.modules.external.vfs;version="[4.2,5)"
+            org.jahia.modules.external;version="[4.2,5)"
         </import-package>
         <sonar.sources>src,pom.xml</sonar.sources>
+        <!-- These classes and their tests are a copy of external-provider-vfs code -->
+        <sonar.cpd.exclusions>**/org/jahia/modules/external/modules/vfs/**</sonar.cpd.exclusions>
     </properties>
     <dependencies>
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>external-provider</artifactId>
-            <version>${project.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jahia.modules</groupId>
-            <artifactId>external-provider-vfs</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -93,6 +88,18 @@
             <artifactId>guava</artifactId>
             <version>${guava.osgi.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${log4j.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <repositories>
