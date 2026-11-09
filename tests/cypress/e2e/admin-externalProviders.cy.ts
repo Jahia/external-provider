@@ -1,29 +1,40 @@
+const screens = [
+    {variant: 'default', url: '/cms/adminframe/default/en/settings.external-provider.html?redirect=false'},
+    {variant: 'anthracite', url: '/cms/adminframe/default/en/settings.external-provider-jahia-anthracite.html?redirect=false'}
+];
+
 describe('External providers admin panel', () => {
-    const pageUrl = '/cms/adminframe/default/en/settings.external-provider.html?redirect=false';
+    const name = 'say "hi" & co';
+    const mountPath = `/mounts/${name}`;
 
     beforeEach(function () {
         cy.executeGroovy('cleanup.groovy');
         cy.executeGroovy('createDir.groovy');
         cy.login();
+        cy.apollo({queryFile: 'mountVfs.graphql', variables: {name}});
     });
 
     afterEach(function () {
         cy.executeGroovy('cleanup.groovy');
     });
 
-    it('lists a mount point whose name contains quotes and an ampersand as typed', function () {
-        const name = 'say "hi" & co';
-        cy.apollo({queryFile: 'mountVfs.graphql', variables: {name}});
-        cy.visit(pageUrl);
-        cy.get('#providersTable').contains('td', `/mounts/${name}`);
-        cy.get('#providersTable input[name="mountpoint"]').should('have.value', `/mounts/${name}`);
-    });
+    screens.forEach(({variant, url}) => {
+        describe(`${variant} template`, () => {
+            beforeEach(function () {
+                cy.visit(url);
+            });
 
-    it('opens the data source information of a mount point whose name contains quotes', function () {
-        const name = 'say "hi" & co';
-        cy.apollo({queryFile: 'mountVfs.graphql', variables: {name}});
-        cy.visit(pageUrl);
-        cy.get('#providersTable button[name="_eventId_viewDataSource"]').click();
-        cy.contains('h2', 'Data source information');
+            it('lists a mount point whose name contains quotes and an ampersand as typed', function () {
+                cy.contains('#providersTable tr', mountPath).within(() => {
+                    cy.contains('td', mountPath);
+                    cy.get('input[name="mountpoint"]').should('have.value', mountPath);
+                });
+            });
+
+            it('opens the data source information of a mount point whose name contains quotes', function () {
+                cy.contains('#providersTable tr', mountPath).find('button[name="_eventId_viewDataSource"]').click();
+                cy.contains('h2', 'Data source information');
+            });
+        });
     });
 });
