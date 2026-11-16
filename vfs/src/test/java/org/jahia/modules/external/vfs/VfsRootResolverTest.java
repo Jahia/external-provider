@@ -181,8 +181,9 @@ public final class VfsRootResolverTest {
     }
 
     @Test
-    public void aLocalRootThatCarriesAnAuthorityIsStillLocal() throws FileSystemException {
-        // file://d:/pdf-files is the form the documentation gives for a Windows drive, and it names file: alone
+    public void anAuthorityLeavesTheSchemeOfALocalRootAsFile() throws FileSystemException {
+        // file://d:/pdf-files is the form the documentation gives for a Windows drive, and it names file: alone;
+        // whether a root is a folder of this server is decided when it resolves
         checkSchemeAllowed("file://d:/pdf-files");
         checkSchemeAllowed("//data/files");
     }
@@ -196,9 +197,8 @@ public final class VfsRootResolverTest {
             assertNotOnThisServer(windows, "\\\\host/share\\files", "//host/share");
             assertNotOnThisServer(windows, "file://host/share/files", "//host/share");
             assertNotOnThisServer(windows, "file:////host/share/files", "//host/share");
-            // the local provider itself refuses these forms, so no root is resolved
-            assertNotResolved(windows, "\\\\?\\UNC\\host\\share\\files");
-            assertNotResolved(windows, "\\\\.\\pipe\\files");
+            assertNotOnThisServer(windows, "\\\\?\\UNC\\host\\share\\files", "//?/UNC");
+            assertNotOnThisServer(windows, "\\\\.\\pipe\\files", "//./pipe");
             // a layer reaches whatever the layer below it names
             assertNotOnThisServer(windows, "gz:file://host/share/archive.gz", "//host/share");
             assertNotOnThisServer(windows, "zip:gz:file://host/share/archive.zip.gz", "//host/share");
@@ -303,16 +303,6 @@ public final class VfsRootResolverTest {
         }
         fail("Expected the root path to be refused as no folder of this server: " + rootPath);
     }
-
-    private static void assertNotResolved(FileSystemManager manager, String rootPath) {
-        try {
-            VfsRootResolver.resolveRoot(rootPath, manager);
-        } catch (FileSystemException e) {
-            return;
-        }
-        fail("Expected the root path to be refused: " + rootPath);
-    }
-
     private static String assertRefused(String rootPath) {
         try {
             checkSchemeAllowed(rootPath);

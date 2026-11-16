@@ -138,8 +138,7 @@ public final class VfsRootResolver {
     }
 
     private static boolean isRootOfThisServer(String localRoot) {
-        return localRoot.isEmpty() || "/".equals(localRoot)
-                || (localRoot.length() == 2 && localRoot.charAt(1) == ':');
+        return localRoot.isEmpty() || (localRoot.length() == 2 && localRoot.charAt(1) == ':');
     }
 
     /**
