@@ -303,6 +303,7 @@ public final class VfsRootResolverTest {
         }
         fail("Expected the root path to be refused as no folder of this server: " + rootPath);
     }
+
     private static String assertRefused(String rootPath) {
         try {
             checkSchemeAllowed(rootPath);
