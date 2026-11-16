@@ -24,6 +24,7 @@ import org.apache.commons.vfs2.provider.local.DefaultLocalFileProvider;
 import org.apache.commons.vfs2.provider.local.GenericFileNameParser;
 import org.apache.commons.vfs2.provider.local.LocalFileNameParser;
 import org.apache.commons.vfs2.provider.local.WindowsFileNameParser;
+import org.apache.commons.vfs2.provider.zip.ZipFileProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -187,39 +188,46 @@ public final class VfsRootResolverTest {
     }
 
     @Test
-    public void aNetworkShareIsRefusedWhereTheLocalProviderReadsOne() throws FileSystemException {
+    public void aRootOnAWindowsShareIsRefused() throws FileSystemException {
         DefaultFileSystemManager windows = managerParsingLocalNamesWith(new WindowsFileNameParser());
         try {
-            assertNetworkShareRefused(windows, "//host/share/files", "//host/share");
-            assertNetworkShareRefused(windows, "\\\\host\\share\\files", "//host/share");
-            assertNetworkShareRefused(windows, "file://host/share/files", "//host/share");
-            assertNetworkShareRefused(windows, "file:////host/share/files", "//host/share");
+            assertNotOnThisServer(windows, "//host/share/files", "//host/share");
+            assertNotOnThisServer(windows, "\\\\host\\share\\files", "//host/share");
+            assertNotOnThisServer(windows, "\\\\host/share\\files", "//host/share");
+            assertNotOnThisServer(windows, "file://host/share/files", "//host/share");
+            assertNotOnThisServer(windows, "file:////host/share/files", "//host/share");
+            // the local provider itself refuses these forms, so no root is resolved
+            assertNotResolved(windows, "\\\\?\\UNC\\host\\share\\files");
+            assertNotResolved(windows, "\\\\.\\pipe\\files");
             // a layer reaches whatever the layer below it names
-            assertNetworkShareRefused(windows, "gz:file://host/share/archive.gz", "//host/share");
+            assertNotOnThisServer(windows, "gz:file://host/share/archive.gz", "//host/share");
+            assertNotOnThisServer(windows, "zip:gz:file://host/share/archive.zip.gz", "//host/share");
         } finally {
             windows.close();
         }
     }
 
     @Test
-    public void aWindowsDriveIsNotANetworkShare() throws FileSystemException {
+    public void aRootOnAWindowsDriveIsResolved() throws FileSystemException {
         DefaultFileSystemManager windows = managerParsingLocalNamesWith(new WindowsFileNameParser());
         try {
-            checkRootIsNotANetworkShare(windows, "file://d:/pdf-files");
-            checkRootIsNotANetworkShare(windows, "file:///d:/pdf-files");
-            checkRootIsNotANetworkShare(windows, "d:/pdf-files");
-            checkRootIsNotANetworkShare(windows, "D:\\pdf-files");
+            for (String rootPath : Arrays.asList("file://d:/pdf-files", "file:///d:/pdf-files", "d:/pdf-files",
+                    "D:\\pdf-files")) {
+                assertEquals(VfsRootResolver.LOCAL_SCHEME,
+                        VfsRootResolver.resolveRoot(rootPath, windows).getName().getScheme());
+            }
         } finally {
             windows.close();
         }
     }
 
     @Test
-    public void aDoubleSlashIsALocalFolderOutsideWindows() throws FileSystemException {
+    public void aDoubleSlashOutsideWindowsIsAFolderOfThisServer() throws FileSystemException {
         DefaultFileSystemManager generic = managerParsingLocalNamesWith(new GenericFileNameParser());
         try {
-            checkRootIsNotANetworkShare(generic, "//data/files");
-            checkRootIsNotANetworkShare(generic, "file://data/files");
+            for (String rootPath : Arrays.asList("//data/files", "file://data/files")) {
+                assertEquals("/data/files", VfsRootResolver.resolveRoot(rootPath, generic).getName().getPath());
+            }
         } finally {
             generic.close();
         }
@@ -273,6 +281,7 @@ public final class VfsRootResolverTest {
         DefaultFileSystemManager manager = new DefaultFileSystemManager();
         manager.addProvider(VfsRootResolver.LOCAL_SCHEME, new LocalFileProviderWithParser(parser));
         manager.addProvider("gz", new GzipFileProvider());
+        manager.addProvider("zip", new ZipFileProvider());
         manager.init();
         return manager;
     }
@@ -283,21 +292,25 @@ public final class VfsRootResolverTest {
         }
     }
 
-    private static void checkRootIsNotANetworkShare(FileSystemManager manager, String rootPath)
-            throws FileSystemException {
-        VfsRootResolver.checkRootIsNotANetworkShare(rootPath, manager.resolveURI(rootPath));
-    }
-
-    private static void assertNetworkShareRefused(FileSystemManager manager, String rootPath, String expectedShare)
+    private static void assertNotOnThisServer(FileSystemManager manager, String rootPath, String expectedRoot)
             throws FileSystemException {
         try {
-            checkRootIsNotANetworkShare(manager, rootPath);
+            VfsRootResolver.resolveRoot(rootPath, manager);
         } catch (VfsRootNotAllowedException e) {
-            assertTrue("Expected the message to name the share " + expectedShare + ", got: " + e.getMessage(),
-                    e.getMessage().contains('"' + expectedShare + '"'));
+            assertTrue("Expected the message to name the root " + expectedRoot + ", got: " + e.getMessage(),
+                    e.getMessage().contains('"' + expectedRoot + '"'));
             return;
         }
-        fail("Expected the root path to be refused as a network share: " + rootPath);
+        fail("Expected the root path to be refused as no folder of this server: " + rootPath);
+    }
+
+    private static void assertNotResolved(FileSystemManager manager, String rootPath) {
+        try {
+            VfsRootResolver.resolveRoot(rootPath, manager);
+        } catch (FileSystemException e) {
+            return;
+        }
+        fail("Expected the root path to be refused: " + rootPath);
     }
 
     private static String assertRefused(String rootPath) {

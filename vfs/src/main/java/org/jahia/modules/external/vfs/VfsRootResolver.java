@@ -90,42 +90,56 @@ public final class VfsRootResolver {
      *
      * @param rootPath the {@code j:rootPath} value of the mount point
      * @return the resolved root
-     * @throws FileSystemException if the root path is blank, uses a scheme that is not allowed, names a network share
-     *         through the local file system, names a file rather than a folder, or cannot be resolved
+     * @throws FileSystemException if the root path is blank, uses a scheme that is not allowed, names no folder of this
+     *         server, names a file rather than a folder, or cannot be resolved
      */
     public static FileObject resolveRoot(String rootPath) throws FileSystemException {
         // One read answers both questions, so the check and the manager carrying the providers cannot disagree.
         Set<String> allowed = allowedSchemes.get();
         checkSchemeAllowed(rootPath, allowed);
-        FileSystemManager manager = managerFor(allowed);
-        // resolveURI parses the name and reads no file.
-        checkRootIsNotANetworkShare(rootPath, manager.resolveURI(rootPath));
+        return resolveRoot(rootPath, managerFor(allowed));
+    }
+
+    /**
+     * Resolves a root that passed the scheme check. Resolving a layered root, such as {@code zip:}, reads the file
+     * under the layer, so the name is parsed and checked before the root is resolved.
+     *
+     * @param rootPath the {@code j:rootPath} value of the mount point
+     * @param manager the manager that carries the providers of the allowed schemes
+     * @return the resolved root
+     * @throws FileSystemException if the root names no folder of this server, names a file, or cannot be resolved
+     */
+    static FileObject resolveRoot(String rootPath, FileSystemManager manager) throws FileSystemException {
+        checkRootIsOnThisServer(rootPath, manager.resolveURI(rootPath));
         FileObject root = manager.resolveFile(rootPath);
         checkRootIsNotAFile(rootPath, root);
         return root;
     }
 
     /**
-     * A root names a folder of this server. On Windows, the local provider parses a UNC path, such as
-     * {@code //host/share} or {@code file://host/share}, with the share as the root of the name, and a drive with its
-     * letter, so the root of the name tells a share from a drive. Elsewhere, the local provider reads {@code //data}
-     * as the folder {@code /data}, and the root of the name is {@code /}.
-     *
-     * @param rootPath the {@code j:rootPath} value of the mount point
-     * @param name the name that the manager parses from that value
-     * @throws FileSystemException if the local file system part of the name is a network share
+     * A root names a folder of this server. The local provider of Apache VFS parses the root of a local name as an
+     * empty string outside Windows, and on Windows as a drive such as {@code d:} or as a UNC share such as
+     * {@code //host/share}. Only the empty root and a drive are folders of this server.
      */
-    static void checkRootIsNotANetworkShare(String rootPath, FileName name) throws FileSystemException {
+    private static void checkRootIsOnThisServer(String rootPath, FileName name) throws FileSystemException {
         FileName innermost = name;
         while (innermost instanceof LayeredFileName) {
             innermost = ((LayeredFileName) innermost).getOuterName();
         }
-        if (innermost instanceof LocalFileName && ((LocalFileName) innermost).getRootFile().startsWith("//")) {
-            throw new VfsRootNotAllowedException(String.format(
-                    "The root \"%s\" names the network share \"%s\", and the root of a VFS mount point names a folder"
-                            + " of this server",
-                    rootPath, ((LocalFileName) innermost).getRootFile()));
+        if (innermost instanceof LocalFileName) {
+            String localRoot = ((LocalFileName) innermost).getRootFile();
+            if (!isRootOfThisServer(localRoot)) {
+                throw new VfsRootNotAllowedException(String.format(
+                        "The root \"%s\" starts at \"%s\", and the root of a VFS mount point names a folder of this"
+                                + " server",
+                        rootPath, localRoot));
+            }
         }
+    }
+
+    private static boolean isRootOfThisServer(String localRoot) {
+        return localRoot.isEmpty() || "/".equals(localRoot)
+                || (localRoot.length() == 2 && localRoot.charAt(1) == ':');
     }
 
     /**
