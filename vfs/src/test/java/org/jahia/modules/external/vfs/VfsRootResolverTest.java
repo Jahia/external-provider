@@ -17,6 +17,13 @@ package org.jahia.modules.external.vfs;
 
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemManager;
+import org.apache.commons.vfs2.impl.DefaultFileSystemManager;
+import org.apache.commons.vfs2.provider.gzip.GzipFileProvider;
+import org.apache.commons.vfs2.provider.local.DefaultLocalFileProvider;
+import org.apache.commons.vfs2.provider.local.GenericFileNameParser;
+import org.apache.commons.vfs2.provider.local.LocalFileNameParser;
+import org.apache.commons.vfs2.provider.local.WindowsFileNameParser;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -180,6 +187,45 @@ public final class VfsRootResolverTest {
     }
 
     @Test
+    public void aNetworkShareIsRefusedWhereTheLocalProviderReadsOne() throws FileSystemException {
+        DefaultFileSystemManager windows = managerParsingLocalNamesWith(new WindowsFileNameParser());
+        try {
+            assertNetworkShareRefused(windows, "//host/share/files", "//host/share");
+            assertNetworkShareRefused(windows, "\\\\host\\share\\files", "//host/share");
+            assertNetworkShareRefused(windows, "file://host/share/files", "//host/share");
+            assertNetworkShareRefused(windows, "file:////host/share/files", "//host/share");
+            // a layer reaches whatever the layer below it names
+            assertNetworkShareRefused(windows, "gz:file://host/share/archive.gz", "//host/share");
+        } finally {
+            windows.close();
+        }
+    }
+
+    @Test
+    public void aWindowsDriveIsNotANetworkShare() throws FileSystemException {
+        DefaultFileSystemManager windows = managerParsingLocalNamesWith(new WindowsFileNameParser());
+        try {
+            checkRootIsNotANetworkShare(windows, "file://d:/pdf-files");
+            checkRootIsNotANetworkShare(windows, "file:///d:/pdf-files");
+            checkRootIsNotANetworkShare(windows, "d:/pdf-files");
+            checkRootIsNotANetworkShare(windows, "D:\\pdf-files");
+        } finally {
+            windows.close();
+        }
+    }
+
+    @Test
+    public void aDoubleSlashIsALocalFolderOutsideWindows() throws FileSystemException {
+        DefaultFileSystemManager generic = managerParsingLocalNamesWith(new GenericFileNameParser());
+        try {
+            checkRootIsNotANetworkShare(generic, "//data/files");
+            checkRootIsNotANetworkShare(generic, "file://data/files");
+        } finally {
+            generic.close();
+        }
+    }
+
+    @Test
     public void aRootThatNamesAFileIsRefused() throws IOException {
         File file = temporaryFolder.newFile("vfs-root-resolver-file.txt");
 
@@ -219,6 +265,39 @@ public final class VfsRootResolverTest {
         // Apache VFS reads a FileSystemException message as a resource-bundle key; the message must survive that
         assertFalse("The message was rendered as a VFS message code: " + message,
                 message.contains("Unknown message with code"));
+    }
+
+    /** The local provider picks its parser from the platform, so a case that needs another platform sets it. */
+    private static DefaultFileSystemManager managerParsingLocalNamesWith(LocalFileNameParser parser)
+            throws FileSystemException {
+        DefaultFileSystemManager manager = new DefaultFileSystemManager();
+        manager.addProvider(VfsRootResolver.LOCAL_SCHEME, new LocalFileProviderWithParser(parser));
+        manager.addProvider("gz", new GzipFileProvider());
+        manager.init();
+        return manager;
+    }
+
+    private static final class LocalFileProviderWithParser extends DefaultLocalFileProvider {
+        LocalFileProviderWithParser(LocalFileNameParser parser) {
+            setFileNameParser(parser);
+        }
+    }
+
+    private static void checkRootIsNotANetworkShare(FileSystemManager manager, String rootPath)
+            throws FileSystemException {
+        VfsRootResolver.checkRootIsNotANetworkShare(rootPath, manager.resolveURI(rootPath));
+    }
+
+    private static void assertNetworkShareRefused(FileSystemManager manager, String rootPath, String expectedShare)
+            throws FileSystemException {
+        try {
+            checkRootIsNotANetworkShare(manager, rootPath);
+        } catch (VfsRootNotAllowedException e) {
+            assertTrue("Expected the message to name the share " + expectedShare + ", got: " + e.getMessage(),
+                    e.getMessage().contains('"' + expectedShare + '"'));
+            return;
+        }
+        fail("Expected the root path to be refused as a network share: " + rootPath);
     }
 
     private static String assertRefused(String rootPath) {
