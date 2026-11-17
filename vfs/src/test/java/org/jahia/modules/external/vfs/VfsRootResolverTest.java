@@ -182,8 +182,8 @@ public final class VfsRootResolverTest {
 
     @Test
     public void anAuthorityLeavesTheSchemeOfALocalRootAsFile() throws FileSystemException {
-        // file://d:/pdf-files is the form the documentation gives for a Windows drive, and it names file: alone;
-        // whether a root is a folder of this server is decided when it resolves
+        // The documentation gives the first form for a Windows drive, and its only scheme is file.
+        // The resolution of a root decides whether the root names a folder of this server.
         checkSchemeAllowed("file://d:/pdf-files");
         checkSchemeAllowed("//data/files");
     }
