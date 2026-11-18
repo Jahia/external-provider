@@ -132,11 +132,11 @@ public class ExternalProviderInitializerServiceImpl implements ExternalProviderI
                     externalId = getExternalId(resultSet, 1);
                 }
             } catch (SQLException | IOException e) {
-                throw new RepositoryException("Issue when obtaining external provider ID for internal identfier " + internalId, e);
+                throw new RepositoryException("Issue when obtaining external provider ID for internal identifier " + internalId, e);
             }
 
         } catch (SQLException e) {
-            throw new RepositoryException("Issue when obtaining external provider ID for internal identfier " + internalId, e);
+            throw new RepositoryException("Issue when obtaining external provider ID for internal identifier " + internalId, e);
         }
 
         return externalId;
