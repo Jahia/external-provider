@@ -6,77 +6,28 @@ External Provider
 ======================
 The External Provider module provides an API allowing integration of external system as content providers.
 
-## Upgrade impacts
+## Upgrade
 
-An upgrade of External Provider can restart many modules that do not use External Provider, and it rebuilds the GraphQL schema. The cause is a package import in `graphql-dxm-provider`, not in External Provider. [graphql-core#629](https://github.com/Jahia/graphql-core/issues/629) gives the full analysis.
+### External Provider in Jahia patch releases
 
-### Why other modules restart
+A Jahia patch release, such as 8.2.3.x or 8.2.2.x, does not upgrade the External Provider modules. An upgrade of these modules refreshes the modules that depend on them, so the instance can be unavailable during the upgrade. A new version of External Provider ships with a new minor version of Jahia, such as 8.2.4.0.
 
-When OSGi refreshes a bundle, it also restarts every bundle that imports a package from it, and every bundle that imports from those bundles. Before version 3.7.0, `graphql-dxm-provider` had a mandatory import of the `org.jahia.modules.external.modules.osgi` package from `external-provider-modules`. This import served only a development feature: the reload of the `graphql-extension.sdl` files of a module whose sources are on the disk of the server.
+### How to upgrade External Provider
 
-That import puts `graphql-dxm-provider` in the refresh chain of External Provider:
+1. Upgrade `graphql-dxm-provider` to 3.7.0 or later.
+2. Stop `external-provider-ui`.
+3. Install the new versions of the External Provider modules during a maintenance window.
+4. Start `external-provider-ui`, or install its new version.
 
-```
-external-provider-vfs
-  └ exports org.jahia.modules.external.vfs
-       ← imported by external-provider-modules
-            └ exports org.jahia.modules.external.modules.osgi
-                 ← imported by graphql-dxm-provider
-                      └ exports the GraphQL API
-                           ← imported by about 14 modules, about 38 modules in total
-```
+Do not use the administration screens during the upgrade.
 
-An upgrade of External Provider refreshes `external-provider-vfs` or `external-provider-modules`. For example, `external-provider-ui` refreshes the bundles that import the `org.jahia.modules.external.admin.mount` packages, because those packages moved from `external-provider` to `external-provider-ui`.
+### Known impacts
 
-### What you see
-
-On a Jahia 8.2 instance, one refresh of `external-provider-vfs` 4.10.0 gives these results:
-
-- About 38 modules stop and start again, for example `graphql-dxm-provider`, `jcontent`, `serverSettings`, `siteSettings` and `module-manager`.
-- `graphql-dxm-provider` removes the GraphQL schema and builds it again.
-- A screen of the administration that is open during the refresh can fail, for example with `java.lang.ClassNotFoundException: org.jahia.modules.modulemanager.flow.ModuleFile`.
-
-### How to limit the impact
-
-- Install `graphql-dxm-provider` 3.7.0 or later before you upgrade External Provider. Version 3.7.0 removes the import, so `graphql-dxm-provider` is no longer in the refresh chain. [graphql-core#630](https://github.com/Jahia/graphql-core/pull/630) has the change.
-- Upgrade External Provider at a time of low traffic, and do not use the administration screens during the upgrade.
-
-### Removal of External Provider VFS from the distribution
-
-Jahia 8.2.4.0 no longer ships `external-provider-vfs`, as [jahia-private#3515](https://github.com/Jahia/jahia-private/issues/3515) states. This removal also removes the start of the refresh chain above.
-
-- `external-provider-modules` 4.11.0 holds a private copy of the VFS classes it needs, and no longer imports `org.jahia.modules.external.vfs`. [external-provider#266](https://github.com/Jahia/external-provider/pull/266) has the change. A refresh of `external-provider-vfs` then no longer reaches `external-provider-modules`, and the Studio works without `external-provider-vfs`.
-- An upgrade to Jahia 8.2.4.0 keeps `external-provider-vfs` and its mount points at their earlier version.
-- 4.11.0 is the last release of `external-provider-vfs`, and the module is then archived.
-
-If you do not use VFS mount points, delete them, then uninstall `external-provider-vfs`. Delete the mount points first, because after an uninstall each VFS mount point node stays `mounted` and serves no content. If you use VFS mount points, install `external-provider-vfs` 4.11.0 from the Jahia Maven repository.
-
-### Blocked startup with external-provider-ui before 4.10.0
-
-With `external-provider-ui` 4.8.0 or 4.9.0, Jahia can stop at startup after an upgrade or a restart, as [jahia-private#4851](https://github.com/Jahia/jahia-private/issues/4851) states. The log then shows `Timeout reached when waiting for final start level to be reached`, many modules do not start, and the instance is not accessible.
-
-The cause is the refresh that `external-provider-ui` does when it starts. The packages `org.jahia.modules.external.admin.mount` and `org.jahia.modules.external.admin.mount.validator` moved from `external-provider` to `external-provider-ui`. When `external-provider-ui` starts, it refreshes each bundle that imports these packages and is not wired to it, for example `external-provider-vfs`. During the startup of Jahia, the OSGi start level thread holds a lock until all bundles start. The refresh waits for that lock, and the start level thread waits for the end of the refresh, so both threads stop.
-
-`external-provider-ui` 4.10.0 fixes this problem: it does not do the refresh while Jahia starts, because the OSGi framework already wires all bundles at startup. [external-provider#226](https://github.com/Jahia/external-provider/pull/226) has the change.
-
-### Deadlock during an upgrade of external-provider-ui
-
-An upgrade of `external-provider-ui` itself, for example from 4.8.0 to 4.10.0, can also block the instance, as [jahia-private#5156](https://github.com/Jahia/jahia-private/issues/5156) states. The new version refreshes the bundles that import the moved packages. The module manager refreshes the same bundles at the same time, and the two refreshes wait for each other. Other modules then stay in the starting state. This problem occurs mostly on the browsing nodes of a cluster, and sometimes on a single node.
-
-To recover, remove the `external-provider-ui` file from the `bundles-deployed` folder of each node, and restart the nodes. You can then install `external-provider-ui` again, but the refresh of the modules stops the edit mode for a short time.
-
-[external-provider#243](https://github.com/Jahia/external-provider/pull/243) fixes this problem. The new version refreshes only the bundles that are wired to an old exporter of the moved packages. It does no refresh during its own upgrade. This fix is not released yet. It ships with the next release of External Provider, for Jahia 8.2.4.0.
-
-### What to do with external-provider-ui
-
-Jahia does not ship `external-provider-ui`, so an upgrade of Jahia does not upgrade it. Before you upgrade or restart Jahia, do one of these steps:
-
-- Stop or uninstall `external-provider-ui`, and install it again after the upgrade. This step prevents both the blocked startup and the deadlock.
-- Upgrade `external-provider-ui` to 4.10.0 or later. This version works with the other External Provider modules from version 4.2 up to version 5.0, which is excluded, so you can keep their versions. Do this upgrade during a maintenance window, because of the deadlock above.
-
-### Identifier cache in a cluster
-
-External Provider 4.10.0 and later keep a cache of the identifiers of external items. In a cluster, the other nodes keep the old identifiers after a rename or a delete of an external item, as [external-provider#274](https://github.com/Jahia/external-provider/issues/274) states. This problem is not fixed yet.
+- Before `graphql-dxm-provider` 3.7.0, an upgrade of External Provider restarts about 38 modules and rebuilds the GraphQL schema. See [graphql-core#629](https://github.com/Jahia/graphql-core/issues/629).
+- With `external-provider-ui` 4.8.0 or 4.9.0, Jahia can block at startup after an upgrade or a restart. Version 4.10.0 fixes this problem. See [jahia-private#4851](https://github.com/Jahia/jahia-private/issues/4851).
+- An upgrade of `external-provider-ui` can deadlock the instance, mostly on a cluster. The fix ships with Jahia 8.2.4.0. See [jahia-private#5156](https://github.com/Jahia/jahia-private/issues/5156).
+- Jahia 8.2.4.0 no longer ships `external-provider-vfs`, and an upgrade keeps the installed module. See [jahia-private#3515](https://github.com/Jahia/jahia-private/issues/3515).
+- In a cluster, External Provider 4.10.0 and later keep old identifiers on the other nodes after a rename or a delete. See [external-provider#274](https://github.com/Jahia/external-provider/issues/274).
 
 ## GraphQL API
 
