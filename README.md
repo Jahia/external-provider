@@ -57,12 +57,26 @@ With `external-provider-ui` 4.8.0 or 4.9.0, Jahia can stop at startup after an u
 
 The cause is the refresh that `external-provider-ui` does when it starts. The packages `org.jahia.modules.external.admin.mount` and `org.jahia.modules.external.admin.mount.validator` moved from `external-provider` to `external-provider-ui`. When `external-provider-ui` starts, it refreshes each bundle that imports these packages and is not wired to it, for example `external-provider-vfs`. During the startup of Jahia, the OSGi start level thread holds a lock until all bundles start. The refresh waits for that lock, and the start level thread waits for the end of the refresh, so both threads stop.
 
-`external-provider-ui` 4.10.0 fixes this problem: it does not do the refresh while Jahia starts, because the OSGi framework already wires all bundles at startup. [external-provider#226](https://github.com/Jahia/external-provider/pull/226) has the change. The versions after 4.10.0 also refresh only the bundles that are wired to an old exporter of the moved packages. They do no refresh during an upgrade of `external-provider-ui` itself. This change prevents the deadlock of [jahia-private#5156](https://github.com/Jahia/jahia-private/issues/5156), and [external-provider#243](https://github.com/Jahia/external-provider/pull/243) has it.
+`external-provider-ui` 4.10.0 fixes this problem: it does not do the refresh while Jahia starts, because the OSGi framework already wires all bundles at startup. [external-provider#226](https://github.com/Jahia/external-provider/pull/226) has the change.
+
+### Deadlock during an upgrade of external-provider-ui
+
+An upgrade of `external-provider-ui` itself, for example from 4.8.0 to 4.10.0, can also block the instance, as [jahia-private#5156](https://github.com/Jahia/jahia-private/issues/5156) states. The new version refreshes the bundles that import the moved packages. The module manager refreshes the same bundles at the same time, and the two refreshes wait for each other. Other modules then stay in the starting state. This problem occurs mostly on the browsing nodes of a cluster, and sometimes on a single node.
+
+To recover, remove the `external-provider-ui` file from the `bundles-deployed` folder of each node, and restart the nodes. You can then install `external-provider-ui` again, but the refresh of the modules stops the edit mode for a short time.
+
+[external-provider#243](https://github.com/Jahia/external-provider/pull/243) fixes this problem. The new version refreshes only the bundles that are wired to an old exporter of the moved packages. It does no refresh during its own upgrade. This fix is not released yet. It ships with the next release of External Provider, for Jahia 8.2.4.0.
+
+### What to do with external-provider-ui
 
 Jahia does not ship `external-provider-ui`, so an upgrade of Jahia does not upgrade it. Before you upgrade or restart Jahia, do one of these steps:
 
-- Upgrade `external-provider-ui` to 4.10.0 or later. This version works with the other External Provider modules from version 4.2 up to version 5.0, which is excluded, so you can keep their versions.
-- Stop or uninstall `external-provider-ui`.
+- Stop or uninstall `external-provider-ui`, and install it again after the upgrade. This step prevents both the blocked startup and the deadlock.
+- Upgrade `external-provider-ui` to 4.10.0 or later. This version works with the other External Provider modules from version 4.2 up to version 5.0, which is excluded, so you can keep their versions. Do this upgrade during a maintenance window, because of the deadlock above.
+
+### Identifier cache in a cluster
+
+External Provider 4.10.0 and later keep a cache of the identifiers of external items. In a cluster, the other nodes keep the old identifiers after a rename or a delete of an external item, as [external-provider#274](https://github.com/Jahia/external-provider/issues/274) states. This problem is not fixed yet.
 
 ## GraphQL API
 
