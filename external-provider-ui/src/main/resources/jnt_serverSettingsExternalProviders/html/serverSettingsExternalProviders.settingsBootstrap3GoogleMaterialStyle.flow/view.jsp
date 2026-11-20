@@ -56,17 +56,17 @@
             <c:forEach items="${mountedProviders}" var="mount" varStatus="loopStatus">
                 <tr>
                     <td>
-                        ${mount.key}
+                        ${fn:escapeXml(mount.key)}
                     </td>
                     <td>
-                        ${mount.mountPoint}
+                        ${fn:escapeXml(mount.mountPoint)}
                     </td>
                     <td>
-                        ${mount.dataSource.clazz}
+                        ${fn:escapeXml(mount.dataSource.clazz)}
                     </td>
                     <td>
                         <form style="margin: 0;" action="${flowExecutionUrl}" method="post">
-                            <input type="hidden" name="mountpoint" value="${mount.mountPoint}"/>
+                            <input type="hidden" name="mountpoint" value="${fn:escapeXml(mount.mountPoint)}"/>
 
                             <button data-toggle="tooltip" class="btn btn-fab btn-fab-xs btn-info" type="submit" name="_eventId_viewDataSource"
                                     onclick=""  data-placement="bottom" title="" data-original-title="<fmt:message key="label.info"/>">

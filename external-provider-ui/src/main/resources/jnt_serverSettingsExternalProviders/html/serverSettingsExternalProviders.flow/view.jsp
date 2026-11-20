@@ -61,18 +61,18 @@
                  <%--${mount.id}--%>
             <%--</td>--%>
             <td>
-                ${mount.key}
+                ${fn:escapeXml(mount.key)}
             </td>
             <td>
-                ${mount.mountPoint}
+                ${fn:escapeXml(mount.mountPoint)}
             </td>
             <td>
-                ${mount.dataSource.clazz}
+                ${fn:escapeXml(mount.dataSource.clazz)}
 
             </td>
             <td>
                 <form style="margin: 0;" action="${flowExecutionUrl}" method="post">
-                    <input type="hidden" name="mountpoint" value="${mount.mountPoint}"/>
+                    <input type="hidden" name="mountpoint" value="${fn:escapeXml(mount.mountPoint)}"/>
 
                     <button class="btn btn-info" type="submit" name="_eventId_viewDataSource" onclick="">
                         <i class=" "></i>&nbsp;<fmt:message key="label.info"/>
