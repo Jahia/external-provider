@@ -49,18 +49,15 @@
             org.jahia.modules.external.query,
             org.jahia.modules.external.service
         </export-package>
-        <!-- Jahia 8.2.0.0 provides jackson 2.15.2 -->
         <import-package>
             com.google.common.base,
             com.google.common.collect,
             org.jahia.defaults.config.spring,
             org.jahia.exceptions,
             org.jahia.services,
-            javassist.util.proxy,
-            com.fasterxml.jackson.databind;version="[2.15,3)",
-            com.fasterxml.jackson.jaxrs.json;version="[2.15,3)"
+            javassist.util.proxy
         </import-package>
-        <jackson.version>2.21.6</jackson.version>
+        <jackson.version>2.15.2</jackson.version> <!-- should match the version that Jahia 8.2.0.0 provides -->
         <jersey.version>2.6</jersey.version>
         <caffeine.version>3.2.3</caffeine.version>
         <jahia-module-signature>MC0CFBN9790pYAIjuOOXgVNL5aZicItUAhUAgnt2uuz1hrCG9eMM+db6HLmnwOc=</jahia-module-signature>
