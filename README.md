@@ -10,7 +10,7 @@ The External Provider module provides an API allowing integration of external sy
 
 ### External Provider upgrade
 
-A Jahia patch release, such as 8.2.3.x or 8.2.2.x, does not upgrade the External Provider modules. A new version of External Provider ships with a new minor version of Jahia, such as 8.2.4.0. When you upgrade the External Provider modules, Jahia refreshes the modules that depend on them, so the instance can be unavailable during the upgrade.
+A new version of External Provider ships with a new minor version of Jahia, such as 8.2.4.0. A Jahia patch release, such as 8.2.3.x or 8.2.2.x, does not upgrade the External Provider modules. When you upgrade the External Provider modules, Jahia refreshes the modules that depend on them, so the instance can be unavailable during the upgrade.
 
 ### How to upgrade External Provider
 
