@@ -6,6 +6,29 @@ External Provider
 ======================
 The External Provider module provides an API allowing integration of external system as content providers.
 
+## Upgrade
+
+### External Provider upgrade
+
+A new version of External Provider ships with a new minor version of Jahia, such as 8.2.4.0. A Jahia patch release, such as 8.2.3.x or 8.2.2.x, does not upgrade the External Provider modules. When you upgrade the External Provider modules, Jahia refreshes the modules that depend on them, so the instance can be unavailable during the upgrade.
+
+### How to upgrade External Provider
+
+1. Upgrade `graphql-dxm-provider` to 3.7.0 or later.
+2. Stop `external-provider-ui`.
+3. Install the new versions of the External Provider modules during a maintenance window.
+4. Start `external-provider-ui`, or install its new version.
+
+Do not use the administration screens during the upgrade.
+
+### Known impacts
+
+- Before `graphql-dxm-provider` 3.7.0, an upgrade of External Provider restarts about 38 modules and rebuilds the GraphQL schema. See [graphql-core#629](https://github.com/Jahia/graphql-core/issues/629).
+- With `external-provider-ui` 4.8.0 or 4.9.0, Jahia can block at startup after an upgrade or a restart. Version 4.10.0 fixes this problem. See [jahia-private#4851](https://github.com/Jahia/jahia-private/issues/4851).
+- An upgrade of `external-provider-ui` can deadlock the instance, mostly on a cluster. The fix ships with Jahia 8.2.4.0. See [jahia-private#5156](https://github.com/Jahia/jahia-private/issues/5156).
+- Jahia 8.2.4.0 no longer ships `external-provider-vfs`, and an upgrade keeps the installed module. See [jahia-private#3515](https://github.com/Jahia/jahia-private/issues/3515).
+- In a cluster, External Provider 4.10.0 and later keep old identifiers on the other nodes after a rename or a delete. See [external-provider#274](https://github.com/Jahia/external-provider/issues/274).
+
 ## GraphQL API
 
 GraphQL API endpoints are available for creating and modifying basic and VFS mount points, as well as mount and unmount and query operations. Other mount point provider modules can also extend endpoints with the same namespaces `mutation.admin.mountpoint` and `query.admin.mountpoint`. 
