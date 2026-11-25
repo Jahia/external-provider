@@ -27,7 +27,6 @@ Do not use the administration screens during the upgrade.
 - With `external-provider-ui` 4.8.0 or 4.9.0, Jahia can block at startup after an upgrade or a restart. Version 4.10.0 fixes this problem. See [jahia-private#4851](https://github.com/Jahia/jahia-private/issues/4851).
 - An upgrade of `external-provider-ui` can deadlock the instance, mostly on a cluster. The fix ships with Jahia 8.2.4.0. See [jahia-private#5156](https://github.com/Jahia/jahia-private/issues/5156).
 - Jahia 8.2.4.0 no longer ships `external-provider-vfs`, and an upgrade keeps the installed module. See [jahia-private#3515](https://github.com/Jahia/jahia-private/issues/3515).
-- In a cluster, External Provider 4.10.0 and later keep old identifiers on the other nodes after a rename or a delete. See [external-provider#274](https://github.com/Jahia/external-provider/issues/274).
 
 ## GraphQL API
 
