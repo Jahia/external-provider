@@ -62,7 +62,7 @@
     "path": "^0.12.7",
     "rimraf": "^3.0.0",
     "sync-pom-version-to-package": "^1.6.1",
-    "webpack": "^5.88.2",
+    "webpack": "^5.104.1",
     "webpack-bundle-analyzer": "^4.4.2",
     "webpack-cli": "^4.8.0"
   },
