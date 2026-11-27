@@ -57,7 +57,7 @@
             org.jahia.services,
             javassist.util.proxy
         </import-package>
-        <jackson.version>2.9.0</jackson.version>
+        <jackson.version>2.15.2</jackson.version> <!-- should match the version set in https://github.com/Jahia/jahia-private/blob/JAHIA_8_2_0_0/jahia-parent/pom.xml#L76 -->
         <jersey.version>2.6</jersey.version>
         <jahia-module-signature>MCwCFF0gc+dVlVobRUNMQYhk8KqZ9D9LAhQNq01VOf2+HdtPhcON6VDUQiBBfA==</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
